@@ -76,6 +76,17 @@ def build_auth_headers(endpoint: str, payload: dict = None, v1: bool = False, pa
         "Content-Type": "application/json"
     }
 
+def redact_headers(headers: dict) -> dict:
+    """
+    Return a copy of headers with sensitive fields redacted.
+    """
+    redacted = headers.copy()
+    if "bfx-apikey" in redacted and redacted["bfx-apikey"]:
+        redacted["bfx-apikey"] = redacted["bfx-apikey"][:4] + "..." if len(redacted["bfx-apikey"]) > 4 else "***"
+    if "bfx-signature" in redacted and redacted["bfx-signature"]:
+        redacted["bfx-signature"] = "[REDACTED]"
+    return redacted
+
 async def place_order(order: dict) -> dict:
     """
     Lägger en order via Bitfinex REST API.
@@ -130,7 +141,7 @@ async def place_order(order: dict) -> dict:
         logger.info(
             f"🔍 DEBUG: API Secret (första 10 chars): {settings.BITFINEX_API_SECRET[:10] if settings.BITFINEX_API_SECRET else 'None'}..."
         )
-        logger.info(f"🔍 DEBUG: Headers: {headers}")
+        logger.info(f"🔍 DEBUG: Headers: {redact_headers(headers)}")
         logger.info(f"🔍 DEBUG: Payload: {bitfinex_order}")
         
         import os
