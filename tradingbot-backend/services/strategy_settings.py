@@ -1,0 +1,94 @@
+"""
+Strategy Settings Service - Hanterar indikatorparametrar och vikter för strategier.
+
+Persistens sker i `config/strategy_settings.json` för enkel justering via API.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+from dataclasses import dataclass, asdict
+from typing import Dict, Optional
+
+from config.settings import Settings
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
+
+
+@dataclass
+class StrategySettings:
+    # Vikter ska summera till 1.0 (valideras), men vi tillåter flexibilitet och normaliserar vid behov
+    ema_weight: float = 0.4
+    rsi_weight: float = 0.4
+    atr_weight: float = 0.2
+
+    # Indikatorparametrar (enkla standardvärden)
+    ema_period: int = 14
+    rsi_period: int = 14
+    atr_period: int = 14
+
+    def to_dict(self) -> Dict:
+        return asdict(self)
+
+    @staticmethod
+    def from_dict(data: Dict) -> "StrategySettings":
+        return StrategySettings(
+            ema_weight=float(data.get("ema_weight", 0.4)),
+            rsi_weight=float(data.get("rsi_weight", 0.4)),
+            atr_weight=float(data.get("atr_weight", 0.2)),
+            ema_period=int(data.get("ema_period", 14)),
+            rsi_period=int(data.get("rsi_period", 14)),
+            atr_period=int(data.get("atr_period", 14)),
+        )
+
+    def normalized(self) -> "StrategySettings":
+        total = max(self.ema_weight + self.rsi_weight + self.atr_weight, 1e-9)
+        return StrategySettings(
+            ema_weight=self.ema_weight / total,
+            rsi_weight=self.rsi_weight / total,
+            atr_weight=self.atr_weight / total,
+            ema_period=self.ema_period,
+            rsi_period=self.rsi_period,
+            atr_period=self.atr_period,
+        )
+
+
+class StrategySettingsService:
+    def __init__(self, settings: Optional[Settings] = None):
+        self.settings = settings or Settings()
+        # Bygg absolut sökväg till config-katalogen relativt projektroten
+        base_dir = os.path.dirname(os.path.dirname(__file__))
+        cfg_dir = os.path.join(base_dir, "config")
+        os.makedirs(cfg_dir, exist_ok=True)
+        self.file_path = os.path.join(cfg_dir, "strategy_settings.json")
+
+    def get_settings(self) -> StrategySettings:
+        try:
+            with open(self.file_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                s = StrategySettings.from_dict(data)
+                return s.normalized()
+        except FileNotFoundError:
+            logger.info("Inga strategiinställningar hittades – använder default och skapar fil.")
+            defaults = StrategySettings()
+            self.save_settings(defaults)
+            return defaults
+        except Exception as e:
+            logger.warning(f"Kunde inte läsa strategiinställningar: {e}")
+            return StrategySettings()
+
+    def save_settings(self, settings_obj: StrategySettings) -> StrategySettings:
+        try:
+            normalized = settings_obj.normalized()
+            # Säkerställ att katalogen finns
+            os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
+            with open(self.file_path, "w", encoding="utf-8") as f:
+                json.dump(normalized.to_dict(), f, ensure_ascii=False, indent=2)
+            return normalized
+        except Exception as e:
+            logger.error(f"Kunde inte spara strategiinställningar: {e}")
+            raise
+
+

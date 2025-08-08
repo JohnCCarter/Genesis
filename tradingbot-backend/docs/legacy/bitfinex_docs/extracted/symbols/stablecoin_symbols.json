@@ -1,0 +1,308 @@
+{
+  "category": "stablecoin",
+  "description": "Handelspar med stablecoins som quote currency (UST, USDT)",
+  "count": 43,
+  "symbols": [
+    {
+      "symbol": "tAAVE:UST",
+      "base_currency": "AAVE",
+      "quote_currency": "UST",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tALT11M250830:UST",
+      "base_currency": "ALT11M250830",
+      "quote_currency": "UST",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tALT11M251029:UST",
+      "base_currency": "ALT11M251029",
+      "quote_currency": "UST",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tALT2612:UST",
+      "base_currency": "ALT2612",
+      "quote_currency": "UST",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tAUSDT:UST",
+      "base_currency": "AUSDT",
+      "quote_currency": "UST",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tAVAX:UST",
+      "base_currency": "AVAX",
+      "quote_currency": "UST",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tBONK:UST",
+      "base_currency": "BONK",
+      "quote_currency": "UST",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tCELO:UST",
+      "base_currency": "CELO",
+      "quote_currency": "UST",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tCOMP:UST",
+      "base_currency": "COMP",
+      "quote_currency": "UST",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tDOGE:UST",
+      "base_currency": "DOGE",
+      "quote_currency": "UST",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tEGLD:UST",
+      "base_currency": "EGLD",
+      "quote_currency": "UST",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tEIGEN:UST",
+      "base_currency": "EIGEN",
+      "quote_currency": "UST",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tETH2X:UST",
+      "base_currency": "ETH2X",
+      "quote_currency": "UST",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tEURQ:UST",
+      "base_currency": "EURQ",
+      "quote_currency": "UST",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tEURR:UST",
+      "base_currency": "EURR",
+      "quote_currency": "UST",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tFLOKI:UST",
+      "base_currency": "FLOKI",
+      "quote_currency": "UST",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tGALA:UST",
+      "base_currency": "GALA",
+      "quote_currency": "UST",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tGOMINING:UST",
+      "base_currency": "GOMINING",
+      "quote_currency": "UST",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tHTXDAO:UST",
+      "base_currency": "HTXDAO",
+      "quote_currency": "UST",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tJASMY:UST",
+      "base_currency": "JASMY",
+      "quote_currency": "UST",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tJUSTICE:UST",
+      "base_currency": "JUSTICE",
+      "quote_currency": "UST",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tKAIA:UST",
+      "base_currency": "KAIA",
+      "quote_currency": "UST",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tKAVA:UST",
+      "base_currency": "KAVA",
+      "quote_currency": "UST",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tLIFIII:UST",
+      "base_currency": "LIFIII",
+      "quote_currency": "UST",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tLINK:UST",
+      "base_currency": "LINK",
+      "quote_currency": "UST",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tNEAR:UST",
+      "base_currency": "NEAR",
+      "quote_currency": "UST",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tNEXO:UST",
+      "base_currency": "NEXO",
+      "quote_currency": "UST",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tPEPE:UST",
+      "base_currency": "PEPE",
+      "quote_currency": "UST",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tSHIB:UST",
+      "base_currency": "SHIB",
+      "quote_currency": "UST",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tSONIC:UST",
+      "base_currency": "SONIC",
+      "quote_currency": "UST",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tSPEC:UST",
+      "base_currency": "SPEC",
+      "quote_currency": "UST",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tSPELL:UST",
+      "base_currency": "SPELL",
+      "quote_currency": "UST",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tSTRK:UST",
+      "base_currency": "STRK",
+      "quote_currency": "UST",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tSUSHI:UST",
+      "base_currency": "SUSHI",
+      "quote_currency": "UST",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tSWEAT:UST",
+      "base_currency": "SWEAT",
+      "quote_currency": "UST",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tTOKEN:UST",
+      "base_currency": "TOKEN",
+      "quote_currency": "UST",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tUSDF:UST",
+      "base_currency": "USDF",
+      "quote_currency": "UST",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tUSDQ:UST",
+      "base_currency": "USDQ",
+      "quote_currency": "UST",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tUSDR:UST",
+      "base_currency": "USDR",
+      "quote_currency": "UST",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tUSTBL:UST",
+      "base_currency": "USTBL",
+      "quote_currency": "UST",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tUXLINK:UST",
+      "base_currency": "UXLINK",
+      "quote_currency": "UST",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tWHBT:UST",
+      "base_currency": "WHBT",
+      "quote_currency": "UST",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tXAUT:UST",
+      "base_currency": "XAUT",
+      "quote_currency": "UST",
+      "is_test": false,
+      "is_paper": false
+    }
+  ]
+}

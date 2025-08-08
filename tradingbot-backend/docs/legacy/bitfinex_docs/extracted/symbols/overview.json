@@ -1,0 +1,48 @@
+{
+  "title": "Bitfinex Trading Symbols Overview",
+  "description": "Översikt över alla tillgängliga handelssymboler på Bitfinex",
+  "categories": [
+    {
+      "name": "commodity",
+      "description": "Handelspar med råvaror som quote currency (XAUT)",
+      "count": 2,
+      "file": "commodity_symbols.json"
+    },
+    {
+      "name": "crypto",
+      "description": "Handelspar med kryptovalutor som quote currency (BTC, ETH, LEO)",
+      "count": 5,
+      "file": "crypto_symbols.json"
+    },
+    {
+      "name": "fiat",
+      "description": "Handelspar med fiatvalutor som quote currency (EUR, GBP, JPY, etc.)",
+      "count": 6,
+      "file": "fiat_symbols.json"
+    },
+    {
+      "name": "other",
+      "description": "Övriga handelspar som inte passar i andra kategorier",
+      "count": 169,
+      "file": "other_symbols.json"
+    },
+    {
+      "name": "stablecoin",
+      "description": "Handelspar med stablecoins som quote currency (UST, USDT)",
+      "count": 43,
+      "file": "stablecoin_symbols.json"
+    },
+    {
+      "name": "test",
+      "description": "Testsymboler för utveckling och testning",
+      "count": 18,
+      "file": "test_symbols.json"
+    },
+    {
+      "name": "usd",
+      "description": "Handelspar med USD och USD-varianter som quote currency",
+      "count": 53,
+      "file": "usd_symbols.json"
+    }
+  ]
+}

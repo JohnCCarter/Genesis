@@ -1,0 +1,56 @@
+{
+  "docs": [
+    {
+      "file": "all_symbols.json",
+      "title": "Collection",
+      "description": ""
+    },
+    {
+      "file": "margin_account.json",
+      "title": "",
+      "description": ""
+    },
+    {
+      "file": "order_types.json",
+      "title": "",
+      "description": ""
+    },
+    {
+      "file": "positions_account.json",
+      "title": "",
+      "description": ""
+    },
+    {
+      "file": "rest-public.json",
+      "title": "",
+      "description": ""
+    },
+    {
+      "file": "rest_auth.json",
+      "title": "",
+      "description": ""
+    },
+    {
+      "file": "symbols.json",
+      "title": "Collection",
+      "description": ""
+    },
+    {
+      "file": "wallet_account.json",
+      "title": "",
+      "description": ""
+    },
+    {
+      "file": "ws-public.json",
+      "title": "",
+      "description": ""
+    },
+    {
+      "file": "ws_auth.json",
+      "title": "",
+      "description": ""
+    }
+  ],
+  "endpoints": [],
+  "schemas": []
+}

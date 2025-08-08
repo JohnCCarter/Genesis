@@ -1,0 +1,16 @@
+{
+  "namedChunks": [
+    "routes-SuperHub",
+    "ViewContainer",
+    "Header",
+    "core-icons-chevron-down-svg",
+    "core-icons-chevron-up-down-svg",
+    "SuperHubSearch",
+    "core-icons-search-svg",
+    "core-icons-custom-pages-svg",
+    "Doc",
+    "ConnectMetadata",
+    "RMDX",
+    "Footer"
+  ]
+}

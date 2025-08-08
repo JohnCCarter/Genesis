@@ -1,0 +1,892 @@
+[
+  {
+    "symbol": "tAAVE:USD"
+  },
+  {
+    "symbol": "tAAVE:UST"
+  },
+  {
+    "symbol": "tADABTC"
+  },
+  {
+    "symbol": "tADAUSD"
+  },
+  {
+    "symbol": "tADAUST"
+  },
+  {
+    "symbol": "tAIOZ:USD"
+  },
+  {
+    "symbol": "tALGUSD"
+  },
+  {
+    "symbol": "tALT11M250830:USD"
+  },
+  {
+    "symbol": "tALT11M250830:UST"
+  },
+  {
+    "symbol": "tALT11M251029:USD"
+  },
+  {
+    "symbol": "tALT11M251029:UST"
+  },
+  {
+    "symbol": "tALT2612:USD"
+  },
+  {
+    "symbol": "tALT2612:UST"
+  },
+  {
+    "symbol": "tAMPUSD"
+  },
+  {
+    "symbol": "tAMPUST"
+  },
+  {
+    "symbol": "tAPENFT:USD"
+  },
+  {
+    "symbol": "tAPEUSD"
+  },
+  {
+    "symbol": "tAPEUST"
+  },
+  {
+    "symbol": "tAPTUSD"
+  },
+  {
+    "symbol": "tAPTUST"
+  },
+  {
+    "symbol": "tARBUSD"
+  },
+  {
+    "symbol": "tARBUST"
+  },
+  {
+    "symbol": "tATHUSD"
+  },
+  {
+    "symbol": "tATHUST"
+  },
+  {
+    "symbol": "tATOUSD"
+  },
+  {
+    "symbol": "tATOUST"
+  },
+  {
+    "symbol": "tAUSDT:USD"
+  },
+  {
+    "symbol": "tAUSDT:UST"
+  },
+  {
+    "symbol": "tAVAX:BTC"
+  },
+  {
+    "symbol": "tAVAX:USD"
+  },
+  {
+    "symbol": "tAVAX:UST"
+  },
+  {
+    "symbol": "tB2MUSD"
+  },
+  {
+    "symbol": "tB2MUST"
+  },
+  {
+    "symbol": "tBCHN:USD"
+  },
+  {
+    "symbol": "tBGBUSD"
+  },
+  {
+    "symbol": "tBGBUST"
+  },
+  {
+    "symbol": "tBONK:USD"
+  },
+  {
+    "symbol": "tBONK:UST"
+  },
+  {
+    "symbol": "tBTC:EURQ"
+  },
+  {
+    "symbol": "tBTC:EURR"
+  },
+  {
+    "symbol": "tBTC:USDQ"
+  },
+  {
+    "symbol": "tBTC:USDR"
+  },
+  {
+    "symbol": "tBTC:XAUT"
+  },
+  {
+    "symbol": "tBTCEUR"
+  },
+  {
+    "symbol": "tBTCGBP"
+  },
+  {
+    "symbol": "tBTCJPY"
+  },
+  {
+    "symbol": "tBTCTRY"
+  },
+  {
+    "symbol": "tBTCUSD"
+  },
+  {
+    "symbol": "tBTCUST"
+  },
+  {
+    "symbol": "tBTTUSD"
+  },
+  {
+    "symbol": "tCELO:USD"
+  },
+  {
+    "symbol": "tCELO:UST"
+  },
+  {
+    "symbol": "tCHZUSD"
+  },
+  {
+    "symbol": "tCHZUST"
+  },
+  {
+    "symbol": "tCNHT:USD"
+  },
+  {
+    "symbol": "tCOMP:USD"
+  },
+  {
+    "symbol": "tCOMP:UST"
+  },
+  {
+    "symbol": "tCRVUSD"
+  },
+  {
+    "symbol": "tCRVUST"
+  },
+  {
+    "symbol": "tDAIUSD"
+  },
+  {
+    "symbol": "tDOGE:BTC"
+  },
+  {
+    "symbol": "tDOGE:USD"
+  },
+  {
+    "symbol": "tDOGE:UST"
+  },
+  {
+    "symbol": "tDOTUSD"
+  },
+  {
+    "symbol": "tDOTUST"
+  },
+  {
+    "symbol": "tDSHBTC"
+  },
+  {
+    "symbol": "tDSHUSD"
+  },
+  {
+    "symbol": "tDYMUSD"
+  },
+  {
+    "symbol": "tDYMUST"
+  },
+  {
+    "symbol": "tEGLD:USD"
+  },
+  {
+    "symbol": "tEGLD:UST"
+  },
+  {
+    "symbol": "tEIGEN:USD"
+  },
+  {
+    "symbol": "tEIGEN:UST"
+  },
+  {
+    "symbol": "tENAUSD"
+  },
+  {
+    "symbol": "tENAUST"
+  },
+  {
+    "symbol": "tEOSBTC"
+  },
+  {
+    "symbol": "tEOSUSD"
+  },
+  {
+    "symbol": "tEOSUST"
+  },
+  {
+    "symbol": "tETCBTC"
+  },
+  {
+    "symbol": "tETCUSD"
+  },
+  {
+    "symbol": "tETCUST"
+  },
+  {
+    "symbol": "tETH2X:ETH"
+  },
+  {
+    "symbol": "tETH2X:USD"
+  },
+  {
+    "symbol": "tETH2X:UST"
+  },
+  {
+    "symbol": "tETH:XAUT"
+  },
+  {
+    "symbol": "tETHBTC"
+  },
+  {
+    "symbol": "tETHEUR"
+  },
+  {
+    "symbol": "tETHGBP"
+  },
+  {
+    "symbol": "tETHJPY"
+  },
+  {
+    "symbol": "tETHUSD"
+  },
+  {
+    "symbol": "tETHUST"
+  },
+  {
+    "symbol": "tEURQ:EUR"
+  },
+  {
+    "symbol": "tEURQ:USD"
+  },
+  {
+    "symbol": "tEURQ:UST"
+  },
+  {
+    "symbol": "tEURR:EUR"
+  },
+  {
+    "symbol": "tEURR:USD"
+  },
+  {
+    "symbol": "tEURR:UST"
+  },
+  {
+    "symbol": "tEURUST"
+  },
+  {
+    "symbol": "tEUTUSD"
+  },
+  {
+    "symbol": "tEUTUST"
+  },
+  {
+    "symbol": "tFETUSD"
+  },
+  {
+    "symbol": "tFETUST"
+  },
+  {
+    "symbol": "tFILUSD"
+  },
+  {
+    "symbol": "tFILUST"
+  },
+  {
+    "symbol": "tFLOKI:USD"
+  },
+  {
+    "symbol": "tFLOKI:UST"
+  },
+  {
+    "symbol": "tGALA:USD"
+  },
+  {
+    "symbol": "tGALA:UST"
+  },
+  {
+    "symbol": "tGBPUST"
+  },
+  {
+    "symbol": "tGOMINING:USD"
+  },
+  {
+    "symbol": "tGOMINING:UST"
+  },
+  {
+    "symbol": "tGTXUSD"
+  },
+  {
+    "symbol": "tGTXUST"
+  },
+  {
+    "symbol": "tGUNUSD"
+  },
+  {
+    "symbol": "tGUNUST"
+  },
+  {
+    "symbol": "tHILSV:USD"
+  },
+  {
+    "symbol": "tHIXUSD"
+  },
+  {
+    "symbol": "tHIXUST"
+  },
+  {
+    "symbol": "tHTXDAO:USD"
+  },
+  {
+    "symbol": "tHTXDAO:UST"
+  },
+  {
+    "symbol": "tICPUSD"
+  },
+  {
+    "symbol": "tICPUST"
+  },
+  {
+    "symbol": "tIOTBTC"
+  },
+  {
+    "symbol": "tIOTUSD"
+  },
+  {
+    "symbol": "tJASMY:USD"
+  },
+  {
+    "symbol": "tJASMY:UST"
+  },
+  {
+    "symbol": "tJPYUST"
+  },
+  {
+    "symbol": "tJSTUSD"
+  },
+  {
+    "symbol": "tJSTUST"
+  },
+  {
+    "symbol": "tJUPUSD"
+  },
+  {
+    "symbol": "tJUPUST"
+  },
+  {
+    "symbol": "tJUSTICE:USD"
+  },
+  {
+    "symbol": "tJUSTICE:UST"
+  },
+  {
+    "symbol": "tJXXUSD"
+  },
+  {
+    "symbol": "tJXXUST"
+  },
+  {
+    "symbol": "tKAIA:USD"
+  },
+  {
+    "symbol": "tKAIA:UST"
+  },
+  {
+    "symbol": "tKANUSD"
+  },
+  {
+    "symbol": "tKANUST"
+  },
+  {
+    "symbol": "tKAVA:USD"
+  },
+  {
+    "symbol": "tKAVA:UST"
+  },
+  {
+    "symbol": "tLDOUSD"
+  },
+  {
+    "symbol": "tLDOUST"
+  },
+  {
+    "symbol": "tLEOBTC"
+  },
+  {
+    "symbol": "tLEOETH"
+  },
+  {
+    "symbol": "tLEOUSD"
+  },
+  {
+    "symbol": "tLEOUST"
+  },
+  {
+    "symbol": "tLIFIII:USD"
+  },
+  {
+    "symbol": "tLIFIII:UST"
+  },
+  {
+    "symbol": "tLINK:USD"
+  },
+  {
+    "symbol": "tLINK:UST"
+  },
+  {
+    "symbol": "tLTCBTC"
+  },
+  {
+    "symbol": "tLTCUSD"
+  },
+  {
+    "symbol": "tLTCUST"
+  },
+  {
+    "symbol": "tMEWUSD"
+  },
+  {
+    "symbol": "tMEWUST"
+  },
+  {
+    "symbol": "tMIMUSD"
+  },
+  {
+    "symbol": "tMIMUST"
+  },
+  {
+    "symbol": "tMKRUSD"
+  },
+  {
+    "symbol": "tMKRUST"
+  },
+  {
+    "symbol": "tMXNT:USD"
+  },
+  {
+    "symbol": "tNEAR:USD"
+  },
+  {
+    "symbol": "tNEAR:UST"
+  },
+  {
+    "symbol": "tNEOUSD"
+  },
+  {
+    "symbol": "tNEOUST"
+  },
+  {
+    "symbol": "tNEXO:BTC"
+  },
+  {
+    "symbol": "tNEXO:USD"
+  },
+  {
+    "symbol": "tNEXO:UST"
+  },
+  {
+    "symbol": "tNYMUSD"
+  },
+  {
+    "symbol": "tNYMUST"
+  },
+  {
+    "symbol": "tOMNUSD"
+  },
+  {
+    "symbol": "tOPXUSD"
+  },
+  {
+    "symbol": "tOPXUST"
+  },
+  {
+    "symbol": "tPEPE:USD"
+  },
+  {
+    "symbol": "tPEPE:UST"
+  },
+  {
+    "symbol": "tPNKUSD"
+  },
+  {
+    "symbol": "tPOLUSD"
+  },
+  {
+    "symbol": "tPOLUST"
+  },
+  {
+    "symbol": "tRRTUSD"
+  },
+  {
+    "symbol": "tSEIUSD"
+  },
+  {
+    "symbol": "tSEIUST"
+  },
+  {
+    "symbol": "tSHIB:USD"
+  },
+  {
+    "symbol": "tSHIB:UST"
+  },
+  {
+    "symbol": "tSHMUSD"
+  },
+  {
+    "symbol": "tSHMUST"
+  },
+  {
+    "symbol": "tSOLBTC"
+  },
+  {
+    "symbol": "tSOLUSD"
+  },
+  {
+    "symbol": "tSOLUST"
+  },
+  {
+    "symbol": "tSONIC:USD"
+  },
+  {
+    "symbol": "tSONIC:UST"
+  },
+  {
+    "symbol": "tSPEC:USD"
+  },
+  {
+    "symbol": "tSPEC:UST"
+  },
+  {
+    "symbol": "tSPELL:USD"
+  },
+  {
+    "symbol": "tSPELL:UST"
+  },
+  {
+    "symbol": "tSTGUSD"
+  },
+  {
+    "symbol": "tSTGUST"
+  },
+  {
+    "symbol": "tSTRK:USD"
+  },
+  {
+    "symbol": "tSTRK:UST"
+  },
+  {
+    "symbol": "tSTXUSD"
+  },
+  {
+    "symbol": "tSTXUST"
+  },
+  {
+    "symbol": "tSUIUSD"
+  },
+  {
+    "symbol": "tSUIUST"
+  },
+  {
+    "symbol": "tSUNUSD"
+  },
+  {
+    "symbol": "tSUNUST"
+  },
+  {
+    "symbol": "tSUSHI:USD"
+  },
+  {
+    "symbol": "tSUSHI:UST"
+  },
+  {
+    "symbol": "tSWEAT:USD"
+  },
+  {
+    "symbol": "tSWEAT:UST"
+  },
+  {
+    "symbol": "tTESTADA:TESTUSD"
+  },
+  {
+    "symbol": "tTESTALGO:TESTUSD"
+  },
+  {
+    "symbol": "tTESTAPT:TESTUSD"
+  },
+  {
+    "symbol": "tTESTAVAX:TESTUSD"
+  },
+  {
+    "symbol": "tTESTBTC:TESTUSD"
+  },
+  {
+    "symbol": "tTESTBTC:TESTUSDT"
+  },
+  {
+    "symbol": "tTESTDOGE:TESTUSD"
+  },
+  {
+    "symbol": "tTESTDOT:TESTUSD"
+  },
+  {
+    "symbol": "tTESTEOS:TESTUSD"
+  },
+  {
+    "symbol": "tTESTETH:TESTUSD"
+  },
+  {
+    "symbol": "tTESTFIL:TESTUSD"
+  },
+  {
+    "symbol": "tTESTLTC:TESTUSD"
+  },
+  {
+    "symbol": "tTESTNEAR:TESTUSD"
+  },
+  {
+    "symbol": "tTESTSOL:TESTUSD"
+  },
+  {
+    "symbol": "tTESTXAUT:TESTUSD"
+  },
+  {
+    "symbol": "tTESTXTZ:TESTUSD"
+  },
+  {
+    "symbol": "tTIAUSD"
+  },
+  {
+    "symbol": "tTIAUST"
+  },
+  {
+    "symbol": "tTITAN1:GBP"
+  },
+  {
+    "symbol": "tTITAN1:USD"
+  },
+  {
+    "symbol": "tTITAN2:GBP"
+  },
+  {
+    "symbol": "tTITAN2:USD"
+  },
+  {
+    "symbol": "tTOKEN:USD"
+  },
+  {
+    "symbol": "tTOKEN:UST"
+  },
+  {
+    "symbol": "tTONUSD"
+  },
+  {
+    "symbol": "tTONUST"
+  },
+  {
+    "symbol": "tTRXBTC"
+  },
+  {
+    "symbol": "tTRXEUR"
+  },
+  {
+    "symbol": "tTRXUSD"
+  },
+  {
+    "symbol": "tTRXUST"
+  },
+  {
+    "symbol": "tTRYUST"
+  },
+  {
+    "symbol": "tTSDUSD"
+  },
+  {
+    "symbol": "tTSDUST"
+  },
+  {
+    "symbol": "tUDCUSD"
+  },
+  {
+    "symbol": "tUDCUST"
+  },
+  {
+    "symbol": "tUNIUSD"
+  },
+  {
+    "symbol": "tUNIUST"
+  },
+  {
+    "symbol": "tUOSBTC"
+  },
+  {
+    "symbol": "tUOSUSD"
+  },
+  {
+    "symbol": "tUSDF:USD"
+  },
+  {
+    "symbol": "tUSDF:UST"
+  },
+  {
+    "symbol": "tUSDQ:USD"
+  },
+  {
+    "symbol": "tUSDQ:UST"
+  },
+  {
+    "symbol": "tUSDR:USD"
+  },
+  {
+    "symbol": "tUSDR:UST"
+  },
+  {
+    "symbol": "tUST:CNHT"
+  },
+  {
+    "symbol": "tUST:MXNT"
+  },
+  {
+    "symbol": "tUSTBL:USD"
+  },
+  {
+    "symbol": "tUSTBL:UST"
+  },
+  {
+    "symbol": "tUSTUSD"
+  },
+  {
+    "symbol": "tUXLINK:USD"
+  },
+  {
+    "symbol": "tUXLINK:UST"
+  },
+  {
+    "symbol": "tWBTBTC"
+  },
+  {
+    "symbol": "tWBTUSD"
+  },
+  {
+    "symbol": "tWHBT:USD"
+  },
+  {
+    "symbol": "tWHBT:UST"
+  },
+  {
+    "symbol": "tWIFUSD"
+  },
+  {
+    "symbol": "tWIFUST"
+  },
+  {
+    "symbol": "tWOOUSD"
+  },
+  {
+    "symbol": "tWOOUST"
+  },
+  {
+    "symbol": "tXAUT:BTC"
+  },
+  {
+    "symbol": "tXAUT:USD"
+  },
+  {
+    "symbol": "tXAUT:UST"
+  },
+  {
+    "symbol": "tXDCUSD"
+  },
+  {
+    "symbol": "tXDCUST"
+  },
+  {
+    "symbol": "tXLMBTC"
+  },
+  {
+    "symbol": "tXLMUSD"
+  },
+  {
+    "symbol": "tXLMUST"
+  },
+  {
+    "symbol": "tXMRBTC"
+  },
+  {
+    "symbol": "tXMRUSD"
+  },
+  {
+    "symbol": "tXMRUST"
+  },
+  {
+    "symbol": "tXRDBTC"
+  },
+  {
+    "symbol": "tXRDUSD"
+  },
+  {
+    "symbol": "tXRPBTC"
+  },
+  {
+    "symbol": "tXRPUSD"
+  },
+  {
+    "symbol": "tXRPUST"
+  },
+  {
+    "symbol": "tXTZUSD"
+  },
+  {
+    "symbol": "tYFIUSD"
+  },
+  {
+    "symbol": "tYFIUST"
+  },
+  {
+    "symbol": "tZECBTC"
+  },
+  {
+    "symbol": "tZECUSD"
+  },
+  {
+    "symbol": "tZKXUSD"
+  },
+  {
+    "symbol": "tZKXUST"
+  },
+  {
+    "symbol": "tZROUSD"
+  },
+  {
+    "symbol": "tZROUST"
+  },
+  {
+    "symbol": "tZRXUSD"
+  },
+  {
+    "symbol": "tTESTBTC:TESTUSD",
+    "is_paper": true
+  },
+  {
+    "symbol": "tTESTETH:TESTUSD",
+    "is_paper": true
+  }
+]

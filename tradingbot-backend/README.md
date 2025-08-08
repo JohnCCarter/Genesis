@@ -1,0 +1,330 @@
+# Genesis Trading Bot - Backend
+
+Detta är backend-delen av Genesis Trading Bot, en plattform för automatiserad trading med Bitfinex API.
+
+## Innehåll
+
+1. [Översikt](#översikt)
+2. [Installation](#installation)
+3. [Konfiguration](#konfiguration)
+4. [Moduler](#moduler)
+5. [API-dokumentation](#api-dokumentation)
+6. [Tester](#tester)
+7. [Utveckling](#utveckling)
+
+## Översikt
+
+Genesis Trading Bot är en plattform för automatiserad trading med Bitfinex API. Backend-delen hanterar:
+
+- Autentisering mot Bitfinex API (REST och WebSocket)
+- Hämtning av marknadsdata
+- Teknisk analys och strategiutvärdering
+- Orderhantering
+- Positionshantering
+- Realtidsuppdateringar via WebSocket
+- Schemaläggning av strategier
+- Loggning och felhantering
+
+## Installation
+
+### Förutsättningar
+
+- Python 3.8+
+- pip
+- virtualenv (rekommenderas)
+
+### Steg för installation
+
+1. Klona repositoryt:
+
+```bash
+git clone https://github.com/yourusername/genesis-trading-bot.git
+cd genesis-trading-bot/tradingbot-backend
+```
+
+2. Aktivera den delade virtuella miljön i repo-rot (rekommenderat):
+
+```bash
+# I repo-rot:
+python -m venv .venv
+# macOS/Linux
+source .venv/bin/activate
+# Windows PowerShell
+.\.venv\Scripts\Activate.ps1
+```
+
+3. Installera beroenden:
+
+```bash
+pip install -r requirements.txt
+```
+
+4. Starta servern (utveckling):
+
+```bash
+uvicorn main:app --reload
+```
+
+Servern startar på `http://127.0.0.1:8000`. Socket.IO finns på `/ws`.
+
+## Konfiguration
+
+1. Kopiera exempelfilen för miljövariabler:
+
+```bash
+cp env.example .env
+```
+
+2. Redigera `.env` med dina Bitfinex API-nycklar och autentiseringsinställningar:
+
+```
+BITFINEX_API_KEY=din_api_nyckel
+BITFINEX_API_SECRET=din_api_hemlighet
+BITFINEX_API_URL=https://api.bitfinex.com/v2
+
+# WebSocket-nycklar (om separata nycklar används för WS)
+BITFINEX_WS_API_KEY=din_ws_api_nyckel
+BITFINEX_WS_API_SECRET=din_ws_api_hemlighet
+
+# Backend JWT
+JWT_SECRET_KEY=byt_till_en_stark_hemlighet
+SOCKETIO_JWT_SECRET=byt_till_en_stark_hemlighet
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+
+# Kräv JWT för REST/WS (sätt False i dev vid behov)
+AUTH_REQUIRED=True
+```
+
+3. Se `API_KEY_SETUP.md` för instruktioner om hur du skapar och konfigurerar Bitfinex API-nycklar.
+
+4. Se `SUB_ACCOUNT_SETUP.md` för instruktioner om hur du konfigurerar ett sub-konto för testning.
+
+## Moduler
+
+### Services
+
+- **bitfinex_data.py**: Hanterar hämtning av marknadsdata från Bitfinex REST API
+- **bitfinex_websocket.py**: Hanterar realtidsdata via Bitfinex WebSocket API
+- **strategy.py**: Implementerar tradingstrategier baserade på tekniska indikatorer
+- **realtime_strategy.py**: Hanterar realtidsutvärdering av strategier
+- **scheduler.py**: Schemaläggning av strategiutvärderingar och andra uppgifter
+- **trading_integration.py**: Integrerar olika delar av systemet för komplett tradingfunktionalitet
+
+### REST API
+
+- **auth.py**: Autentisering mot Bitfinex REST API
+- **routes.py**: FastAPI-routes för backend API
+- **wallet.py**: Hantering av plånboksinformation
+- **positions.py**: Hantering av positioner
+- **positions_history.py**: Hantering av positionshistorik
+- **margin.py**: Hantering av margin-information
+- **order_history.py**: Hantering av orderhistorik
+- **active_orders.py**: Hantering av aktiva ordrar
+- **order_validator.py**: Validering av orderparametrar
+
+### WebSocket
+
+- **auth.py**: Autentisering mot Bitfinex WebSocket API
+- **manager.py**: Hantering av WebSocket-anslutningar
+- **order_handler.py**: Hantering av ordrar via WebSocket
+- **wallet_handler.py**: Hantering av plånboksuppdateringar via WebSocket
+- **position_handler.py**: Hantering av positionsuppdateringar via WebSocket
+
+### Indicators
+
+- **rsi.py**: Implementering av Relative Strength Index (RSI)
+- **ema.py**: Implementering av Exponential Moving Average (EMA)
+- **atr.py**: Implementering av Average True Range (ATR)
+
+### Utils
+
+- **bitfinex_client.py**: Hjälpklass för Bitfinex API-anrop
+- **logger.py**: Konfigurering av loggning
+
+### (Legacy) Scraper
+
+Scraper-relaterade filer och dokumentation har arkiverats och flyttats till `docs/legacy/`.
+
+### Models
+
+- **api_models.py**: Pydantic-modeller för API-requests och responses
+
+## API-dokumentation
+
+Detaljerad API-dokumentation nås via OpenAPI-specen:
+
+- `GET /openapi.json` (kan importeras i Lovable/verktyg)
+- `GET /docs` (interaktiv Swagger UI)
+- Legacy-dokumentation och exempel finns i `docs/legacy/`
+
+## Snabbstart
+
+1. Skapa `.env` från mall och fyll i nycklar (se Konfiguration ovan)
+
+2. Hämta JWT och anropa ett säkrat REST-endpoint (PowerShell-exempel):
+
+```powershell
+$body = @{ user_id='frontend_user'; scope='read'; expiry_hours=1 } | ConvertTo-Json
+$token = (Invoke-RestMethod -Uri http://127.0.0.1:8000/api/v2/auth/ws-token -Method Post -ContentType 'application/json' -Body $body).token
+$h = @{ Authorization = "Bearer $token" }
+Invoke-RestMethod -Uri http://127.0.0.1:8000/api/v2/wallets -Headers $h | ConvertTo-Json -Depth 6
+```
+
+3. Testa Socket.IO med testklienten `ws_test.html` som serveras via `/ws`:
+
+- Öppna `http://127.0.0.1:8000/ws`
+- Klicka “Get JWT”, därefter “Connect WS” och lyssna på events
+
+## Autentisering (JWT) och åtkomst
+
+- Backend kan kräva JWT för både REST och Socket.IO enligt `AUTH_REQUIRED` i `.env`.
+- Hämta en access token via:
+  - `POST /api/v2/auth/ws-token` med payload:
+    ```json
+    { "user_id": "frontend_user", "scope": "read", "expiry_hours": 1 }
+    ```
+  - Svaret innehåller `access_token` som används i `Authorization: Bearer <token>`.
+- Socket.IO: Skicka samma Bearer-token i `Authorization` headern när du ansluter, eller som query `?token=...` i utveckling.
+
+## WebSocket-test (Socket.IO)
+
+- Öppna testklienten på `http://127.0.0.1:8000/ws` (serverar `ws_test.html`).
+- Knappen “Get JWT” anropar `POST /api/v2/auth/ws-token` och fyller `Authorization`-headern automatiskt.
+- Realtids-händelser (wallet, positions, orders, trades) emit:as som Socket.IO-events.
+
+## Smoke test (kommandon)
+
+1. Hämta JWT och förbered Authorization-header
+
+```powershell
+$body = @{ user_id='frontend_user'; scope='read'; expiry_hours=1 } | ConvertTo-Json
+$token = (Invoke-RestMethod -Uri http://127.0.0.1:8000/api/v2/auth/ws-token -Method Post -ContentType 'application/json' -Body $body).token
+$h = @{ Authorization = "Bearer $token" }
+"Token prefix: $($token.Substring(0,20))..."
+```
+
+2. Hämta plånböcker
+
+```powershell
+Invoke-RestMethod -Uri http://127.0.0.1:8000/api/v2/wallets -Headers $h | ConvertTo-Json -Depth 6
+```
+
+3. Lägg en liten market-order (sim/ subaccount)
+
+```powershell
+$order = @{ symbol='tBTCUSD'; amount='0.0001'; type='EXCHANGE MARKET' } | ConvertTo-Json
+Invoke-RestMethod -Uri http://127.0.0.1:8000/api/v2/order -Method Post -Headers $h -ContentType 'application/json' -Body $order | ConvertTo-Json -Depth 6
+```
+
+4. Avbryt alla ordrar (fallback per order finns i backend)
+
+```powershell
+Invoke-RestMethod -Uri http://127.0.0.1:8000/api/v2/orders/cancel/all -Method Post -Headers $h | ConvertTo-Json -Depth 6
+```
+
+Lovable-knappar: "Get JWT", "Get Wallets", "Market Buy", "Cancel All" mappas till ovan.
+
+## Risk & handelsfönster (API-exempel)
+
+### PowerShell (Windows)
+
+1. Hämta JWT och sätt Authorization-header
+
+```powershell
+$body = @{ user_id='frontend_user'; scope='read'; expiry_hours=1 } | ConvertTo-Json
+$token = (Invoke-RestMethod -Uri http://127.0.0.1:8000/api/v2/auth/ws-token -Method Post -ContentType 'application/json' -Body $body).token
+$h = @{ Authorization = "Bearer $token" }
+```
+
+2. Uppdatera max trades per dag
+
+```powershell
+Invoke-RestMethod -Uri http://127.0.0.1:8000/api/v2/risk/max-trades -Method Post -Headers $h -ContentType 'application/json' -Body (@{ max_trades_per_day = 5 } | ConvertTo-Json)
+```
+
+3. Uppdatera handelsfönster och paus
+
+```powershell
+$payload = @{
+  timezone = 'Europe/Stockholm'
+  windows  = @{
+    mon = @(@('08:00','17:00'))
+    tue = @(@('08:00','17:00'))
+    wed = @(@('08:00','17:00'))
+    thu = @(@('08:00','17:00'))
+    fri = @(@('08:00','16:00'))
+    sat = @()
+    sun = @()
+  }
+  paused = $false
+} | ConvertTo-Json -Depth 6
+
+Invoke-RestMethod -Uri http://127.0.0.1:8000/api/v2/risk/windows -Method Post -Headers $h -ContentType 'application/json' -Body $payload
+```
+
+4. Hämta riskstatus
+
+```powershell
+Invoke-RestMethod -Uri http://127.0.0.1:8000/api/v2/risk/status -Headers $h | ConvertTo-Json -Depth 6
+```
+
+### curl (bash)
+
+```bash
+TOKEN=$(curl -s -X POST http://127.0.0.1:8000/api/v2/auth/ws-token \
+  -H 'Content-Type: application/json' \
+  -d '{"user_id":"frontend_user","scope":"read","expiry_hours":1}' | jq -r .token)
+
+curl -s -X POST http://127.0.0.1:8000/api/v2/risk/max-trades \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"max_trades_per_day":5}' | jq .
+
+curl -s -X POST http://127.0.0.1:8000/api/v2/risk/windows \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"timezone":"Europe/Stockholm","windows":{"mon":[["08:00","17:00"]],"tue":[["08:00","17:00"]],"wed":[["08:00","17:00"]],"thu":[["08:00","17:00"]],"fri":[["08:00","16:00"]],"sat":[],"sun":[]},"paused":false}' | jq .
+
+curl -s http://127.0.0.1:8000/api/v2/risk/status -H "Authorization: Bearer $TOKEN" | jq .
+```
+
+## Tester
+
+### Köra tester
+
+```bash
+python -m pytest tests/
+```
+
+### Testfiler
+
+- **test_auth.py**: Testar autentisering mot Bitfinex API
+- **test_market_data.py**: Testar hämtning av marknadsdata
+- **test_realtime.py**: Testar realtidsfunktionalitet
+- **test_strategy.py**: Testar strategiutvärdering
+
+## Utveckling
+
+### Kodstruktur
+
+Projektet följer en modulär struktur där varje modul har ett specifikt ansvarsområde:
+
+- **services/**: Kärntjänster för trading-funktionalitet
+- **rest/**: REST API-implementation
+- **ws/**: WebSocket-implementation
+- **indicators/**: Tekniska indikatorer
+- **utils/**: Hjälpfunktioner och verktyg
+- **tests/**: Testfiler
+- **config/**: Konfigurationsfiler
+- **models/**: Datamodeller
+- **scraper/**: Web scraping-funktionalitet
+
+### Exempel (arkiverade)
+
+Exempel-skript har flyttats till `docs/legacy/examples/` för referens.
+
+### Bidra
+
+1. Forka repositoryt
+2. Skapa en feature branch (`git checkout -b feature/amazing-feature`)
+3. Commita dina ändringar (`git commit -m 'Add some amazing feature'`)
+4. Pusha till branchen (`git push origin feature/amazing-feature`)
+5. Öppna en Pull Request

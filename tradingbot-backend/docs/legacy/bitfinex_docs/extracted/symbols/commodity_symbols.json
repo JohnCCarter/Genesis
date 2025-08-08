@@ -1,0 +1,21 @@
+{
+  "category": "commodity",
+  "description": "Handelspar med råvaror som quote currency (XAUT)",
+  "count": 2,
+  "symbols": [
+    {
+      "symbol": "tBTC:XAUT",
+      "base_currency": "BTC",
+      "quote_currency": "XAUT",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tETH:XAUT",
+      "base_currency": "ETH",
+      "quote_currency": "XAUT",
+      "is_test": false,
+      "is_paper": false
+    }
+  ]
+}

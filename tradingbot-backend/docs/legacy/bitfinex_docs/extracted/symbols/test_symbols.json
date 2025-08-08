@@ -1,0 +1,133 @@
+{
+  "category": "test",
+  "description": "Testsymboler för utveckling och testning",
+  "count": 18,
+  "symbols": [
+    {
+      "symbol": "tTESTADA:TESTUSD",
+      "base_currency": "ADA",
+      "quote_currency": "TESTUSD",
+      "is_test": true,
+      "is_paper": false
+    },
+    {
+      "symbol": "tTESTALGO:TESTUSD",
+      "base_currency": "ALGO",
+      "quote_currency": "TESTUSD",
+      "is_test": true,
+      "is_paper": false
+    },
+    {
+      "symbol": "tTESTAPT:TESTUSD",
+      "base_currency": "APT",
+      "quote_currency": "TESTUSD",
+      "is_test": true,
+      "is_paper": false
+    },
+    {
+      "symbol": "tTESTAVAX:TESTUSD",
+      "base_currency": "AVAX",
+      "quote_currency": "TESTUSD",
+      "is_test": true,
+      "is_paper": false
+    },
+    {
+      "symbol": "tTESTBTC:TESTUSD",
+      "base_currency": "BTC",
+      "quote_currency": "TESTUSD",
+      "is_test": true,
+      "is_paper": false
+    },
+    {
+      "symbol": "tTESTBTC:TESTUSD",
+      "base_currency": "BTC",
+      "quote_currency": "TESTUSD",
+      "is_test": true,
+      "is_paper": true
+    },
+    {
+      "symbol": "tTESTBTC:TESTUSDT",
+      "base_currency": "BTC",
+      "quote_currency": "TESTUSDT",
+      "is_test": true,
+      "is_paper": false
+    },
+    {
+      "symbol": "tTESTDOGE:TESTUSD",
+      "base_currency": "DOGE",
+      "quote_currency": "TESTUSD",
+      "is_test": true,
+      "is_paper": false
+    },
+    {
+      "symbol": "tTESTDOT:TESTUSD",
+      "base_currency": "DOT",
+      "quote_currency": "TESTUSD",
+      "is_test": true,
+      "is_paper": false
+    },
+    {
+      "symbol": "tTESTEOS:TESTUSD",
+      "base_currency": "EOS",
+      "quote_currency": "TESTUSD",
+      "is_test": true,
+      "is_paper": false
+    },
+    {
+      "symbol": "tTESTETH:TESTUSD",
+      "base_currency": "ETH",
+      "quote_currency": "TESTUSD",
+      "is_test": true,
+      "is_paper": false
+    },
+    {
+      "symbol": "tTESTETH:TESTUSD",
+      "base_currency": "ETH",
+      "quote_currency": "TESTUSD",
+      "is_test": true,
+      "is_paper": true
+    },
+    {
+      "symbol": "tTESTFIL:TESTUSD",
+      "base_currency": "FIL",
+      "quote_currency": "TESTUSD",
+      "is_test": true,
+      "is_paper": false
+    },
+    {
+      "symbol": "tTESTLTC:TESTUSD",
+      "base_currency": "LTC",
+      "quote_currency": "TESTUSD",
+      "is_test": true,
+      "is_paper": false
+    },
+    {
+      "symbol": "tTESTNEAR:TESTUSD",
+      "base_currency": "NEAR",
+      "quote_currency": "TESTUSD",
+      "is_test": true,
+      "is_paper": false
+    },
+    {
+      "symbol": "tTESTSOL:TESTUSD",
+      "base_currency": "SOL",
+      "quote_currency": "TESTUSD",
+      "is_test": true,
+      "is_paper": false
+    },
+    {
+      "symbol": "tTESTXAUT:TESTUSD",
+      "base_currency": "XAUT",
+      "quote_currency": "TESTUSD",
+      "is_test": true,
+      "is_paper": false
+    },
+    {
+      "symbol": "tTESTXTZ:TESTUSD",
+      "base_currency": "XTZ",
+      "quote_currency": "TESTUSD",
+      "is_test": true,
+      "is_paper": false
+    }
+  ]
+}

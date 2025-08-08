@@ -1,0 +1,24 @@
+{
+  "templates": [
+    {
+      "name": "",
+      "symbol": "tTESTBTC:TESTUSD",
+      "side": "buy",
+      "type": "EXCHANGE MARKET",
+      "amount": "0.001",
+      "price": "10000",
+      "sl_price": "9500",
+      "tp_price": "10500"
+    },
+    {
+      "name": "1",
+      "symbol": "tTESTBTC:TESTUSD",
+      "side": "buy",
+      "type": "EXCHANGE MARKET",
+      "amount": "0.001",
+      "price": "10000",
+      "sl_price": "9500",
+      "tp_price": "10500"
+    }
+  ]
+}

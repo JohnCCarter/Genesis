@@ -1,0 +1,1835 @@
+{
+  "title": "Bitfinex API Documentation",
+  "description": "Strukturerad dokumentation för Bitfinex API",
+  "categories": {
+    "general": {
+      "count": 304,
+      "files": [
+        {
+          "name": "all_symbols_1",
+          "file": "all_symbols_1.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_10",
+          "file": "all_symbols_10.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_100",
+          "file": "all_symbols_100.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_101",
+          "file": "all_symbols_101.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_102",
+          "file": "all_symbols_102.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_103",
+          "file": "all_symbols_103.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_104",
+          "file": "all_symbols_104.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_105",
+          "file": "all_symbols_105.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_106",
+          "file": "all_symbols_106.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_107",
+          "file": "all_symbols_107.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_108",
+          "file": "all_symbols_108.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_109",
+          "file": "all_symbols_109.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_11",
+          "file": "all_symbols_11.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_110",
+          "file": "all_symbols_110.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_111",
+          "file": "all_symbols_111.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_112",
+          "file": "all_symbols_112.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_113",
+          "file": "all_symbols_113.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_114",
+          "file": "all_symbols_114.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_115",
+          "file": "all_symbols_115.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_116",
+          "file": "all_symbols_116.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_117",
+          "file": "all_symbols_117.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_118",
+          "file": "all_symbols_118.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_119",
+          "file": "all_symbols_119.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_12",
+          "file": "all_symbols_12.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_120",
+          "file": "all_symbols_120.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_121",
+          "file": "all_symbols_121.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_122",
+          "file": "all_symbols_122.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_123",
+          "file": "all_symbols_123.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_124",
+          "file": "all_symbols_124.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_125",
+          "file": "all_symbols_125.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_126",
+          "file": "all_symbols_126.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_127",
+          "file": "all_symbols_127.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_128",
+          "file": "all_symbols_128.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_129",
+          "file": "all_symbols_129.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_13",
+          "file": "all_symbols_13.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_130",
+          "file": "all_symbols_130.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_131",
+          "file": "all_symbols_131.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_132",
+          "file": "all_symbols_132.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_133",
+          "file": "all_symbols_133.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_134",
+          "file": "all_symbols_134.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_135",
+          "file": "all_symbols_135.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_136",
+          "file": "all_symbols_136.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_137",
+          "file": "all_symbols_137.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_138",
+          "file": "all_symbols_138.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_139",
+          "file": "all_symbols_139.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_14",
+          "file": "all_symbols_14.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_140",
+          "file": "all_symbols_140.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_141",
+          "file": "all_symbols_141.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_142",
+          "file": "all_symbols_142.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_143",
+          "file": "all_symbols_143.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_144",
+          "file": "all_symbols_144.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_145",
+          "file": "all_symbols_145.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_146",
+          "file": "all_symbols_146.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_147",
+          "file": "all_symbols_147.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_148",
+          "file": "all_symbols_148.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_149",
+          "file": "all_symbols_149.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_15",
+          "file": "all_symbols_15.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_150",
+          "file": "all_symbols_150.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_151",
+          "file": "all_symbols_151.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_152",
+          "file": "all_symbols_152.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_153",
+          "file": "all_symbols_153.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_154",
+          "file": "all_symbols_154.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_155",
+          "file": "all_symbols_155.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_156",
+          "file": "all_symbols_156.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_157",
+          "file": "all_symbols_157.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_158",
+          "file": "all_symbols_158.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_159",
+          "file": "all_symbols_159.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_16",
+          "file": "all_symbols_16.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_160",
+          "file": "all_symbols_160.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_161",
+          "file": "all_symbols_161.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_162",
+          "file": "all_symbols_162.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_163",
+          "file": "all_symbols_163.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_164",
+          "file": "all_symbols_164.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_165",
+          "file": "all_symbols_165.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_166",
+          "file": "all_symbols_166.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_167",
+          "file": "all_symbols_167.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_168",
+          "file": "all_symbols_168.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_169",
+          "file": "all_symbols_169.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_17",
+          "file": "all_symbols_17.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_170",
+          "file": "all_symbols_170.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_171",
+          "file": "all_symbols_171.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_172",
+          "file": "all_symbols_172.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_173",
+          "file": "all_symbols_173.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_174",
+          "file": "all_symbols_174.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_175",
+          "file": "all_symbols_175.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_176",
+          "file": "all_symbols_176.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_177",
+          "file": "all_symbols_177.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_178",
+          "file": "all_symbols_178.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_179",
+          "file": "all_symbols_179.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_18",
+          "file": "all_symbols_18.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_180",
+          "file": "all_symbols_180.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_181",
+          "file": "all_symbols_181.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_182",
+          "file": "all_symbols_182.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_183",
+          "file": "all_symbols_183.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_184",
+          "file": "all_symbols_184.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_185",
+          "file": "all_symbols_185.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_186",
+          "file": "all_symbols_186.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_187",
+          "file": "all_symbols_187.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_188",
+          "file": "all_symbols_188.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_189",
+          "file": "all_symbols_189.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_19",
+          "file": "all_symbols_19.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_190",
+          "file": "all_symbols_190.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_191",
+          "file": "all_symbols_191.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_192",
+          "file": "all_symbols_192.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_193",
+          "file": "all_symbols_193.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_194",
+          "file": "all_symbols_194.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_195",
+          "file": "all_symbols_195.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_196",
+          "file": "all_symbols_196.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_197",
+          "file": "all_symbols_197.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_198",
+          "file": "all_symbols_198.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_199",
+          "file": "all_symbols_199.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_2",
+          "file": "all_symbols_2.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_20",
+          "file": "all_symbols_20.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_200",
+          "file": "all_symbols_200.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_201",
+          "file": "all_symbols_201.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_202",
+          "file": "all_symbols_202.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_203",
+          "file": "all_symbols_203.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_204",
+          "file": "all_symbols_204.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_205",
+          "file": "all_symbols_205.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_206",
+          "file": "all_symbols_206.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_207",
+          "file": "all_symbols_207.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_208",
+          "file": "all_symbols_208.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_209",
+          "file": "all_symbols_209.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_21",
+          "file": "all_symbols_21.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_210",
+          "file": "all_symbols_210.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_211",
+          "file": "all_symbols_211.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_212",
+          "file": "all_symbols_212.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_213",
+          "file": "all_symbols_213.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_214",
+          "file": "all_symbols_214.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_215",
+          "file": "all_symbols_215.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_216",
+          "file": "all_symbols_216.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_217",
+          "file": "all_symbols_217.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_218",
+          "file": "all_symbols_218.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_219",
+          "file": "all_symbols_219.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_22",
+          "file": "all_symbols_22.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_220",
+          "file": "all_symbols_220.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_221",
+          "file": "all_symbols_221.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_222",
+          "file": "all_symbols_222.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_223",
+          "file": "all_symbols_223.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_224",
+          "file": "all_symbols_224.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_225",
+          "file": "all_symbols_225.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_226",
+          "file": "all_symbols_226.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_227",
+          "file": "all_symbols_227.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_228",
+          "file": "all_symbols_228.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_229",
+          "file": "all_symbols_229.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_23",
+          "file": "all_symbols_23.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_230",
+          "file": "all_symbols_230.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_231",
+          "file": "all_symbols_231.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_232",
+          "file": "all_symbols_232.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_233",
+          "file": "all_symbols_233.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_234",
+          "file": "all_symbols_234.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_235",
+          "file": "all_symbols_235.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_236",
+          "file": "all_symbols_236.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_237",
+          "file": "all_symbols_237.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_238",
+          "file": "all_symbols_238.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_239",
+          "file": "all_symbols_239.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_24",
+          "file": "all_symbols_24.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_240",
+          "file": "all_symbols_240.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_241",
+          "file": "all_symbols_241.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_242",
+          "file": "all_symbols_242.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_243",
+          "file": "all_symbols_243.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_244",
+          "file": "all_symbols_244.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_245",
+          "file": "all_symbols_245.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_246",
+          "file": "all_symbols_246.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_247",
+          "file": "all_symbols_247.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_248",
+          "file": "all_symbols_248.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_249",
+          "file": "all_symbols_249.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_25",
+          "file": "all_symbols_25.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_250",
+          "file": "all_symbols_250.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_251",
+          "file": "all_symbols_251.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_252",
+          "file": "all_symbols_252.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_253",
+          "file": "all_symbols_253.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_254",
+          "file": "all_symbols_254.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_255",
+          "file": "all_symbols_255.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_256",
+          "file": "all_symbols_256.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_257",
+          "file": "all_symbols_257.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_258",
+          "file": "all_symbols_258.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_259",
+          "file": "all_symbols_259.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_26",
+          "file": "all_symbols_26.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_260",
+          "file": "all_symbols_260.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_261",
+          "file": "all_symbols_261.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_262",
+          "file": "all_symbols_262.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_263",
+          "file": "all_symbols_263.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_264",
+          "file": "all_symbols_264.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_265",
+          "file": "all_symbols_265.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_266",
+          "file": "all_symbols_266.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_267",
+          "file": "all_symbols_267.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_268",
+          "file": "all_symbols_268.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_269",
+          "file": "all_symbols_269.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_27",
+          "file": "all_symbols_27.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_270",
+          "file": "all_symbols_270.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_271",
+          "file": "all_symbols_271.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_272",
+          "file": "all_symbols_272.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_273",
+          "file": "all_symbols_273.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_274",
+          "file": "all_symbols_274.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_275",
+          "file": "all_symbols_275.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_276",
+          "file": "all_symbols_276.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_277",
+          "file": "all_symbols_277.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_278",
+          "file": "all_symbols_278.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_279",
+          "file": "all_symbols_279.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_28",
+          "file": "all_symbols_28.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_280",
+          "file": "all_symbols_280.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_281",
+          "file": "all_symbols_281.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_282",
+          "file": "all_symbols_282.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_283",
+          "file": "all_symbols_283.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_284",
+          "file": "all_symbols_284.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_285",
+          "file": "all_symbols_285.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_286",
+          "file": "all_symbols_286.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_287",
+          "file": "all_symbols_287.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_288",
+          "file": "all_symbols_288.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_289",
+          "file": "all_symbols_289.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_29",
+          "file": "all_symbols_29.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_290",
+          "file": "all_symbols_290.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_291",
+          "file": "all_symbols_291.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_292",
+          "file": "all_symbols_292.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_293",
+          "file": "all_symbols_293.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_294",
+          "file": "all_symbols_294.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_295",
+          "file": "all_symbols_295.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_296",
+          "file": "all_symbols_296.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_3",
+          "file": "all_symbols_3.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_30",
+          "file": "all_symbols_30.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_31",
+          "file": "all_symbols_31.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_32",
+          "file": "all_symbols_32.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_33",
+          "file": "all_symbols_33.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_34",
+          "file": "all_symbols_34.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_35",
+          "file": "all_symbols_35.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_36",
+          "file": "all_symbols_36.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_37",
+          "file": "all_symbols_37.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_38",
+          "file": "all_symbols_38.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_39",
+          "file": "all_symbols_39.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_4",
+          "file": "all_symbols_4.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_40",
+          "file": "all_symbols_40.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_41",
+          "file": "all_symbols_41.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_42",
+          "file": "all_symbols_42.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_43",
+          "file": "all_symbols_43.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_44",
+          "file": "all_symbols_44.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_45",
+          "file": "all_symbols_45.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_46",
+          "file": "all_symbols_46.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_47",
+          "file": "all_symbols_47.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_48",
+          "file": "all_symbols_48.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_49",
+          "file": "all_symbols_49.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_5",
+          "file": "all_symbols_5.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_50",
+          "file": "all_symbols_50.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_51",
+          "file": "all_symbols_51.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_52",
+          "file": "all_symbols_52.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_53",
+          "file": "all_symbols_53.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_54",
+          "file": "all_symbols_54.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_55",
+          "file": "all_symbols_55.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_56",
+          "file": "all_symbols_56.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_57",
+          "file": "all_symbols_57.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_58",
+          "file": "all_symbols_58.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_59",
+          "file": "all_symbols_59.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_6",
+          "file": "all_symbols_6.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_60",
+          "file": "all_symbols_60.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_61",
+          "file": "all_symbols_61.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_62",
+          "file": "all_symbols_62.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_63",
+          "file": "all_symbols_63.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_64",
+          "file": "all_symbols_64.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_65",
+          "file": "all_symbols_65.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_66",
+          "file": "all_symbols_66.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_67",
+          "file": "all_symbols_67.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_68",
+          "file": "all_symbols_68.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_69",
+          "file": "all_symbols_69.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_7",
+          "file": "all_symbols_7.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_70",
+          "file": "all_symbols_70.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_71",
+          "file": "all_symbols_71.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_72",
+          "file": "all_symbols_72.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_73",
+          "file": "all_symbols_73.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_74",
+          "file": "all_symbols_74.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_75",
+          "file": "all_symbols_75.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_76",
+          "file": "all_symbols_76.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_77",
+          "file": "all_symbols_77.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_78",
+          "file": "all_symbols_78.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_79",
+          "file": "all_symbols_79.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_8",
+          "file": "all_symbols_8.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_80",
+          "file": "all_symbols_80.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_81",
+          "file": "all_symbols_81.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_82",
+          "file": "all_symbols_82.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_83",
+          "file": "all_symbols_83.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_84",
+          "file": "all_symbols_84.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_85",
+          "file": "all_symbols_85.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_86",
+          "file": "all_symbols_86.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_87",
+          "file": "all_symbols_87.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_88",
+          "file": "all_symbols_88.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_89",
+          "file": "all_symbols_89.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_9",
+          "file": "all_symbols_9.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_90",
+          "file": "all_symbols_90.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_91",
+          "file": "all_symbols_91.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_92",
+          "file": "all_symbols_92.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_93",
+          "file": "all_symbols_93.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_94",
+          "file": "all_symbols_94.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_95",
+          "file": "all_symbols_95.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_96",
+          "file": "all_symbols_96.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_97",
+          "file": "all_symbols_97.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_98",
+          "file": "all_symbols_98.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "all_symbols_99",
+          "file": "all_symbols_99.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "margin_account",
+          "file": "margin_account.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "order_types",
+          "file": "order_types.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "positions_account",
+          "file": "positions_account.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "rest-public",
+          "file": "rest-public.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "rest_auth",
+          "file": "rest_auth.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "wallet_account",
+          "file": "wallet_account.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "ws-public",
+          "file": "ws-public.json",
+          "title": "",
+          "description": ""
+        },
+        {
+          "name": "ws_auth",
+          "file": "ws_auth.json",
+          "title": "",
+          "description": ""
+        }
+      ]
+    }
+  }
+}

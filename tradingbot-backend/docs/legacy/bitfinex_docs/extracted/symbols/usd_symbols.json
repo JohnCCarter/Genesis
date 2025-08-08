@@ -1,0 +1,378 @@
+{
+  "category": "usd",
+  "description": "Handelspar med USD och USD-varianter som quote currency",
+  "count": 53,
+  "symbols": [
+    {
+      "symbol": "tAAVE:USD",
+      "base_currency": "AAVE",
+      "quote_currency": "USD",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tAIOZ:USD",
+      "base_currency": "AIOZ",
+      "quote_currency": "USD",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tALT11M250830:USD",
+      "base_currency": "ALT11M250830",
+      "quote_currency": "USD",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tALT11M251029:USD",
+      "base_currency": "ALT11M251029",
+      "quote_currency": "USD",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tALT2612:USD",
+      "base_currency": "ALT2612",
+      "quote_currency": "USD",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tAPENFT:USD",
+      "base_currency": "APENFT",
+      "quote_currency": "USD",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tAUSDT:USD",
+      "base_currency": "AUSDT",
+      "quote_currency": "USD",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tAVAX:USD",
+      "base_currency": "AVAX",
+      "quote_currency": "USD",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tBCHN:USD",
+      "base_currency": "BCHN",
+      "quote_currency": "USD",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tBONK:USD",
+      "base_currency": "BONK",
+      "quote_currency": "USD",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tBTC:USDQ",
+      "base_currency": "BTC",
+      "quote_currency": "USDQ",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tBTC:USDR",
+      "base_currency": "BTC",
+      "quote_currency": "USDR",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tCELO:USD",
+      "base_currency": "CELO",
+      "quote_currency": "USD",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tCNHT:USD",
+      "base_currency": "CNHT",
+      "quote_currency": "USD",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tCOMP:USD",
+      "base_currency": "COMP",
+      "quote_currency": "USD",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tDOGE:USD",
+      "base_currency": "DOGE",
+      "quote_currency": "USD",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tEGLD:USD",
+      "base_currency": "EGLD",
+      "quote_currency": "USD",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tEIGEN:USD",
+      "base_currency": "EIGEN",
+      "quote_currency": "USD",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tETH2X:USD",
+      "base_currency": "ETH2X",
+      "quote_currency": "USD",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tEURQ:USD",
+      "base_currency": "EURQ",
+      "quote_currency": "USD",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tEURR:USD",
+      "base_currency": "EURR",
+      "quote_currency": "USD",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tFLOKI:USD",
+      "base_currency": "FLOKI",
+      "quote_currency": "USD",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tGALA:USD",
+      "base_currency": "GALA",
+      "quote_currency": "USD",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tGOMINING:USD",
+      "base_currency": "GOMINING",
+      "quote_currency": "USD",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tHILSV:USD",
+      "base_currency": "HILSV",
+      "quote_currency": "USD",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tHTXDAO:USD",
+      "base_currency": "HTXDAO",
+      "quote_currency": "USD",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tJASMY:USD",
+      "base_currency": "JASMY",
+      "quote_currency": "USD",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tJUSTICE:USD",
+      "base_currency": "JUSTICE",
+      "quote_currency": "USD",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tKAIA:USD",
+      "base_currency": "KAIA",
+      "quote_currency": "USD",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tKAVA:USD",
+      "base_currency": "KAVA",
+      "quote_currency": "USD",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tLIFIII:USD",
+      "base_currency": "LIFIII",
+      "quote_currency": "USD",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tLINK:USD",
+      "base_currency": "LINK",
+      "quote_currency": "USD",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tMXNT:USD",
+      "base_currency": "MXNT",
+      "quote_currency": "USD",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tNEAR:USD",
+      "base_currency": "NEAR",
+      "quote_currency": "USD",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tNEXO:USD",
+      "base_currency": "NEXO",
+      "quote_currency": "USD",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tPEPE:USD",
+      "base_currency": "PEPE",
+      "quote_currency": "USD",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tSHIB:USD",
+      "base_currency": "SHIB",
+      "quote_currency": "USD",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tSONIC:USD",
+      "base_currency": "SONIC",
+      "quote_currency": "USD",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tSPEC:USD",
+      "base_currency": "SPEC",
+      "quote_currency": "USD",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tSPELL:USD",
+      "base_currency": "SPELL",
+      "quote_currency": "USD",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tSTRK:USD",
+      "base_currency": "STRK",
+      "quote_currency": "USD",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tSUSHI:USD",
+      "base_currency": "SUSHI",
+      "quote_currency": "USD",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tSWEAT:USD",
+      "base_currency": "SWEAT",
+      "quote_currency": "USD",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tTITAN1:USD",
+      "base_currency": "TITAN1",
+      "quote_currency": "USD",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tTITAN2:USD",
+      "base_currency": "TITAN2",
+      "quote_currency": "USD",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tTOKEN:USD",
+      "base_currency": "TOKEN",
+      "quote_currency": "USD",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tUSDF:USD",
+      "base_currency": "USDF",
+      "quote_currency": "USD",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tUSDQ:USD",
+      "base_currency": "USDQ",
+      "quote_currency": "USD",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tUSDR:USD",
+      "base_currency": "USDR",
+      "quote_currency": "USD",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tUSTBL:USD",
+      "base_currency": "USTBL",
+      "quote_currency": "USD",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tUXLINK:USD",
+      "base_currency": "UXLINK",
+      "quote_currency": "USD",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tWHBT:USD",
+      "base_currency": "WHBT",
+      "quote_currency": "USD",
+      "is_test": false,
+      "is_paper": false
+    },
+    {
+      "symbol": "tXAUT:USD",
+      "base_currency": "XAUT",
+      "quote_currency": "USD",
+      "is_test": false,
+      "is_paper": false
+    }
+  ]
+}
