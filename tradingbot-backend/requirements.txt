@@ -4,7 +4,7 @@ python-socketio==5.8.0
 python-dotenv==1.0.0
 httpx==0.24.0
 websockets==11.0.1
-pydantic==1.10.7
+pydantic==1.10.15
 pyjwt==2.10.1
 pytest==7.3.1
 pytest-asyncio==0.21.0
@@ -12,4 +12,4 @@ numpy==1.24.2
 pandas==2.0.0
 beautifulsoup4==4.12.2
 lxml==4.9.2
-requests==2.31.0
+requests==2.32.3

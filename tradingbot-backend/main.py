@@ -69,9 +69,9 @@ async def lifespan(app: FastAPI):
 # Skapa FastAPI-applikation – flytta inställningsloggningen UTANFÖR app=FastAPI(...)
 settings = Settings()
 
-logger.info(f"🔑 Kontroll vid startup:")
-logger.info(f"    BITFINEX_API_KEY: {'✅' if settings.BITFINEX_API_KEY else '❌'}")
-logger.info(f"    Första 10 tecken: {settings.BITFINEX_API_KEY[:10] if settings.BITFINEX_API_KEY else 'None'}")
+logger.info("🔑 Kontroll vid startup:")
+logger.info("    BITFINEX_API_KEY: %s", '✅' if settings.BITFINEX_API_KEY else '❌')
+logger.info("    API_SECRET status: %s", '✅' if settings.BITFINEX_API_SECRET else '❌')
 
 app = FastAPI(
     title="TradingBot Backend",

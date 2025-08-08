@@ -2,5 +2,5 @@ from config.settings import Settings
 
 settings = Settings()
 
-print(f"✅ API_KEY: {settings.BITFINEX_API_KEY}")
-print(f"✅ API_SECRET: {settings.BITFINEX_API_SECRET}")
+print(f"API_KEY status: {'SET' if settings.BITFINEX_API_KEY else 'MISSING'}")
+print(f"API_SECRET status: {'SET' if settings.BITFINEX_API_SECRET else 'MISSING'}")

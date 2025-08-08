@@ -18,18 +18,10 @@ from utils.logger import get_logger
 security = HTTPBearer()
 logger = get_logger(__name__)
 
-# Bitfinex API credentials - använd Settings istället för os.getenv
-from config.settings import Settings
+# Bitfinex API credentials - använd Settings (logga endast status, inte nycklar)
 settings = Settings()
-logger.info(f"🔐 Laddad BITFINEX_API_KEY: {settings.BITFINEX_API_KEY}")
-_secret_preview = f"{settings.BITFINEX_API_SECRET[:10]}..." if settings.BITFINEX_API_SECRET else "None"
-logger.info(f"🔐 Laddad BITFINEX_API_SECRET: {_secret_preview}")
-logger.info(
-    f"API Key status: {'✅ Konfigurerad' if settings.BITFINEX_API_KEY else '❌ Saknas'}"
-)
-logger.info(
-    f"API Secret status: {'✅ Konfigurerad' if settings.BITFINEX_API_SECRET else '❌ Saknas'}"
-)
+logger.info("API Key status: %s", '✅ Konfigurerad' if settings.BITFINEX_API_KEY else '❌ Saknas')
+logger.info("API Secret status: %s", '✅ Konfigurerad' if settings.BITFINEX_API_SECRET else '❌ Saknas')
 
 def build_auth_headers(endpoint: str, payload: dict = None, v1: bool = False, payload_str: Optional[str] = None) -> dict:
     """

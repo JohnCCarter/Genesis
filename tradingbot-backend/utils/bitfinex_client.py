@@ -62,6 +62,6 @@ async def example_usage():
     
     # WebSocket auth exempel
     auth_message = client.get_ws_auth_message()
-    logger.info(f"WebSocket auth message: {auth_message}")
+    logger.info("WebSocket auth message generated (content redacted)")
 
 # TODO: Implementera fullständig Bitfinex API-integration 
