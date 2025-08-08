@@ -87,8 +87,8 @@ class Settings(_BaseSettings):
         # Pydantic v2 settings
         model_config = SettingsConfigDict(env_file=_ENV_FILE, case_sensitive=False, extra="allow")
     else:
-        # Pydantic v1 settings
+        # Pydantic v1 settings – undvik självreferens till Settings i klasskroppen
         class Config:
-            env_file = Settings._ENV_FILE  # type: ignore[attr-defined]
+            env_file = _os.path.join(_os.path.dirname(_os.path.dirname(__file__)), ".env")
             case_sensitive = False
             extra = "allow"  # Tillåt extra fält från .env
