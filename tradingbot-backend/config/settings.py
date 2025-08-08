@@ -61,6 +61,16 @@ class Settings(_BaseSettings):
     TRADE_COOLDOWN_SECONDS: int = 60
     TRADING_PAUSED: bool = False
     
+    # Circuit Breaker
+    CB_ENABLED: bool = True
+    CB_ERROR_WINDOW_SECONDS: int = 60
+    CB_MAX_ERRORS_PER_WINDOW: int = 5
+    CB_NOTIFY: bool = True
+
+    # Telegram notifieringar
+    TELEGRAM_BOT_TOKEN: Optional[str] = None
+    TELEGRAM_CHAT_ID: Optional[str] = None
+    
     # SMTP (från din .env)
     SMTP_PORT: Optional[str] = None
     SMTP_USER: Optional[str] = None

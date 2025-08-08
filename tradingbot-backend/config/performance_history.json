@@ -1,0 +1,12 @@
+{
+  "equity": [
+    {
+      "date": "2025-08-08",
+      "total_usd": -4.11544,
+      "wallets_usd": 0.0,
+      "unrealized_pnl_usd": -4.11544,
+      "positions_count": 1,
+      "realized_usd": 0.0
+    }
+  ]
+}

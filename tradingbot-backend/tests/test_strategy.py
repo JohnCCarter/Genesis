@@ -110,6 +110,6 @@ class TestWeightedStrategy:
         assert result["signal"] == "sell"
 
     def test_weighted_strategy_hold(self):
-        data = {"ema": "buy", "rsi": "sell", "atr": "neutral"}
+        data = {"ema": "buy", "rsi": "sell", "atr": "low"}
         result = evaluate_weighted_strategy(data)
         assert result["signal"] == "hold"

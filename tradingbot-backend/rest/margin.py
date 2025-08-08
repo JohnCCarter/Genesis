@@ -129,31 +129,36 @@ class MarginService:
                     logger.info(f"✅ REST API: Hämtade margin-information från v2 API")
                 except httpx.HTTPStatusError as e:
                     # Om v2 API misslyckas, försök med v1 API endpoint
-                    if e.response.status_code == 404:
-                        logger.warning(f"⚠️ v2 API endpoint inte tillgänglig, försöker med v1 API")
-                        v1_endpoint = "margin_infos"
-                        v1_base_url = "https://api.bitfinex.com/v1"
-                        v1_headers = build_auth_headers(v1_endpoint, v1=True)
-                        
-                        v1_response = await client.post(
-                            f"{v1_base_url}/{v1_endpoint}",
-                            headers=v1_headers
-                        )
-                        v1_response.raise_for_status()
-                        
-                        # Konvertera v1 API svar till v2 format
-                        v1_data = v1_response.json()
-                        margin_data = self._convert_v1_to_v2_format(v1_data)
-                        logger.info(f"✅ REST API: Hämtade margin-information från v1 API")
+                    if e.response.status_code in (404, 400, 500):
+                        logger.warning("⚠️ v2 API misslyckades (%s), försöker med v1 API", e.response.status_code)
+                        try:
+                            v1_endpoint = "margin_infos"
+                            v1_base_url = "https://api.bitfinex.com/v1"
+                            v1_headers = build_auth_headers(v1_endpoint, v1=True)
+                            v1_response = await client.post(
+                                f"{v1_base_url}/{v1_endpoint}",
+                                headers=v1_headers
+                            )
+                            v1_response.raise_for_status()
+                            v1_data = v1_response.json()
+                            margin_data = self._convert_v1_to_v2_format(v1_data)
+                            logger.info("✅ REST API: Hämtade margin-information från v1 API")
+                        except Exception as e1:
+                            logger.error(f"❌ v1 margin API misslyckades: {e1}")
+                            # Fallback – returnera neutral struktur så flödet inte kraschar
+                            margin_data = [0, 0, 0, 0, 0]
                     else:
-                        raise
+                        # Okänt fel – fallback med neutral struktur
+                        logger.error(f"❌ v2 margin API fel: {e}")
+                        margin_data = [0, 0, 0, 0, 0]
                 
                 margin_info = MarginInfo.from_bitfinex_data(margin_data)
                 return margin_info
                 
         except Exception as e:
             logger.error(f"Fel vid hämtning av margin-information: {e}")
-            raise
+            # Fallback – returnera tom/neutral margin-info istället för att höja
+            return MarginInfo.from_bitfinex_data([0, 0, 0, 0, 0])
     
     async def get_margin_limits(self) -> List[MarginLimitInfo]:
         """

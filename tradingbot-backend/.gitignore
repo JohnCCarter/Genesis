@@ -147,6 +147,7 @@ config/*.json
 !config/trading_rules.json
 !config/strategy_settings.json
 !config/order_templates.json
+!config/performance_history.json
 
 # Spyder project settings
 .spyderproject

@@ -114,10 +114,9 @@ class RealtimeStrategyService:
             result: Strategi-resultat
         """
         try:
-            from ws.manager import sio
-            
-            # Skicka till alla anslutna klienter
-            await sio.emit('strategy_signal', result)
+            # Använd delad Socket.IO-server
+            from ws.manager import socket_app
+            await socket_app.emit('strategy_signal', result)
             
         except Exception as e:
             logger.error(f"❌ Fel vid broadcast av signal: {e}")

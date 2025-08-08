@@ -23,7 +23,13 @@ class OrderTemplatesService:
         try:
             if os.path.exists(self.file_path):
                 with open(self.file_path, "r", encoding="utf-8") as f:
-                    return json.load(f)
+                    data = json.load(f)
+                    # Om filen råkar vara en lista, wrappa den i {"templates": ...}
+                    if isinstance(data, list):
+                        return {"templates": data}
+                    if isinstance(data, dict):
+                        return data
+                    return {"templates": []}
         except Exception as e:
             logger.warning(f"Kunde inte läsa templates: {e}")
         return {"templates": []}
@@ -35,7 +41,11 @@ class OrderTemplatesService:
 
     def list_templates(self) -> List[Dict[str, Any]]:
         data = self._load()
-        return data.get("templates", [])
+        try:
+            items = data.get("templates", []) if isinstance(data, dict) else []
+            return items if isinstance(items, list) else []
+        except Exception:
+            return []
 
     def save_template(self, template: Dict[str, Any]) -> Dict[str, Any]:
         data = self._load()

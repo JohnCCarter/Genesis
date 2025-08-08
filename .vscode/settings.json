@@ -23,5 +23,24 @@
     },
     "[html]": {
         "editor.defaultFormatter": "esbenp.prettier-vscode"
-    }
+    },
+    "files.exclude": {
+        "**/.venv/**": true,
+        "**/venv/**": true,
+        "**/__pycache__/**": true,
+        "**/.pytest_cache/**": true,
+        "tradingbot-backend/cache/**": true
+    },
+    "files.watcherExclude": {
+        "**/.venv/**": true,
+        "**/venv/**": true,
+        "**/__pycache__/**": true,
+        "**/.pytest_cache/**": true,
+        "tradingbot-backend/cache/**": true
+    },
+    "python.analysis.exclude": [
+        "**/.venv/**",
+        "**/venv/**",
+        "tradingbot-backend/cache/**"
+    ]
 }

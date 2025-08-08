@@ -33,6 +33,8 @@ from rest.auth import place_order
 from services.bitfinex_data import bitfinex_data
 from services.strategy import evaluate_strategy
 from services.realtime_strategy import realtime_strategy
+from services.risk_manager import RiskManager
+from services.metrics import inc
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -181,6 +183,8 @@ class TradingIntegrationService:
             # Hämta candles och konvertera till strategidata
             candles = self.market_data[symbol]["candles"]
             strategy_data = bitfinex_data.parse_candles_to_strategy_data(candles)
+            # bädda in symbol för per-symbol viktning
+            strategy_data["symbol"] = symbol
             
             # Utvärdera strategi
             result = evaluate_strategy(strategy_data)
@@ -303,6 +307,16 @@ class TradingIntegrationService:
                     "message": f"Kan inte handla: {signal_data.get('reason', 'Okänd anledning')}",
                     "order": None
                 }
+
+            # Centrala riskkontroller (TradingWindow, dagliga limits, cooldown, CB)
+            try:
+                risk = RiskManager()
+                ok, reason = risk.pre_trade_checks()
+                if not ok:
+                    logger.warning(f"🚫 RiskManager block: {reason}")
+                    return {"success": False, "message": f"risk_blocked:{reason}", "order": None}
+            except Exception as e:
+                logger.warning(f"RiskManager-kontroll misslyckades: {e}")
             
             # Kontrollera om vi ska handla
             if signal not in ["BUY", "SELL"]:
@@ -330,6 +344,12 @@ class TradingIntegrationService:
             
             if "error" in result:
                 logger.error(f"❌ Fel vid orderläggning för {symbol}: {result['error']}")
+                try:
+                    inc("orders_total")
+                    inc("orders_failed_total")
+                    RiskManager().record_error()
+                except Exception:
+                    pass
                 return {
                     "success": False,
                     "message": f"Orderläggning misslyckades: {result['error']}",
@@ -337,6 +357,11 @@ class TradingIntegrationService:
                 }
             
             logger.info(f"✅ Order lagd för {symbol}: {result}")
+            try:
+                inc("orders_total")
+                RiskManager().record_trade()
+            except Exception:
+                pass
             
             # Uppdatera position- och plånboksinformation
             await asyncio.gather(

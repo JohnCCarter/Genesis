@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 import os
 from dataclasses import dataclass, asdict
-from typing import Dict, Optional
+from typing import Dict, Optional, Any
 
 from config.settings import Settings
 from utils.logger import get_logger
@@ -63,29 +63,74 @@ class StrategySettingsService:
         cfg_dir = os.path.join(base_dir, "config")
         os.makedirs(cfg_dir, exist_ok=True)
         self.file_path = os.path.join(cfg_dir, "strategy_settings.json")
+        self.overrides_path = os.path.join(cfg_dir, "strategy_settings.overrides.json")
 
-    def get_settings(self) -> StrategySettings:
+    def _load_overrides(self) -> Dict[str, Dict[str, Any]]:
+        try:
+            with open(self.overrides_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                if isinstance(data, dict):
+                    return data
+                return {}
+        except FileNotFoundError:
+            return {}
+        except Exception as e:
+            logger.warning(f"Kunde inte läsa overrides för strategiinställningar: {e}")
+            return {}
+
+    def _save_overrides(self, overrides: Dict[str, Dict[str, Any]]) -> None:
+        try:
+            os.makedirs(os.path.dirname(self.overrides_path), exist_ok=True)
+            with open(self.overrides_path, "w", encoding="utf-8") as f:
+                json.dump(overrides, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            logger.error(f"Kunde inte spara overrides för strategiinställningar: {e}")
+            raise
+
+    def get_settings(self, symbol: Optional[str] = None) -> StrategySettings:
         try:
             with open(self.file_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
-                s = StrategySettings.from_dict(data)
-                return s.normalized()
+                base = StrategySettings.from_dict(data)
         except FileNotFoundError:
             logger.info("Inga strategiinställningar hittades – använder default och skapar fil.")
-            defaults = StrategySettings()
-            self.save_settings(defaults)
-            return defaults
+            base = StrategySettings()
+            self.save_settings(base)
+        except FileNotFoundError:
+            # Redundant branch retained for clarity
+            base = StrategySettings()
         except Exception as e:
             logger.warning(f"Kunde inte läsa strategiinställningar: {e}")
-            return StrategySettings()
+            base = StrategySettings()
 
-    def save_settings(self, settings_obj: StrategySettings) -> StrategySettings:
+        # Applicera per-symbol override om angiven symbol
+        if symbol:
+            try:
+                overrides = self._load_overrides()
+                ov = overrides.get(symbol)
+                if isinstance(ov, dict):
+                    merged = base.to_dict()
+                    for k, v in ov.items():
+                        if v is not None and k in merged:
+                            merged[k] = v
+                    return StrategySettings.from_dict(merged).normalized()
+            except Exception as e:
+                logger.warning(f"Kunde inte applicera symboloverride för {symbol}: {e}")
+        return base.normalized()
+
+    def save_settings(self, settings_obj: StrategySettings, symbol: Optional[str] = None) -> StrategySettings:
         try:
             normalized = settings_obj.normalized()
-            # Säkerställ att katalogen finns
-            os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
-            with open(self.file_path, "w", encoding="utf-8") as f:
-                json.dump(normalized.to_dict(), f, ensure_ascii=False, indent=2)
+            if symbol:
+                # Spara som per-symbol override
+                overrides = self._load_overrides()
+                overrides[symbol] = normalized.to_dict()
+                self._save_overrides(overrides)
+            else:
+                # Spara som global default
+                os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
+                with open(self.file_path, "w", encoding="utf-8") as f:
+                    json.dump(normalized.to_dict(), f, ensure_ascii=False, indent=2)
             return normalized
         except Exception as e:
             logger.error(f"Kunde inte spara strategiinställningar: {e}")

@@ -36,6 +36,13 @@ async def lifespan(app: FastAPI):
         logger.info("✅ WebSocket-anslutning etablerad")
     except Exception as e:
         logger.warning(f"⚠️ WebSocket-anslutning misslyckades: {e}")
+
+    # Starta enklare scheduler (equity snapshots)
+    try:
+        from services.scheduler import scheduler
+        scheduler.start()
+    except Exception as e:
+        logger.warning(f"⚠️ Kunde inte starta scheduler: {e}")
     
     yield
     
@@ -48,6 +55,13 @@ async def lifespan(app: FastAPI):
         logger.info("✅ WebSocket-anslutning stängd")
     except Exception as e:
         logger.warning(f"⚠️ Fel vid stängning av WebSocket: {e}")
+
+    # Stoppa scheduler
+    try:
+        from services.scheduler import scheduler
+        await scheduler.stop()
+    except Exception as e:
+        logger.warning(f"⚠️ Fel vid stopp av scheduler: {e}")
 
 # Skapa FastAPI-applikation
 

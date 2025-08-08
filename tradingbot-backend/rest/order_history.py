@@ -58,7 +58,7 @@ class TradeItem(BaseModel):
     id: int
     symbol: str
     order_id: int
-    execution_id: Optional[str] = None
+    execution_id: Optional[str | int | float] = None
     amount: float
     price: float
     fee: float
@@ -67,20 +67,81 @@ class TradeItem(BaseModel):
     
     @classmethod
     def from_bitfinex_data(cls, data: List) -> 'TradeItem':
-        """Skapar en TradeItem från Bitfinex API-data."""
-        if len(data) < 9:
+        """Skapar en TradeItem från Bitfinex API-data.
+
+        Bitfinex kan returnera olika former för trades:
+        - Klassisk (utan order_type): [ID, PAIR, ORDER_ID, EXECUTION_ID, AMOUNT, PRICE, FEE, FEE_CURRENCY, MTS_CREATE]
+        - Variant med tidsstämpel i index 2: [ID, PAIR, MTS_CREATE, ORDER_ID, EXECUTION_ID, AMOUNT, PRICE, FEE, FEE_CURRENCY]
+        - Variant med order_type (t.ex. 'EXCHANGE MARKET') i index 5:
+          [ID, PAIR, MTS_CREATE, ORDER_ID, EXECUTION_ID, ORDER_TYPE, AMOUNT, PRICE, FEE, FEE_CURRENCY]
+        """
+        if not data or len(data) < 8:
             raise ValueError(f"Ogiltig tradedata: {data}")
-        
+
+        def try_float(x):
+            try:
+                return float(x)
+            except Exception:
+                return 0.0
+
+        trade_id = int(data[0])
+        symbol = data[1]
+
+        mts_create: Optional[int] = None
+        order_id: int = 0
+        execution_id: Optional[str] = None
+        amount: float = 0.0
+        price: float = 0.0
+        fee: float = 0.0
+        fee_currency: str = ""
+
+        try:
+            # Fall 1: ORDER_TYPE som str på index 5
+            if len(data) >= 10 and isinstance(data[5], str):
+                # [id, sym, mts, orderId, execId, type, amount, price, fee, feeCur]
+                mts_create = int(data[2]) if data[2] is not None else None
+                order_id = int(data[3]) if data[3] is not None else 0
+                execution_id = data[4] if data[4] else None
+                amount = try_float(data[6])
+                price = try_float(data[7])
+                fee = try_float(data[8])
+                fee_currency = str(data[9]) if len(data) > 9 else ""
+            # Fall 2: tidsstämpel på index 2 (ms)
+            elif len(data) >= 9 and isinstance(data[2], (int, float)) and float(data[2]) > 10_000_000_000:
+                # [id, sym, mts, orderId, execId, amount, price, fee, feeCur]
+                mts_create = int(data[2])
+                order_id = int(data[3]) if len(data) > 3 and data[3] is not None else 0
+                execution_id = data[4] if len(data) > 4 else None
+                amount = try_float(data[5]) if len(data) > 5 else 0.0
+                price = try_float(data[6]) if len(data) > 6 else 0.0
+                fee = try_float(data[7]) if len(data) > 7 else 0.0
+                fee_currency = str(data[8]) if len(data) > 8 else ""
+            else:
+                # Fallback: klassisk mappning utan mts i index 2
+                # [id, sym, orderId, execId, amount, price, fee, feeCur, mts]
+                order_id = int(data[2]) if len(data) > 2 and data[2] is not None else 0
+                execution_id = data[3] if len(data) > 3 else None
+                amount = try_float(data[4]) if len(data) > 4 else 0.0
+                price = try_float(data[5]) if len(data) > 5 else 0.0
+                fee = try_float(data[6]) if len(data) > 6 else 0.0
+                fee_currency = str(data[7]) if len(data) > 7 else ""
+                if len(data) > 8 and isinstance(data[8], (int, float)):
+                    mts_create = int(data[8])
+        except Exception as e:
+            raise ValueError(f"Kunde inte tolka tradedata: {data} ({e})")
+
+        executed_at = datetime.fromtimestamp(mts_create / 1000) if mts_create else datetime.now()
+
         return cls(
-            id=int(data[0]),
-            symbol=data[1],
-            order_id=int(data[2]),
-            execution_id=data[3] if data[3] else None,
-            amount=float(data[4]),
-            price=float(data[5]),
-            fee=float(data[6]),
-            fee_currency=data[7],
-            executed_at=datetime.fromtimestamp(data[8] / 1000) if data[8] else datetime.now()
+            id=trade_id,
+            symbol=symbol,
+            order_id=order_id,
+            execution_id=execution_id,
+            amount=amount,
+            price=price,
+            fee=fee,
+            fee_currency=fee_currency,
+            executed_at=executed_at,
         )
 
 class LedgerEntry(BaseModel):

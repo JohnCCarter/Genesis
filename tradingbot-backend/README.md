@@ -7,10 +7,14 @@ Detta är backend-delen av Genesis Trading Bot, en plattform för automatiserad 
 1. [Översikt](#översikt)
 2. [Installation](#installation)
 3. [Konfiguration](#konfiguration)
-4. [Moduler](#moduler)
-5. [API-dokumentation](#api-dokumentation)
-6. [Tester](#tester)
-7. [Utveckling](#utveckling)
+4. [Telegram-notiser](#telegram-notiser)
+5. [Moduler](#moduler)
+6. [API-dokumentation](#api-dokumentation)
+7. [Tester](#tester)
+8. [Utveckling](#utveckling)
+9. [Orderflaggor (Reduce-Only/Post-Only)](#orderflaggor-reduce-onlypost-only)
+10. [Backtest & Heatmap](#backtest--heatmap)
+11. [CI (GitHub Actions)](#ci-github-actions)
 
 ## Översikt
 
@@ -93,11 +97,25 @@ ACCESS_TOKEN_EXPIRE_MINUTES=30
 
 # Kräv JWT för REST/WS (sätt False i dev vid behov)
 AUTH_REQUIRED=True
+
+# (Valfritt) Telegram-notiser
+TELEGRAM_BOT_TOKEN=123456:ABC-DEF...  # BotFather token
+TELEGRAM_CHAT_ID=123456789           # Chat eller kanal-ID
 ```
 
 3. Se `API_KEY_SETUP.md` för instruktioner om hur du skapar och konfigurerar Bitfinex API-nycklar.
 
 4. Se `SUB_ACCOUNT_SETUP.md` för instruktioner om hur du konfigurerar ett sub-konto för testning.
+
+## Telegram-notiser
+
+Om `TELEGRAM_BOT_TOKEN` och `TELEGRAM_CHAT_ID` är satta skickas notiser vid bl.a.:
+
+- Lyckad/misslyckad order
+- Avbruten order (lyckad/misslyckad)
+- Circuit Breaker aktivering
+
+Notiser skickas även via Socket.IO som `notification`-event.
 
 ## Moduler
 
@@ -322,6 +340,79 @@ Projektet följer en modulär struktur där varje modul har ett specifikt ansvar
 Exempel-skript har flyttats till `docs/legacy/examples/` för referens.
 
 ### Bidra
+
+## CI (GitHub Actions)
+
+En enkel CI kör lint och tester på push/PR.
+
+Skapa `.github/workflows/ci.yml` i repo-roten:
+
+```yaml
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tradingbot-backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest
+
+      - name: Lint (importable modules)
+        run: python -c "import sys; import pkgutil; print('OK')"
+
+      - name: Run tests
+        env:
+          AUTH_REQUIRED: "False"
+        run: pytest -q
+```
+
+Notera att `AUTH_REQUIRED=False` under test förenklar körningen. Justera vid behov.
+
+## Orderflaggor (Reduce-Only/Post-Only)
+
+- **Reduce-Only**: Säkerställer att en order endast minskar en befintlig position, aldrig ökar eller vänder den. Praktiskt för att stänga eller delstänga positioner utan risk att oavsiktligt öppna motsatt riktning. I backend stöds flaggan i modellerna och används bl.a. vid "Stäng position" (skickar MARKET med `reduce_only=true`).
+
+- **Post-Only**: Ordern läggs endast om den kan bli en maker-order (ligga i orderboken). Om den annars skulle matchas direkt som taker avbryts den i stället. Används för att undvika taker-avgifter och för att säkerställa likviditetspostning. Relevant främst för LIMIT-ordrar.
+
+Användning i API (exempel för bracket):
+
+```json
+{
+  "symbol": "tBTCUSD",
+  "amount": "0.01",
+  "side": "buy",
+  "entry_type": "EXCHANGE LIMIT",
+  "entry_price": "30000",
+  "post_only": true,
+  "reduce_only": false
+}
+```
+
+Observera att `post_only` ignoreras för MARKET-ordrar (gäller LIMIT). `reduce_only` kan användas för att säkra exits.
+
+## Backtest & Heatmap
+
+- Backtest-endpoint: `POST /api/v2/strategy/backtest` med fält `symbol`, `timeframe`, `limit` och automatisk lokal tidszon via UI.
+- Returnerar bl.a.: `final_equity`, `winrate`, `max_drawdown`, `sharpe`, `distribution`, `equity_curve`, `heatmap_return` (alias `heatmap`), `heatmap_winrate` och `heatmap_counts`.
+- Heatmap visar genomsnittlig avkastning per trade (return-heatmap). Winrate-heatmap visar andel vinnare per cell. UI kan utökas med toggle vid behov.
 
 1. Forka repositoryt
 2. Skapa en feature branch (`git checkout -b feature/amazing-feature`)

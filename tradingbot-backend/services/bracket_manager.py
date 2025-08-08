@@ -8,6 +8,7 @@ för att auto-avbryta kvarvarande barnorder när en av SL/TP fylls.
 from __future__ import annotations
 
 from typing import Dict, Optional, Tuple
+from dataclasses import dataclass
 from utils.logger import get_logger
 
 from rest.auth import cancel_order
@@ -15,15 +16,23 @@ from rest.auth import cancel_order
 logger = get_logger(__name__)
 
 
+@dataclass
+class BracketGroup:
+    entry_id: Optional[int]
+    sl_id: Optional[int]
+    tp_id: Optional[int]
+    active: bool = True
+
+
 class BracketManager:
     def __init__(self) -> None:
         # Mappar: child_order_id -> (gid, role)
         self.child_to_group: Dict[int, Tuple[str, str]] = {}
-        # Mappar: gid -> {"entry": id, "sl": id, "tp": id, "active": True}
-        self.groups: Dict[str, Dict[str, Optional[int]]] = {}
+        # Mappar: gid -> BracketGroup
+        self.groups: Dict[str, BracketGroup] = {}
 
     def register_group(self, gid: str, entry_id: Optional[int], sl_id: Optional[int], tp_id: Optional[int]) -> None:
-        self.groups[gid] = {"entry": entry_id, "sl": sl_id, "tp": tp_id, "active": True}
+        self.groups[gid] = BracketGroup(entry_id=entry_id, sl_id=sl_id, tp_id=tp_id, active=True)
         for role, oid in (("sl", sl_id), ("tp", tp_id)):
             if isinstance(oid, int):
                 self.child_to_group[oid] = (gid, role)
@@ -35,18 +44,18 @@ class BracketManager:
             return
         gid, role = group
         data = self.groups.get(gid)
-        if not data or not data.get("active"):
+        if not data or not data.active:
             return
         # Bestäm syskon
         sibling_role = "tp" if role == "sl" else "sl"
-        sibling_id = data.get(sibling_role)
+        sibling_id = data.tp_id if sibling_role == "tp" else data.sl_id
         if isinstance(sibling_id, int):
             try:
                 logger.info(f"Bracket gid={gid}: cancel {sibling_role} order {sibling_id} efter fill av {role} {filled_child_id}")
                 await cancel_order(sibling_id)
             except Exception as e:
                 logger.warning(f"Kunde inte cancel syskon-order {sibling_id}: {e}")
-        data["active"] = False
+        data.active = False
 
     async def handle_private_event(self, event_code: str, msg) -> None:
         """Hantera Bitfinex privata event (te/tu/oc/ou)."""

@@ -24,6 +24,7 @@ def render_prometheus_text() -> str:
     lines = [
         f"tradingbot_orders_total {metrics_store.get('orders_total', 0)}",
         f"tradingbot_orders_failed_total {metrics_store.get('orders_failed_total', 0)}",
+        f"tradingbot_circuit_breaker_active {1 if metrics_store.get('circuit_breaker_active') else 0}",
     ]
     return "\n".join(lines) + "\n"
 

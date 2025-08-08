@@ -1,6 +1,46 @@
 {
   "templates": [
     {
+      "name": "12",
+      "symbol": "tTESTBTC:TESTUSD",
+      "side": "buy",
+      "type": "EXCHANGE MARKET",
+      "amount": "0.001",
+      "price": "10000",
+      "sl_price": "9500",
+      "tp_price": "10500"
+    },
+    {
+      "name": "gtg",
+      "symbol": "tTESTALGO:TESTUSD",
+      "side": "buy",
+      "type": "EXCHANGE MARKET",
+      "amount": "0.001",
+      "price": "10000",
+      "sl_price": "9500",
+      "tp_price": "10500"
+    },
+    {
+      "name": "w",
+      "symbol": "tTESTLTC:TESTUSD",
+      "side": "buy",
+      "type": "EXCHANGE MARKET",
+      "amount": "1",
+      "price": "",
+      "sl_price": "110",
+      "tp_price": "150"
+    },
+    {
+      "name": "1",
+      "symbol": "tTESTLTC:TESTUSD",
+      "side": "buy",
+      "type": "EXCHANGE MARKET",
+      "amount": "1",
+      "price": "",
+      "sl_price": "110",
+      "tp_price": "150"
+    },
+    {
       "name": "",
       "symbol": "tTESTBTC:TESTUSD",
       "side": "buy",
@@ -11,14 +51,14 @@
       "tp_price": "10500"
     },
     {
-      "name": "1",
-      "symbol": "tTESTBTC:TESTUSD",
+      "name": "we",
+      "symbol": "tTESTLTC:TESTUSD",
       "side": "buy",
       "type": "EXCHANGE MARKET",
-      "amount": "0.001",
-      "price": "10000",
-      "sl_price": "9500",
-      "tp_price": "10500"
+      "amount": "1",
+      "price": "",
+      "sl_price": "110",
+      "tp_price": "140"
     }
   ]
 }

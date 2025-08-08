@@ -79,6 +79,19 @@
     </style>
   </head>
   <body>
+    <div
+      id="riskBanner"
+      class="small"
+      style="
+        display: none;
+        margin: 8px 0;
+        padding: 8px 10px;
+        border-radius: 6px;
+        border: 1px solid #ffeeba;
+        background: #fff3cd;
+        color: #856404;
+      "
+    ></div>
     <h1>TradingBot WebSocket Test</h1>
 
     <div>
@@ -119,6 +132,13 @@
           </select>
         </div>
         <div>
+          <label>Konto</label><br />
+          <select id="accountSelect">
+            <option value="exchange" selected>Exchange</option>
+            <option value="margin">Margin</option>
+          </select>
+        </div>
+        <div>
           <label>Side</label><br />
           <select id="sideSelect">
             <option selected>buy</option>
@@ -134,8 +154,30 @@
         <button id="watchlistBtn" disabled>Watchlist</button>
         <button id="perfBtn" disabled>Performance</button>
         <button id="perfDetailBtn" disabled>Perf detail</button>
+        <button id="equityBtn" disabled>Equity</button>
+        <button id="equitySnapBtn" disabled>Equity snapshot</button>
+        <button id="equityHistBtn" disabled>Equity history</button>
+      </div>
+      <div style="margin-top: 10px">
+        <canvas
+          id="equitySpark"
+          width="600"
+          height="100"
+          style="
+            width: 100%;
+            max-width: 800px;
+            height: 120px;
+            border: 1px solid #e0e0e0;
+            background: #fff;
+          "
+        ></canvas>
+        <div class="small">Equity sparkline (senaste dagar)</div>
       </div>
     </div>
+
+    <div id="watchlistArea" style="margin-top: 10px"></div>
+    <div id="positionsArea" style="margin-top: 10px"></div>
+    <div id="xpositionsArea" style="margin-top: 10px"></div>
 
     <div style="margin-top: 20px">
       <h3>Bracket-order (entry + SL/TP)</h3>
@@ -160,6 +202,13 @@
           <select id="brType">
             <option selected>EXCHANGE MARKET</option>
             <option>EXCHANGE LIMIT</option>
+          </select>
+        </div>
+        <div>
+          <label>Konto</label><br />
+          <select id="brAccount">
+            <option value="exchange" selected>Exchange</option>
+            <option value="margin">Margin</option>
           </select>
         </div>
         <div>
@@ -188,6 +237,7 @@
         <button id="saveTplBtn" disabled>Spara mall (från Bracket)</button>
         <button id="listTplBtn" disabled>Visa mallar</button>
       </div>
+      <div id="tplArea" class="small" style="margin-top: 6px"></div>
     </div>
 
     <div style="margin-top: 20px">
@@ -205,7 +255,149 @@
           <label>Limit</label><br />
           <input id="btLimit" type="number" value="500" style="width: 90px" />
         </div>
+        <div>
+          <label>Tidszon offset (minuter)</label><br />
+          <input id="btTzOff" type="number" value="0" style="width: 120px" />
+        </div>
+        <div>
+          <label>Heatmap</label><br />
+          <select id="btHeatmapMetric" style="width: 140px">
+            <option value="return" selected>Return</option>
+            <option value="winrate">Winrate</option>
+          </select>
+        </div>
         <button id="runBtBtn" disabled>Kör backtest</button>
+      </div>
+      <div id="btHeatmapArea" style="margin-top: 8px"></div>
+    </div>
+
+    <div style="margin-top: 20px">
+      <h3>Automatiserad handel</h3>
+      <div class="row">
+        <div>
+          <label>Symbol</label><br />
+          <input
+            id="autoSymbol"
+            value="tTESTBTC:TESTUSD"
+            style="width: 150px"
+          />
+        </div>
+        <button id="autoStartBtn" disabled>Starta auto</button>
+        <button id="autoStopBtn" disabled>Stoppa auto</button>
+        <button id="autoStatusBtn" disabled>Auto status</button>
+      </div>
+    </div>
+
+    <div style="margin-top: 20px">
+      <h3>Snabbstart per symbol</h3>
+      <div class="row">
+        <div>
+          <label>Symbol</label><br />
+          <div style="display: flex; gap: 6px; align-items: center">
+            <input
+              id="quickSymbol"
+              value="tTESTBTC:TESTUSD"
+              style="width: 150px"
+            />
+            <select
+              id="quickSymbolsSelect"
+              disabled
+              style="min-width: 180px"
+            ></select>
+          </div>
+        </div>
+        <div>
+          <label>EMA vikt</label><br />
+          <input
+            id="qEmaWeight"
+            type="number"
+            step="0.05"
+            min="0"
+            max="1"
+            style="width: 110px"
+          />
+        </div>
+        <div>
+          <label>RSI vikt</label><br />
+          <input
+            id="qRsiWeight"
+            type="number"
+            step="0.05"
+            min="0"
+            max="1"
+            style="width: 110px"
+          />
+        </div>
+        <div>
+          <label>ATR vikt</label><br />
+          <input
+            id="qAtrWeight"
+            type="number"
+            step="0.05"
+            min="0"
+            max="1"
+            style="width: 110px"
+          />
+        </div>
+        <button id="qLoadBtn" disabled>Ladda</button>
+        <button id="qStartBtn" disabled>Spara + Starta</button>
+        <button id="qStopBtn" disabled>Stoppa</button>
+        <button id="qStopAllBtn" disabled>Stoppa alla</button>
+      </div>
+      <div class="row" style="margin-top: 6px">
+        <div>
+          <label>EMA period</label><br />
+          <input
+            id="qEmaPeriod"
+            type="number"
+            min="2"
+            max="500"
+            value="14"
+            style="width: 110px"
+          />
+        </div>
+        <div>
+          <label>RSI period</label><br />
+          <input
+            id="qRsiPeriod"
+            type="number"
+            min="2"
+            max="500"
+            value="14"
+            style="width: 110px"
+          />
+        </div>
+        <div>
+          <label>ATR period</label><br />
+          <input
+            id="qAtrPeriod"
+            type="number"
+            min="2"
+            max="500"
+            value="14"
+            style="width: 110px"
+          />
+        </div>
+        <div>
+          <label>Batch-symboler (komma-separerade)</label><br />
+          <input
+            id="qBatchSymbols"
+            placeholder="tBTCUSD,tETHUSD,..."
+            style="min-width: 260px"
+          />
+        </div>
+        <button id="qStartBatchBtn" disabled>Starta batch</button>
+      </div>
+      <details style="margin-top: 8px">
+        <summary>Avancerat</summary>
+        <div class="small" style="margin-top: 6px">
+          - Per-symbol perioder (EMA/RSI/ATR) – överstyr globalt.<br />
+          - Starta batch – sparar vikter/perioder och startar flera symboler.<br />
+          - Stoppa alla – stoppar all automatiserad handel.
+        </div>
+      </details>
+      <div class="small" style="margin-top: 6px">
+        Tips: Symbolfält synkas med andra sektioner.
       </div>
     </div>
 
@@ -259,6 +451,11 @@
       <div
         style="display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end"
       >
+        <input
+          id="strategySymbol"
+          placeholder="Symbol för inställningar (t.ex. tBTCUSD)"
+          style="width: 200px"
+        />
         <input
           id="emaWeight"
           type="number"
@@ -319,13 +516,70 @@
       <div style="margin-top: 10px">
         <label>Timezone</label>
         <input id="tzInput" value="Europe/Stockholm" />
-        <label style="margin-left: 10px">Mån-fre</label>
-        <input id="winMon" value="08:00-17:00" />
-        <input id="winTue" value="08:00-17:00" />
-        <input id="winWed" value="08:00-17:00" />
-        <input id="winThu" value="08:00-17:00" />
-        <input id="winFri" value="08:00-16:00" />
-        <button id="updateWindowsBtn" disabled>Uppdatera fönster</button>
+        <div class="row" style="margin-top: 8px">
+          <div>
+            <label><input type="checkbox" id="chkMon" checked /> Mon</label>
+            <input id="winMon" value="08:00-17:00" />
+          </div>
+          <div>
+            <label><input type="checkbox" id="chkTue" checked /> Tue</label>
+            <input id="winTue" value="08:00-17:00" />
+          </div>
+          <div>
+            <label><input type="checkbox" id="chkWed" checked /> Wed</label>
+            <input id="winWed" value="08:00-17:00" />
+          </div>
+          <div>
+            <label><input type="checkbox" id="chkThu" checked /> Thu</label>
+            <input id="winThu" value="08:00-17:00" />
+          </div>
+          <div>
+            <label><input type="checkbox" id="chkFri" checked /> Fri</label>
+            <input id="winFri" value="08:00-16:00" />
+          </div>
+          <div>
+            <label><input type="checkbox" id="chkSat" /> Sat</label>
+            <input id="winSat" placeholder="t.ex. 10:00-14:00" />
+          </div>
+          <div>
+            <label><input type="checkbox" id="chkSun" /> Sun</label>
+            <input id="winSun" placeholder="t.ex. 10:00-14:00" />
+          </div>
+        </div>
+        <button id="updateWindowsBtn" disabled style="margin-top: 8px">
+          Uppdatera fönster
+        </button>
+        <div class="row" style="margin-top: 12px">
+          <button id="circuitStatusBtn" disabled>Circuit status</button>
+          <label>Resume on reset</label>
+          <select id="cbResume">
+            <option value="true" selected>true</option>
+            <option value="false">false</option>
+          </select>
+          <label>Clear errors</label>
+          <select id="cbClear">
+            <option value="true" selected>true</option>
+            <option value="false">false</option>
+          </select>
+          <button id="circuitResetBtn" disabled>Reset CB</button>
+        </div>
+        <div class="row" style="margin-top: 8px">
+          <label>CB enabled</label>
+          <select id="cbEnabled">
+            <option value="true" selected>true</option>
+            <option value="false">false</option>
+          </select>
+          <label>Window (s)</label>
+          <input id="cbWindow" type="number" value="60" style="width: 90px" />
+          <label>Max errors</label>
+          <input id="cbMaxErrors" type="number" value="5" style="width: 90px" />
+          <label>Notify</label>
+          <select id="cbNotify">
+            <option value="true" selected>true</option>
+            <option value="false">false</option>
+          </select>
+          <button id="circuitConfigBtn" disabled>Update CB</button>
+        </div>
       </div>
     </div>
 
@@ -381,6 +635,77 @@
           `<span class="timestamp">[${ts}]</span><span class="badge ${type}">${type.toUpperCase()}</span><span class="title">${title}</span>${content}`
         );
       }
+      async function updateRiskBanner() {
+        try {
+          const el = document.getElementById("riskBanner");
+          if (!el) return;
+          const status = await restFetch("/api/v2/risk/status");
+          const circuit = await restFetch("/api/v2/risk/circuit");
+          const paused = !!(status && status.paused);
+          const cbOpen = !!(circuit && circuit.opened_at);
+          if (paused || cbOpen) {
+            el.style.display = "block";
+            const parts = [];
+            if (paused) parts.push("Trading pausad");
+            if (cbOpen) parts.push("Circuit breaker aktiv");
+            el.textContent = parts.join(" • ");
+          } else {
+            el.style.display = "block";
+            el.style.background = "#e8f7ee";
+            el.style.borderColor = "#bfe3cc";
+            el.style.color = "#1e7e34";
+            el.textContent = "Trading aktiv";
+          }
+        } catch (e) {
+          // ignore
+        }
+      }
+      function drawEquitySparkline(records) {
+        try {
+          const canvas = document.getElementById("equitySpark");
+          if (!canvas) return;
+          const ctx = canvas.getContext("2d");
+          const w = canvas.width;
+          const h = canvas.height;
+          ctx.clearRect(0, 0, w, h);
+          if (!records || !records.length) return;
+          const values = records.map((r) =>
+            Number(r.total_usd || r.total || 0)
+          );
+          const n = values.length;
+          if (n < 2) return;
+          const min = Math.min(...values);
+          const max = Math.max(...values);
+          const range = max - min || 1;
+          const padX = 4;
+          const padY = 4;
+          // Axes baseline (optional subtle)
+          ctx.strokeStyle = "#eee";
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(padX, h - padY);
+          ctx.lineTo(w - padX, h - padY);
+          ctx.stroke();
+          // Sparkline
+          ctx.strokeStyle = "#4a90e2";
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          for (let i = 0; i < n; i++) {
+            const x = padX + (i / (n - 1)) * (w - 2 * padX);
+            const y = h - padY - ((values[i] - min) / range) * (h - 2 * padY);
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+          ctx.stroke();
+          // Last value label
+          const last = values[n - 1];
+          ctx.fillStyle = "#555";
+          ctx.font = "12px sans-serif";
+          ctx.fillText(`${last.toFixed(2)}`, 6, 12);
+        } catch (e) {
+          // no-op
+        }
+      }
       document.getElementById("clearLogBtn").addEventListener("click", () => {
         document.getElementById("logArea").innerHTML = "";
       });
@@ -388,34 +713,13 @@
       document
         .getElementById("getTokenBtn")
         .addEventListener("click", async () => {
-          log("Requesting token...");
+          log("Begär token från API...");
           try {
-            // Försök med testservern först (port 8080)
-            try {
-              log("Trying test server on port 8080...");
-              const response = await fetch(
-                "http://localhost:8080/api/v2/auth/ws-token-test"
-              );
-              const data = await response.json();
-              if (data.success && data.token) {
-                token = data.token;
-                document.getElementById("tokenArea").value = token;
-                document.getElementById("connectBtn").disabled = false;
-                log("Token received from test server successfully.");
-                return;
-              }
-            } catch (e) {
-              log("Test server not available, trying main server...");
-            }
-
-            // Fallback till huvudservern (port 8000)
-            const response = await fetch(
+            const res = await fetch(
               "http://localhost:8000/api/v2/auth/ws-token",
               {
                 method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                },
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                   user_id: "test_user",
                   scope: "read",
@@ -423,18 +727,21 @@
                 }),
               }
             );
-
-            const data = await response.json();
-            if (data.success && data.token) {
+            const data = await res.json();
+            if (data && data.success && data.token) {
               token = data.token;
               document.getElementById("tokenArea").value = token;
               document.getElementById("connectBtn").disabled = false;
-              log("Token received from main server successfully.");
+              log("Token erhållen.");
             } else {
-              log("Failed to get token: " + (data.error || "Unknown error"));
+              log(
+                "Kunde inte hämta token: " +
+                  (data && data.error ? data.error : "okänt fel"),
+                "error"
+              );
             }
           } catch (error) {
-            log("Error getting token: " + error.message);
+            log("Fel vid hämtning av token: " + error.message, "error");
           }
         });
 
@@ -471,19 +778,44 @@
             document.getElementById("updateMaxTradesBtn").disabled = false;
             document.getElementById("updatePauseBtn").disabled = false;
             document.getElementById("updateWindowsBtn").disabled = false;
+            document.getElementById("circuitStatusBtn").disabled = false;
+            document.getElementById("circuitResetBtn").disabled = false;
+            document.getElementById("circuitConfigBtn").disabled = false;
             document.getElementById("getStrategySettingsBtn").disabled = false;
             document.getElementById("saveStrategySettingsBtn").disabled = false;
             document.getElementById("calcSizeBtn").disabled = false;
             document.getElementById("healthBtn").disabled = false;
             document.getElementById("loadSymbolsBtn").disabled = false;
             document.getElementById("symbolsSelect").disabled = false;
+            const qsel = document.getElementById("quickSymbolsSelect");
+            if (qsel) qsel.disabled = false;
             document.getElementById("watchlistBtn").disabled = false;
             document.getElementById("perfBtn").disabled = false;
             document.getElementById("perfDetailBtn").disabled = false;
+            document.getElementById("equityBtn").disabled = false;
+            document.getElementById("equitySnapBtn").disabled = false;
+            document.getElementById("equityHistBtn").disabled = false;
             document.getElementById("placeBracketBtn").disabled = false;
             document.getElementById("saveTplBtn").disabled = false;
             document.getElementById("listTplBtn").disabled = false;
             document.getElementById("runBtBtn").disabled = false;
+            // Auto trading controls
+            document.getElementById("autoStartBtn").disabled = false;
+            document.getElementById("autoStopBtn").disabled = false;
+            document.getElementById("autoStatusBtn").disabled = false;
+            // Quick panel controls
+            const qLoad = document.getElementById("qLoadBtn");
+            const qStart = document.getElementById("qStartBtn");
+            const qStop = document.getElementById("qStopBtn");
+            const qStopAll = document.getElementById("qStopAllBtn");
+            const qStartBatch = document.getElementById("qStartBatchBtn");
+            if (qLoad) qLoad.disabled = false;
+            if (qStart) qStart.disabled = false;
+            if (qStop) qStop.disabled = false;
+            if (qStopAll) qStopAll.disabled = false;
+            if (qStartBatch) qStartBatch.disabled = false;
+            // Uppdatera riskbanner direkt efter anslutning
+            updateRiskBanner();
           });
 
           socket.on("authenticated", (data) => {
@@ -550,6 +882,8 @@
               data.payload || data,
               t === "error" ? "error" : t === "warn" ? "warn" : "info"
             );
+            // Uppdatera banner vid notifieringar (t.ex. CB on/off)
+            updateRiskBanner();
           });
           socket.on("health", (data) => {
             logSection("WS Health", data);
@@ -596,7 +930,14 @@
             const symbol = document.getElementById("symbolInput").value.trim();
             const amount = document.getElementById("amountInput").value.trim();
             const price = document.getElementById("priceInput").value.trim();
-            const type = document.getElementById("typeSelect").value;
+            let type = document.getElementById("typeSelect").value;
+            const acct = document.getElementById("accountSelect").value;
+            // Växla EXCHANGE <-> margin beroende på konto
+            if (acct === "margin") {
+              type = type.replace("EXCHANGE ", "");
+            } else {
+              if (!type.startsWith("EXCHANGE")) type = `EXCHANGE ${type}`;
+            }
             const side = document.getElementById("sideSelect").value;
             const payload = { symbol, amount, type, side };
             if (!type.includes("MARKET")) {
@@ -637,12 +978,158 @@
           }
         });
 
+      // Bygg Exchange (syntetisk) positionsvy från wallets + trades
+      async function renderExchangePositions() {
+        try {
+          const [wallets, perf] = await Promise.all([
+            restFetch("/api/v2/wallets"),
+            restFetch("/api/v2/account/performance/detail"),
+          ]);
+          const area = document.getElementById("xpositionsArea");
+          if (!area) return;
+          // Använd wallets_by_symbol från performance/detail som sammanställning
+          const wbs = (perf && perf.wallets_by_symbol) || {};
+          const symbols = Object.keys(wbs);
+          let html = "<h4>Exchange (syntetisk) positioner</h4>";
+          html +=
+            '<div style="overflow:auto"><table style="width:100%; border-collapse: collapse;">';
+          html +=
+            "<thead><tr>" +
+            '<th style="text-align:left;border-bottom:1px solid #eee;padding:6px">Symbol</th>' +
+            '<th style="text-align:right;border-bottom:1px solid #eee;padding:6px">Base total</th>' +
+            '<th style="text-align:right;border-bottom:1px solid #eee;padding:6px">Quote total</th>' +
+            '<th style="text-align:right;border-bottom:1px solid #eee;padding:6px">Base (exchange)</th>' +
+            '<th style="text-align:right;border-bottom:1px solid #eee;padding:6px">Quote (exchange)</th>' +
+            "</tr></thead><tbody>";
+          symbols.forEach((sym) => {
+            const r = wbs[sym] || {};
+            html += `<tr>
+              <td style="padding:6px;border-bottom:1px solid #f3f3f3">${sym}</td>
+              <td style="padding:6px;border-bottom:1px solid #f3f3f3;text-align:right">${Number(
+                r.base_total || 0
+              ).toFixed(8)} ${r.base_currency || ""}</td>
+              <td style="padding:6px;border-bottom:1px solid #f3f3f3;text-align:right">${Number(
+                r.quote_total || 0
+              ).toFixed(8)} ${r.quote_currency || ""}</td>
+              <td style="padding:6px;border-bottom:1px solid #f3f3f3;text-align:right">${Number(
+                (r.base_by_type || {}).exchange || 0
+              ).toFixed(8)} ${r.base_currency || ""}</td>
+              <td style="padding:6px;border-bottom:1px solid #f3f3f3;text-align:right">${Number(
+                (r.quote_by_type || {}).exchange || 0
+              ).toFixed(8)} ${r.quote_currency || ""}</td>
+            </tr>`;
+          });
+          html += "</tbody></table></div>";
+          area.innerHTML = html;
+        } catch (e) {
+          logSection(
+            "Exchange positions error",
+            { message: e.message },
+            "error"
+          );
+        }
+      }
+
       document
         .getElementById("getPositionsBtn")
         .addEventListener("click", async () => {
           try {
-            const resp = await restFetch("/api/v2/positions");
-            logSection("Positions", { count: (resp || []).length, data: resp });
+            // Hämta positions med current_price via performance/detail
+            const data = await restFetch("/api/v2/account/performance/detail");
+            const positions = (data && data.positions) || [];
+            logSection("Positions", { count: positions.length }, "success");
+            const area = document.getElementById("positionsArea");
+            if (!area) return;
+            const ts = new Date();
+            // Bygg tabell
+            let html =
+              '<div style="overflow:auto"><table style="width:100%; border-collapse: collapse;">';
+            html +=
+              "<thead><tr>" +
+              '<th style="text-align:left;border-bottom:1px solid #eee;padding:6px">Symbol</th>' +
+              '<th style="text-align:left;border-bottom:1px solid #eee;padding:6px">Valuta</th>' +
+              '<th style="text-align:left;border-bottom:1px solid #eee;padding:6px">Side</th>' +
+              '<th style="text-align:right;border-bottom:1px solid #eee;padding:6px">Amount</th>' +
+              '<th style="text-align:right;border-bottom:1px solid #eee;padding:6px">Inköpspris</th>' +
+              '<th style="text-align:right;border-bottom:1px solid #eee;padding:6px">Nu pris</th>' +
+              '<th style="text-align:right;border-bottom:1px solid #eee;padding:6px">PnL</th>' +
+              '<th style="text-align:right;border-bottom:1px solid #eee;padding:6px">PnL %</th>' +
+              '<th style="text-align:right;border-bottom:1px solid #eee;padding:6px">Exponering</th>' +
+              '<th style="text-align:right;border-bottom:1px solid #eee;padding:6px">Liq</th>' +
+              '<th style="text-align:left;border-bottom:1px solid #eee;padding:6px">Status</th>' +
+              '<th style="text-align:left;border-bottom:1px solid #eee;padding:6px">Tid</th>' +
+              "</tr></thead><tbody>";
+            function parseQuote(sym) {
+              let s = sym.startsWith("t") ? sym.slice(1) : sym;
+              if (s.includes(":")) return s.split(":")[1];
+              return s.slice(-3);
+            }
+            positions.forEach((p) => {
+              const sym = p.symbol || "";
+              const quote = parseQuote(sym).toUpperCase();
+              const amount = Number(p.amount || 0);
+              const side = amount > 0 ? "long" : amount < 0 ? "short" : "flat";
+              const base_price = Number(p.base_price || 0);
+              const cur = Number(p.current_price || 0);
+              const pnl = Number(p.profit_loss || 0);
+              const pnlp = Number(p.profit_loss_percentage || 0);
+              const expo = cur ? Math.abs(amount) * cur : 0;
+              const liq =
+                p.liquidation_price != null
+                  ? Number(p.liquidation_price)
+                  : null;
+              const status = p.status || "";
+              html += `<tr>
+                <td style=\"padding:6px;border-bottom:1px solid #f3f3f3\">${sym}</td>
+                <td style=\"padding:6px;border-bottom:1px solid #f3f3f3\">${quote}</td>
+                <td style=\"padding:6px;border-bottom:1px solid #f3f3f3\">${side}</td>
+                <td style=\"padding:6px;border-bottom:1px solid #f3f3f3;text-align:right\">${amount.toFixed(
+                  6
+                )}</td>
+                <td style=\"padding:6px;border-bottom:1px solid #f3f3f3;text-align:right\">${
+                  base_price ? base_price.toFixed(6) : "-"
+                }</td>
+                <td style=\"padding:6px;border-bottom:1px solid #f3f3f3;text-align:right\">${
+                  cur ? cur.toFixed(6) : "-"
+                }</td>
+                <td style=\"padding:6px;border-bottom:1px solid #f3f3f3;text-align:right\">${pnl.toFixed(
+                  6
+                )} ${quote}</td>
+                <td style=\"padding:6px;border-bottom:1px solid #f3f3f3;text-align:right\">${
+                  pnlp ? pnlp.toFixed(2) : 0
+                }%</td>
+                <td style=\"padding:6px;border-bottom:1px solid #f3f3f3;text-align:right\">${
+                  expo ? expo.toFixed(2) : "-"
+                } ${quote}</td>
+                <td style=\"padding:6px;border-bottom:1px solid #f3f3f3;text-align:right\">${
+                  liq != null ? liq.toFixed(6) : "-"
+                }</td>
+                <td style=\"padding:6px;border-bottom:1px solid #f3f3f3\">${status} <button data-close="${sym}" style=\"margin-left:8px\">Stäng</button></td>
+                <td style=\"padding:6px;border-bottom:1px solid #f3f3f3\">${ts.toLocaleString()}</td>
+              </tr>`;
+            });
+            html += "</tbody></table></div>";
+            area.innerHTML = html;
+            // Hook för stäng-knappar
+            area.querySelectorAll("button[data-close]").forEach((btn) => {
+              btn.addEventListener("click", async () => {
+                const s = btn.getAttribute("data-close");
+                if (!s) return;
+                try {
+                  const resp = await restFetch(
+                    `/api/v2/positions/close/${encodeURIComponent(s)}`,
+                    { method: "POST" }
+                  );
+                  logSection("Close position", resp, "success");
+                } catch (e) {
+                  logSection(
+                    "Close position error",
+                    { message: e.message },
+                    "error"
+                  );
+                }
+              });
+            });
           } catch (e) {
             logSection("Positions error", { message: e.message }, "error");
           }
@@ -664,11 +1151,52 @@
               opt.textContent = s;
               sel.appendChild(opt);
             });
+            // Fyll snabbpanelens select också
+            const qsel = document.getElementById("quickSymbolsSelect");
+            if (qsel) {
+              qsel.innerHTML = "";
+              arr.forEach((s) => {
+                const opt = document.createElement("option");
+                opt.value = s;
+                opt.textContent = s;
+                qsel.appendChild(opt);
+              });
+              qsel.disabled = false;
+              if (!qsel._bound) {
+                qsel.addEventListener("change", () => {
+                  const v = qsel.value;
+                  document.getElementById("quickSymbol").value = v;
+                  [
+                    "symbolInput",
+                    "sizeSymbol",
+                    "autoSymbol",
+                    "btSymbol",
+                    "brSymbol",
+                    "strategySymbol",
+                  ].forEach((id) => {
+                    const el = document.getElementById(id);
+                    if (el) el.value = v;
+                  });
+                });
+                qsel._bound = true;
+              }
+            }
             logSection("Symbols loaded", { count: arr.length });
             sel.addEventListener("change", () => {
               const v = sel.value;
               document.getElementById("symbolInput").value = v;
               document.getElementById("sizeSymbol").value = v;
+              // Synka övriga symbolfält
+              [
+                "autoSymbol",
+                "btSymbol",
+                "brSymbol",
+                "quickSymbol",
+                "strategySymbol",
+              ].forEach((id) => {
+                const el = document.getElementById(id);
+                if (el) el.value = v;
+              });
             });
           } catch (e) {
             logSection("Symbols error", { message: e.message }, "error");
@@ -717,7 +1245,14 @@
               document.getElementById("brAmount").value || ""
             ).trim();
             const side = document.getElementById("brSide").value;
-            const entry_type = document.getElementById("brType").value;
+            let entry_type = document.getElementById("brType").value;
+            const acct = document.getElementById("brAccount").value;
+            if (acct === "margin") {
+              entry_type = entry_type.replace("EXCHANGE ", "");
+            } else {
+              if (!entry_type.startsWith("EXCHANGE"))
+                entry_type = `EXCHANGE ${entry_type}`;
+            }
             const entry_price = (
               document.getElementById("brEntryPrice").value || ""
             ).trim();
@@ -777,6 +1312,49 @@
           try {
             const arr = await restFetch("/api/v2/order/templates");
             logSection("Templates", arr, "success");
+            const area = document.getElementById("tplArea");
+            if (area) {
+              if (!Array.isArray(arr) || !arr.length) {
+                area.innerHTML = "Inga mallar";
+              } else {
+                const rows = arr
+                  .map((t, i) => {
+                    const name = t.name || `Mall ${i + 1}`;
+                    return `<div style=\"margin:4px 0;\"><strong>${name}</strong> <button data-idx=\"${i}\" class=\"tpl-use\">Använd</button></div>`;
+                  })
+                  .join("");
+                area.innerHTML = rows;
+                area.onclick = (ev) => {
+                  const t = ev.target;
+                  if (!(t instanceof HTMLElement)) return;
+                  if (t.classList.contains("tpl-use")) {
+                    const idx = parseInt(
+                      t.getAttribute("data-idx") || "-1",
+                      10
+                    );
+                    const tpl =
+                      Array.isArray(arr) && idx >= 0 ? arr[idx] : null;
+                    if (!tpl) return;
+                    // Fyll bracket-fälten
+                    if (tpl.symbol)
+                      document.getElementById("brSymbol").value = tpl.symbol;
+                    if (tpl.amount)
+                      document.getElementById("brAmount").value = tpl.amount;
+                    if (tpl.side)
+                      document.getElementById("brSide").value = tpl.side;
+                    if (tpl.type)
+                      document.getElementById("brType").value = tpl.type;
+                    if (tpl.price)
+                      document.getElementById("brEntryPrice").value = tpl.price;
+                    if (tpl.sl_price)
+                      document.getElementById("brSl").value = tpl.sl_price;
+                    if (tpl.tp_price)
+                      document.getElementById("brTp").value = tpl.tp_price;
+                    logSection("Mall laddad till Bracket", tpl, "success");
+                  }
+                };
+              }
+            }
           } catch (e) {
             logSection("List templates error", { message: e.message }, "error");
           }
@@ -797,11 +1375,110 @@
               document.getElementById("btLimit").value || "500",
               10
             );
+            // Auto: använd lokal tidszon (DST ingår). getTimezoneOffset() är minuter från lokal till UTC, med tecken tvärtom.
+            const tz_offset_minutes = -new Date().getTimezoneOffset();
+            const tzInp = document.getElementById("btTzOff");
+            if (tzInp) tzInp.value = String(tz_offset_minutes);
             const resp = await restFetch("/api/v2/strategy/backtest", {
               method: "POST",
-              body: JSON.stringify({ symbol, timeframe, limit }),
+              body: JSON.stringify({
+                symbol,
+                timeframe,
+                limit,
+                tz_offset_minutes,
+              }),
             });
             logSection("Backtest", resp, "success");
+            // render heatmap if present
+            try {
+              const area = document.getElementById("btHeatmapArea");
+              if (area) {
+                area.innerHTML = "";
+                if (resp && resp.heatmap) {
+                  const metricSel = document.getElementById("btHeatmapMetric");
+                  const metric = metricSel ? metricSel.value : "return";
+                  const map =
+                    metric === "winrate"
+                      ? resp.heatmap_winrate || resp.heatmap
+                      : resp.heatmap_return || resp.heatmap;
+                  const table = document.createElement("table");
+                  table.style.borderCollapse = "collapse";
+                  const header = document.createElement("tr");
+                  const days = [
+                    "Mån",
+                    "Tis",
+                    "Ons",
+                    "Tors",
+                    "Fre",
+                    "Lör",
+                    "Sön",
+                  ];
+                  const th0 = document.createElement("th");
+                  th0.textContent = "";
+                  header.appendChild(th0);
+                  for (let h = 0; h < 24; h++) {
+                    const th = document.createElement("th");
+                    th.textContent = String(h).padStart(2, "0");
+                    th.style.padding = "2px 4px";
+                    header.appendChild(th);
+                  }
+                  table.appendChild(header);
+                  for (let d = 0; d < 7; d++) {
+                    const tr = document.createElement("tr");
+                    const dth = document.createElement("th");
+                    dth.textContent = days[d];
+                    dth.style.textAlign = "right";
+                    dth.style.paddingRight = "4px";
+                    tr.appendChild(dth);
+                    for (let h = 0; h < 24; h++) {
+                      const td = document.createElement("td");
+                      td.style.width = "18px";
+                      td.style.height = "18px";
+                      td.style.border = "1px solid #eee";
+                      const keyD = String(d);
+                      const keyH = String(h);
+                      const val = (map[keyD] && map[keyD][keyH]) || 0;
+                      const cnt =
+                        (resp.heatmap_counts &&
+                          resp.heatmap_counts[keyD] &&
+                          resp.heatmap_counts[keyD][keyH]) ||
+                        0;
+                      // color scale: red (-) to white (0) to green (+)
+                      const clip = (x) => {
+                        if (metric === "winrate")
+                          return Math.max(0, Math.min(1, x)) - 0.5; // center at 0.5
+                        return Math.max(-0.02, Math.min(0.02, x));
+                      };
+                      const v =
+                        metric === "winrate"
+                          ? clip(val) / 0.5
+                          : clip(val) / 0.02; // -1..1
+                      const r = v >= 0 ? Math.round(255 * (1 - v)) : 255;
+                      const g = v >= 0 ? 255 : Math.round(255 * (1 + v));
+                      const b = 200;
+                      td.style.background = `rgb(${r},${g},${b})`;
+                      const label =
+                        metric === "winrate"
+                          ? `wr=${(val * 100).toFixed(1)}%`
+                          : `avg=${val.toFixed(4)}`;
+                      td.title = `d=${days[d]} h=${h}: ${label} n=${cnt}`;
+                      tr.appendChild(td);
+                    }
+                    table.appendChild(tr);
+                  }
+                  const caption = document.createElement("div");
+                  caption.className = "small";
+                  caption.textContent =
+                    metric === "winrate"
+                      ? "Heatmap (lokal tid): färg = winrate (andel vinster); n = antal trades per cell"
+                      : "Heatmap (lokal tid): färg = genomsnittlig avkastning per trade; n = antal trades per cell";
+                  area.appendChild(caption);
+                  area.appendChild(table);
+                }
+              }
+            } catch (e) {
+              // ignore heatmap render errors
+            }
           } catch (e) {
             logSection("Backtest error", { message: e.message }, "error");
           }
@@ -813,7 +1490,72 @@
         .addEventListener("click", async () => {
           try {
             const arr = await restFetch(`/api/v2/market/watchlist`);
-            logSection("Watchlist", arr);
+            logSection("Watchlist", { count: arr.length }, "success");
+            const area = document.getElementById("watchlistArea");
+            if (!area) return;
+            area.innerHTML = "";
+            const wrap = document.createElement("div");
+            wrap.style.display = "grid";
+            wrap.style.gridTemplateColumns =
+              "repeat(auto-fit, minmax(260px, 1fr))";
+            wrap.style.gap = "8px";
+            arr.forEach((row) => {
+              const card = document.createElement("div");
+              card.style.border = "1px solid #eee";
+              card.style.borderRadius = "6px";
+              card.style.padding = "8px";
+              card.style.background = "#fff";
+              card.innerHTML = `
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                  <div><strong>${row.symbol}</strong><div class="small">pris: ${
+                row.last ?? "-"
+              }</div></div>
+                  <div>
+                    <button data-s="${
+                      row.symbol
+                    }" class="wl-start">Start</button>
+                    <button data-s="${row.symbol}" class="wl-stop">Stop</button>
+                  </div>
+                </div>
+              `;
+              wrap.appendChild(card);
+            });
+            area.appendChild(wrap);
+            area.onclick = async (ev) => {
+              const t = ev.target;
+              if (!(t instanceof HTMLElement)) return;
+              const sym = t.getAttribute("data-s");
+              if (!sym) return;
+              if (t.classList.contains("wl-start")) {
+                try {
+                  await restFetch("/api/v2/auto/start", {
+                    method: "POST",
+                    body: JSON.stringify({ symbol: sym }),
+                  });
+                  logSection("Auto start", { symbol: sym }, "success");
+                } catch (e) {
+                  logSection(
+                    "Auto start error",
+                    { message: e.message },
+                    "error"
+                  );
+                }
+              } else if (t.classList.contains("wl-stop")) {
+                try {
+                  await restFetch("/api/v2/auto/stop", {
+                    method: "POST",
+                    body: JSON.stringify({ symbol: sym }),
+                  });
+                  logSection("Auto stop", { symbol: sym }, "success");
+                } catch (e) {
+                  logSection(
+                    "Auto stop error",
+                    { message: e.message },
+                    "error"
+                  );
+                }
+              }
+            };
           } catch (e) {
             logSection("Watchlist error", { message: e.message }, "error");
           }
@@ -833,13 +1575,82 @@
         .addEventListener("click", async () => {
           try {
             const data = await restFetch(`/api/v2/account/performance/detail`);
-            logSection("Performance detail", data, "success");
+            // Summera realized_usd (totals) och visa i rubrik
+            let headline = "Performance detail";
+            try {
+              const tot = data && data.realized && data.realized.totals;
+              const ru = tot && (tot.realized_usd ?? tot.realizedUSD ?? null);
+              if (typeof ru === "number")
+                headline += ` (realized_usd: ${ru.toFixed(2)})`;
+            } catch {}
+            logSection(headline, data, "success");
           } catch (e) {
             logSection(
               "Performance detail error",
               { message: e.message },
               "error"
             );
+          }
+        });
+
+      // Equity endpoints
+      document
+        .getElementById("equityBtn")
+        .addEventListener("click", async () => {
+          try {
+            const data = await restFetch(`/api/v2/account/equity`);
+            logSection("Equity", data, "success");
+          } catch (e) {
+            logSection("Equity error", { message: e.message }, "error");
+          }
+        });
+      document
+        .getElementById("equitySnapBtn")
+        .addEventListener("click", async () => {
+          try {
+            const data = await restFetch(`/api/v2/account/equity/snapshot`, {
+              method: "POST",
+            });
+            logSection("Equity snapshot", data, "success");
+          } catch (e) {
+            logSection(
+              "Equity snapshot error",
+              { message: e.message },
+              "error"
+            );
+          }
+        });
+      document
+        .getElementById("equityHistBtn")
+        .addEventListener("click", async () => {
+          try {
+            const data = await restFetch(
+              `/api/v2/account/equity/history?limit=30`
+            );
+            const eq = (data && data.equity) || [];
+            // Lägg till headline med senaste dagsförändring om finns
+            let headline = "Equity history";
+            if (eq.length) {
+              const last = eq[eq.length - 1] || {};
+              const dc =
+                typeof last.day_change_usd === "number"
+                  ? last.day_change_usd.toFixed(2)
+                  : null;
+              const rdc =
+                typeof last.realized_day_change_usd === "number"
+                  ? last.realized_day_change_usd.toFixed(2)
+                  : null;
+              const parts = [];
+              if (dc !== null) parts.push(`Δ ${dc}`);
+              if (rdc !== null) parts.push(`realized Δ ${rdc}`);
+              if (parts.length) headline += ` (${parts.join(", ")})`;
+            }
+            logSection(headline, data, "success");
+            if (eq.length) {
+              drawEquitySparkline(eq);
+            }
+          } catch (e) {
+            logSection("Equity history error", { message: e.message }, "error");
           }
         });
 
@@ -852,6 +1663,64 @@
             logSection("Risk status", resp);
           } catch (e) {
             logSection("Risk status error", { message: e.message }, "error");
+          }
+        });
+
+      // Circuit Breaker
+      document
+        .getElementById("circuitStatusBtn")
+        .addEventListener("click", async () => {
+          try {
+            const resp = await restFetch("/api/v2/risk/circuit");
+            logSection("Circuit status", resp, "success");
+          } catch (e) {
+            logSection("Circuit status error", { message: e.message }, "error");
+          }
+        });
+      document
+        .getElementById("circuitResetBtn")
+        .addEventListener("click", async () => {
+          try {
+            const resume = document.getElementById("cbResume").value === "true";
+            const clear_errors =
+              document.getElementById("cbClear").value === "true";
+            const resp = await restFetch(
+              `/api/v2/risk/circuit/reset?resume=${resume}&clear_errors=${clear_errors}`,
+              { method: "POST" }
+            );
+            logSection("Circuit reset", resp, "success");
+          } catch (e) {
+            logSection("Circuit reset error", { message: e.message }, "error");
+          }
+        });
+      document
+        .getElementById("circuitConfigBtn")
+        .addEventListener("click", async () => {
+          try {
+            const enabled =
+              document.getElementById("cbEnabled").value === "true";
+            const window_seconds = parseInt(
+              document.getElementById("cbWindow").value || "60",
+              10
+            );
+            const max_errors_per_window = parseInt(
+              document.getElementById("cbMaxErrors").value || "5",
+              10
+            );
+            const notify = document.getElementById("cbNotify").value === "true";
+            const body = {
+              enabled,
+              window_seconds,
+              max_errors_per_window,
+              notify,
+            };
+            const resp = await restFetch("/api/v2/risk/circuit/config", {
+              method: "POST",
+              body: JSON.stringify(body),
+            });
+            logSection("Circuit config updated", resp, "success");
+          } catch (e) {
+            logSection("Circuit config error", { message: e.message }, "error");
           }
         });
 
@@ -907,16 +1776,23 @@
                   const parts = r.split("-");
                   return [parts[0], parts[1]];
                 });
+            function day(winId, chkId) {
+              const enabled = document.getElementById(chkId).checked;
+              if (!enabled) return [];
+              const val = (document.getElementById(winId).value || "").trim();
+              if (!val) return [];
+              return parseWin(val);
+            }
             const payload = {
               timezone: tz,
               windows: {
-                mon: parseWin(document.getElementById("winMon").value),
-                tue: parseWin(document.getElementById("winTue").value),
-                wed: parseWin(document.getElementById("winWed").value),
-                thu: parseWin(document.getElementById("winThu").value),
-                fri: parseWin(document.getElementById("winFri").value),
-                sat: [],
-                sun: [],
+                mon: day("winMon", "chkMon"),
+                tue: day("winTue", "chkTue"),
+                wed: day("winWed", "chkWed"),
+                thu: day("winThu", "chkThu"),
+                fri: day("winFri", "chkFri"),
+                sat: day("winSat", "chkSat"),
+                sun: day("winSun", "chkSun"),
               },
             };
             const resp = await restFetch("/api/v2/risk/windows", {
@@ -934,11 +1810,33 @@
         .getElementById("getStrategySettingsBtn")
         .addEventListener("click", async () => {
           try {
-            const settings = await restFetch("/api/v2/strategy/settings");
-            logSection("Strategy settings", settings, "success");
+            const sym = (
+              document.getElementById("strategySymbol").value || ""
+            ).trim();
+            const url = sym
+              ? `/api/v2/strategy/settings?symbol=${encodeURIComponent(sym)}`
+              : "/api/v2/strategy/settings";
+            const settings = await restFetch(url);
+            logSection(
+              `Strategy settings${sym ? ` (${sym})` : ""}`,
+              settings,
+              "success"
+            );
             document.getElementById("emaWeight").value = settings.ema_weight;
             document.getElementById("rsiWeight").value = settings.rsi_weight;
             document.getElementById("atrWeight").value = settings.atr_weight;
+            // Synka snabbpanel om samma symbol
+            const qSym = (
+              document.getElementById("quickSymbol")?.value || ""
+            ).trim();
+            if (sym && qSym === sym) {
+              const qE = document.getElementById("qEmaWeight");
+              const qR = document.getElementById("qRsiWeight");
+              const qA = document.getElementById("qAtrWeight");
+              if (qE) qE.value = settings.ema_weight;
+              if (qR) qR.value = settings.rsi_weight;
+              if (qA) qA.value = settings.atr_weight;
+            }
           } catch (e) {
             logSection(
               "Strategy settings error",
@@ -951,6 +1849,9 @@
         .getElementById("saveStrategySettingsBtn")
         .addEventListener("click", async () => {
           try {
+            const sym = (
+              document.getElementById("strategySymbol").value || ""
+            ).trim();
             const ema_weight = parseFloat(
               document.getElementById("emaWeight").value
             );
@@ -960,11 +1861,18 @@
             const atr_weight = parseFloat(
               document.getElementById("atrWeight").value
             );
-            const resp = await restFetch("/api/v2/strategy/settings", {
+            const url = sym
+              ? `/api/v2/strategy/settings?symbol=${encodeURIComponent(sym)}`
+              : "/api/v2/strategy/settings";
+            const resp = await restFetch(url, {
               method: "POST",
               body: JSON.stringify({ ema_weight, rsi_weight, atr_weight }),
             });
-            logSection("Strategy settings saved", resp, "success");
+            logSection(
+              `Strategy settings saved${sym ? ` (${sym})` : ""}`,
+              resp,
+              "success"
+            );
           } catch (e) {
             logSection(
               "Save strategy settings error",
@@ -973,6 +1881,198 @@
             );
           }
         });
+
+      // Snabbstart-panel
+      const qLoadBtn = document.getElementById("qLoadBtn");
+      const qStartBtn = document.getElementById("qStartBtn");
+      const qStopBtn = document.getElementById("qStopBtn");
+      const qStopAllBtn = document.getElementById("qStopAllBtn");
+      const qStartBatchBtn = document.getElementById("qStartBatchBtn");
+      if (qLoadBtn) {
+        qLoadBtn.addEventListener("click", async () => {
+          try {
+            const sym = (
+              document.getElementById("quickSymbol").value || ""
+            ).trim();
+            if (!sym) throw new Error("Ingen symbol");
+            const settings = await restFetch(
+              `/api/v2/strategy/settings?symbol=${encodeURIComponent(sym)}`
+            );
+            const qE = document.getElementById("qEmaWeight");
+            const qR = document.getElementById("qRsiWeight");
+            const qA = document.getElementById("qAtrWeight");
+            if (qE) qE.value = settings.ema_weight;
+            if (qR) qR.value = settings.rsi_weight;
+            if (qA) qA.value = settings.atr_weight;
+            // Synka övriga fält
+            document.getElementById("strategySymbol").value = sym;
+            document.getElementById("emaWeight").value = settings.ema_weight;
+            document.getElementById("rsiWeight").value = settings.rsi_weight;
+            document.getElementById("atrWeight").value = settings.atr_weight;
+            [
+              "symbolInput",
+              "sizeSymbol",
+              "autoSymbol",
+              "btSymbol",
+              "brSymbol",
+            ].forEach((id) => {
+              const el = document.getElementById(id);
+              if (el) el.value = sym;
+            });
+            logSection(
+              "Laddade inställningar (snabbpanel)",
+              { symbol: sym, settings },
+              "success"
+            );
+          } catch (e) {
+            logSection(
+              "Ladda snabbpanel error",
+              { message: e.message },
+              "error"
+            );
+          }
+        });
+      }
+      if (qStartBtn) {
+        qStartBtn.addEventListener("click", async () => {
+          try {
+            const sym = (
+              document.getElementById("quickSymbol").value || ""
+            ).trim();
+            if (!sym) throw new Error("Ingen symbol");
+            const ema_weight = parseFloat(
+              document.getElementById("qEmaWeight").value || ""
+            );
+            const rsi_weight = parseFloat(
+              document.getElementById("qRsiWeight").value || ""
+            );
+            const atr_weight = parseFloat(
+              document.getElementById("qAtrWeight").value || ""
+            );
+            const ema_period = parseInt(
+              document.getElementById("qEmaPeriod").value || "14",
+              10
+            );
+            const rsi_period = parseInt(
+              document.getElementById("qRsiPeriod").value || "14",
+              10
+            );
+            const atr_period = parseInt(
+              document.getElementById("qAtrPeriod").value || "14",
+              10
+            );
+            await restFetch(
+              `/api/v2/strategy/settings?symbol=${encodeURIComponent(sym)}`,
+              {
+                method: "POST",
+                body: JSON.stringify({
+                  ema_weight,
+                  rsi_weight,
+                  atr_weight,
+                  ema_period,
+                  rsi_period,
+                  atr_period,
+                }),
+              }
+            );
+            const resp = await restFetch(`/api/v2/auto/start`, {
+              method: "POST",
+              body: JSON.stringify({ symbol: sym }),
+            });
+            logSection("Sparat + Startat (snabbpanel)", resp, "success");
+          } catch (e) {
+            logSection("Snabbstart error", { message: e.message }, "error");
+          }
+        });
+      }
+      if (qStopAllBtn) {
+        qStopAllBtn.addEventListener("click", async () => {
+          try {
+            const resp = await restFetch(`/api/v2/auto/stop-all`, {
+              method: "POST",
+            });
+            logSection("Stoppa alla", resp, "success");
+          } catch (e) {
+            logSection("Stoppa alla error", { message: e.message }, "error");
+          }
+        });
+      }
+      if (qStartBatchBtn) {
+        qStartBatchBtn.addEventListener("click", async () => {
+          try {
+            const batch = (document.getElementById("qBatchSymbols").value || "")
+              .split(",")
+              .map((s) => s.trim())
+              .filter(Boolean);
+            if (!batch.length) throw new Error("Inga batch-symboler");
+            const ema_weight = parseFloat(
+              document.getElementById("qEmaWeight").value || ""
+            );
+            const rsi_weight = parseFloat(
+              document.getElementById("qRsiWeight").value || ""
+            );
+            const atr_weight = parseFloat(
+              document.getElementById("qAtrWeight").value || ""
+            );
+            const ema_period = parseInt(
+              document.getElementById("qEmaPeriod").value || "14",
+              10
+            );
+            const rsi_period = parseInt(
+              document.getElementById("qRsiPeriod").value || "14",
+              10
+            );
+            const atr_period = parseInt(
+              document.getElementById("qAtrPeriod").value || "14",
+              10
+            );
+            for (const sym of batch) {
+              await restFetch(
+                `/api/v2/strategy/settings?symbol=${encodeURIComponent(sym)}`,
+                {
+                  method: "POST",
+                  body: JSON.stringify({
+                    ema_weight,
+                    rsi_weight,
+                    atr_weight,
+                    ema_period,
+                    rsi_period,
+                    atr_period,
+                  }),
+                }
+              );
+            }
+            const resp = await restFetch(`/api/v2/auto/start-batch`, {
+              method: "POST",
+              body: JSON.stringify({ symbols: batch }),
+            });
+            logSection("Starta batch", resp, "success");
+          } catch (e) {
+            logSection("Starta batch error", { message: e.message }, "error");
+          }
+        });
+      }
+      if (qStopBtn) {
+        qStopBtn.addEventListener("click", async () => {
+          try {
+            const sym = (
+              document.getElementById("quickSymbol").value || ""
+            ).trim();
+            if (!sym) throw new Error("Ingen symbol");
+            const resp = await restFetch(`/api/v2/auto/stop`, {
+              method: "POST",
+              body: JSON.stringify({ symbol: sym }),
+            });
+            logSection("Stoppat (snabbpanel)", resp, "success");
+          } catch (e) {
+            logSection(
+              "Snabbpanel stop error",
+              { message: e.message },
+              "error"
+            );
+          }
+        });
+      }
 
       // Position size & Health
       document
@@ -1025,6 +2125,48 @@
 
       // Initiera logg
       log("WebSocket test page loaded.");
+      // Auto trading controls (enkel UI hook om knappar finns i DOM)
+      const autoStartBtn = document.getElementById("autoStartBtn");
+      const autoStopBtn = document.getElementById("autoStopBtn");
+      const autoStatusBtn = document.getElementById("autoStatusBtn");
+      if (autoStartBtn && autoStopBtn && autoStatusBtn) {
+        autoStartBtn.addEventListener("click", async () => {
+          try {
+            const sym = (
+              document.getElementById("autoSymbol").value || ""
+            ).trim();
+            const resp = await restFetch("/api/v2/auto/start", {
+              method: "POST",
+              body: JSON.stringify({ symbol: sym }),
+            });
+            logSection("Auto start", resp, "success");
+          } catch (e) {
+            logSection("Auto start error", { message: e.message }, "error");
+          }
+        });
+        autoStopBtn.addEventListener("click", async () => {
+          try {
+            const sym = (
+              document.getElementById("autoSymbol").value || ""
+            ).trim();
+            const resp = await restFetch("/api/v2/auto/stop", {
+              method: "POST",
+              body: JSON.stringify({ symbol: sym }),
+            });
+            logSection("Auto stop", resp, "success");
+          } catch (e) {
+            logSection("Auto stop error", { message: e.message }, "error");
+          }
+        });
+        autoStatusBtn.addEventListener("click", async () => {
+          try {
+            const resp = await restFetch("/api/v2/auto/status");
+            logSection("Auto status", resp, "success");
+          } catch (e) {
+            logSection("Auto status error", { message: e.message }, "error");
+          }
+        });
+      }
     </script>
   </body>
 </html>

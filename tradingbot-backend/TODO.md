@@ -1,75 +1,60 @@
 # TODO - Genesis Trading Bot Backend
 
-This list summarizes next steps. Prioritized (High -> Medium -> Low).
+Single-user roadmap (Måste → Nice-to-have → Backlog). Fokus: stabil drift, notifieringar, enkel prestandahistorik.
 
-## High priority
+## Måste (single-user scope)
 
-- [ ] UI: Scheduling (calendar) for trading windows
-  - [ ] Endpoint: presets (Office hours, Asia/Europe/US sessions)
-  - [ ] Holidays support (exclude dates) + API (POST /api/v2/risk/holidays)
-- [ ] Notifications: Telegram channel for critical events (order fail, pause, limit)
-  - [ ] ENV: TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
-  - [ ] Service + Socket.IO toggle (toast/desktop/Telegram)
-- [ ] Metrics/Observability (Prometheus)
-  - [ ] More metrics: per-endpoint latency, order outcomes, fills, PnL, WS reconnects
-  - [ ] /metrics: structure labels (symbol, side, type)
-- [ ] Order flags in bracket: Post-Only, Reduce-Only, IOC/FOK/TIF
-  - [ ] Validation + mirror in UI (ws_test.html)
-- [ ] RiskManager refinement
-  - [ ] Per-symbol max exposure and max concurrent positions
-  - [ ] Circuit breaker (pause on max drawdown/error spikes)
+- [x] Circuit breaker (snabb paus vid felspikar)
+  - [x] Räkna fel på kritiska endpoints (order, ws-auth) i rullande fönster; auto `pause`
+  - [x] WS-notifiering vid paus; manuell `resume` via API (`/api/v2/risk/circuit/reset`)
+- [x] Auto-handel kontroll (per symbol)
+  - [x] Endpoints: `/auto/start`, `/auto/stop`, `/auto/status`, `/auto/stop-all`, `/auto/start-batch`
+  - [x] UI: Snabbstart per symbol, Starta batch, Stoppa alla
+- [x] Per‑symbol strategiinställningar
+  - [x] GET/POST `/strategy/settings?symbol=...` (vikter + perioder)
+  - [x] Strategin och position‑size använder symboloverride
+- [x] Notifieringar
+  - [x] Socket.IO – order success/fail, risk events, CB
+  - [x] Telegram (valfritt): ENV (`TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`), enkel service
+- [x] PnL & Performance (minimum)
+  - [x] Realized PnL per symbol (USD‑konverterad) + fees (backend)
+  - [x] Visa realized_usd i UI (perf detail‑panel)
+  - [x] Equity endpoint + sparklines (UI)
+  - [x] Dagliga snapshots (equity) – backend & scheduler (UI: knapp + sparkline)
+  - [x] Snapshots: visa realized/dagens förändring i UI
+- [x] Tester (minimum)
+  - [x] Orderflöde (market/limit) + notifiering (grund)
+  - [x] RiskManager grunder (pause/window)
+  - [x] BracketManager länkning (register)
+- [ ] README – snabbstart, AUTH_REQUIRED/JWT, viktiga endpoints (uppdatera med nya endpoints och UI)
 
-## Medium priority
+## Nice-to-have
 
-- [ ] Bracket/OCO improvements
-  - [ ] Robust partial-fill handling (step sizing, leftover cleanup)
-  - [ ] GID grouping and recovery after reconnect
-- [ ] PnL & Performance
-  - [ ] Realized PnL per symbol (aggregate via ledger/trades)
-  - [ ] Equity curve endpoint + UI
-  - [ ] /wallets/balance: FX conversion to USD via ticker when needed
-- [ ] Risk-based order panel
-  - [ ] % of balance + ATR-based sizing – UI preview of SL/TP & risk in USD/%
-- [ ] Rate-limit/anti-abuse on sensitive endpoints
-  - [ ] Simple IP-based throttling + status codes
+- [ ] Orderflaggor du faktiskt använder (t.ex. Reduce‑Only; Post‑Only vid behov)
+- [ ] Risk-baserat orderpanel (UI): % av balans + ATR-beräkning som förhandsvisning
+- [ ] Bracket/OCO förbättringar
+  - [x] Robust parsing av Bitfinex‑svar (list/dict) för entry/SL/TP
+  - [ ] Partial fills (step sizing, cleanup)
+  - [ ] GID-grouping och återhämtning efter reconnect
+- [ ] Enkel rate-limit på känsliga endpoints
 
-## Low priority
+## Backlog
 
-- [ ] Backtest sandbox
-  - [ ] Local candle cache (SQLite) + history fetcher
-  - [ ] Unified simulator (same Strategy + RiskManager)
-  - [ ] Reports: Sharpe, winrate, max DD, trade distribution, heatmap
-- [ ] Docker
-  - [ ] Dockerfile + docker-compose (Bitfinex keys via env)
-  - [ ] Healthchecks and graceful shutdown (DMS already supported in WS)
-- [ ] API/UI
-  - [ ] Watchlist: MTF signal preview (1m/5m/1h) + sorting/filters
-  - [ ] Order templates: import/export, favorites, hotkeys (frontend)
+- [ ] UI: Scheduling/kalender + holidays‑API
+- [ ] Metrics/observability – avancerade labels (symbol/side/type) och latens
+- [ ] Backtest-fördjupning
+  - [ ] Lokal candle-cache (SQLite) + history fetcher
+  - [ ] Samma simulator som live (Strategy + RiskManager)
+  - [x] Rapporter: Sharpe, winrate, max DD, distribution, heatmap
+- [ ] Docker (Dockerfile + compose, healthchecks)
+- [ ] API/UI: Watchlist MTF-preview, templates import/export/hotkeys
 
-## Testing
+## Klart i UI
 
-- [ ] Unit tests
-  - [ ] services/bracket_manager.py: registration, fill events, oc/tu/te
-  - [ ] services/risk_manager.py: timezones, holidays, cooldown/limits
-  - [ ] rest/routes.py risk endpoints: validation/timeformat
-  - [ ] position-size: ATR calc + fallback flows
-- [ ] Integration tests
-  - [ ] REST order flow (market/limit) + Socket.IO notification
-  - [ ] Performance/PnL: consistency of wallets/positions/prices
-- [ ] Smoke tests (curl/PS)
-  - [ ] Token, WS connect, /health, /market/ticker, /risk/position-size, /order/bracket
-
-## Documentation
-
-- [ ] README – update with new endpoints and dashboard Quick Start
-- [ ] Describe AUTH_REQUIRED, JWT flow, Socket.IO events
-- [ ] Examples: client POST for schedule + templates + backtest
-
-## Configuration & Security
-
-- [ ] .env example – extend with Telegram & rate-limit parameters
-- [ ] Config: toggle Bitfinex WS autostart in dev
-- [ ] Ensure no keys/logs are exposed (logger levels in prod)
+- [x] Positionsvy med fler kolumner + "Stäng position" (reduce‑only)
+- [x] Exchange (syntetisk) positionsvy baserad på wallets/trades
+- [x] Konto‑växel (Exchange/Margin) i order- och bracket‑panel (automatiskt typbyte)
+- [x] Ordermallar: GET /order/templates (422) – felsöka och säkerställa listning returnerar [] vid tom fil
 
 ---
 

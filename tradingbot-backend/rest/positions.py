@@ -76,15 +76,21 @@ class PositionsService:
             
             async with httpx.AsyncClient() as client:
                 logger.info(f"🌐 REST API: Hämtar positioner från {self.base_url}/{endpoint}")
-                response = await client.post(
-                    f"{self.base_url}/{endpoint}",
-                    headers=headers
-                )
-                response.raise_for_status()
+                try:
+                    response = await client.post(
+                        f"{self.base_url}/{endpoint}",
+                        headers=headers
+                    )
+                    response.raise_for_status()
+                    positions_data = response.json()
+                except httpx.HTTPStatusError as e:
+                    # Vid temporära serverfel – returnera tom lista istället för att krascha flöden
+                    if e.response.status_code in (500, 502, 503, 504):
+                        logger.error(f"Serverfel vid positionshämtning ({e.response.status_code}), returnerar tom lista")
+                        return []
+                    raise
                 
-                positions_data = response.json()
                 logger.info(f"✅ REST API: Hämtade {len(positions_data)} positioner")
-                
                 positions = [Position.from_bitfinex_data(position) for position in positions_data]
                 return positions
                 
@@ -132,43 +138,43 @@ class PositionsService:
     
     async def close_position(self, symbol: str) -> Dict[str, Any]:
         """
-        Stänger en position genom att skicka en motsatt order via Bitfinex API.
-        
-        Args:
-            symbol: Handelssymbol för positionen som ska stängas
-            
-        Returns:
-            Svar från API:et
+        Stänger en margin-position genom att skicka en reduce-only market-order i motsatt riktning.
         """
         try:
-            # Hämta positionen först för att veta hur mycket vi behöver stänga
+            # Hämta aktuell position
             position = await self.get_position_by_symbol(symbol)
-            if not position:
-                raise ValueError(f"Ingen aktiv position hittad för symbol: {symbol}")
-            
-            # Använd Bitfinex API för att stänga positionen
-            endpoint = "auth/w/position/close"
-            payload = {"position_id": symbol}
-            headers = build_auth_headers(endpoint, payload)
-            
+            if not position or not position.amount:
+                raise ValueError(f"Ingen aktiv position med amount hittad för symbol: {symbol}")
+
+            # Bestäm motsatt amount
+            amount = float(position.amount)
+            close_amount = -amount  # motsatt riktning
+
+            # Bygg order (MARKET, margin)
+            order_endpoint = "auth/w/order/submit"
+            order_payload = {
+                "type": "MARKET",  # margin
+                "symbol": symbol,
+                "amount": str(close_amount),
+                "reduce_only": True,
+            }
+            headers = build_auth_headers(order_endpoint, order_payload)
+
             async with httpx.AsyncClient() as client:
-                logger.info(f"🌐 REST API: Stänger position för {symbol}")
+                logger.info(f"🌐 REST API: Stänger position via reduce-only MARKET för {symbol} ({close_amount})")
                 response = await client.post(
-                    f"{self.base_url}/{endpoint}",
+                    f"{self.base_url}/{order_endpoint}",
                     headers=headers,
-                    json=payload
+                    json=order_payload,
                 )
                 response.raise_for_status()
-                
                 result = response.json()
-                logger.info(f"✅ REST API: Position för {symbol} stängd framgångsrikt")
-                
-                return {
-                    "success": True,
-                    "message": f"Position för {symbol} stängd",
-                    "data": result
-                }
-                
+                logger.info(f"✅ REST API: Reduce-only order skickad för {symbol}")
+                return {"success": True, "message": "Reduce-only submit skickad", "data": result}
+
+        except httpx.HTTPStatusError as e:
+            logger.error(f"Fel vid stängning av position (HTTP): {e}")
+            raise
         except Exception as e:
             logger.error(f"Fel vid stängning av position: {e}")
             raise
