@@ -127,16 +127,8 @@ async def place_order(order: dict) -> dict:
         headers = build_auth_headers(endpoint, payload_str=body_json)
         
         # Logga alla detaljer för debugging
-        logger.info(
-            f"🔍 DEBUG: API Key is {'set' if settings.BITFINEX_API_KEY else 'not set'}"
-        )
-        logger.info(
-        
-            f"🔍 DEBUG: API Secret: {'set' if settings.BITFINEX_API_SECRET else 'not set'}"
-
-            f"🔍 DEBUG: API Secret is {'set' if settings.BITFINEX_API_SECRET else 'not set'}"
-        
-        )
+        logger.info("🔍 DEBUG: API Key is %s", 'set' if settings.BITFINEX_API_KEY else 'not set')
+        logger.info("🔍 DEBUG: API Secret is %s", 'set' if settings.BITFINEX_API_SECRET else 'not set')
         logger.info(f"🔍 DEBUG: Headers: {redact_headers(headers)}")
         logger.info(f"🔍 DEBUG: Payload: {bitfinex_order}")
         
