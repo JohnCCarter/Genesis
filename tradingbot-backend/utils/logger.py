@@ -6,6 +6,7 @@ Inkluderar konfigurerad loggning med olika nivåer och formatering.
 """
 
 import logging
+import os
 import sys
 from typing import Optional
 from datetime import datetime
@@ -52,6 +53,21 @@ def get_logger(name: str) -> logging.Logger:
         console_handler = logging.StreamHandler(sys.stdout)
         console_handler.setFormatter(formatter)
         logger.addHandler(console_handler)
+
+        # Skapa filhandler om möjligt (LOG_FILE från Settings)
+        try:
+            from config.settings import Settings  # lazily import to avoid cycles
+            settings = Settings()
+            log_file_name = getattr(settings, 'LOG_FILE', 'tradingbot.log') or 'tradingbot.log'
+            # Skriv loggfil i projektroten (mappen över utils)
+            project_root = os.path.dirname(os.path.dirname(__file__))
+            log_path = os.path.join(project_root, log_file_name)
+            file_handler = logging.FileHandler(log_path, encoding='utf-8')
+            file_handler.setFormatter(formatter)
+            logger.addHandler(file_handler)
+        except Exception:
+            # Om filhandler misslyckas, fortsätt med endast konsollogg
+            pass
         
         # Sätt loggningsnivå
         logger.setLevel(logging.INFO)

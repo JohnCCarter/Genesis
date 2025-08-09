@@ -71,7 +71,17 @@ class BitfinexDataService:
             Dict med ticker-data eller None vid fel
         """
         try:
+            import re
             symbol = (symbol or "").strip()
+            # Normalisera testsymboler till kolonformat tTESTASSET:TESTUSD
+            m = re.match(r"^tTEST([A-Z0-9]+)USD$", symbol)
+            if m:
+                asset = m.group(1)
+                symbol = f"tTEST{asset}:TESTUSD"
+            m = re.match(r"^tUSD:TEST([A-Z0-9]+)$", symbol)
+            if m:
+                asset = m.group(1)
+                symbol = f"tTESTUSD:TEST{asset}"
             endpoint = f"ticker/{symbol}"
             url = f"{self.base_url}/{endpoint}"
             

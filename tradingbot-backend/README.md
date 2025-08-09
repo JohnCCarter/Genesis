@@ -15,6 +15,7 @@ Detta är backend-delen av Genesis Trading Bot, en plattform för automatiserad 
 9. [Orderflaggor (Reduce-Only/Post-Only)](#orderflaggor-reduce-onlypost-only)
 10. [Backtest & Heatmap](#backtest--heatmap)
 11. [CI (GitHub Actions)](#ci-github-actions)
+12. [CodeQL](#codeql)
 
 ## Översikt
 
@@ -65,8 +66,26 @@ pip install -r requirements.txt
 
 4. Starta servern (utveckling):
 
-```bash
-uvicorn main:app --reload
+Alternativ A – kör från `tradingbot-backend`:
+
+```powershell
+cd .\tradingbot-backend
+$env:AUTH_REQUIRED = "True"
+$env:PYTHONPATH   = (Resolve-Path ".").Path
+python -m uvicorn main:app --reload
+```
+
+Alternativ B – kör från repo-roten med skript (rekommenderas för enkelhet):
+
+```powershell
+pwsh -File .\scripts\start.ps1   # startar på http://127.0.0.1:8000
+```
+
+Alternativ C – kör från repo-roten utan skript:
+
+```powershell
+$env:AUTH_REQUIRED = "True"
+uvicorn main:app --reload --app-dir .\tradingbot-backend
 ```
 
 Servern startar på `http://127.0.0.1:8000`. Socket.IO finns på `/ws`.
@@ -385,6 +404,10 @@ jobs:
 ```
 
 Notera att `AUTH_REQUIRED=False` under test förenklar körningen. Justera vid behov.
+
+## CodeQL
+
+CodeQL-körning är aktiverad via en separat job i samma workflow. Den analyserar Python-koden vid push/PR och rapporterar säkerhetsfynd under "Security" i GitHub.
 
 ## Orderflaggor (Reduce-Only/Post-Only)
 

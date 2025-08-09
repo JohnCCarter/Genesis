@@ -96,11 +96,34 @@ class PerformanceService:
         # Snabb validering – undvik försök för värden som uppenbart inte är valutor (t.ex. "1", "-1")
         if not self._looks_like_currency(cur):
             return 0.0
+        # USD och stablecoins (inkl TESTUSD/TESTUSDT) → 1.0
         if cur == "USD" or self._is_usd_stablecoin(cur):
             return 1.0
         if cur in self._fx_cache:
             return self._fx_cache[cur]
-        # Try direct
+
+        # Test-mynt: försök med TESTUSD som quote (korrekt form: t{ASSET}:TESTUSD)
+        if cur.startswith("TEST"):
+            try:
+                sym_test = f"t{cur}:TESTUSD"
+                t = await self.data_service.get_ticker(sym_test)
+                if t and float(t.get("last_price", 0)) > 0:
+                    rate = float(t.get("last_price"))  # 1 TESTUSD = 1 USD
+                    self._fx_cache[cur] = rate
+                    return rate
+            except Exception:
+                pass
+            try:
+                sym_test_inv = f"tTESTUSD:{cur}"
+                t = await self.data_service.get_ticker(sym_test_inv)
+                if t and float(t.get("last_price", 0)) > 0:
+                    rate = 1.0 / float(t.get("last_price"))
+                    self._fx_cache[cur] = rate
+                    return rate
+            except Exception:
+                pass
+
+        # Produktion: försök direkt USD-quote, därefter inverse
         try:
             sym = f"t{cur}USD"
             t = await self.data_service.get_ticker(sym)
@@ -110,7 +133,6 @@ class PerformanceService:
                 return rate
         except Exception:
             pass
-        # Try inverse
         try:
             sym_inv = f"tUSD:{cur}"
             t = await self.data_service.get_ticker(sym_inv)
@@ -134,7 +156,12 @@ class PerformanceService:
         - PnL beräknas i symbolens quote-valuta.
         - Fees summeras separat per fee_currency (ingen FX-konvertering här).
         """
-        trades: List[TradeItem] = await self.order_history_service.get_trades_history(symbol=None, limit=limit)
+        # Hämta trades – var robust mot tillfälliga Bitfinex-fel (t.ex. 5xx)
+        try:
+            trades: List[TradeItem] = await self.order_history_service.get_trades_history(symbol=None, limit=limit)
+        except Exception as e:
+            logger.warning(f"Kunde inte hämta trades för realized PnL (fortsätter med tom lista): {e}")
+            trades = []
         # Sortera i tidsordning
         trades.sort(key=lambda t: t.executed_at)
 
@@ -253,16 +280,30 @@ class PerformanceService:
 
     # ---- Equity (USD) + snapshots ----
     async def compute_current_equity(self) -> Dict[str, Any]:
-        """Beräkna enkel equity i USD: USD-plånböcker + summerad unrealized PnL (om tillgängligt)."""
+        """Beräkna equity i USD:
+        - Summan av alla plånböcker konverterade till USD (USD och USD-stablecoins → 1.0)
+        - Plus summerad unrealized PnL (om tillgängligt)
+        """
         wallets = await self.wallet_service.get_wallets()
         positions = await self.positions_service.get_positions()
 
-        usd_total = sum(w.balance for w in wallets if str(w.currency).upper() == "USD")
+        wallets_usd_total = 0.0
+        for w in wallets:
+            cur = (w.currency or "").upper()
+            fx = 1.0 if cur == "USD" or self._is_usd_stablecoin(cur) else await self._fx_to_usd(cur)
+            try:
+                wallets_usd_total += float(w.balance) * (fx if fx > 0 else 0.0)
+            except Exception:
+                # Ignorera korrupta värden
+                pass
+
+        # OBS: profit_loss från Bitfinex är normalt i quote-valuta; i praktiken USD för USD-par
+        # Vi antar USD här. (För icke-USD-par kan detta förbättras genom FX per position.)
         unrealized = sum(float(p.profit_loss or 0.0) for p in positions)
 
         return {
-            "total_usd": round(float(usd_total) + float(unrealized), 8),
-            "wallets_usd": round(float(usd_total), 8),
+            "total_usd": round(float(wallets_usd_total) + float(unrealized), 8),
+            "wallets_usd": round(float(wallets_usd_total), 8),
             "unrealized_pnl_usd": round(float(unrealized), 8),
             "positions_count": len(positions),
         }

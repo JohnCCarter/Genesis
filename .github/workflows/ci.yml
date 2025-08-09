@@ -6,15 +6,14 @@ on:
 
 permissions:
   contents: read
-  packages: read
-  statuses: read
+  security-events: write
 
 jobs:
   backend:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.10', '3.11']
+        python-version: ["3.10", "3.11"]
     defaults:
       run:
         working-directory: tradingbot-backend
@@ -32,16 +31,45 @@ jobs:
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('tradingbot-backend/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pytest
+          pip install pytest flake8 black
+
+      - name: Lint (flake8)
+        run: flake8 . --max-line-length=120 --extend-ignore=E203,W503
+
+      - name: Format check (black)
+        run: black --check .
 
       - name: Run tests
         env:
           AUTH_REQUIRED: "False"
         run: pytest -q
 
+  codeql:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: python
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:python"
