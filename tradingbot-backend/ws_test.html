@@ -598,6 +598,14 @@
       let socket = null;
       let token = null;
 
+      function escapeHtml(str) {
+        return String(str)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
       function pretty(obj) {
         try {
           return JSON.stringify(obj, null, 2);
@@ -619,22 +627,22 @@
         const ts = new Date().toLocaleTimeString();
         if (typeof message === "object") {
           logHtml(
-            `<span class="timestamp">[${ts}]</span><span class="badge ${type}">${type.toUpperCase()}</span><pre>${pretty(
-              message
-            )}</pre>`
+            `<span class="timestamp">[${escapeHtml(ts)}]</span><span class="badge ${escapeHtml(type)}">${escapeHtml(type.toUpperCase())}</span><pre>${escapeHtml(pretty(message))}</pre>`
           );
         } else {
           logHtml(
-            `<span class="timestamp">[${ts}]</span><span class="badge ${type}">${type.toUpperCase()}</span><span>${message}</span>`
+            `<span class="timestamp">[${escapeHtml(ts)}]</span><span class="badge ${escapeHtml(type)}">${escapeHtml(type.toUpperCase())}</span><span>${escapeHtml(message)}</span>`
           );
         }
       }
       function logSection(title, data, type = "info") {
         const ts = new Date().toLocaleTimeString();
         const content =
-          typeof data === "string" ? data : `<pre>${pretty(data)}</pre>`;
+          typeof data === "string"
+            ? `<span>${escapeHtml(data)}</span>`
+            : `<pre>${escapeHtml(pretty(data))}</pre>`;
         logHtml(
-          `<span class="timestamp">[${ts}]</span><span class="badge ${type}">${type.toUpperCase()}</span><span class="title">${title}</span>${content}`
+          `<span class="timestamp">[${escapeHtml(ts)}]</span><span class="badge ${escapeHtml(type)}">${escapeHtml(type.toUpperCase())}</span><span class="title">${escapeHtml(title)}</span>${content}`
         );
       }
       async function updateRiskBanner() {
