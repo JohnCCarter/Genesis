@@ -74,7 +74,7 @@ def redact_headers(headers: dict) -> dict:
     """
     redacted = headers.copy()
     if "bfx-apikey" in redacted and redacted["bfx-apikey"]:
-        redacted["bfx-apikey"] = redacted["bfx-apikey"][:4] + "..." if len(redacted["bfx-apikey"]) > 4 else "***"
+        redacted["bfx-apikey"] = "[REDACTED]"
     if "bfx-signature" in redacted and redacted["bfx-signature"]:
         redacted["bfx-signature"] = "[REDACTED]"
     return redacted
