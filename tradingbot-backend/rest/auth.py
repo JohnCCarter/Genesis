@@ -131,7 +131,11 @@ async def place_order(order: dict) -> dict:
             f"🔍 DEBUG: API Key is {'set' if settings.BITFINEX_API_KEY else 'not set'}"
         )
         logger.info(
+        
+            f"🔍 DEBUG: API Secret: {'set' if settings.BITFINEX_API_SECRET else 'not set'}"
+
             f"🔍 DEBUG: API Secret is {'set' if settings.BITFINEX_API_SECRET else 'not set'}"
+        
         )
         logger.info(f"🔍 DEBUG: Headers: {redact_headers(headers)}")
         logger.info(f"🔍 DEBUG: Payload: {bitfinex_order}")
