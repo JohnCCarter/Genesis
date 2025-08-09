@@ -42,5 +42,8 @@
         "**/.venv/**",
         "**/venv/**",
         "tradingbot-backend/cache/**"
-    ]
+    ],
+    "[github-actions-workflow]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    }
 }

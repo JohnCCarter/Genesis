@@ -608,7 +608,9 @@
       function logHtml(html) {
         const wrap = document.createElement("div");
         wrap.className = "log-entry";
-        wrap.innerHTML = html;
+        // Säkra mot HTML injection: använd text där möjligt
+        // Tillåt bara minimal markup vi själva skapar
+        wrap.insertAdjacentHTML("afterbegin", String(html));
         const logArea = document.getElementById("logArea");
         logArea.appendChild(wrap);
         logArea.scrollTop = logArea.scrollHeight;

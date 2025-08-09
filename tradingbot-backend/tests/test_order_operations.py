@@ -25,8 +25,8 @@ API_KEY = os.getenv("BITFINEX_API_KEY")
 API_SECRET = os.getenv("BITFINEX_API_SECRET")
 
 # Felsökningsutskrift
-print("DEBUG - API_KEY:", API_KEY)
-print("DEBUG - API_SECRET:", "✅ LOADED" if API_SECRET else "❌ MISSING")
+print("DEBUG - API_KEY:", "SET" if API_KEY else "MISSING")
+print("DEBUG - API_SECRET:", "SET" if API_SECRET else "MISSING")
 
 # Skapa korrekt signerad header enligt Bitfinex-spec
 def _build_authentication_headers(endpoint: str, payload=None):

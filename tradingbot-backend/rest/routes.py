@@ -882,9 +882,9 @@ async def market_watchlist(symbols: Optional[str] = None, _: bool = Depends(requ
                 strat = evaluate_strategy(parsed)
             out.append({"symbol": s, "last": last, "volume": vol, "strategy": strat})
         return out
-    except Exception as e:
-        logger.exception(f"Fel vid watchlist: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        logger.exception("Fel vid watchlist")
+        raise HTTPException(status_code=500, detail="internal_error")
 
 # Backtest endpoint
 class BacktestRequest(BaseModel):
@@ -901,9 +901,9 @@ async def strategy_backtest(payload: BacktestRequest, _: bool = Depends(require_
         tz_off = payload.tz_offset_minutes or 0
         result = await svc.run(payload.symbol, payload.timeframe, payload.limit, tz_off)
         return result
-    except Exception as e:
-        logger.exception(f"Backtest fel: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        logger.exception("Backtest fel")
+        raise HTTPException(status_code=500, detail="internal_error")
 
 # --- Auto trading controls ---
 class AutoStartRequest(BaseModel):
