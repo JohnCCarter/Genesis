@@ -154,8 +154,13 @@ class TradingWindowService:
             self.rules.windows = windows
         if paused is not None:
             self.rules.paused = paused
-        if max_trades_per_symbol_per_day is not None and max_trades_per_symbol_per_day >= 0:
-            self.rules.max_trades_per_symbol_per_day = int(max_trades_per_symbol_per_day)
+        if (
+            max_trades_per_symbol_per_day is not None
+            and max_trades_per_symbol_per_day >= 0
+        ):
+            self.rules.max_trades_per_symbol_per_day = int(
+                max_trades_per_symbol_per_day
+            )
         if max_trades_per_day is not None and max_trades_per_day > 0:
             self.rules.max_trades_per_day = int(max_trades_per_day)
         if trade_cooldown_seconds is not None and trade_cooldown_seconds >= 0:

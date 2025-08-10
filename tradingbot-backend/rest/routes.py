@@ -16,7 +16,7 @@ from pydantic import BaseModel
 from config.settings import Settings
 from indicators.atr import calculate_atr
 from rest import auth as rest_auth
-from rest.active_orders import ActiveOrdersService, OrderResponse
+from rest.active_orders import ActiveOrdersService
 from rest.margin import MarginService
 from rest.order_history import (
     LedgerEntry,
@@ -24,6 +24,7 @@ from rest.order_history import (
     OrderHistoryService,
     TradeItem,
 )
+from rest.order_validator import order_validator
 from rest.positions import Position, PositionsService
 from rest.wallet import WalletBalance, WalletService
 from services.backtest import BacktestService
@@ -40,7 +41,6 @@ from services.templates import OrderTemplatesService
 from services.trading_integration import trading_integration
 from services.trading_window import TradingWindowService
 from utils.logger import get_logger
-from rest.order_validator import order_validator
 
 logger = get_logger(__name__)
 
@@ -93,7 +93,7 @@ class UpdateOrderRequest(BaseModel):
 
 
 class OrderResponse(BaseModel):
-    """Response model för orderoperationer."""
+    """Generiskt svar för orderoperationer (wrapper)."""
 
     success: bool
     error: Optional[str] = None
@@ -1576,7 +1576,7 @@ class SaveTemplateRequest(BaseModel):
     tp_price: Optional[str] = None
 
 
-## OBS: GET /order/templates togs bort för att undvika kollision med /order/{order_id} (int)
+# OBS: GET /order/templates togs bort för att undvika kollision med /order/{order_id} (int)
 
 
 @router.get("/order/templates/{name}")
@@ -1619,6 +1619,7 @@ async def list_templates_alias(_: bool = Depends(require_auth)):
     except Exception as e:
         logger.exception(f"Fel vid list_templates (alias): {e}")
         return []
+
 
 @router.delete("/order/templates/{name}")
 async def delete_template(name: str, _: bool = Depends(require_auth)):

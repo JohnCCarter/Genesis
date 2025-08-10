@@ -21,5 +21,3 @@ def test_symbol_daily_limit_blocks(monkeypatch):
     # Andra trade ska blockeras
     ok, reason = rm.pre_trade_checks(symbol="tBTCUSD")
     assert ok is False and reason == "symbol_daily_trade_limit_reached"
-
-

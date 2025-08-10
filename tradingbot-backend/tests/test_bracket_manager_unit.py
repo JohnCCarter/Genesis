@@ -1,4 +1,5 @@
 import asyncio
+
 import pytest
 
 
@@ -30,5 +31,3 @@ async def test_bracket_manager_cancels_sibling_on_fill(monkeypatch):
     # Syskon (TP) ska cancelleras och gruppen bli inaktiv
     assert tp_id in cancelled
     assert mgr.groups["g1"].active is False
-
-

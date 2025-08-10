@@ -42,5 +42,3 @@ async def test_dms_enabled_on_auth():
 
     assert fake.enable_called is True
     assert fake.enable_timeout == 60000
-
-

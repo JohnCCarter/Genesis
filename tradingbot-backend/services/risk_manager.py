@@ -30,7 +30,9 @@ class RiskManager:
         self._error_events = _CB_ERROR_EVENTS
         self._circuit_opened_at_ref = lambda: _CB_OPENED_AT
 
-    def pre_trade_checks(self, *, symbol: Optional[str] = None) -> Tuple[bool, Optional[str]]:
+    def pre_trade_checks(
+        self, *, symbol: Optional[str] = None
+    ) -> Tuple[bool, Optional[str]]:
         if self.trading_window.is_paused():
             return False, "trading_paused"
         if not self.trading_window.is_open():
@@ -39,7 +41,9 @@ class RiskManager:
         try:
             limits = self.trading_window.get_limits()
             limit_from_rules = limits.get("max_trades_per_symbol_per_day", 0)
-            limit_from_settings = int(getattr(self.settings, "MAX_TRADES_PER_SYMBOL_PER_DAY", 0) or 0)
+            limit_from_settings = int(
+                getattr(self.settings, "MAX_TRADES_PER_SYMBOL_PER_DAY", 0) or 0
+            )
             active_limit = limit_from_rules or limit_from_settings or 0
             if symbol and active_limit > 0:
                 per_symbol = self.trade_counter.stats().get("per_symbol", {})

@@ -158,8 +158,6 @@ async def place_order(order: dict) -> dict:
         logger.info(f"🔍 DEBUG: Headers: {redact_headers(headers)}")
         logger.info(f"🔍 DEBUG: Payload: {bitfinex_order}")
 
-        import os
-
         # Under pytest: respektera monkeypatch om den satt
         if os.environ.get("PYTEST_CURRENT_TEST"):
             import httpx  # keep import for type

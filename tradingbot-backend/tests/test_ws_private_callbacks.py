@@ -1,4 +1,5 @@
 import asyncio
+
 import pytest
 
 
@@ -14,6 +15,7 @@ async def test_ws_private_callbacks_fire(monkeypatch):
     async def mk_cb(code):
         async def _cb(msg):
             events[code] += 1
+
         return _cb
 
     # Registrera callbacks
@@ -38,5 +40,3 @@ async def test_ws_private_callbacks_fire(monkeypatch):
     assert events["oc"] == 1
     assert events["te"] == 1
     assert events["tu"] == 1
-
-

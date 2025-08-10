@@ -111,7 +111,8 @@ class TradeCounterService:
                     self.state.day = self._today()
             self.state.count = int(data.get("count", 0))
             self.symbol_counts = {
-                str(k).upper(): int(v) for k, v in (data.get("per_symbol", {}) or {}).items()
+                str(k).upper(): int(v)
+                for k, v in (data.get("per_symbol", {}) or {}).items()
             }
         except Exception:
             # korrupt fil – börja om

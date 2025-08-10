@@ -3,7 +3,7 @@ import os
 import tempfile
 
 from config.settings import Settings
-from services.trading_window import TradingWindowService, WEEKDAY_KEYS
+from services.trading_window import WEEKDAY_KEYS, TradingWindowService
 
 
 def test_save_and_reload_rules(monkeypatch):
@@ -51,5 +51,3 @@ def test_save_and_reload_rules(monkeypatch):
             assert list(mon) == [("08:00", "12:00")]
         else:
             assert mon == [["08:00", "12:00"]]
-
-

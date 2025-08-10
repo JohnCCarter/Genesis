@@ -36,8 +36,6 @@ class ActiveOrdersService:
         try:
             endpoint = "auth/r/orders"
             # För v2 auth/r endpoints ska body vara en tom JSON {} och signaturen inkludera '{}'
-            import json
-
             empty_json = "{}"
             headers = build_auth_headers(endpoint, payload_str=empty_json)
 
@@ -242,8 +240,6 @@ class ActiveOrdersService:
                     try:
                         cancel_endpoint = "auth/w/order/cancel"
                         payload = {"id": order.id}
-                        import json
-
                         body_json = json.dumps(
                             payload, separators=(",", ":"), ensure_ascii=False
                         )
