@@ -5,27 +5,32 @@ Denna modul implementerar RSI-beräkningar för teknisk analys.
 Inkluderar RSI-formel och signalgenerering.
 """
 
-import pandas as pd
 from typing import List, Optional
+
+import pandas as pd
+
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
+
 def calculate_rsi(prices: List[float], period: int = 14) -> Optional[float]:
     """
     Beräknar Relative Strength Index (RSI).
-    
+
     Args:
         prices: Lista med prisdata
         period: RSI-period (standard: 14)
-        
+
     Returns:
         float: RSI-värde eller None om otillräcklig data
     """
     if len(prices) < period + 1:
-        logger.warning(f"Otillräcklig data för RSI-beräkning. Kräver {period + 1}, fick {len(prices)}")
+        logger.warning(
+            f"Otillräcklig data för RSI-beräkning. Kräver {period + 1}, fick {len(prices)}"
+        )
         return None
-    
+
     series = pd.Series(prices)
     delta = series.diff().dropna()
     gain = delta.clip(lower=0)
@@ -39,6 +44,6 @@ def calculate_rsi(prices: List[float], period: int = 14) -> Optional[float]:
     else:
         rs = avg_gain / avg_loss
         rsi_value = 100 - (100 / (1 + rs))
-    
+
     logger.debug(f"RSI beräknad: {rsi_value:.2f} (period: {period})")
-    return round(rsi_value, 2) 
+    return round(rsi_value, 2)

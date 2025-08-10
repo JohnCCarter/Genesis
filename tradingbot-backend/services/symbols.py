@@ -57,5 +57,3 @@ class SymbolService:
         if fmt.lower() in ("v2", "bitfinex_v2", "t"):
             return [f"t{s}" for s in symbols]
         return symbols
-
-

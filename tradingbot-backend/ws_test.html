@@ -76,6 +76,23 @@
       button {
         cursor: pointer;
       }
+      .advanced {
+        display: none;
+      }
+      body.show-advanced .advanced {
+        display: initial;
+      }
+      .statusbar {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        align-items: center;
+        border: 1px solid #e8e8e8;
+        background: #fff;
+        border-radius: 6px;
+        padding: 6px 8px;
+        color: #333;
+      }
     </style>
   </head>
   <body>
@@ -93,6 +110,13 @@
       "
     ></div>
     <h1>TradingBot WebSocket Test</h1>
+
+    <div class="small" style="margin: 8px 0">
+      <label
+        ><input id="toggleAdvanced" type="checkbox" /> Visa avancerat</label
+      >
+    </div>
+    <div id="miniStatus" class="small statusbar" style="margin: 8px 0"></div>
 
     <div>
       <button id="getTokenBtn">1. Hämta Token</button>
@@ -151,12 +175,18 @@
         <button id="getPositionsBtn" disabled>Hämta positions</button>
         <button id="getTickerBtn" disabled>Hämta ticker</button>
         <button id="getCandlesBtn" disabled>Hämta candles</button>
-        <button id="watchlistBtn" disabled>Watchlist</button>
-        <button id="perfBtn" disabled>Performance</button>
-        <button id="perfDetailBtn" disabled>Perf detail</button>
-        <button id="equityBtn" disabled>Equity</button>
-        <button id="equitySnapBtn" disabled>Equity snapshot</button>
-        <button id="equityHistBtn" disabled>Equity history</button>
+        <button id="watchlistBtn" class="advanced" disabled>Watchlist</button>
+        <button id="perfBtn" class="advanced" disabled>Performance</button>
+        <button id="perfDetailBtn" class="advanced" disabled>
+          Perf detail
+        </button>
+        <button id="equityBtn" class="advanced" disabled>Equity</button>
+        <button id="equitySnapBtn" class="advanced" disabled>
+          Equity snapshot
+        </button>
+        <button id="equityHistBtn" class="advanced" disabled>
+          Equity history
+        </button>
       </div>
       <div style="margin-top: 10px">
         <canvas
@@ -225,6 +255,15 @@
         </div>
         <button id="placeBracketBtn" disabled>Placera bracket</button>
       </div>
+      <div class="row" style="margin-top: 8px">
+        <div>
+          <label>Mallar</label><br />
+          <select id="brTplSelect" style="min-width: 220px"></select>
+        </div>
+        <button id="brTplRefreshBtn" disabled>Uppdatera</button>
+        <button id="brTplApplyBtn" disabled>Använd mall</button>
+        <button id="brTplDeleteBtn" disabled>Ta bort mall</button>
+      </div>
     </div>
 
     <div style="margin-top: 20px">
@@ -240,7 +279,7 @@
       <div id="tplArea" class="small" style="margin-top: 6px"></div>
     </div>
 
-    <div style="margin-top: 20px">
+    <div style="margin-top: 20px" class="advanced">
       <h3>Backtest</h3>
       <div class="row">
         <div>
@@ -271,7 +310,7 @@
       <div id="btHeatmapArea" style="margin-top: 8px"></div>
     </div>
 
-    <div style="margin-top: 20px">
+    <div style="margin-top: 20px" class="advanced">
       <h3>Automatiserad handel</h3>
       <div class="row">
         <div>
@@ -288,7 +327,7 @@
       </div>
     </div>
 
-    <div style="margin-top: 20px">
+    <div style="margin-top: 20px" class="advanced">
       <h3>Snabbstart per symbol</h3>
       <div class="row">
         <div>
@@ -401,7 +440,7 @@
       </div>
     </div>
 
-    <div style="margin-top: 20px">
+    <div style="margin-top: 20px" class="advanced">
       <h3>Positionsstorlek & Hälsa</h3>
       <div
         style="display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end"
@@ -446,7 +485,7 @@
       </div>
     </div>
 
-    <div style="margin-top: 20px">
+    <div style="margin-top: 20px" class="advanced">
       <h3>Strategiinställningar (vikter)</h3>
       <div
         style="display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end"
@@ -512,8 +551,17 @@
           <option value="true">true</option>
         </select>
         <button id="updatePauseBtn" disabled>Uppdatera paus</button>
+        <label>Max trades/symbol/dag</label>
+        <input
+          id="maxTradesPerSymInput"
+          type="number"
+          value="3"
+          style="width: 90px"
+        />
+        <button id="updateMaxTradesSymBtn" disabled>Uppd. per‑symbol</button>
+        <button id="showTradeCounterBtn" disabled>Visa trade‑counter</button>
       </div>
-      <div style="margin-top: 10px">
+      <div style="margin-top: 10px" class="advanced">
         <label>Timezone</label>
         <input id="tzInput" value="Europe/Stockholm" />
         <div class="row" style="margin-top: 8px">
@@ -581,6 +629,7 @@
           <button id="circuitConfigBtn" disabled>Update CB</button>
         </div>
       </div>
+      <div id="tradeCounterArea" style="margin-top: 8px"></div>
     </div>
 
     <div style="margin-top: 20px">
@@ -597,6 +646,57 @@
     <script>
       let socket = null;
       let token = null;
+
+      // Simple/Advanced toggle
+      const advToggle = document.getElementById("toggleAdvanced");
+      function applyAdvancedVisibility() {
+        const show = !!(advToggle && advToggle.checked);
+        try {
+          localStorage.setItem("showAdvanced", show ? "1" : "0");
+        } catch {}
+        document.body.classList.toggle("show-advanced", show);
+      }
+      (function initAdvanced() {
+        try {
+          const saved = localStorage.getItem("showAdvanced");
+          const show = saved === "1";
+          if (advToggle) advToggle.checked = show;
+        } catch {}
+        applyAdvancedVisibility();
+        if (advToggle)
+          advToggle.addEventListener("change", applyAdvancedVisibility);
+      })();
+
+      async function updateMiniStatus() {
+        try {
+          const [risk, circuit, health] = await Promise.all([
+            restFetch("/api/v2/risk/status").catch(() => null),
+            restFetch("/api/v2/risk/circuit").catch(() => null),
+            restFetch("/api/v2/health").catch(() => null),
+          ]);
+          const el = document.getElementById("miniStatus");
+          if (!el) return;
+          const parts = [];
+          if (risk) {
+            parts.push(`open: ${risk.open ? "yes" : "no"}`);
+            parts.push(`paused: ${risk.paused ? "yes" : "no"}`);
+            if (risk.next_open) parts.push(`next_open: ${risk.next_open}`);
+          }
+          if (circuit) {
+            parts.push(`CB: ${circuit.opened_at ? "active" : "ok"}`);
+          }
+          if (health) {
+            parts.push(
+              `ws: ${health.ws_connected ? "up" : "down"}/${
+                health.ws_authenticated ? "auth" : "anon"
+              }`
+            );
+          }
+          el.textContent = parts.join(" • ");
+        } catch (e) {
+          // ignore
+        }
+      }
 
       function escapeHtml(str) {
         return String(str)
@@ -627,11 +727,19 @@
         const ts = new Date().toLocaleTimeString();
         if (typeof message === "object") {
           logHtml(
-            `<span class="timestamp">[${escapeHtml(ts)}]</span><span class="badge ${escapeHtml(type)}">${escapeHtml(type.toUpperCase())}</span><pre>${escapeHtml(pretty(message))}</pre>`
+            `<span class="timestamp">[${escapeHtml(
+              ts
+            )}]</span><span class="badge ${escapeHtml(type)}">${escapeHtml(
+              type.toUpperCase()
+            )}</span><pre>${escapeHtml(pretty(message))}</pre>`
           );
         } else {
           logHtml(
-            `<span class="timestamp">[${escapeHtml(ts)}]</span><span class="badge ${escapeHtml(type)}">${escapeHtml(type.toUpperCase())}</span><span>${escapeHtml(message)}</span>`
+            `<span class="timestamp">[${escapeHtml(
+              ts
+            )}]</span><span class="badge ${escapeHtml(type)}">${escapeHtml(
+              type.toUpperCase()
+            )}</span><span>${escapeHtml(message)}</span>`
           );
         }
       }
@@ -642,7 +750,11 @@
             ? `<span>${escapeHtml(data)}</span>`
             : `<pre>${escapeHtml(pretty(data))}</pre>`;
         logHtml(
-          `<span class="timestamp">[${escapeHtml(ts)}]</span><span class="badge ${escapeHtml(type)}">${escapeHtml(type.toUpperCase())}</span><span class="title">${escapeHtml(title)}</span>${content}`
+          `<span class="timestamp">[${escapeHtml(
+            ts
+          )}]</span><span class="badge ${escapeHtml(type)}">${escapeHtml(
+            type.toUpperCase()
+          )}</span><span class="title">${escapeHtml(title)}</span>${content}`
         );
       }
       async function updateRiskBanner() {
@@ -791,6 +903,10 @@
             document.getElementById("circuitStatusBtn").disabled = false;
             document.getElementById("circuitResetBtn").disabled = false;
             document.getElementById("circuitConfigBtn").disabled = false;
+            const upSym = document.getElementById("updateMaxTradesSymBtn");
+            const showCtr = document.getElementById("showTradeCounterBtn");
+            if (upSym) upSym.disabled = false;
+            if (showCtr) showCtr.disabled = false;
             document.getElementById("getStrategySettingsBtn").disabled = false;
             document.getElementById("saveStrategySettingsBtn").disabled = false;
             document.getElementById("calcSizeBtn").disabled = false;
@@ -808,6 +924,16 @@
             document.getElementById("placeBracketBtn").disabled = false;
             document.getElementById("saveTplBtn").disabled = false;
             document.getElementById("listTplBtn").disabled = false;
+            const brTplRefreshBtn = document.getElementById("brTplRefreshBtn");
+            const brTplApplyBtn = document.getElementById("brTplApplyBtn");
+            const brTplDeleteBtn = document.getElementById("brTplDeleteBtn");
+            if (brTplRefreshBtn) brTplRefreshBtn.disabled = false;
+            if (brTplApplyBtn) brTplApplyBtn.disabled = false;
+            if (brTplDeleteBtn) brTplDeleteBtn.disabled = false;
+            // Ladda mallar initialt
+            try {
+              loadTemplatesIntoSelect("brTplSelect");
+            } catch {}
             document.getElementById("runBtBtn").disabled = false;
             // Auto trading controls
             document.getElementById("autoStartBtn").disabled = false;
@@ -830,6 +956,7 @@
 
           socket.on("authenticated", (data) => {
             logSection("Authenticated", data, "success");
+            updateMiniStatus();
           });
 
           socket.on("connect_error", (error) => {
@@ -840,6 +967,7 @@
             logSection("Disconnected", { reason }, "warn");
             document.getElementById("disconnectBtn").disabled = true;
             document.getElementById("connectBtn").disabled = false;
+            updateMiniStatus();
           });
 
           // Wallet events
@@ -894,6 +1022,7 @@
             );
             // Uppdatera banner vid notifieringar (t.ex. CB on/off)
             updateRiskBanner();
+            updateMiniStatus();
           });
           socket.on("health", (data) => {
             logSection("WS Health", data);
@@ -1288,6 +1417,26 @@
         });
 
       // Templates
+      async function loadTemplatesIntoSelect(selectId) {
+        try {
+          const arr = await restFetch("/api/v2/orders/templates");
+          const sel = document.getElementById(selectId);
+          if (!sel) return;
+          sel.innerHTML = "";
+          if (Array.isArray(arr)) {
+            arr.forEach((t) => {
+              const opt = document.createElement("option");
+              opt.value = t.name || "";
+              opt.textContent = t.name || "Default";
+              opt._tpl = t;
+              sel.appendChild(opt);
+            });
+          }
+          return arr;
+        } catch (e) {
+          logSection("Templates load error", { message: e.message }, "error");
+        }
+      }
       document
         .getElementById("saveTplBtn")
         .addEventListener("click", async () => {
@@ -1316,11 +1465,67 @@
             logSection("Save template error", { message: e.message }, "error");
           }
         });
+      // Bracket: uppdatera/använd/ta bort mall
+      const brTplRefreshBtn = document.getElementById("brTplRefreshBtn");
+      if (brTplRefreshBtn) {
+        brTplRefreshBtn.addEventListener("click", async () => {
+          await loadTemplatesIntoSelect("brTplSelect");
+        });
+      }
+      const brTplApplyBtn = document.getElementById("brTplApplyBtn");
+      if (brTplApplyBtn) {
+        brTplApplyBtn.addEventListener("click", async () => {
+          try {
+            const sel = document.getElementById("brTplSelect");
+            if (!sel || !sel.value) throw new Error("Ingen mall vald");
+            const opt = sel.selectedOptions && sel.selectedOptions[0];
+            const tpl = opt && (opt._tpl || null);
+            let t = tpl;
+            if (!t) {
+              // fallback: hämta hela listan och matcha namn
+              const arr = await restFetch("/api/v2/orders/templates");
+              t = Array.isArray(arr)
+                ? arr.find((x) => (x.name || "") === sel.value)
+                : null;
+            }
+            if (!t) throw new Error("Mall saknas");
+            if (t.symbol) document.getElementById("brSymbol").value = t.symbol;
+            if (t.amount) document.getElementById("brAmount").value = t.amount;
+            if (t.side) document.getElementById("brSide").value = t.side;
+            if (t.type) document.getElementById("brType").value = t.type;
+            if (t.price)
+              document.getElementById("brEntryPrice").value = t.price;
+            if (t.sl_price) document.getElementById("brSl").value = t.sl_price;
+            if (t.tp_price) document.getElementById("brTp").value = t.tp_price;
+            logSection("Mall använd (Bracket)", t, "success");
+          } catch (e) {
+            logSection("Använd mall error", { message: e.message }, "error");
+          }
+        });
+      }
+      const brTplDeleteBtn = document.getElementById("brTplDeleteBtn");
+      if (brTplDeleteBtn) {
+        brTplDeleteBtn.addEventListener("click", async () => {
+          try {
+            const sel = document.getElementById("brTplSelect");
+            if (!sel || !sel.value) throw new Error("Ingen mall vald");
+            const name = sel.value;
+            const resp = await restFetch(
+              `/api/v2/order/templates/${encodeURIComponent(name)}`,
+              { method: "DELETE" }
+            );
+            logSection("Mall borttagen", resp, "success");
+            await loadTemplatesIntoSelect("brTplSelect");
+          } catch (e) {
+            logSection("Ta bort mall error", { message: e.message }, "error");
+          }
+        });
+      }
       document
         .getElementById("listTplBtn")
         .addEventListener("click", async () => {
           try {
-            const arr = await restFetch("/api/v2/order/templates");
+            const arr = await restFetch("/api/v2/orders/templates");
             logSection("Templates", arr, "success");
             const area = document.getElementById("tplArea");
             if (area) {
@@ -1755,6 +1960,88 @@
             );
           }
         });
+
+      // Risk: uppdatera per‑symbol gräns
+      const updateMaxTradesSymBtn = document.getElementById(
+        "updateMaxTradesSymBtn"
+      );
+      if (updateMaxTradesSymBtn) {
+        updateMaxTradesSymBtn.addEventListener("click", async () => {
+          try {
+            const perSym = parseInt(
+              document.getElementById("maxTradesPerSymInput").value || "3",
+              10
+            );
+            const resp = await restFetch("/api/v2/risk/max-trades-symbol", {
+              method: "POST",
+              body: JSON.stringify({ max_trades_per_symbol_per_day: perSym }),
+            });
+            logSection("Max trades/symbol uppdaterad", resp, "success");
+            try {
+              const ctr = await restFetch("/api/v2/risk/trade-counter");
+              renderTradeCounter(ctr);
+            } catch {}
+            updateMiniStatus();
+          } catch (e) {
+            logSection(
+              "Uppdatera per-symbol gräns error",
+              { message: e.message },
+              "error"
+            );
+          }
+        });
+      }
+
+      // Risk: visa trade counter
+      const showTradeCounterBtn = document.getElementById(
+        "showTradeCounterBtn"
+      );
+      if (showTradeCounterBtn) {
+        showTradeCounterBtn.addEventListener("click", async () => {
+          try {
+            const resp = await restFetch("/api/v2/risk/trade-counter");
+            logSection("Trade counter", resp, "success");
+            try {
+              renderTradeCounter(resp);
+            } catch {}
+            updateMiniStatus();
+          } catch (e) {
+            logSection("Trade counter error", { message: e.message }, "error");
+          }
+        });
+      }
+
+      function renderTradeCounter(data) {
+        const area = document.getElementById("tradeCounterArea");
+        if (!area || !data) return;
+        const day = data.day || "-";
+        const count = Number(data.count || 0);
+        const maxd = Number(data.max_per_day || 0);
+        const cd = !!data.cooldown_active;
+        const per = data.per_symbol || {};
+        let html = `<div style="border:1px solid #eee;border-radius:6px;padding:8px;background:#fff">
+          <div class=\"small\" style=\"margin-bottom:6px\"><strong>Trade counter</strong> — dag: ${day} • total: ${count}${
+          maxd ? ` / ${maxd}` : ""
+        } • cooldown: ${cd}</div>`;
+        const syms = Object.keys(per);
+        if (syms.length) {
+          html +=
+            '<div style="overflow:auto"><table style="width:100%;border-collapse:collapse">';
+          html +=
+            '<thead><tr><th style="text-align:left;border-bottom:1px solid #eee;padding:6px">Symbol</th><th style="text-align:right;border-bottom:1px solid #eee;padding:6px">Trades idag</th></tr></thead><tbody>';
+          syms.sort().forEach((s) => {
+            html += `<tr><td style=\"padding:6px;border-bottom:1px solid #f3f3f3\">${s}</td><td style=\"padding:6px;border-bottom:1px solid #f3f3f3;text-align:right\">${Number(
+              per[s] || 0
+            )}</td></tr>`;
+          });
+          html += "</tbody></table></div>";
+        } else {
+          html +=
+            '<div class="small">Inga symbolspecifika trades registrerade idag.</div>';
+        }
+        html += "</div>";
+        area.innerHTML = html;
+      }
 
       document
         .getElementById("updatePauseBtn")

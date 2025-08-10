@@ -1,4 +1,5 @@
 import os
+
 import pytest
 
 
@@ -8,5 +9,3 @@ def disable_auth_for_tests():
     yield
     # optional cleanup
     os.environ.pop("AUTH_REQUIRED", None)
-
-

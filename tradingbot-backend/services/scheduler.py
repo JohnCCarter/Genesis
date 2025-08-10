@@ -11,8 +11,8 @@ Nuvarande jobb:
 from __future__ import annotations
 
 import asyncio
+from datetime import datetime, timedelta, timezone
 from typing import Optional
-from datetime import datetime, timezone, timedelta
 
 from utils.logger import get_logger
 
@@ -65,7 +65,9 @@ class SchedulerService:
                 now = datetime.now(timezone.utc)
                 if now >= next_run_at:
                     await self._safe_run_equity_snapshot(reason="interval")
-                    next_run_at = now.replace(microsecond=0) + timedelta(seconds=self.snapshot_interval_seconds)
+                    next_run_at = now.replace(microsecond=0) + timedelta(
+                        seconds=self.snapshot_interval_seconds
+                    )
                 # Sov en kort stund för att inte spinna
                 await asyncio.sleep(1)
             except asyncio.CancelledError:
@@ -78,6 +80,7 @@ class SchedulerService:
         """Kör equity-snapshot säkert och logga eventuella fel."""
         try:
             from services.performance import PerformanceService
+
             svc = PerformanceService()
             result = await svc.snapshot_equity()
             self._last_snapshot_at = datetime.now(timezone.utc)
@@ -87,11 +90,17 @@ class SchedulerService:
             # Skicka valfri notis till UI (tyst misslyckande om WS ej initierat)
             try:
                 from ws.manager import socket_app
-                asyncio.create_task(socket_app.emit("notification", {
-                    "type": "info",
-                    "title": "Equity snapshot",
-                    "payload": {"reason": reason, **result}
-                }))
+
+                asyncio.create_task(
+                    socket_app.emit(
+                        "notification",
+                        {
+                            "type": "info",
+                            "title": "Equity snapshot",
+                            "payload": {"reason": reason, **result},
+                        },
+                    )
+                )
             except Exception:
                 pass
         except Exception as e:

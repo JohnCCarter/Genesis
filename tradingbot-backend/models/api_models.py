@@ -5,15 +5,17 @@ Detta är en centraliserad modul för alla Pydantic-modeller som används i API:
 Genom att samla alla modeller på ett ställe blir det enklare att återanvända och underhålla dem.
 """
 
-from typing import Dict, List, Optional, Any, Union
-from pydantic import BaseModel, Field, validator
 from datetime import datetime
 from enum import Enum
+from typing import Any, Dict, List, Optional, Union
+
+from pydantic import BaseModel, Field, validator
 
 
 # Gemensamma enums och konstanter
 class WalletType(str, Enum):
     """Enum för plånbokstyper."""
+
     EXCHANGE = "exchange"
     MARGIN = "margin"
     FUNDING = "funding"
@@ -21,6 +23,7 @@ class WalletType(str, Enum):
 
 class OrderType(str, Enum):
     """Enum för ordertyper."""
+
     LIMIT = "LIMIT"
     MARKET = "MARKET"
     STOP = "STOP"
@@ -39,12 +42,14 @@ class OrderType(str, Enum):
 
 class OrderSide(str, Enum):
     """Enum för ordersidor."""
+
     BUY = "buy"
     SELL = "sell"
 
 
 class OrderStatus(str, Enum):
     """Enum för orderstatus."""
+
     ACTIVE = "ACTIVE"
     EXECUTED = "EXECUTED"
     PARTIALLY_FILLED = "PARTIALLY FILLED"
@@ -54,12 +59,14 @@ class OrderStatus(str, Enum):
 
 class PositionStatus(str, Enum):
     """Enum för positionsstatus."""
+
     ACTIVE = "ACTIVE"
     CLOSED = "CLOSED"
 
 
 class TimeFrame(str, Enum):
     """Enum för tidsramar."""
+
     ONE_MINUTE = "1m"
     FIVE_MINUTES = "5m"
     FIFTEEN_MINUTES = "15m"
@@ -77,29 +84,31 @@ class TimeFrame(str, Enum):
 # Wallet-modeller
 class WalletBalance(BaseModel):
     """Modell för plånbokssaldo."""
+
     wallet_type: WalletType
     currency: str
     balance: float
     unsettled_interest: float = 0.0
     available_balance: Optional[float] = None
-    
+
     @classmethod
-    def from_bitfinex_data(cls, data: List) -> 'WalletBalance':
+    def from_bitfinex_data(cls, data: List) -> "WalletBalance":
         """Skapar en WalletBalance från Bitfinex API-data."""
         if len(data) < 4:
             raise ValueError(f"Ogiltig plånboksdata: {data}")
-        
+
         return cls(
             wallet_type=data[0],
             currency=data[1],
             balance=float(data[2]),
             unsettled_interest=float(data[3]) if len(data) > 3 else 0.0,
-            available_balance=float(data[4]) if len(data) > 4 else None
+            available_balance=float(data[4]) if len(data) > 4 else None,
         )
 
 
 class WalletSummary(BaseModel):
     """Sammanfattning av plånböcker."""
+
     total_balance_usd: float
     exchange_wallets: List[WalletBalance]
     margin_wallets: List[WalletBalance]
@@ -109,24 +118,26 @@ class WalletSummary(BaseModel):
 # Margin-modeller
 class MarginLimitInfo(BaseModel):
     """Modell för margin-begränsningar för ett handelssymbol."""
+
     on_pair: str
     initial_margin: float
     tradable_balance: float
     margin_requirements: float
-    
+
     @classmethod
-    def from_bitfinex_data(cls, data: Dict[str, Any]) -> 'MarginLimitInfo':
+    def from_bitfinex_data(cls, data: Dict[str, Any]) -> "MarginLimitInfo":
         """Skapar ett MarginLimitInfo-objekt från Bitfinex API-data."""
         return cls(
             on_pair=data.get("on_pair", ""),
             initial_margin=float(data.get("initial_margin", 0)),
             tradable_balance=float(data.get("tradable_balance", 0)),
-            margin_requirements=float(data.get("margin_requirements", 0))
+            margin_requirements=float(data.get("margin_requirements", 0)),
         )
 
 
 class MarginInfo(BaseModel):
     """Modell för margin-information."""
+
     margin_balance: float
     unrealized_pl: float
     unrealized_swap: float
@@ -134,18 +145,18 @@ class MarginInfo(BaseModel):
     required_margin: float
     leverage: Optional[float] = None
     margin_limits: List[Dict[str, Any]] = []
-    
+
     @classmethod
-    def from_bitfinex_data(cls, data: List) -> 'MarginInfo':
+    def from_bitfinex_data(cls, data: List) -> "MarginInfo":
         """Skapar ett MarginInfo-objekt från Bitfinex API-data."""
         if len(data) < 5:
             raise ValueError(f"Ogiltig margin-data: {data}")
-        
+
         # Beräkna leverage från margin_balance och net_value om det finns
         leverage = None
         if data[0] > 0 and data[3] > 0:
             leverage = data[3] / data[0]
-        
+
         return cls(
             margin_balance=float(data[0]),
             unrealized_pl=float(data[1]),
@@ -153,12 +164,15 @@ class MarginInfo(BaseModel):
             net_value=float(data[3]),
             required_margin=float(data[4]),
             leverage=leverage,
-            margin_limits=data[5] if len(data) > 5 and isinstance(data[5], list) else []
+            margin_limits=(
+                data[5] if len(data) > 5 and isinstance(data[5], list) else []
+            ),
         )
 
 
 class MarginStatus(BaseModel):
     """Modell för margin-status."""
+
     margin_balance: float
     net_value: float
     unrealized_pl: float
@@ -172,6 +186,7 @@ class MarginStatus(BaseModel):
 # Position-modeller
 class Position(BaseModel):
     """Modell för en position."""
+
     symbol: str
     status: PositionStatus
     amount: float
@@ -181,23 +196,23 @@ class Position(BaseModel):
     profit_loss: Optional[float] = None
     profit_loss_percentage: Optional[float] = None
     liquidation_price: Optional[float] = None
-    
+
     @property
     def is_long(self) -> bool:
         """Returnerar True om positionen är long."""
         return self.amount > 0
-    
+
     @property
     def is_short(self) -> bool:
         """Returnerar True om positionen är short."""
         return self.amount < 0
-    
+
     @classmethod
-    def from_bitfinex_data(cls, data: List) -> 'Position':
+    def from_bitfinex_data(cls, data: List) -> "Position":
         """Skapar en Position från Bitfinex API-data."""
         if len(data) < 6:
             raise ValueError(f"Ogiltig positionsdata: {data}")
-        
+
         return cls(
             symbol=data[0],
             status=data[1],
@@ -207,12 +222,13 @@ class Position(BaseModel):
             funding_type=int(data[5]) if len(data) > 5 else 0,
             profit_loss=float(data[6]) if len(data) > 6 else None,
             profit_loss_percentage=float(data[7]) if len(data) > 7 else None,
-            liquidation_price=float(data[8]) if len(data) > 8 else None
+            liquidation_price=float(data[8]) if len(data) > 8 else None,
         )
 
 
 class PositionHistory(BaseModel):
     """Modell för en historisk position."""
+
     id: Optional[int] = None
     symbol: str
     status: PositionStatus
@@ -225,23 +241,23 @@ class PositionHistory(BaseModel):
     liquidation_price: Optional[float] = None
     created_at: Optional[datetime] = None
     closed_at: Optional[datetime] = None
-    
+
     @property
     def is_long(self) -> bool:
         """Returnerar True om positionen är long."""
         return self.amount > 0
-    
+
     @property
     def is_short(self) -> bool:
         """Returnerar True om positionen är short."""
         return self.amount < 0
-    
+
     @classmethod
-    def from_bitfinex_data(cls, data: List) -> 'PositionHistory':
+    def from_bitfinex_data(cls, data: List) -> "PositionHistory":
         """Skapar en PositionHistory från Bitfinex API-data."""
         if len(data) < 6:
             raise ValueError(f"Ogiltig positionsdata: {data}")
-        
+
         # Skapa en grundläggande position
         position = cls(
             symbol=data[0],
@@ -249,9 +265,9 @@ class PositionHistory(BaseModel):
             amount=float(data[2]) if data[2] is not None else 0.0,
             base_price=float(data[3]) if data[3] is not None else 0.0,
             funding=float(data[4]) if len(data) > 4 and data[4] is not None else 0.0,
-            funding_type=int(data[5]) if len(data) > 5 and data[5] is not None else 0
+            funding_type=int(data[5]) if len(data) > 5 and data[5] is not None else 0,
         )
-        
+
         # Lägg till ytterligare fält om de finns
         if len(data) > 6 and data[6] is not None:
             position.profit_loss = float(data[6])
@@ -265,12 +281,13 @@ class PositionHistory(BaseModel):
             position.closed_at = datetime.fromtimestamp(data[10] / 1000)
         if len(data) > 11 and data[11] is not None:
             position.id = int(data[11])
-            
+
         return position
 
 
 class ClosePositionResponse(BaseModel):
     """Svar från API:et vid stängning av position."""
+
     success: bool
     message: str
     data: Optional[Dict[str, Any]] = None
@@ -279,6 +296,7 @@ class ClosePositionResponse(BaseModel):
 # Order-modeller
 class OrderRequest(BaseModel):
     """Modell för en orderförfrågan."""
+
     symbol: str
     amount: float
     price: Optional[float] = None
@@ -291,19 +309,20 @@ class OrderRequest(BaseModel):
     price_oco_stop: Optional[float] = None
     tif: Optional[datetime] = None
     leverage: Optional[int] = None
-    
-    @validator('amount')
+
+    @validator("amount")
     def validate_amount(cls, v, values):
         """Validerar att beloppet är positivt och justerar för sidan."""
         if v <= 0:
             raise ValueError("Belopp måste vara positivt")
-        
+
         # Justera inte beloppet här, det hanteras av API-klienten
         return v
 
 
 class OrderResponse(BaseModel):
     """Svar från API:et vid orderläggning."""
+
     id: int
     client_order_id: Optional[int] = None
     symbol: str
@@ -317,13 +336,13 @@ class OrderResponse(BaseModel):
     updated_at: datetime
     is_live: bool
     is_cancelled: bool
-    
+
     @classmethod
-    def from_bitfinex_data(cls, data: List) -> 'OrderResponse':
+    def from_bitfinex_data(cls, data: List) -> "OrderResponse":
         """Skapar en OrderResponse från Bitfinex API-data."""
         if len(data) < 12:
             raise ValueError(f"Ogiltig orderdata: {data}")
-        
+
         return cls(
             id=data[0],
             client_order_id=data[2] if data[2] > 0 else None,
@@ -337,12 +356,13 @@ class OrderResponse(BaseModel):
             created_at=datetime.fromtimestamp(data[4] / 1000),
             updated_at=datetime.fromtimestamp(data[5] / 1000),
             is_live=data[13] == "ACTIVE",
-            is_cancelled=data[13] == "CANCELED"
+            is_cancelled=data[13] == "CANCELED",
         )
 
 
 class OrderHistoryItem(BaseModel):
     """Modell för ett objekt i orderhistoriken."""
+
     id: int
     client_order_id: Optional[int] = None
     symbol: str
@@ -354,13 +374,13 @@ class OrderHistoryItem(BaseModel):
     price: float
     average_price: Optional[float] = None
     status: str
-    
+
     @classmethod
-    def from_bitfinex_data(cls, data: List) -> 'OrderHistoryItem':
+    def from_bitfinex_data(cls, data: List) -> "OrderHistoryItem":
         """Skapar en OrderHistoryItem från Bitfinex API-data."""
         if len(data) < 18:
             raise ValueError(f"Ogiltig orderhistorikdata: {data}")
-        
+
         return cls(
             id=data[0],
             client_order_id=data[2] if data[2] > 0 else None,
@@ -372,12 +392,13 @@ class OrderHistoryItem(BaseModel):
             order_type=data[8],
             price=float(data[16]),
             average_price=float(data[17]) if data[17] > 0 else None,
-            status=data[13]
+            status=data[13],
         )
 
 
 class TradeItem(BaseModel):
     """Modell för ett handelsobjekt."""
+
     id: int
     symbol: str
     order_id: int
@@ -386,13 +407,13 @@ class TradeItem(BaseModel):
     fee: Optional[float] = None
     fee_currency: Optional[str] = None
     created_at: datetime
-    
+
     @classmethod
-    def from_bitfinex_data(cls, data: List) -> 'TradeItem':
+    def from_bitfinex_data(cls, data: List) -> "TradeItem":
         """Skapar en TradeItem från Bitfinex API-data."""
         if len(data) < 11:
             raise ValueError(f"Ogiltig handelsdata: {data}")
-        
+
         return cls(
             id=data[0],
             symbol=data[1],
@@ -401,12 +422,13 @@ class TradeItem(BaseModel):
             executed_price=float(data[5]),
             fee=float(data[9]) if len(data) > 9 else None,
             fee_currency=data[10] if len(data) > 10 else None,
-            created_at=datetime.fromtimestamp(data[2] / 1000)
+            created_at=datetime.fromtimestamp(data[2] / 1000),
         )
 
 
 class LedgerEntry(BaseModel):
     """Modell för en post i huvudboken."""
+
     id: int
     currency: str
     amount: float
@@ -414,13 +436,13 @@ class LedgerEntry(BaseModel):
     description: str
     created_at: datetime
     wallet_type: Optional[str] = None
-    
+
     @classmethod
-    def from_bitfinex_data(cls, data: List) -> 'LedgerEntry':
+    def from_bitfinex_data(cls, data: List) -> "LedgerEntry":
         """Skapar en LedgerEntry från Bitfinex API-data."""
         if len(data) < 6:
             raise ValueError(f"Ogiltig huvudboksdata: {data}")
-        
+
         # Extrahera wallet_type från beskrivningen om det finns
         wallet_type = None
         description = data[5]
@@ -430,7 +452,7 @@ class LedgerEntry(BaseModel):
             wallet_type = "margin"
         elif "funding" in description.lower():
             wallet_type = "funding"
-        
+
         return cls(
             id=data[0],
             currency=data[1],
@@ -438,13 +460,14 @@ class LedgerEntry(BaseModel):
             balance=float(data[3]),
             description=description,
             created_at=datetime.fromtimestamp(data[4] / 1000),
-            wallet_type=wallet_type
+            wallet_type=wallet_type,
         )
 
 
 # Marknadsdata-modeller
 class Ticker(BaseModel):
     """Modell för ticker-data."""
+
     symbol: str
     bid: float
     bid_size: float
@@ -456,13 +479,13 @@ class Ticker(BaseModel):
     volume: float
     high: float
     low: float
-    
+
     @classmethod
-    def from_bitfinex_data(cls, symbol: str, data: List) -> 'Ticker':
+    def from_bitfinex_data(cls, symbol: str, data: List) -> "Ticker":
         """Skapar en Ticker från Bitfinex API-data."""
         if len(data) < 10:
             raise ValueError(f"Ogiltig ticker-data: {data}")
-        
+
         return cls(
             symbol=symbol,
             bid=float(data[0]),
@@ -474,99 +497,99 @@ class Ticker(BaseModel):
             last_price=float(data[6]),
             volume=float(data[7]),
             high=float(data[8]),
-            low=float(data[9])
+            low=float(data[9]),
         )
 
 
 class Candle(BaseModel):
     """Modell för ljusstake-data."""
+
     timestamp: datetime
     open: float
     close: float
     high: float
     low: float
     volume: float
-    
+
     @classmethod
-    def from_bitfinex_data(cls, data: List) -> 'Candle':
+    def from_bitfinex_data(cls, data: List) -> "Candle":
         """Skapar en Candle från Bitfinex API-data."""
         if len(data) < 6:
             raise ValueError(f"Ogiltig ljusstake-data: {data}")
-        
+
         return cls(
             timestamp=datetime.fromtimestamp(data[0] / 1000),
             open=float(data[1]),
             close=float(data[2]),
             high=float(data[3]),
             low=float(data[4]),
-            volume=float(data[5])
+            volume=float(data[5]),
         )
 
 
 class OrderBookEntry(BaseModel):
     """Modell för en post i orderboken."""
+
     price: float
     count: int
     amount: float  # Positivt för bud, negativt för utbud
-    
+
     @property
     def is_bid(self) -> bool:
         """Returnerar True om posten är ett bud."""
         return self.amount > 0
-    
+
     @property
     def is_ask(self) -> bool:
         """Returnerar True om posten är ett utbud."""
         return self.amount < 0
-    
+
     @classmethod
-    def from_bitfinex_data(cls, data: List) -> 'OrderBookEntry':
+    def from_bitfinex_data(cls, data: List) -> "OrderBookEntry":
         """Skapar en OrderBookEntry från Bitfinex API-data."""
         if len(data) < 3:
             raise ValueError(f"Ogiltig orderbok-data: {data}")
-        
-        return cls(
-            price=float(data[0]),
-            count=int(data[1]),
-            amount=float(data[2])
-        )
+
+        return cls(price=float(data[0]), count=int(data[1]), amount=float(data[2]))
 
 
 class OrderBook(BaseModel):
     """Modell för en orderbok."""
+
     symbol: str
     bids: List[OrderBookEntry]
     asks: List[OrderBookEntry]
-    
+
     @classmethod
-    def from_bitfinex_data(cls, symbol: str, data: List[List]) -> 'OrderBook':
+    def from_bitfinex_data(cls, symbol: str, data: List[List]) -> "OrderBook":
         """Skapar en OrderBook från Bitfinex API-data."""
         entries = [OrderBookEntry.from_bitfinex_data(entry) for entry in data]
         bids = [entry for entry in entries if entry.is_bid]
         asks = [entry for entry in entries if entry.is_ask]
-        
+
         return cls(
             symbol=symbol,
             bids=sorted(bids, key=lambda x: x.price, reverse=True),
-            asks=sorted(asks, key=lambda x: x.price)
+            asks=sorted(asks, key=lambda x: x.price),
         )
 
 
 # Websocket-modeller
 class WebSocketAuthRequest(BaseModel):
     """Modell för en autentiseringsförfrågan via WebSocket."""
+
     api_key: str
     auth_sig: str
     auth_payload: str
     auth_nonce: int
-    
+
     model_config = {
         "json_schema_extra": {
             "example": {
                 "api_key": "your-api-key",
                 "auth_sig": "generated-signature",
                 "auth_payload": "auth-payload",
-                "auth_nonce": 1234567890
+                "auth_nonce": 1234567890,
             }
         }
     }
@@ -574,22 +597,19 @@ class WebSocketAuthRequest(BaseModel):
 
 class WebSocketSubscriptionRequest(BaseModel):
     """Modell för en prenumerationsförfrågan via WebSocket."""
+
     channel: str
     symbol: str
-    
+
     model_config = {
-        "json_schema_extra": {
-            "example": {
-                "channel": "ticker",
-                "symbol": "tBTCUSD"
-            }
-        }
+        "json_schema_extra": {"example": {"channel": "ticker", "symbol": "tBTCUSD"}}
     }
 
 
 # API-svar-modeller
 class ApiResponse(BaseModel):
     """Generisk modell för API-svar."""
+
     success: bool
     message: str
     data: Optional[Any] = None
@@ -597,6 +617,7 @@ class ApiResponse(BaseModel):
 
 class PaginatedResponse(BaseModel):
     """Modell för paginerade API-svar."""
+
     success: bool
     message: str
     data: List[Any]

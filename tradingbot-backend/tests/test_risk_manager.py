@@ -14,5 +14,3 @@ def test_risk_manager_window_blocks(monkeypatch):
     monkeypatch.setattr(rm.trading_window, "is_open", lambda: False)
     ok, reason = rm.pre_trade_checks()
     assert ok is False and reason == "outside_trading_window"
-
-

@@ -8,8 +8,8 @@ from __future__ import annotations
 
 import json
 import os
-from dataclasses import dataclass, asdict
-from typing import Dict, Optional, Any
+from dataclasses import asdict, dataclass
+from typing import Any, Dict, Optional
 
 from config.settings import Settings
 from utils.logger import get_logger
@@ -93,7 +93,9 @@ class StrategySettingsService:
                 data = json.load(f)
                 base = StrategySettings.from_dict(data)
         except FileNotFoundError:
-            logger.info("Inga strategiinställningar hittades – använder default och skapar fil.")
+            logger.info(
+                "Inga strategiinställningar hittades – använder default och skapar fil."
+            )
             base = StrategySettings()
             self.save_settings(base)
         except FileNotFoundError:
@@ -118,7 +120,9 @@ class StrategySettingsService:
                 logger.warning(f"Kunde inte applicera symboloverride för {symbol}: {e}")
         return base.normalized()
 
-    def save_settings(self, settings_obj: StrategySettings, symbol: Optional[str] = None) -> StrategySettings:
+    def save_settings(
+        self, settings_obj: StrategySettings, symbol: Optional[str] = None
+    ) -> StrategySettings:
         try:
             normalized = settings_obj.normalized()
             if symbol:
@@ -135,5 +139,3 @@ class StrategySettingsService:
         except Exception as e:
             logger.error(f"Kunde inte spara strategiinställningar: {e}")
             raise
-
-

@@ -5,38 +5,42 @@ Detta är huvudmodulen för REST API-routes.
 Inkluderar endpoints för orderhantering, marknadsdata, plånboksinformation och positioner.
 """
 
-from fastapi import APIRouter, HTTPException, Depends, Response
-from typing import List, Dict, Any, Optional
+import asyncio
+from typing import Any, Dict, List, Optional
+
+import jwt
+from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel
 
-from rest import auth as rest_auth
-from rest.wallet import WalletService, WalletBalance
-from rest.positions import PositionsService, Position
-from rest.margin import MarginService
-from rest.order_history import OrderHistoryService, OrderHistoryItem, TradeItem, LedgerEntry
-from rest.active_orders import ActiveOrdersService, OrderResponse
-from services.strategy import evaluate_weighted_strategy
-from services.strategy_settings import StrategySettingsService, StrategySettings
-from services.bitfinex_data import BitfinexDataService
-from indicators.atr import calculate_atr
-import asyncio
-from services.risk_manager import RiskManager
-from services.trading_window import TradingWindowService
-from services.symbols import SymbolService
-from services.bracket_manager import bracket_manager
-from services.performance import PerformanceService
-from rest.wallet import WalletService
-from rest.positions import PositionsService
-from utils.logger import get_logger
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-import jwt
 from config.settings import Settings
-from services.metrics import inc
-from services.templates import OrderTemplatesService
-from services.notifications import notification_service
-from services.bitfinex_data import BitfinexDataService
+from indicators.atr import calculate_atr
+from rest import auth as rest_auth
+from rest.active_orders import ActiveOrdersService, OrderResponse
+from rest.margin import MarginService
+from rest.order_history import (
+    LedgerEntry,
+    OrderHistoryItem,
+    OrderHistoryService,
+    TradeItem,
+)
+from rest.positions import Position, PositionsService
+from rest.wallet import WalletBalance, WalletService
 from services.backtest import BacktestService
+from services.bitfinex_data import BitfinexDataService
+from services.bracket_manager import bracket_manager
+from services.metrics import inc
+from services.notifications import notification_service
+from services.performance import PerformanceService
+from services.risk_manager import RiskManager
+from services.strategy import evaluate_weighted_strategy
+from services.strategy_settings import StrategySettings, StrategySettingsService
+from services.symbols import SymbolService
+from services.templates import OrderTemplatesService
 from services.trading_integration import trading_integration
+from services.trading_window import TradingWindowService
+from utils.logger import get_logger
+from rest.order_validator import order_validator
 
 logger = get_logger(__name__)
 
@@ -45,10 +49,12 @@ security = HTTPBearer(auto_error=False)
 settings = Settings()
 JWT_SECRET = settings.SOCKETIO_JWT_SECRET
 
+
 # Hjälpfunktion för att emit:a notifieringar via Socket.IO
 def _emit_notification(event_type: str, title: str, payload: dict):
     try:
         from ws.manager import socket_app
+
         asyncio.create_task(
             socket_app.emit(
                 "notification",
@@ -58,34 +64,45 @@ def _emit_notification(event_type: str, title: str, payload: dict):
     except Exception:
         pass
 
+
 # Modeller för förfrågningar och svar
+
 
 class OrderRequest(BaseModel):
     """Request model för orderläggning."""
+
     symbol: str
     amount: str
     price: Optional[str] = None  # Optional för MARKET orders
     type: str = "EXCHANGE LIMIT"  # EXCHANGE LIMIT, EXCHANGE MARKET, etc.
     side: Optional[str] = None  # Optional för att matcha test_order_operations.py
 
+
 class CancelOrderRequest(BaseModel):
     """Request model för orderavbrytning."""
+
     order_id: int
+
 
 class UpdateOrderRequest(BaseModel):
     """Request model för orderuppdatering."""
+
     order_id: int
     price: Optional[float] = None
     amount: Optional[float] = None
 
+
 class OrderResponse(BaseModel):
     """Response model för orderoperationer."""
+
     success: bool
     error: Optional[str] = None
     data: Optional[Any] = None
 
+
 class BracketOrderRequest(BaseModel):
     """Request för bracket-order (entry + valfri SL/TP)."""
+
     symbol: str
     amount: str
     side: str  # buy/sell
@@ -97,7 +114,9 @@ class BracketOrderRequest(BaseModel):
     post_only: bool = False
     reduce_only: bool = False
 
+
 # Order endpoints
+
 
 def require_auth(credentials: HTTPAuthorizationCredentials | None = Depends(security)):
     """Kräv JWT endast när AUTH_REQUIRED=True. Annars släpp igenom utan header."""
@@ -120,15 +139,18 @@ async def place_order_endpoint(order: OrderRequest, _: bool = Depends(require_au
     """
     try:
         logger.info(f"Mottog orderförfrågan: {order.dict()}")
-        
+
         # Validera order innan den skickas
-        # Här skulle du kunna använda OrderValidator om implementerad
-        
+        is_valid, err = order_validator.validate_order(order.dict())
+        if not is_valid:
+            return OrderResponse(success=False, error=f"validation_error:{err}")
+
         # Riskkontroller före order (skippa i pytest-miljö för enhetstester)
         import os
+
         if "PYTEST_CURRENT_TEST" not in os.environ:
             risk = RiskManager()
-            ok, reason = risk.pre_trade_checks()
+            ok, reason = risk.pre_trade_checks(symbol=order.symbol)
             if not ok:
                 logger.warning(f"Order blockeras av riskkontroll: {reason}")
                 return OrderResponse(success=False, error=f"risk_blocked:{reason}")
@@ -137,10 +159,14 @@ async def place_order_endpoint(order: OrderRequest, _: bool = Depends(require_au
 
         # Skicka ordern till Bitfinex
         result = await rest_auth.place_order(order.dict())
-        
+
         if "error" in result:
             logger.error(f"Fel vid orderläggning: {result['error']}")
-            await notification_service.notify("error", "Order misslyckades", {"request": order.dict(), "error": result.get("error")})
+            await notification_service.notify(
+                "error",
+                "Order misslyckades",
+                {"request": order.dict(), "error": result.get("error")},
+            )
             inc("orders_total")
             inc("orders_failed_total")
             try:
@@ -149,72 +175,93 @@ async def place_order_endpoint(order: OrderRequest, _: bool = Depends(require_au
             except Exception:
                 pass
             return OrderResponse(success=False, error=result["error"])
-        
+
         # Markera trade om lyckad
         if "error" not in result:
-            risk.record_trade()
+            risk.record_trade(symbol=order.symbol)
             inc("orders_total")
         logger.info(f"Order framgångsrikt lagd: {result}")
-        await notification_service.notify("info", "Order lagd", {"request": order.dict(), "response": result})
+        await notification_service.notify(
+            "info", "Order lagd", {"request": order.dict(), "response": result}
+        )
         return OrderResponse(success=True, data=result)
-        
+
     except Exception as e:
         logger.exception(f"Oväntat fel vid orderläggning: {e}")
         return OrderResponse(success=False, error=str(e))
 
+
 @router.post("/order/cancel", response_model=OrderResponse)
-async def cancel_order_endpoint(cancel_request: CancelOrderRequest, _: bool = Depends(require_auth)):
+async def cancel_order_endpoint(
+    cancel_request: CancelOrderRequest, _: bool = Depends(require_auth)
+):
     """
     Avbryter en order via Bitfinex API.
     """
     try:
         logger.info(f"Mottog avbrottsförfrågan för order: {cancel_request.order_id}")
-        
+
         # Skicka avbrottsförfrågan till Bitfinex
         result = await rest_auth.cancel_order(cancel_request.order_id)
-        
+
         if "error" in result:
             logger.error(f"Fel vid avbrytning av order: {result['error']}")
-            await notification_service.notify("error", "Order cancel misslyckades", {"order_id": cancel_request.order_id, "error": result.get("error")})
+            await notification_service.notify(
+                "error",
+                "Order cancel misslyckades",
+                {"order_id": cancel_request.order_id, "error": result.get("error")},
+            )
             try:
                 RiskManager().record_error()
             except Exception:
                 pass
             return OrderResponse(success=False, error=result["error"])
-        
+
         logger.info(f"Order framgångsrikt avbruten: {result}")
-        await notification_service.notify("info", "Order avbruten", {"order_id": cancel_request.order_id, "response": result})
+        await notification_service.notify(
+            "info",
+            "Order avbruten",
+            {"order_id": cancel_request.order_id, "response": result},
+        )
         return OrderResponse(success=True, data=result)
-        
+
     except Exception as e:
         logger.exception(f"Oväntat fel vid avbrytning av order: {e}")
         return OrderResponse(success=False, error=str(e))
 
+
 @router.post("/order/update", response_model=OrderResponse)
-async def update_order_endpoint(update_request: UpdateOrderRequest, _: bool = Depends(require_auth)):
+async def update_order_endpoint(
+    update_request: UpdateOrderRequest, _: bool = Depends(require_auth)
+):
     """
     Uppdaterar en order via Bitfinex API.
     """
     try:
-        logger.info(f"Mottog uppdateringsförfrågan för order: {update_request.order_id}")
-        
+        logger.info(
+            f"Mottog uppdateringsförfrågan för order: {update_request.order_id}"
+        )
+
         # Skapa en instans av ActiveOrdersService
         active_orders_service = ActiveOrdersService()
-        
+
         # Uppdatera ordern
         result = await active_orders_service.update_order(
-            update_request.order_id,
-            update_request.price,
-            update_request.amount
+            update_request.order_id, update_request.price, update_request.amount
         )
-        
+
         logger.info(f"Order framgångsrikt uppdaterad: {result}")
-        _emit_notification("info", "Order uppdaterad", {"request": update_request.dict(), "response": result})
+        _emit_notification(
+            "info",
+            "Order uppdaterad",
+            {"request": update_request.dict(), "response": result},
+        )
         return OrderResponse(success=True, data=result)
-        
+
     except Exception as e:
         logger.exception(f"Oväntat fel vid uppdatering av order: {e}")
         return OrderResponse(success=False, error=str(e))
+
 
 @router.post("/orders/cancel/all", response_model=OrderResponse)
 async def cancel_all_orders_endpoint(_: bool = Depends(require_auth)):
@@ -223,42 +270,48 @@ async def cancel_all_orders_endpoint(_: bool = Depends(require_auth)):
     """
     try:
         logger.info("Mottog förfrågan om att avbryta alla ordrar")
-        
+
         # Skapa en instans av ActiveOrdersService
         active_orders_service = ActiveOrdersService()
-        
+
         # Avbryt alla ordrar
         result = await active_orders_service.cancel_all_orders()
-        
+
         logger.info("Alla ordrar framgångsrikt avbrutna")
         _emit_notification("info", "Alla ordrar avbrutna", {"response": result})
         return OrderResponse(success=True, data=result)
-        
+
     except Exception as e:
         logger.exception(f"Oväntat fel vid avbrytning av alla ordrar: {e}")
         return OrderResponse(success=False, error=str(e))
 
+
 @router.post("/orders/cancel/symbol/{symbol}", response_model=OrderResponse)
-async def cancel_orders_by_symbol_endpoint(symbol: str, _: bool = Depends(require_auth)):
+async def cancel_orders_by_symbol_endpoint(
+    symbol: str, _: bool = Depends(require_auth)
+):
     """
     Avbryter alla aktiva ordrar för en specifik symbol.
     """
     try:
         logger.info(f"Mottog förfrågan om att avbryta alla ordrar för symbol: {symbol}")
-        
+
         # Skapa en instans av ActiveOrdersService
         active_orders_service = ActiveOrdersService()
-        
+
         # Avbryt alla ordrar för symbolen
         result = await active_orders_service.cancel_orders_by_symbol(symbol)
-        
+
         logger.info(f"Ordrar för {symbol} framgångsrikt avbrutna")
-        _emit_notification("info", "Ordrar avbrutna för symbol", {"symbol": symbol, "response": result})
+        _emit_notification(
+            "info", "Ordrar avbrutna för symbol", {"symbol": symbol, "response": result}
+        )
         return OrderResponse(success=True, data=result)
-        
+
     except Exception as e:
         logger.exception(f"Oväntat fel vid avbrytning av ordrar för {symbol}: {e}")
         return OrderResponse(success=False, error=str(e))
+
 
 @router.get("/orders", response_model=List[OrderResponse])
 async def get_active_orders_endpoint(_: bool = Depends(require_auth)):
@@ -268,16 +321,17 @@ async def get_active_orders_endpoint(_: bool = Depends(require_auth)):
     try:
         # Skapa en instans av ActiveOrdersService
         active_orders_service = ActiveOrdersService()
-        
+
         # Hämta alla aktiva ordrar
         orders = await active_orders_service.get_active_orders()
-        
+
         # Konvertera varje order till vår API OrderResponse-modell
         return [OrderResponse(success=True, data=order) for order in orders]
-        
+
     except Exception as e:
         logger.exception(f"Fel vid hämtning av aktiva ordrar: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.get("/orders/symbol/{symbol}", response_model=List[OrderResponse])
 async def get_orders_by_symbol_endpoint(symbol: str, _: bool = Depends(require_auth)):
@@ -287,16 +341,17 @@ async def get_orders_by_symbol_endpoint(symbol: str, _: bool = Depends(require_a
     try:
         # Skapa en instans av ActiveOrdersService
         active_orders_service = ActiveOrdersService()
-        
+
         # Hämta aktiva ordrar för symbolen
         orders = await active_orders_service.get_active_orders_by_symbol(symbol)
-        
+
         # Konvertera varje order till vår API OrderResponse-modell
         return [OrderResponse(success=True, data=order) for order in orders]
-        
+
     except Exception as e:
         logger.exception(f"Fel vid hämtning av aktiva ordrar för {symbol}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.get("/order/{order_id}", response_model=OrderResponse)
 async def get_order_by_id_endpoint(order_id: int, _: bool = Depends(require_auth)):
@@ -306,22 +361,26 @@ async def get_order_by_id_endpoint(order_id: int, _: bool = Depends(require_auth
     try:
         # Skapa en instans av ActiveOrdersService
         active_orders_service = ActiveOrdersService()
-        
+
         # Hämta ordern
         order = await active_orders_service.get_order_by_id(order_id)
-        
+
         if not order:
-            raise HTTPException(status_code=404, detail=f"Order med ID {order_id} hittades inte")
-            
+            raise HTTPException(
+                status_code=404, detail=f"Order med ID {order_id} hittades inte"
+            )
+
         return OrderResponse(success=True, data=order)
-        
+
     except HTTPException:
         raise
     except Exception as e:
         logger.exception(f"Fel vid hämtning av order {order_id}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
 # Wallet endpoints
+
 
 @router.get("/wallets", response_model=List[WalletBalance])
 async def get_wallets_endpoint(_: bool = Depends(require_auth)):
@@ -332,13 +391,16 @@ async def get_wallets_endpoint(_: bool = Depends(require_auth)):
         wallet_service = WalletService()
         wallets = await wallet_service.get_wallets()
         return wallets
-        
+
     except Exception as e:
         logger.exception(f"Fel vid hämtning av plånböcker: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @router.get("/wallets/balance")
-async def get_wallets_balance_endpoint(currency: Optional[str] = None, _: bool = Depends(require_auth)):
+async def get_wallets_balance_endpoint(
+    currency: Optional[str] = None, _: bool = Depends(require_auth)
+):
     """Aggregat saldo per valuta med brytning per wallet-typ.
 
     - Om `currency` anges returneras endast den valutan.
@@ -354,15 +416,21 @@ async def get_wallets_balance_endpoint(currency: Optional[str] = None, _: bool =
         balances: Dict[str, Dict[str, Any]] = {}
         for w in wallets:
             cur = _upper(w.currency)
-            entry = balances.setdefault(cur, {"total": 0.0, "available_total": 0.0, "by_type": {}})
+            entry = balances.setdefault(
+                cur, {"total": 0.0, "available_total": 0.0, "by_type": {}}
+            )
             entry["total"] += float(w.balance)
             entry["available_total"] += float(w.available_balance or 0.0)
             by_type = entry["by_type"]
-            by_type[w.wallet_type] = float(by_type.get(w.wallet_type, 0.0)) + float(w.balance)
+            by_type[w.wallet_type] = float(by_type.get(w.wallet_type, 0.0)) + float(
+                w.balance
+            )
 
         if currency:
             cur = currency.upper()
-            data = balances.get(cur, {"total": 0.0, "available_total": 0.0, "by_type": {}})
+            data = balances.get(
+                cur, {"total": 0.0, "available_total": 0.0, "by_type": {}}
+            )
             # inkludera råa wallets för valutan
             data["wallets"] = [w.dict() for w in wallets if _upper(w.currency) == cur]
             data["currency"] = cur
@@ -377,6 +445,7 @@ async def get_wallets_balance_endpoint(currency: Optional[str] = None, _: bool =
         logger.exception(f"Fel vid wallets/balance: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @router.get("/wallets/exchange", response_model=List[WalletBalance])
 async def get_exchange_wallets_endpoint(_: bool = Depends(require_auth)):
     """
@@ -386,10 +455,11 @@ async def get_exchange_wallets_endpoint(_: bool = Depends(require_auth)):
         wallet_service = WalletService()
         wallets = await wallet_service.get_exchange_wallets()
         return wallets
-        
+
     except Exception as e:
         logger.exception(f"Fel vid hämtning av exchange-plånböcker: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.get("/wallets/margin", response_model=List[WalletBalance])
 async def get_margin_wallets_endpoint(_: bool = Depends(require_auth)):
@@ -400,10 +470,11 @@ async def get_margin_wallets_endpoint(_: bool = Depends(require_auth)):
         wallet_service = WalletService()
         wallets = await wallet_service.get_margin_wallets()
         return wallets
-        
+
     except Exception as e:
         logger.exception(f"Fel vid hämtning av margin-plånböcker: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.get("/wallets/funding", response_model=List[WalletBalance])
 async def get_funding_wallets_endpoint(_: bool = Depends(require_auth)):
@@ -414,12 +485,14 @@ async def get_funding_wallets_endpoint(_: bool = Depends(require_auth)):
         wallet_service = WalletService()
         wallets = await wallet_service.get_funding_wallets()
         return wallets
-        
+
     except Exception as e:
         logger.exception(f"Fel vid hämtning av funding-plånböcker: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
 # Position endpoints
+
 
 @router.get("/positions", response_model=List[Position])
 async def get_positions_endpoint(_: bool = Depends(require_auth)):
@@ -430,10 +503,11 @@ async def get_positions_endpoint(_: bool = Depends(require_auth)):
         positions_service = PositionsService()
         positions = await positions_service.get_positions()
         return positions
-        
+
     except Exception as e:
         logger.exception(f"Fel vid hämtning av positioner: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.get("/positions/long", response_model=List[Position])
 async def get_long_positions_endpoint(_: bool = Depends(require_auth)):
@@ -444,10 +518,11 @@ async def get_long_positions_endpoint(_: bool = Depends(require_auth)):
         positions_service = PositionsService()
         positions = await positions_service.get_long_positions()
         return positions
-        
+
     except Exception as e:
         logger.exception(f"Fel vid hämtning av long-positioner: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.get("/positions/short", response_model=List[Position])
 async def get_short_positions_endpoint(_: bool = Depends(require_auth)):
@@ -458,10 +533,11 @@ async def get_short_positions_endpoint(_: bool = Depends(require_auth)):
         positions_service = PositionsService()
         positions = await positions_service.get_short_positions()
         return positions
-        
+
     except Exception as e:
         logger.exception(f"Fel vid hämtning av short-positioner: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.post("/positions/close/{symbol}", response_model=Dict[str, Any])
 async def close_position_endpoint(symbol: str, _: bool = Depends(require_auth)):
@@ -472,12 +548,14 @@ async def close_position_endpoint(symbol: str, _: bool = Depends(require_auth)):
         positions_service = PositionsService()
         result = await positions_service.close_position(symbol)
         return result
-        
+
     except Exception as e:
         logger.exception(f"Fel vid stängning av position: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
 # Margin endpoints
+
 
 @router.get("/margin", response_model=Dict[str, Any])
 async def get_margin_info_endpoint(_: bool = Depends(require_auth)):
@@ -488,10 +566,11 @@ async def get_margin_info_endpoint(_: bool = Depends(require_auth)):
         margin_service = MarginService()
         margin_info = await margin_service.get_margin_info()
         return margin_info.dict()
-        
+
     except Exception as e:
         logger.exception(f"Fel vid hämtning av margin-information: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.get("/margin/status", response_model=Dict[str, Any])
 async def get_margin_status_endpoint(_: bool = Depends(require_auth)):
@@ -502,10 +581,11 @@ async def get_margin_status_endpoint(_: bool = Depends(require_auth)):
         margin_service = MarginService()
         margin_status = await margin_service.get_margin_status()
         return margin_status
-        
+
     except Exception as e:
         logger.exception(f"Fel vid hämtning av margin-status: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.get("/margin/leverage", response_model=Dict[str, float])
 async def get_leverage_endpoint(_: bool = Depends(require_auth)):
@@ -516,26 +596,36 @@ async def get_leverage_endpoint(_: bool = Depends(require_auth)):
         margin_service = MarginService()
         leverage = await margin_service.get_leverage()
         return {"leverage": leverage}
-        
+
     except Exception as e:
         logger.exception(f"Fel vid hämtning av hävstång: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
 # Order History endpoints
 
+
 @router.get("/orders/history", response_model=List[OrderHistoryItem])
-async def get_orders_history_endpoint(limit: int = 25, start_time: Optional[int] = None, end_time: Optional[int] = None, _: bool = Depends(require_auth)):
+async def get_orders_history_endpoint(
+    limit: int = 25,
+    start_time: Optional[int] = None,
+    end_time: Optional[int] = None,
+    _: bool = Depends(require_auth),
+):
     """
     Hämtar orderhistorik från Bitfinex API.
     """
     try:
         order_history_service = OrderHistoryService()
-        orders = await order_history_service.get_orders_history(limit, start_time, end_time)
+        orders = await order_history_service.get_orders_history(
+            limit, start_time, end_time
+        )
         return orders
-        
+
     except Exception as e:
         logger.exception(f"Fel vid hämtning av orderhistorik: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.get("/order/{order_id}/trades", response_model=List[TradeItem])
 async def get_order_trades_endpoint(order_id: int, _: bool = Depends(require_auth)):
@@ -546,13 +636,16 @@ async def get_order_trades_endpoint(order_id: int, _: bool = Depends(require_aut
         order_history_service = OrderHistoryService()
         trades = await order_history_service.get_order_trades(order_id)
         return trades
-        
+
     except Exception as e:
         logger.exception(f"Fel vid hämtning av trades för order {order_id}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @router.get("/trades/history", response_model=List[TradeItem])
-async def get_trades_history_endpoint(symbol: Optional[str] = None, limit: int = 25, _: bool = Depends(require_auth)):
+async def get_trades_history_endpoint(
+    symbol: Optional[str] = None, limit: int = 25, _: bool = Depends(require_auth)
+):
     """
     Hämtar handelshistorik från Bitfinex API.
     """
@@ -560,13 +653,16 @@ async def get_trades_history_endpoint(symbol: Optional[str] = None, limit: int =
         order_history_service = OrderHistoryService()
         trades = await order_history_service.get_trades_history(symbol, limit)
         return trades
-        
+
     except Exception as e:
         logger.exception(f"Fel vid hämtning av handelshistorik: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @router.get("/ledgers", response_model=List[LedgerEntry])
-async def get_ledgers_endpoint(currency: Optional[str] = None, limit: int = 25, _: bool = Depends(require_auth)):
+async def get_ledgers_endpoint(
+    currency: Optional[str] = None, limit: int = 25, _: bool = Depends(require_auth)
+):
     """
     Hämtar ledger-poster från Bitfinex API.
     """
@@ -574,25 +670,31 @@ async def get_ledgers_endpoint(currency: Optional[str] = None, limit: int = 25, 
         order_history_service = OrderHistoryService()
         ledgers = await order_history_service.get_ledgers(currency, limit)
         return ledgers
-        
+
     except Exception as e:
         logger.exception(f"Fel vid hämtning av ledger: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
 # WebSocket Autentisering endpoints
 from ws.auth import generate_token
 
+
 class TokenRequest(BaseModel):
     """Request model för token generering."""
+
     user_id: str = "frontend_user"
     scope: str = "read"
     expiry_hours: int = 1
 
+
 class TokenResponse(BaseModel):
     """Response model för token generering."""
+
     success: bool
     token: Optional[str] = None
     error: Optional[str] = None
+
 
 @router.post("/auth/ws-token", response_model=TokenResponse)
 async def generate_ws_token(request: TokenRequest):
@@ -603,21 +705,23 @@ async def generate_ws_token(request: TokenRequest):
         token_data = generate_token(
             user_id=request.user_id,
             scope=request.scope,
-            expiry_minutes=request.expiry_hours * 60
+            expiry_minutes=request.expiry_hours * 60,
         )
-        
+
         if token_data and isinstance(token_data, dict):
             return TokenResponse(success=True, token=token_data.get("access_token"))
         else:
             return TokenResponse(success=False, error="Kunde inte generera token")
-        
+
     except Exception as e:
         logger.exception(f"Fel vid generering av WebSocket-token: {e}")
         return TokenResponse(success=False, error=str(e))
 
+
 # Strategy endpoints
 class WeightedStrategyRequest(BaseModel):
     """Input för viktad strategiutvärdering."""
+
     ema: str
     rsi: str
     atr: Optional[str] = None
@@ -625,26 +729,32 @@ class WeightedStrategyRequest(BaseModel):
 
 class WeightedStrategyResponse(BaseModel):
     """Svar för viktad strategiutvärdering."""
+
     signal: str
     probabilities: Dict[str, float]
 
 
 @router.post("/strategy/evaluate-weighted", response_model=WeightedStrategyResponse)
-async def evaluate_weighted_strategy_endpoint(request: WeightedStrategyRequest, _: bool = Depends(require_auth)):
+async def evaluate_weighted_strategy_endpoint(
+    request: WeightedStrategyRequest, _: bool = Depends(require_auth)
+):
     """
     Returnerar viktad slutsignal (buy/sell/hold) och sannolikheter baserat på
     simplifierade signaler från EMA, RSI och ATR.
     """
     try:
-        result = evaluate_weighted_strategy({
-            "ema": request.ema,
-            "rsi": request.rsi,
-            "atr": request.atr,
-        })
+        result = evaluate_weighted_strategy(
+            {
+                "ema": request.ema,
+                "rsi": request.rsi,
+                "atr": request.atr,
+            }
+        )
         return result
     except Exception as e:
         logger.exception(f"Fel vid viktad strategiutvärdering: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 # Strategy settings endpoints
 class StrategySettingsPayload(BaseModel):
@@ -657,7 +767,9 @@ class StrategySettingsPayload(BaseModel):
 
 
 @router.get("/strategy/settings")
-async def get_strategy_settings(symbol: Optional[str] = None, _: bool = Depends(require_auth)):
+async def get_strategy_settings(
+    symbol: Optional[str] = None, _: bool = Depends(require_auth)
+):
     try:
         svc = StrategySettingsService()
         return svc.get_settings(symbol=symbol).to_dict()
@@ -667,34 +779,73 @@ async def get_strategy_settings(symbol: Optional[str] = None, _: bool = Depends(
 
 
 @router.post("/strategy/settings")
-async def update_strategy_settings(payload: StrategySettingsPayload, symbol: Optional[str] = None, _: bool = Depends(require_auth)):
+async def update_strategy_settings(
+    payload: StrategySettingsPayload,
+    symbol: Optional[str] = None,
+    _: bool = Depends(require_auth),
+):
     try:
         svc = StrategySettingsService()
         current = svc.get_settings(symbol=symbol)
         updated = StrategySettings(
-            ema_weight=payload.ema_weight if payload.ema_weight is not None else current.ema_weight,
-            rsi_weight=payload.rsi_weight if payload.rsi_weight is not None else current.rsi_weight,
-            atr_weight=payload.atr_weight if payload.atr_weight is not None else current.atr_weight,
-            ema_period=payload.ema_period if payload.ema_period is not None else current.ema_period,
-            rsi_period=payload.rsi_period if payload.rsi_period is not None else current.rsi_period,
-            atr_period=payload.atr_period if payload.atr_period is not None else current.atr_period,
+            ema_weight=(
+                payload.ema_weight
+                if payload.ema_weight is not None
+                else current.ema_weight
+            ),
+            rsi_weight=(
+                payload.rsi_weight
+                if payload.rsi_weight is not None
+                else current.rsi_weight
+            ),
+            atr_weight=(
+                payload.atr_weight
+                if payload.atr_weight is not None
+                else current.atr_weight
+            ),
+            ema_period=(
+                payload.ema_period
+                if payload.ema_period is not None
+                else current.ema_period
+            ),
+            rsi_period=(
+                payload.rsi_period
+                if payload.rsi_period is not None
+                else current.rsi_period
+            ),
+            atr_period=(
+                payload.atr_period
+                if payload.atr_period is not None
+                else current.atr_period
+            ),
         )
         saved = svc.save_settings(updated, symbol=symbol)
         # Skicka WS-notifiering
         try:
-            from ws.manager import socket_app
             import asyncio
-            asyncio.create_task(socket_app.emit("notification", {
-                "type": "info",
-                "title": "Strategiinställningar uppdaterade",
-                "payload": {**saved.to_dict(), **({"symbol": symbol} if symbol else {})}
-            }))
+
+            from ws.manager import socket_app
+
+            asyncio.create_task(
+                socket_app.emit(
+                    "notification",
+                    {
+                        "type": "info",
+                        "title": "Strategiinställningar uppdaterade",
+                        "payload": {
+                            **saved.to_dict(),
+                            **({"symbol": symbol} if symbol else {}),
+                        },
+                    },
+                )
+            )
         except Exception:
             pass
         return saved.to_dict()
     except Exception as e:
         logger.exception(f"Fel vid uppdatering av strategiinställningar: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 # Position sizing endpoint (enkel riskprocent-variant)
 class PositionSizeRequest(BaseModel):
@@ -708,7 +859,9 @@ class PositionSizeRequest(BaseModel):
 
 
 @router.post("/risk/position-size")
-async def calculate_position_size(req: PositionSizeRequest, _: bool = Depends(require_auth)):
+async def calculate_position_size(
+    req: PositionSizeRequest, _: bool = Depends(require_auth)
+):
     try:
         # Hämta total balans i quote-valutan (auto-detektera från symbol)
         wallet_service = WalletService()
@@ -720,13 +873,19 @@ async def calculate_position_size(req: PositionSizeRequest, _: bool = Depends(re
             # Fallback: anta 3 sista tecken som quote (t.ex. BTCUSD -> USD)
             quote_currency = symbol_clean[-3:] if len(symbol_clean) >= 3 else "USD"
         quote_upper = quote_currency.upper()
-        total_quote = sum(w.balance for w in wallets if w.currency.upper() == quote_upper)
+        total_quote = sum(
+            w.balance for w in wallets if w.currency.upper() == quote_upper
+        )
         if total_quote <= 0 and quote_upper != "USD":
             # Fallback till USD om ingen balans i quote hittas
             total_quote = sum(w.balance for w in wallets if w.currency.upper() == "USD")
             quote_upper = "USD" if total_quote > 0 else quote_upper
         if total_quote <= 0:
-            return {"size": 0.0, "reason": "no_quote_balance", "quote_currency": quote_currency}
+            return {
+                "size": 0.0,
+                "reason": "no_quote_balance",
+                "quote_currency": quote_currency,
+            }
 
         # Hämta pris
         price = req.price
@@ -748,13 +907,22 @@ async def calculate_position_size(req: PositionSizeRequest, _: bool = Depends(re
         tp_price = None
         try:
             data = BitfinexDataService()
-            candles = await data.get_candles(req.symbol, req.timeframe, limit= req.atr_period if hasattr(req, 'atr_period') else 100)
+            candles = await data.get_candles(
+                req.symbol,
+                req.timeframe,
+                limit=req.atr_period if hasattr(req, "atr_period") else 100,
+            )
             if candles:
                 parsed = data.parse_candles_to_strategy_data(candles)
                 # Hämta ATR-period från strategiinställningar
                 ssvc = StrategySettingsService()
                 s = ssvc.get_settings(symbol=req.symbol)
-                atr_val = calculate_atr(parsed.get("highs", []), parsed.get("lows", []), parsed.get("closes", []), period=s.atr_period)
+                atr_val = calculate_atr(
+                    parsed.get("highs", []),
+                    parsed.get("lows", []),
+                    parsed.get("closes", []),
+                    period=s.atr_period,
+                )
                 if atr_val is not None and atr_val > 0:
                     if req.side.lower() == "buy":
                         sl_price = price - req.atr_multiplier_sl * atr_val
@@ -772,17 +940,23 @@ async def calculate_position_size(req: PositionSizeRequest, _: bool = Depends(re
             "price": price,
         }
         if sl_price is not None and tp_price is not None:
-            resp.update({
-                "atr_sl": round(sl_price, 8),
-                "atr_tp": round(tp_price, 8),
-                "atr_multipliers": {"sl": req.atr_multiplier_sl, "tp": req.atr_multiplier_tp},
-                "side": req.side,
-                "timeframe": req.timeframe,
-            })
+            resp.update(
+                {
+                    "atr_sl": round(sl_price, 8),
+                    "atr_tp": round(tp_price, 8),
+                    "atr_multipliers": {
+                        "sl": req.atr_multiplier_sl,
+                        "tp": req.atr_multiplier_tp,
+                    },
+                    "side": req.side,
+                    "timeframe": req.timeframe,
+                }
+            )
         return resp
     except Exception as e:
         logger.exception(f"Fel vid positionsstorleksberäkning: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 # Performance endpoint (förenklad)
 @router.get("/account/performance")
@@ -795,6 +969,7 @@ async def get_account_performance(_: bool = Depends(require_auth)):
     except Exception as e:
         logger.exception(f"Fel vid performance: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 # Market data endpoints
 @router.get("/market/ticker/{symbol}")
@@ -813,7 +988,12 @@ async def market_ticker(symbol: str, _: bool = Depends(require_auth)):
 
 
 @router.get("/market/candles/{symbol}")
-async def market_candles(symbol: str, timeframe: str = "1m", limit: int = 100, _: bool = Depends(require_auth)):
+async def market_candles(
+    symbol: str,
+    timeframe: str = "1m",
+    limit: int = 100,
+    _: bool = Depends(require_auth),
+):
     try:
         data = BitfinexDataService()
         candles = await data.get_candles(symbol, timeframe, limit)
@@ -821,6 +1001,7 @@ async def market_candles(symbol: str, timeframe: str = "1m", limit: int = 100, _
             raise HTTPException(status_code=502, detail="Kunde inte hämta candles")
         parsed = data.parse_candles_to_strategy_data(candles)
         from services.strategy import evaluate_strategy
+
         # bädda in symbol i parsed för vikt-override
         parsed["symbol"] = symbol
         strategy = evaluate_strategy(parsed)
@@ -834,11 +1015,13 @@ async def market_candles(symbol: str, timeframe: str = "1m", limit: int = 100, _
         logger.exception(f"Fel vid candles: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
 # Health endpoint
 @router.get("/health")
 async def health(_: bool = Depends(require_auth)):
     try:
         from services.bitfinex_websocket import bitfinex_ws
+
         return {
             "rest": True,
             "ws_connected": bool(bitfinex_ws.is_connected),
@@ -848,9 +1031,12 @@ async def health(_: bool = Depends(require_auth)):
         logger.exception(f"Health error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
 # Symbols endpoint
 @router.get("/market/symbols")
-async def market_symbols(test_only: bool = False, format: str = "v2", _: bool = Depends(require_auth)):
+async def market_symbols(
+    test_only: bool = False, format: str = "v2", _: bool = Depends(require_auth)
+):
     try:
         svc = SymbolService()
         return svc.get_symbols(test_only=test_only, fmt=format)
@@ -858,9 +1044,12 @@ async def market_symbols(test_only: bool = False, format: str = "v2", _: bool = 
         logger.exception(f"Fel vid symbols: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
 # Watchlist endpoint (liten vy) med ticker + volym + senaste strategi-signal
 @router.get("/market/watchlist")
-async def market_watchlist(symbols: Optional[str] = None, _: bool = Depends(require_auth)):
+async def market_watchlist(
+    symbols: Optional[str] = None, _: bool = Depends(require_auth)
+):
     try:
         svc = SymbolService()
         data = BitfinexDataService()
@@ -878,6 +1067,7 @@ async def market_watchlist(symbols: Optional[str] = None, _: bool = Depends(requ
             if candles:
                 parsed = data.parse_candles_to_strategy_data(candles)
                 from services.strategy import evaluate_strategy
+
                 parsed["symbol"] = s
                 strat = evaluate_strategy(parsed)
             out.append({"symbol": s, "last": last, "volume": vol, "strategy": strat})
@@ -885,6 +1075,7 @@ async def market_watchlist(symbols: Optional[str] = None, _: bool = Depends(requ
     except Exception:
         logger.exception("Fel vid watchlist")
         raise HTTPException(status_code=500, detail="internal_error")
+
 
 # Backtest endpoint
 class BacktestRequest(BaseModel):
@@ -904,6 +1095,7 @@ async def strategy_backtest(payload: BacktestRequest, _: bool = Depends(require_
     except Exception:
         logger.exception("Backtest fel")
         raise HTTPException(status_code=500, detail="internal_error")
+
 
 # --- Auto trading controls ---
 class AutoStartRequest(BaseModel):
@@ -936,10 +1128,14 @@ async def auto_stop(req: AutoStartRequest, _: bool = Depends(require_auth)):
 async def auto_status(_: bool = Depends(require_auth)):
     try:
         summary = await trading_integration.get_account_summary()
-        return {"active_symbols": list(trading_integration.active_symbols), "summary": summary}
+        return {
+            "active_symbols": list(trading_integration.active_symbols),
+            "summary": summary,
+        }
     except Exception as e:
         logger.exception(f"Fel vid auto/status: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 # Batch/Stop-all endpoints
 class AutoBatchRequest(BaseModel):
@@ -971,19 +1167,24 @@ async def auto_start_batch(req: AutoBatchRequest, _: bool = Depends(require_auth
             except Exception as ie:
                 logger.warning(f"Kunde inte starta {s}: {ie}")
         if started:
-            _emit_notification("info", "Auto trading startad (batch)", {"symbols": started})
+            _emit_notification(
+                "info", "Auto trading startad (batch)", {"symbols": started}
+            )
         return {"ok": True, "started": started}
     except Exception as e:
         logger.exception(f"Fel vid auto/start-batch: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
 # Bracket order endpoint
 @router.post("/order/bracket", response_model=OrderResponse)
-async def place_bracket_order(req: BracketOrderRequest, _: bool = Depends(require_auth)):
+async def place_bracket_order(
+    req: BracketOrderRequest, _: bool = Depends(require_auth)
+):
     try:
         logger.info(f"Mottog bracket-order: {req.dict()}")
         risk = RiskManager()
-        ok, reason = risk.pre_trade_checks()
+        ok, reason = risk.pre_trade_checks(symbol=req.symbol)
         if not ok:
             return OrderResponse(success=False, error=f"risk_blocked:{reason}")
 
@@ -994,7 +1195,11 @@ async def place_bracket_order(req: BracketOrderRequest, _: bool = Depends(requir
                     return res.get("order_id") or res.get("id")
                 if isinstance(res, list) and len(res) >= 5:
                     orders = res[4]
-                    if isinstance(orders, list) and len(orders) > 0 and isinstance(orders[0], list):
+                    if (
+                        isinstance(orders, list)
+                        and len(orders) > 0
+                        and isinstance(orders[0], list)
+                    ):
                         return int(orders[0][0])
             except Exception:
                 return None
@@ -1009,6 +1214,10 @@ async def place_bracket_order(req: BracketOrderRequest, _: bool = Depends(requir
         }
         if req.entry_type and "LIMIT" in req.entry_type.upper():
             entry_payload["price"] = req.entry_price
+        # Validera payload
+        is_valid, err = order_validator.validate_order(entry_payload)
+        if not is_valid:
+            return OrderResponse(success=False, error=f"validation_error:{err}")
         entry_res = await rest_auth.place_order(entry_payload)
         if "error" in entry_res:
             return OrderResponse(success=False, error=entry_res.get("error"))
@@ -1022,11 +1231,16 @@ async def place_bracket_order(req: BracketOrderRequest, _: bool = Depends(requir
         if req.sl_price:
             sl_payload = {
                 "symbol": req.symbol,
-                "amount": req.amount if req.side.lower() == "sell" else f"-{req.amount}",
+                "amount": (
+                    req.amount if req.side.lower() == "sell" else f"-{req.amount}"
+                ),
                 "type": "EXCHANGE STOP",
                 "price": req.sl_price,
                 "side": "sell" if req.side.lower() == "buy" else "buy",
             }
+            is_valid, err = order_validator.validate_order(sl_payload)
+            if not is_valid:
+                return OrderResponse(success=False, error=f"validation_error:{err}")
             sl_res = await rest_auth.place_order(sl_payload)
             if "error" not in sl_res:
                 sl_id = _extract_order_id(sl_res)
@@ -1034,22 +1248,39 @@ async def place_bracket_order(req: BracketOrderRequest, _: bool = Depends(requir
         if req.tp_price:
             tp_payload = {
                 "symbol": req.symbol,
-                "amount": req.amount if req.side.lower() == "sell" else f"-{req.amount}",
+                "amount": (
+                    req.amount if req.side.lower() == "sell" else f"-{req.amount}"
+                ),
                 "type": "EXCHANGE LIMIT",
                 "price": req.tp_price,
                 "side": "sell" if req.side.lower() == "buy" else "buy",
             }
+            is_valid, err = order_validator.validate_order(tp_payload)
+            if not is_valid:
+                return OrderResponse(success=False, error=f"validation_error:{err}")
             tp_res = await rest_auth.place_order(tp_payload)
             if "error" not in tp_res:
                 tp_id = _extract_order_id(tp_res)
 
         gid = f"br_{entry_id}"
         bracket_manager.register_group(str(gid), entry_id, sl_id, tp_id)
-        await notification_service.notify("info", "Bracket order lagd", {"entry_id": entry_id, "sl_id": sl_id, "tp_id": tp_id, "symbol": req.symbol})
-        return OrderResponse(success=True, data={"entry_id": entry_id, "sl_id": sl_id, "tp_id": tp_id})
+        await notification_service.notify(
+            "info",
+            "Bracket order lagd",
+            {
+                "entry_id": entry_id,
+                "sl_id": sl_id,
+                "tp_id": tp_id,
+                "symbol": req.symbol,
+            },
+        )
+        return OrderResponse(
+            success=True, data={"entry_id": entry_id, "sl_id": sl_id, "tp_id": tp_id}
+        )
     except Exception as e:
         logger.exception(f"Fel vid bracket-order: {e}")
         return OrderResponse(success=False, error=str(e))
+
 
 # Risk windows GET + pause/resume
 @router.get("/risk/windows")
@@ -1067,6 +1298,7 @@ async def get_trading_windows(_: bool = Depends(require_auth)):
         logger.exception(f"Fel vid hämtning av trading windows: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @router.post("/risk/pause")
 async def pause_trading(_: bool = Depends(require_auth)):
     try:
@@ -1078,6 +1310,7 @@ async def pause_trading(_: bool = Depends(require_auth)):
         logger.exception(f"Fel vid paus: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @router.post("/risk/resume")
 async def resume_trading(_: bool = Depends(require_auth)):
     try:
@@ -1088,6 +1321,7 @@ async def resume_trading(_: bool = Depends(require_auth)):
     except Exception as e:
         logger.exception(f"Fel vid resume: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 # Performance breakdown per symbol
 @router.get("/account/performance/detail")
@@ -1128,16 +1362,18 @@ async def get_account_performance_detail(_: bool = Depends(require_auth)):
             pnl = float(p.profit_loss or 0.0)
             pnl_by_symbol[p.symbol] = pnl_by_symbol.get(p.symbol, 0.0) + pnl
 
-            positions_info.append({
-                "symbol": p.symbol,
-                "amount": p.amount,
-                "base_price": p.base_price,
-                "current_price": cur_price,
-                "profit_loss": p.profit_loss,
-                "profit_loss_percentage": p.profit_loss_percentage,
-                "liquidation_price": p.liquidation_price,
-                "status": p.status,
-            })
+            positions_info.append(
+                {
+                    "symbol": p.symbol,
+                    "amount": p.amount,
+                    "base_price": p.base_price,
+                    "current_price": cur_price,
+                    "profit_loss": p.profit_loss,
+                    "profit_loss_percentage": p.profit_loss_percentage,
+                    "liquidation_price": p.liquidation_price,
+                    "status": p.status,
+                }
+            )
 
         # Per-symbol wallets (summa av base- och quote-valutor över alla wallet-typer)
         wallets_by_symbol: Dict[str, Dict[str, Any]] = {}
@@ -1145,7 +1381,9 @@ async def get_account_performance_detail(_: bool = Depends(require_auth)):
         totals_by_currency: Dict[str, Dict[str, float]] = {}
         for w in wallets:
             cur = w.currency.upper()
-            e = totals_by_currency.setdefault(cur, {"total": 0.0, "exchange": 0.0, "margin": 0.0, "funding": 0.0})
+            e = totals_by_currency.setdefault(
+                cur, {"total": 0.0, "exchange": 0.0, "margin": 0.0, "funding": 0.0}
+            )
             e["total"] += float(w.balance)
             e[w.wallet_type] += float(w.balance)
 
@@ -1187,6 +1425,7 @@ async def get_account_performance_detail(_: bool = Depends(require_auth)):
         logger.exception(f"Fel vid performance/detail: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
 # Risk endpoints
 class UpdateMaxTradesRequest(BaseModel):
     max_trades_per_day: int
@@ -1199,7 +1438,9 @@ async def get_risk_status(_: bool = Depends(require_auth)):
 
 
 @router.post("/risk/max-trades")
-async def update_max_trades(req: UpdateMaxTradesRequest, _: bool = Depends(require_auth)):
+async def update_max_trades(
+    req: UpdateMaxTradesRequest, _: bool = Depends(require_auth)
+):
     # Uppdatera i runtime settings (enkel variant). Permanent lagring kräver filskrivning.
     try:
         s = Settings()
@@ -1213,6 +1454,36 @@ async def update_max_trades(req: UpdateMaxTradesRequest, _: bool = Depends(requi
     except Exception as e:
         logger.exception(f"Fel vid uppdatering av max trades: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+class UpdateMaxTradesSymbolRequest(BaseModel):
+    max_trades_per_symbol_per_day: int
+
+
+@router.post("/risk/max-trades-symbol")
+async def update_max_trades_symbol(
+    req: UpdateMaxTradesSymbolRequest, _: bool = Depends(require_auth)
+):
+    try:
+        s = Settings()
+        tw = TradingWindowService(s)
+        tw.save_rules(max_trades_per_symbol_per_day=req.max_trades_per_symbol_per_day)
+        rm = RiskManager(s)
+        return {"success": True, "status": rm.status()}
+    except Exception as e:
+        logger.exception(f"Fel vid uppdatering av max trades per symbol: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/risk/trade-counter")
+async def get_trade_counter(_: bool = Depends(require_auth)):
+    try:
+        rm = RiskManager()
+        return rm.trade_counter.stats()
+    except Exception as e:
+        logger.exception(f"Fel vid hämtning av trade counter: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 # --- Circuit Breaker endpoints ---
 class CircuitConfigRequest(BaseModel):
@@ -1233,7 +1504,9 @@ async def circuit_status(_: bool = Depends(require_auth)):
 
 
 @router.post("/risk/circuit/reset")
-async def circuit_reset(resume: bool = True, clear_errors: bool = True, _: bool = Depends(require_auth)):
+async def circuit_reset(
+    resume: bool = True, clear_errors: bool = True, _: bool = Depends(require_auth)
+):
     try:
         rm = RiskManager()
         return rm.circuit_reset(resume=resume, clear_errors=clear_errors)
@@ -1255,6 +1528,7 @@ async def circuit_config(req: CircuitConfigRequest, _: bool = Depends(require_au
     except Exception as e:
         logger.exception(f"Fel vid circuit config: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 # Equity endpoints
 @router.get("/account/equity")
@@ -1289,6 +1563,7 @@ async def equity_history(limit: Optional[int] = None, _: bool = Depends(require_
         logger.exception(f"Fel vid equity history: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
 # Order Templates endpoints
 class SaveTemplateRequest(BaseModel):
     name: str
@@ -1301,30 +1576,36 @@ class SaveTemplateRequest(BaseModel):
     tp_price: Optional[str] = None
 
 
-@router.get("/order/templates", response_model=List[Dict[str, Any]])
-async def list_templates(_: bool = Depends(require_auth)):
+## OBS: GET /order/templates togs bort för att undvika kollision med /order/{order_id} (int)
+
+
+@router.get("/order/templates/{name}")
+async def get_template(name: str, _: bool = Depends(require_auth)):
     try:
         svc = OrderTemplatesService()
-        items = svc.list_templates()
-        # Säkerställ lista även vid tom/korrupt fil
-        if not isinstance(items, list):
-            return []
-        return items
-    except Exception as e:
-        logger.exception(f"Fel vid list_templates: {e}")
-        # Returnera tom lista istället för 5xx för att undvika 422 i klient
-        return []
+        tpl = svc.get_template(name)
+        if not tpl:
+            raise HTTPException(status_code=404, detail="template_not_found")
+        return tpl
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Fel vid get_template")
+        raise HTTPException(status_code=500, detail="internal_error")
 
 
 @router.post("/order/templates")
 async def save_template(payload: SaveTemplateRequest, _: bool = Depends(require_auth)):
     try:
         svc = OrderTemplatesService()
-        result = svc.save_template({k: v for k, v in payload.dict().items() if v is not None})
+        result = svc.save_template(
+            {k: v for k, v in payload.dict().items() if v is not None}
+        )
         return result
     except Exception as e:
         logger.exception(f"Fel vid save_template: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 # Alias endpoints för att undvika kollision med /order/{order_id}
 @router.get("/orders/templates", response_model=List[Dict[str, Any]])
@@ -1339,11 +1620,30 @@ async def list_templates_alias(_: bool = Depends(require_auth)):
         logger.exception(f"Fel vid list_templates (alias): {e}")
         return []
 
-@router.post("/orders/templates")
-async def save_template_alias(payload: SaveTemplateRequest, _: bool = Depends(require_auth)):
+@router.delete("/order/templates/{name}")
+async def delete_template(name: str, _: bool = Depends(require_auth)):
     try:
         svc = OrderTemplatesService()
-        result = svc.save_template({k: v for k, v in payload.dict().items() if v is not None})
+        ok = svc.delete_template(name)
+        if not ok:
+            raise HTTPException(status_code=404, detail="template_not_found")
+        return {"deleted": True, "name": name}
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Fel vid delete_template")
+        raise HTTPException(status_code=500, detail="internal_error")
+
+
+@router.post("/orders/templates")
+async def save_template_alias(
+    payload: SaveTemplateRequest, _: bool = Depends(require_auth)
+):
+    try:
+        svc = OrderTemplatesService()
+        result = svc.save_template(
+            {k: v for k, v in payload.dict().items() if v is not None}
+        )
         return result
     except Exception as e:
         logger.exception(f"Fel vid save_template (alias): {e}")
@@ -1354,10 +1654,15 @@ class UpdateWindowsRequest(BaseModel):
     timezone: Optional[str] = None
     windows: Optional[Dict[str, List[List[str]]]] = None
     paused: Optional[bool] = None
+    max_trades_per_symbol_per_day: Optional[int] = None
+    max_trades_per_day: Optional[int] = None
+    trade_cooldown_seconds: Optional[int] = None
 
 
 @router.post("/risk/windows")
-async def update_trading_windows(req: UpdateWindowsRequest, _: bool = Depends(require_auth)):
+async def update_trading_windows(
+    req: UpdateWindowsRequest, _: bool = Depends(require_auth)
+):
     try:
         s = Settings()
         tw = TradingWindowService(s)
@@ -1365,7 +1670,14 @@ async def update_trading_windows(req: UpdateWindowsRequest, _: bool = Depends(re
         windows_typed = None
         if req.windows is not None:
             windows_typed = {k: [(a, b) for a, b in v] for k, v in req.windows.items()}
-        tw.save_rules(timezone=req.timezone, windows=windows_typed, paused=req.paused)
+        tw.save_rules(
+            timezone=req.timezone,
+            windows=windows_typed,
+            paused=req.paused,
+            max_trades_per_symbol_per_day=req.max_trades_per_symbol_per_day,
+            max_trades_per_day=req.max_trades_per_day,
+            trade_cooldown_seconds=req.trade_cooldown_seconds,
+        )
         rm = RiskManager(s)
         return {"success": True, "status": rm.status()}
     except Exception as e:

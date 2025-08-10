@@ -16,6 +16,7 @@ Detta är backend-delen av Genesis Trading Bot, en plattform för automatiserad 
 10. [Backtest & Heatmap](#backtest--heatmap)
 11. [CI (GitHub Actions)](#ci-github-actions)
 12. [CodeQL](#codeql)
+13. [Cursor Prompts](#cursor-prompts)
 
 ## Översikt
 
@@ -229,6 +230,9 @@ Invoke-RestMethod -Uri http://127.0.0.1:8000/api/v2/wallets -Headers $h | Conver
 - Knappen “Get JWT” anropar `POST /api/v2/auth/ws-token` och fyller `Authorization`-headern automatiskt.
 - Realtids-händelser (wallet, positions, orders, trades) emit:as som Socket.IO-events.
 
+- Simple/Advanced Mode: använd checkboxen “Visa avancerat” för att dölja/visa avancerade sektioner i `ws_test.html`. Valet sparas i `localStorage` och återställs automatiskt.
+- Statusrad: överst i sidan visas en kompakt status (öppet/paus, nästa öppning, Circuit Breaker, WS‑anslutning). Uppdateras vid anslutning, notifieringar och risk‑ändringar.
+
 ## Smoke test (kommandon)
 
 1. Hämta JWT och förbered Authorization-header
@@ -303,6 +307,15 @@ Invoke-RestMethod -Uri http://127.0.0.1:8000/api/v2/risk/windows -Method Post -H
 
 ```powershell
 Invoke-RestMethod -Uri http://127.0.0.1:8000/api/v2/risk/status -Headers $h | ConvertTo-Json -Depth 6
+```
+
+5. Uppdatera max trades per symbol och visa trade‑counter
+
+```powershell
+$perSym = 3
+Invoke-RestMethod -Uri http://127.0.0.1:8000/api/v2/risk/max-trades-symbol -Method Post -Headers $h -ContentType 'application/json' -Body (@{ max_trades_per_symbol_per_day = $perSym } | ConvertTo-Json)
+
+Invoke-RestMethod -Uri http://127.0.0.1:8000/api/v2/risk/trade-counter -Headers $h | ConvertTo-Json -Depth 6
 ```
 
 ### curl (bash)
@@ -437,8 +450,24 @@ Observera att `post_only` ignoreras för MARKET-ordrar (gäller LIMIT). `reduce_
 - Returnerar bl.a.: `final_equity`, `winrate`, `max_drawdown`, `sharpe`, `distribution`, `equity_curve`, `heatmap_return` (alias `heatmap`), `heatmap_winrate` och `heatmap_counts`.
 - Heatmap visar genomsnittlig avkastning per trade (return-heatmap). Winrate-heatmap visar andel vinnare per cell. UI kan utökas med toggle vid behov.
 
+## Ordermallar
+
+- Endpoints:
+  - GET `/api/v2/order/templates` – lista mallar
+  - GET `/api/v2/order/templates/{name}` – hämta en mall
+  - POST `/api/v2/order/templates` – spara/uppdatera mall
+  - DELETE `/api/v2/order/templates/{name}` – ta bort mall
+- Lagring: `config/order_templates.json` (tålig mot tom/korrupt fil)
+- UI (ws_test.html):
+  - "Spara mall (från Bracket)" – sparar aktuell bracket‑konfiguration under angivet namn
+  - "Visa mallar" – listar och erbjuder "Använd" som fyller bracket‑fälten
+
 1. Forka repositoryt
 2. Skapa en feature branch (`git checkout -b feature/amazing-feature`)
 3. Commita dina ändringar (`git commit -m 'Add some amazing feature'`)
 4. Pusha till branchen (`git push origin feature/amazing-feature`)
 5. Öppna en Pull Request
+
+## Cursor Prompts
+
+Se `cursor_prompts.md` för en svensk systemprompt och tio återanvändbara Cursor‑mallar (bugfix, REST/WS‑endpoint, strategi/indikator, ordervalidering, tester, dokumentation, refaktorering, scraper, CI). Mallarna är anpassade till projektets modulstruktur (`services`, `rest`, `ws`, `indicators`, `utils`) och Bitfinex API v2 (REST + WS, autentiserat).

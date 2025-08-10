@@ -7,11 +7,11 @@ för att auto-avbryta kvarvarande barnorder när en av SL/TP fylls.
 
 from __future__ import annotations
 
-from typing import Dict, Optional, Tuple
 from dataclasses import dataclass
-from utils.logger import get_logger
+from typing import Dict, Optional, Tuple
 
 from rest.auth import cancel_order
+from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -31,12 +31,22 @@ class BracketManager:
         # Mappar: gid -> BracketGroup
         self.groups: Dict[str, BracketGroup] = {}
 
-    def register_group(self, gid: str, entry_id: Optional[int], sl_id: Optional[int], tp_id: Optional[int]) -> None:
-        self.groups[gid] = BracketGroup(entry_id=entry_id, sl_id=sl_id, tp_id=tp_id, active=True)
+    def register_group(
+        self,
+        gid: str,
+        entry_id: Optional[int],
+        sl_id: Optional[int],
+        tp_id: Optional[int],
+    ) -> None:
+        self.groups[gid] = BracketGroup(
+            entry_id=entry_id, sl_id=sl_id, tp_id=tp_id, active=True
+        )
         for role, oid in (("sl", sl_id), ("tp", tp_id)):
             if isinstance(oid, int):
                 self.child_to_group[oid] = (gid, role)
-        logger.info(f"Registered bracket gid={gid} entry={entry_id} sl={sl_id} tp={tp_id}")
+        logger.info(
+            f"Registered bracket gid={gid} entry={entry_id} sl={sl_id} tp={tp_id}"
+        )
 
     async def _cancel_sibling(self, filled_child_id: int) -> None:
         group = self.child_to_group.get(filled_child_id)
@@ -51,7 +61,9 @@ class BracketManager:
         sibling_id = data.tp_id if sibling_role == "tp" else data.sl_id
         if isinstance(sibling_id, int):
             try:
-                logger.info(f"Bracket gid={gid}: cancel {sibling_role} order {sibling_id} efter fill av {role} {filled_child_id}")
+                logger.info(
+                    f"Bracket gid={gid}: cancel {sibling_role} order {sibling_id} efter fill av {role} {filled_child_id}"
+                )
                 await cancel_order(sibling_id)
             except Exception as e:
                 logger.warning(f"Kunde inte cancel syskon-order {sibling_id}: {e}")
@@ -79,12 +91,11 @@ class BracketManager:
                     if group:
                         gid, _ = group
                         if gid in self.groups:
-                            self.groups[gid]["active"] = False
+                            # Markera bracket-gruppen inaktiv korrekt via dataclass-fält
+                            self.groups[gid].active = False
         except Exception as e:
             logger.error(f"Fel i BracketManager.handle_private_event: {e}")
 
 
 # Global instans
 bracket_manager = BracketManager()
-
-

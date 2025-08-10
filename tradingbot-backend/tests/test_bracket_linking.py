@@ -8,5 +8,3 @@ def test_register_group_sets_ids():
     grp = bracket_manager.groups.get(gid)
     assert grp is not None
     assert grp.entry_id == entry and grp.sl_id == sl and grp.tp_id == tp
-
-

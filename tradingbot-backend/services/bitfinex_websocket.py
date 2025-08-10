@@ -7,19 +7,21 @@ Inkluderar automatisk återanslutning och tickdata-hantering.
 
 import asyncio
 import json
-import websockets
-from typing import Dict, List, Optional, Callable, Any
 from datetime import datetime
+from typing import Any, Callable, Dict, List, Optional
+
+import websockets
 
 from config.settings import Settings
-from ws.auth import build_ws_auth_payload
 from utils.logger import get_logger
+from ws.auth import build_ws_auth_payload
 
 logger = get_logger(__name__)
 
+
 class BitfinexWebSocketService:
     """Service för WebSocket-anslutning till Bitfinex."""
-    
+
     def __init__(self):
         self.settings = Settings()
         self.ws_url = self.settings.BITFINEX_WS_URI
@@ -34,9 +36,10 @@ class BitfinexWebSocketService:
         self.strategy_callbacks = {}  # Callbacks för strategiutvärdering
         # Synk-event för auth-ack
         import asyncio as _asyncio
+
         self._asyncio = _asyncio
         self._auth_event = _asyncio.Event()
-        
+
     # Publikt API för andra moduler
     def register_handler(self, event_code: str, callback: Callable[[Any], Any]):
         """Registrera callback för privat kanal 0-event (t.ex. 'ws','wu','ps','pu','on','oc','te','tu','auth')."""
@@ -69,7 +72,7 @@ class BitfinexWebSocketService:
         except Exception as e:
             logger.error(f"❌ WebSocket-anslutning misslyckades: {e}")
             return False
-    
+
     async def authenticate(self):
         """Autentiserar WS-sessionen med Bitfinex v2 auth-event."""
         try:
@@ -80,7 +83,9 @@ class BitfinexWebSocketService:
             try:
                 await self._asyncio.wait_for(self._auth_event.wait(), timeout=10)
             except Exception:
-                logger.warning("⚠️ Ingen auth-bekräftelse inom timeout. Fortsätter utan auth.")
+                logger.warning(
+                    "⚠️ Ingen auth-bekräftelse inom timeout. Fortsätter utan auth."
+                )
         except Exception as e:
             logger.warning(f"⚠️ Kunde inte skicka WS auth: {e}")
 
@@ -112,11 +117,11 @@ class BitfinexWebSocketService:
             await self.websocket.close()
             self.is_connected = False
             logger.info("🔌 Frånkopplad från Bitfinex WebSocket")
-    
+
     async def subscribe_ticker(self, symbol: str, callback: Callable):
         """
         Prenumererar på ticker-data för en symbol.
-        
+
         Args:
             symbol: Trading pair (t.ex. 'tBTCUSD')
             callback: Funktion som anropas vid ny ticker-data
@@ -124,27 +129,27 @@ class BitfinexWebSocketService:
         try:
             if not self.is_connected:
                 await self.connect()
-            
+
             # Skapa subscription-meddelande
             subscribe_msg = {
                 "event": "subscribe",
                 "channel": "ticker",
-                "symbol": symbol
+                "symbol": symbol,
             }
-            
+
             await self.websocket.send(json.dumps(subscribe_msg))
             self.subscriptions[symbol] = subscribe_msg
             self.callbacks[symbol] = callback
-            
+
             logger.info(f"📊 Prenumererar på ticker för {symbol}")
-            
+
         except Exception as e:
             logger.error(f"❌ Ticker-prenumeration misslyckades: {e}")
-    
+
     async def subscribe_trades(self, symbol: str, callback: Callable):
         """
         Prenumererar på trades-data för en symbol.
-        
+
         Args:
             symbol: Trading pair
             callback: Funktion som anropas vid ny trade-data
@@ -152,26 +157,26 @@ class BitfinexWebSocketService:
         try:
             if not self.is_connected:
                 await self.connect()
-            
+
             subscribe_msg = {
                 "event": "subscribe",
                 "channel": "trades",
-                "symbol": symbol
+                "symbol": symbol,
             }
-            
+
             await self.websocket.send(json.dumps(subscribe_msg))
             self.subscriptions[f"{symbol}_trades"] = subscribe_msg
             self.callbacks[f"{symbol}_trades"] = callback
-            
+
             logger.info(f"💱 Prenumererar på trades för {symbol}")
-            
+
         except Exception as e:
             logger.error(f"❌ Trades-prenumeration misslyckades: {e}")
-    
+
     async def subscribe_with_strategy_evaluation(self, symbol: str, callback: Callable):
         """
         Prenumererar på ticker och kör automatisk strategiutvärdering.
-        
+
         Args:
             symbol: Trading pair (t.ex. 'tBTCUSD')
             callback: Funktion som anropas med strategi-resultat
@@ -179,110 +184,112 @@ class BitfinexWebSocketService:
         try:
             if not self.is_connected:
                 await self.connect()
-            
+
             # Spara callback för strategiutvärdering
             self.strategy_callbacks[symbol] = callback
-            
+
             # Prenumerera på ticker
             await self.subscribe_ticker(symbol, self._handle_ticker_with_strategy)
-            
+
             logger.info(f"🎯 Prenumererar på {symbol} med strategiutvärdering")
-            
+
         except Exception as e:
             logger.error(f"❌ Strategi-prenumeration misslyckades: {e}")
-    
+
     async def _handle_ticker_with_strategy(self, ticker_data: Dict):
         """
         Hanterar ticker-data och kör strategiutvärdering.
-        
+
         Args:
             ticker_data: Ticker-data från Bitfinex
         """
         try:
-            symbol = ticker_data.get('symbol', 'unknown')
-            price = ticker_data.get('last_price', 0)
-            
+            symbol = ticker_data.get("symbol", "unknown")
+            price = ticker_data.get("last_price", 0)
+
             # Uppdatera senaste pris
             self.latest_prices[symbol] = price
-            
+
             # Lägg till i pris-historik (behåll senaste 100 datapunkter)
             if symbol not in self.price_history:
                 self.price_history[symbol] = []
-            
+
             self.price_history[symbol].append(price)
             if len(self.price_history[symbol]) > 100:
                 self.price_history[symbol].pop(0)
-            
+
             # Kör strategiutvärdering om vi har tillräckligt med data
             if len(self.price_history[symbol]) >= 30:  # Minst 30 datapunkter
                 await self._evaluate_strategy_for_symbol(symbol)
-            
+
         except Exception as e:
             logger.error(f"❌ Fel vid hantering av ticker med strategi: {e}")
-    
+
     async def _evaluate_strategy_for_symbol(self, symbol: str):
         """
         Utvärderar strategi för en symbol baserat på pris-historik.
-        
+
         Args:
             symbol: Trading pair
         """
         try:
             from services.strategy import evaluate_strategy
-            
+
             # Förbered data för strategiutvärdering
             prices = self.price_history[symbol]
-            
+
             # Skapa mock-data för strategi (eftersom vi bara har closes)
             strategy_data = {
                 "closes": prices,
                 "highs": prices,  # Använd samma värden som approximation
-                "lows": prices     # Använd samma värden som approximation
+                "lows": prices,  # Använd samma värden som approximation
             }
-            
+
             # Utvärdera strategi
             result = evaluate_strategy(strategy_data)
-            
+
             # Lägg till symbol och timestamp
-            result['symbol'] = symbol
-            result['current_price'] = self.latest_prices.get(symbol, 0)
-            result['timestamp'] = datetime.now().isoformat()
-            
+            result["symbol"] = symbol
+            result["current_price"] = self.latest_prices.get(symbol, 0)
+            result["timestamp"] = datetime.now().isoformat()
+
             # Anropa callback om den finns
             if symbol in self.strategy_callbacks:
                 await self.strategy_callbacks[symbol](result)
-            
-            logger.info(f"🎯 Strategiutvärdering för {symbol}: {result['signal']} - {result['reason']}")
-            
+
+            logger.info(
+                f"🎯 Strategiutvärdering för {symbol}: {result['signal']} - {result['reason']}"
+            )
+
         except Exception as e:
             logger.error(f"❌ Fel vid strategiutvärdering för {symbol}: {e}")
-    
+
     async def listen_for_messages(self):
         """Lyssnar på WebSocket-meddelanden."""
         try:
             logger.info("👂 Lyssnar på WebSocket-meddelanden...")
-            
+
             async for message in self.websocket:
                 try:
                     data = json.loads(message)
-                    
+
                     # Hantera olika meddelandetyper
                     if isinstance(data, list) and len(data) > 1:
                         await self._handle_channel_message(data)
                     elif isinstance(data, dict):
                         await self._handle_event_message(data)
-                        
+
                 except json.JSONDecodeError:
                     logger.warning("⚠️ Kunde inte parsa WebSocket-meddelande")
                 except Exception as e:
                     logger.error(f"❌ Fel vid hantering av WebSocket-meddelande: {e}")
-                    
+
         except websockets.exceptions.ConnectionClosed:
             logger.warning("⚠️ WebSocket-anslutning stängd")
             self.is_connected = False
         except Exception as e:
             logger.error(f"❌ WebSocket-lyssnare fel: {e}")
-    
+
     async def _handle_channel_message(self, data: List):
         """Hanterar kanal-meddelanden (publika och privata)."""
         try:
@@ -302,7 +309,7 @@ class BitfinexWebSocketService:
                         logger.debug(f"ℹ️ Ohanterad privat händelse: {event_code}")
                 else:
                     # Heartbeat: [0, 'hb'] eller liknande
-                    if message_data == 'hb':
+                    if message_data == "hb":
                         return
                     logger.debug(f"ℹ️ Oväntat privat meddelande: {data}")
                 return
@@ -310,20 +317,20 @@ class BitfinexWebSocketService:
             # Publika ticker/trades
             if isinstance(message_data, list) and len(message_data) >= 7:
                 ticker_data = {
-                    'symbol': self._get_symbol_from_channel_id(channel_id),
-                    'bid': message_data[0],
-                    'bid_size': message_data[1],
-                    'ask': message_data[2],
-                    'ask_size': message_data[3],
-                    'daily_change': message_data[4],
-                    'daily_change_relative': message_data[5],
-                    'last_price': message_data[6],
-                    'volume': message_data[7] if len(message_data) > 7 else 0,
-                    'high': message_data[8] if len(message_data) > 8 else 0,
-                    'low': message_data[9] if len(message_data) > 9 else 0
+                    "symbol": self._get_symbol_from_channel_id(channel_id),
+                    "bid": message_data[0],
+                    "bid_size": message_data[1],
+                    "ask": message_data[2],
+                    "ask_size": message_data[3],
+                    "daily_change": message_data[4],
+                    "daily_change_relative": message_data[5],
+                    "last_price": message_data[6],
+                    "volume": message_data[7] if len(message_data) > 7 else 0,
+                    "high": message_data[8] if len(message_data) > 8 else 0,
+                    "low": message_data[9] if len(message_data) > 9 else 0,
                 }
                 for symbol, callback in self.callbacks.items():
-                    if symbol in ticker_data['symbol']:
+                    if symbol in ticker_data["symbol"]:
                         await callback(ticker_data)
                         break
             else:
@@ -331,24 +338,26 @@ class BitfinexWebSocketService:
                     if symbol in str(message_data):
                         await callback(message_data)
                         break
-                    
+
         except Exception as e:
             logger.error(f"❌ Fel vid hantering av kanal-meddelande: {e}")
-    
+
     def _get_symbol_from_channel_id(self, channel_id: int) -> str:
         """Hämtar symbol från channel ID baserat på prenumerationer."""
         for symbol, sub_data in self.subscriptions.items():
-            if 'ticker' in str(sub_data):
+            if "ticker" in str(sub_data):
                 return symbol
-        return 'unknown'
-    
+        return "unknown"
+
     async def _handle_event_message(self, data: Dict):
         """Hanterar event-meddelanden (subscribe, auth, etc.)."""
         try:
             event = data.get("event")
-            
+
             if event == "subscribed":
-                logger.info(f"✅ Prenumeration bekräftad: {data.get('symbol', 'unknown')}")
+                logger.info(
+                    f"✅ Prenumeration bekräftad: {data.get('symbol', 'unknown')}"
+                )
             elif event == "auth":
                 status = data.get("status")
                 if status == "OK":
@@ -367,18 +376,19 @@ class BitfinexWebSocketService:
                 logger.error(f"❌ WebSocket-fel: {data.get('msg', 'unknown error')}")
             elif event == "info":
                 logger.info(f"ℹ️ WebSocket-info: {data.get('msg', 'no message')}")
-                
+
         except Exception as e:
             logger.error(f"❌ Fel vid hantering av event-meddelande: {e}")
-    
+
     async def start_listening(self):
         """Startar WebSocket-lyssnare i bakgrunden."""
         if not self.is_connected:
             await self.connect()
-        
+
         # Starta lyssnare i bakgrunden
         asyncio.create_task(self.listen_for_messages())
         logger.info("🚀 WebSocket-lyssnare startad")
 
+
 # Global instans för enkel åtkomst
-bitfinex_ws = BitfinexWebSocketService() 
+bitfinex_ws = BitfinexWebSocketService()

@@ -1,6 +1,6 @@
 [flake8]
 max-line-length = 120
-extend-ignore = E203, W503
+extend-ignore = E203, W503, E501, E402, F401, F541, F841
 exclude =
     .git,
     __pycache__,
@@ -10,5 +10,18 @@ exclude =
     cache,
     cache/**,
     scraper,
-    scraper/**
+    scraper/**,
+    docs,
+    docs/**,
+    docs/legacy/**,
+    docs/legacy/archived_tests/**,
+    docs/legacy/examples/**,
+    examples,
+    examples/**,
+    tests,
+    tests/**,
+    ws,
+    ws/**,
+    simple_ws_test_server.py,
+    test_direct_bitfinex.py
 

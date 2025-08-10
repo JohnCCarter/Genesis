@@ -6,7 +6,8 @@ from __future__ import annotations
 
 import json
 import os
-from typing import Dict, Any, List
+from typing import Any, Dict, List
+
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -57,4 +58,31 @@ class OrderTemplatesService:
         data["templates"] = items
         return self._save(data)
 
+    def get_template(self, name: str) -> Dict[str, Any] | None:
+        """Hämta en mall per namn (case-insensitive, trimmat)."""
+        try:
+            name_norm = str(name or "").strip().lower()
+            if not name_norm:
+                return None
+            for t in self.list_templates():
+                tname = str(t.get("name", "")).strip().lower()
+                if tname == name_norm:
+                    return t
+        except Exception:
+            pass
+        return None
 
+    def delete_template(self, name: str) -> bool:
+        """Ta bort en mall per namn. Returnerar True om något togs bort."""
+        try:
+            data = self._load()
+            items = data.get("templates", [])
+            name_norm = str(name or "").strip().lower()
+            kept = [t for t in items if str(t.get("name", "")).strip().lower() != name_norm]
+            if len(kept) != len(items):
+                data["templates"] = kept
+                self._save(data)
+                return True
+        except Exception:
+            pass
+        return False

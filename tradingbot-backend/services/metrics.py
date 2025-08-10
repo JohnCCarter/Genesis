@@ -6,7 +6,6 @@ from __future__ import annotations
 
 from typing import Dict
 
-
 metrics_store: Dict[str, int] = {
     "orders_total": 0,
     "orders_failed_total": 0,
@@ -27,5 +26,3 @@ def render_prometheus_text() -> str:
         f"tradingbot_circuit_breaker_active {1 if metrics_store.get('circuit_breaker_active') else 0}",
     ]
     return "\n".join(lines) + "\n"
-
-

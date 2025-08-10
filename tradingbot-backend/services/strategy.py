@@ -5,16 +5,17 @@ Denna modul hanterar tradingstrategier och signalgenerering.
 Inkluderar strategiutvärdering och orderhantering.
 """
 
-from typing import Dict, List, Optional, Any
 import os
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 
-from indicators.rsi import calculate_rsi
-from indicators.ema import calculate_ema
 from indicators.atr import calculate_atr
+from indicators.ema import calculate_ema
+from indicators.rsi import calculate_rsi
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
+
 
 def evaluate_weighted_strategy(data: Dict[str, str]) -> Dict[str, Any]:
     """
@@ -59,6 +60,7 @@ def evaluate_weighted_strategy(data: Dict[str, str]) -> Dict[str, Any]:
     else:
         try:
             from services.strategy_settings import StrategySettingsService
+
             settings_service = StrategySettingsService()
             # Om callern har skickat med symbol i data kan vi läsa overrides
             sym = data.get("symbol") if isinstance(data, dict) else None
@@ -106,23 +108,24 @@ def evaluate_weighted_strategy(data: Dict[str, str]) -> Dict[str, Any]:
         },
     }
 
+
 def evaluate_strategy(data: Dict[str, List[float]]) -> Dict[str, Any]:
     """
     Kombinerar RSI, EMA och ATR för att returnera en sannolikhetssignal.
-    
+
     Args:
         data: Dictionary med prisdata
             - closes: Lista med slutpriser
             - highs: Lista med högsta priser
             - lows: Lista med lägsta priser
-            
+
     Returns:
         Dict med indikatorvärden och trading-signal
     """
     prices = data.get("closes", [])
     highs = data.get("highs", [])
     lows = data.get("lows", [])
-    
+
     if not prices:
         logger.warning("Ingen prisdata tillgänglig för strategiutvärdering")
         return {
@@ -130,12 +133,13 @@ def evaluate_strategy(data: Dict[str, List[float]]) -> Dict[str, Any]:
             "rsi": None,
             "atr": None,
             "signal": "WAIT",
-            "reason": "Ingen prisdata"
+            "reason": "Ingen prisdata",
         }
-    
+
     # Beräkna indikatorer med per-symbol perioder
     try:
         from services.strategy_settings import StrategySettingsService
+
         sym = data.get("symbol") if isinstance(data, dict) else None
         ssvc = StrategySettingsService()
         s = ssvc.get_settings(symbol=sym)
@@ -152,7 +156,7 @@ def evaluate_strategy(data: Dict[str, List[float]]) -> Dict[str, Any]:
 
     if ema and rsi and atr:
         current_price = prices[-1]
-        
+
         # Trading-logik
         if rsi < 30 and current_price > ema:
             signal = "BUY"
@@ -169,18 +173,22 @@ def evaluate_strategy(data: Dict[str, List[float]]) -> Dict[str, Any]:
 
         # Härleder enkla riktade signaler och använder viktad strategi
         try:
-            ema_sig = "buy" if current_price > ema else ("sell" if current_price < ema else "neutral")
-            rsi_sig = (
-                "buy" if rsi < 30 else ("sell" if rsi > 70 else "neutral")
+            ema_sig = (
+                "buy"
+                if current_price > ema
+                else ("sell" if current_price < ema else "neutral")
             )
+            rsi_sig = "buy" if rsi < 30 else ("sell" if rsi > 70 else "neutral")
             # ATR beskriver volatilitet – markera som "high" eller "low" (riktningsneutral för viktningen)
             # Enkel heuristik: hög volatilitet om ATR > 2% av priset
             atr_vol = "high" if (atr / current_price) > 0.02 else "low"
-            weighted = evaluate_weighted_strategy({
-                "ema": ema_sig,
-                "rsi": rsi_sig,
-                "atr": atr_vol,
-            })
+            weighted = evaluate_weighted_strategy(
+                {
+                    "ema": ema_sig,
+                    "rsi": rsi_sig,
+                    "atr": atr_vol,
+                }
+            )
         except Exception as e:
             logger.warning(f"Kunde inte beräkna viktad strategi: {e}")
             weighted = {
@@ -203,6 +211,6 @@ def evaluate_strategy(data: Dict[str, List[float]]) -> Dict[str, Any]:
         "timestamp": datetime.now().isoformat(),
         "weighted": weighted,
     }
-    
+
     logger.info(f"Strategiutvärdering: {signal} - {reason}")
-    return result 
+    return result

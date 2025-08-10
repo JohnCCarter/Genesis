@@ -4,9 +4,9 @@ Backtest Service - enkel sandbox-backtest mot historiska candles via Bitfinex RE
 
 from __future__ import annotations
 
-from typing import Dict, Any, List
-from datetime import datetime, timezone, timedelta
 import math
+from datetime import datetime, timedelta, timezone
+from typing import Any, Dict, List
 
 from services.bitfinex_data import BitfinexDataService
 from services.strategy import evaluate_strategy
@@ -16,7 +16,9 @@ logger = get_logger(__name__)
 
 
 class BacktestService:
-    async def run(self, symbol: str, timeframe: str, limit: int = 500, tz_offset_minutes: int = 0) -> Dict[str, Any]:
+    async def run(
+        self, symbol: str, timeframe: str, limit: int = 500, tz_offset_minutes: int = 0
+    ) -> Dict[str, Any]:
         data = BitfinexDataService()
         candles = await data.get_candles(symbol, timeframe, limit)
         if not candles:
@@ -55,7 +57,9 @@ class BacktestService:
             ts_ms = None
             try:
                 idx_in_candles = len(candles) - len(closes) + i
-                idx_in_candles = idx_in_candles if 0 <= idx_in_candles < len(candles) else i
+                idx_in_candles = (
+                    idx_in_candles if 0 <= idx_in_candles < len(candles) else i
+                )
                 ts_ms = int(candles[idx_in_candles][0])
             except Exception:
                 ts_ms = None
@@ -63,7 +67,7 @@ class BacktestService:
             if sig == "buy" and pos <= 0:
                 if pos < 0:
                     # stäng short
-                    factor = (entry_price / price)
+                    factor = entry_price / price
                     equity *= factor
                     trade_returns.append(factor - 1.0)
                     if ts_ms is not None:
@@ -75,7 +79,9 @@ class BacktestService:
                         heatmap_sum.setdefault(dow, {})
                         heatmap_cnt.setdefault(dow, {})
                         heatmap_wins.setdefault(dow, {})
-                        heatmap_sum[dow][hour] = heatmap_sum[dow].get(hour, 0.0) + (factor - 1.0)
+                        heatmap_sum[dow][hour] = heatmap_sum[dow].get(hour, 0.0) + (
+                            factor - 1.0
+                        )
                         heatmap_cnt[dow][hour] = heatmap_cnt[dow].get(hour, 0) + 1
                         if factor - 1.0 > 0:
                             heatmap_wins[dow][hour] = heatmap_wins[dow].get(hour, 0) + 1
@@ -91,7 +97,7 @@ class BacktestService:
             elif sig == "sell" and pos >= 0:
                 if pos > 0:
                     # stäng long
-                    factor = (price / entry_price)
+                    factor = price / entry_price
                     equity *= factor
                     trade_returns.append(factor - 1.0)
                     if ts_ms is not None:
@@ -103,7 +109,9 @@ class BacktestService:
                         heatmap_sum.setdefault(dow, {})
                         heatmap_cnt.setdefault(dow, {})
                         heatmap_wins.setdefault(dow, {})
-                        heatmap_sum[dow][hour] = heatmap_sum[dow].get(hour, 0.0) + (factor - 1.0)
+                        heatmap_sum[dow][hour] = heatmap_sum[dow].get(hour, 0.0) + (
+                            factor - 1.0
+                        )
                         heatmap_cnt[dow][hour] = heatmap_cnt[dow].get(hour, 0) + 1
                         if factor - 1.0 > 0:
                             heatmap_wins[dow][hour] = heatmap_wins[dow].get(hour, 0) + 1
@@ -169,5 +177,3 @@ class BacktestService:
             "heatmap_counts": heatmap_cnt,
             "heatmap_tz_offset_minutes": tz_offset_minutes,
         }
-
-

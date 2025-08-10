@@ -23,10 +23,17 @@ Single-user roadmap (Måste → Nice-to-have → Backlog). Fokus: stabil drift, 
   - [x] Dagliga snapshots (equity) – backend & scheduler (UI: knapp + sparkline)
   - [x] Snapshots: visa realized/dagens förändring i UI
 - [x] Tester (minimum)
+
   - [x] Orderflöde (market/limit) + notifiering (grund)
   - [x] RiskManager grunder (pause/window)
   - [x] BracketManager länkning (register)
-- [ ] README – snabbstart, AUTH_REQUIRED/JWT, viktiga endpoints (uppdatera med nya endpoints och UI)
+  - [x] TradingWindow save_rules (persistens och reload)
+  - [ ] Tester – Circuit Breaker (risk_manager): öppna/paus, notifiering, reset
+  - [x] README – snabbstart, AUTH_REQUIRED/JWT, viktiga endpoints (uppdaterad med nya endpoints och UI)
+
+- [x] WS privata flöden (kanal 0)
+  - [x] on/ou/oc/te/tu registrerade i `ws/manager.py`
+  - [x] DMS aktiveras vid `auth`; tester lagda
 
 ## Nice-to-have
 
@@ -54,7 +61,10 @@ Single-user roadmap (Måste → Nice-to-have → Backlog). Fokus: stabil drift, 
 - [x] Positionsvy med fler kolumner + "Stäng position" (reduce‑only)
 - [x] Exchange (syntetisk) positionsvy baserad på wallets/trades
 - [x] Konto‑växel (Exchange/Margin) i order- och bracket‑panel (automatiskt typbyte)
-- [x] Ordermallar: GET /order/templates (422) – felsöka och säkerställa listning returnerar [] vid tom fil
+- [x] Ordersmallar: route‑krock fixad – UI använder `GET /api/v2/orders/templates` (tidigare konflikt med `/api/v2/order/{order_id}`)
+- [x] Simple/Advanced‑läge i `ws_test.html` (sparas i `localStorage`)
+- [x] Statusrad i UI (open/paused/next_open/CB/WS‑status)
+- [x] Per‑symbol max‑trades input + "Visa trade‑counter" tabell
 
 ---
 

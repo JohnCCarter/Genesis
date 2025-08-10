@@ -5,7 +5,8 @@ Notifications Service - Telegram (optional) + Socket.IO helpers
 from __future__ import annotations
 
 import asyncio
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
+
 import httpx
 
 from config.settings import Settings
@@ -35,11 +36,17 @@ class NotificationService:
             logger.warning(f"Telegram-notis misslyckades: {e}")
             return False
 
-    async def notify(self, level: str, title: str, payload: Optional[Dict[str, Any]] = None) -> None:
+    async def notify(
+        self, level: str, title: str, payload: Optional[Dict[str, Any]] = None
+    ) -> None:
         # Socket.IO broadcast
         try:
             from ws.manager import socket_app
-            await socket_app.emit("notification", {"type": level, "title": title, "payload": payload or {}})
+
+            await socket_app.emit(
+                "notification",
+                {"type": level, "title": title, "payload": payload or {}},
+            )
         except Exception:
             pass
         # Telegram (best effort)
@@ -51,5 +58,3 @@ class NotificationService:
 
 
 notification_service = NotificationService()
-
-

@@ -10,11 +10,11 @@ Mål (minimum):
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from datetime import datetime, date
-from typing import Any, Dict, List, Optional, Tuple
 import json
 import os
+from dataclasses import dataclass
+from datetime import date, datetime
+from typing import Any, Dict, List, Optional, Tuple
 
 try:
     # Python 3.9+
@@ -22,13 +22,12 @@ try:
 except Exception:  # pragma: no cover
     ZoneInfo = None  # Fallback; använder naive tider
 
-from utils.logger import get_logger
 from config.settings import Settings
-from rest.wallet import WalletService
-from rest.positions import PositionsService
 from rest.order_history import OrderHistoryService, TradeItem
+from rest.positions import PositionsService
+from rest.wallet import WalletService
 from services.bitfinex_data import BitfinexDataService
-
+from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -79,7 +78,16 @@ class PerformanceService:
     @staticmethod
     def _is_usd_stablecoin(cur: str) -> bool:
         c = (cur or "").upper()
-        return c in {"USDT", "USDC", "TUSD", "DAI", "PAX", "BUSD", "TESTUSD", "TESTUSDT"}
+        return c in {
+            "USDT",
+            "USDC",
+            "TUSD",
+            "DAI",
+            "PAX",
+            "BUSD",
+            "TESTUSD",
+            "TESTUSDT",
+        }
 
     async def _fx_to_usd(self, currency: Optional[str]) -> float:
         """Get simple FX rate currency->USD using Bitfinex tickers.
@@ -158,9 +166,15 @@ class PerformanceService:
         """
         # Hämta trades – var robust mot tillfälliga Bitfinex-fel (t.ex. 5xx)
         try:
-            trades: List[TradeItem] = await self.order_history_service.get_trades_history(symbol=None, limit=limit)
+            trades: List[TradeItem] = (
+                await self.order_history_service.get_trades_history(
+                    symbol=None, limit=limit
+                )
+            )
         except Exception as e:
-            logger.warning(f"Kunde inte hämta trades för realized PnL (fortsätter med tom lista): {e}")
+            logger.warning(
+                f"Kunde inte hämta trades för realized PnL (fortsätter med tom lista): {e}"
+            )
             trades = []
         # Sortera i tidsordning
         trades.sort(key=lambda t: t.executed_at)
@@ -175,7 +189,9 @@ class PerformanceService:
 
             # Summera fees
             try:
-                fees_by_currency[t.fee_currency] = fees_by_currency.get(t.fee_currency, 0.0) + float(t.fee)
+                fees_by_currency[t.fee_currency] = fees_by_currency.get(
+                    t.fee_currency, 0.0
+                ) + float(t.fee)
                 pos.fees += float(t.fee)
             except Exception:
                 pass
@@ -187,7 +203,9 @@ class PerformanceService:
                 continue
 
             # Samma riktning -> utöka position och uppdatera avg_price
-            if (pos.net_amount > 0 and amount > 0) or (pos.net_amount < 0 and amount < 0):
+            if (pos.net_amount > 0 and amount > 0) or (
+                pos.net_amount < 0 and amount < 0
+            ):
                 total_qty = abs(pos.net_amount) + abs(amount)
                 if total_qty > 0:
                     pos.avg_price = (
@@ -208,7 +226,9 @@ class PerformanceService:
             if new_net == 0:
                 pos.net_amount = 0.0
                 pos.avg_price = 0.0
-            elif (pos.net_amount > 0 and new_net < 0) or (pos.net_amount < 0 and new_net > 0):
+            elif (pos.net_amount > 0 and new_net < 0) or (
+                pos.net_amount < 0 and new_net > 0
+            ):
                 # Vi har stängt hela och öppnat ny i motsatt riktning för residual
                 residual = new_net
                 pos.net_amount = residual
@@ -248,7 +268,9 @@ class PerformanceService:
                 "base": base,
                 "quote": quote,
                 "realized": round(st.realized_pnl, 8),
-                "realized_usd": round(realized_usd, 8) if realized_usd is not None else None,
+                "realized_usd": (
+                    round(realized_usd, 8) if realized_usd is not None else None
+                ),
                 "fx_quote_usd": round(fx, 8) if fx > 0 else None,
                 "open_amount": round(st.net_amount, 8),
                 "avg_price": round(st.avg_price, 8),
@@ -290,7 +312,11 @@ class PerformanceService:
         wallets_usd_total = 0.0
         for w in wallets:
             cur = (w.currency or "").upper()
-            fx = 1.0 if cur == "USD" or self._is_usd_stablecoin(cur) else await self._fx_to_usd(cur)
+            fx = (
+                1.0
+                if cur == "USD" or self._is_usd_stablecoin(cur)
+                else await self._fx_to_usd(cur)
+            )
             try:
                 wallets_usd_total += float(w.balance) * (fx if fx > 0 else 0.0)
             except Exception:
@@ -348,7 +374,9 @@ class PerformanceService:
         equity = await self.compute_current_equity()
         # Ta med realized_usd (kumulativ) i snapshot
         realized = await self.compute_realized_pnl(limit=1000)
-        realized_usd = float((realized.get("totals", {}) or {}).get("realized_usd", 0.0) or 0.0)
+        realized_usd = float(
+            (realized.get("totals", {}) or {}).get("realized_usd", 0.0) or 0.0
+        )
         today = self._now_local_date()
 
         data = self._load_history()
@@ -367,35 +395,55 @@ class PerformanceService:
         updated = False
         for row in history:
             if row.get("date") == today:
-                row.update({
-                    "total_usd": equity["total_usd"],
-                    "wallets_usd": equity["wallets_usd"],
-                    "unrealized_pnl_usd": equity["unrealized_pnl_usd"],
-                    "realized_usd": round(realized_usd, 8),
-                })
+                row.update(
+                    {
+                        "total_usd": equity["total_usd"],
+                        "wallets_usd": equity["wallets_usd"],
+                        "unrealized_pnl_usd": equity["unrealized_pnl_usd"],
+                        "realized_usd": round(realized_usd, 8),
+                    }
+                )
                 # Beräkna dagsförändring relativt föregående dag
                 if prev_total is not None:
                     row["day_change_usd"] = round(equity["total_usd"] - prev_total, 8)
                 if prev_realized_usd is not None:
-                    row["realized_day_change_usd"] = round(realized_usd - prev_realized_usd, 8)
+                    row["realized_day_change_usd"] = round(
+                        realized_usd - prev_realized_usd, 8
+                    )
                 updated = True
                 break
         if not updated:
-            history.append({
-                "date": today,
-                **equity,
-                "realized_usd": round(realized_usd, 8),
-                "day_change_usd": round((equity["total_usd"] - prev_total), 8) if prev_total is not None else 0.0,
-                "realized_day_change_usd": round((realized_usd - prev_realized_usd), 8) if prev_realized_usd is not None else 0.0,
-            })
+            history.append(
+                {
+                    "date": today,
+                    **equity,
+                    "realized_usd": round(realized_usd, 8),
+                    "day_change_usd": (
+                        round((equity["total_usd"] - prev_total), 8)
+                        if prev_total is not None
+                        else 0.0
+                    ),
+                    "realized_day_change_usd": (
+                        round((realized_usd - prev_realized_usd), 8)
+                        if prev_realized_usd is not None
+                        else 0.0
+                    ),
+                }
+            )
 
         # Spara
         data["equity"] = history
         self._save_history(data)
 
         # Beräkna dagliga diffar för retur-snapshot (även om historik var tom)
-        day_change = 0.0 if prev_total is None else round(equity["total_usd"] - prev_total, 8)
-        realized_day_change = 0.0 if prev_realized_usd is None else round(realized_usd - prev_realized_usd, 8)
+        day_change = (
+            0.0 if prev_total is None else round(equity["total_usd"] - prev_total, 8)
+        )
+        realized_day_change = (
+            0.0
+            if prev_realized_usd is None
+            else round(realized_usd - prev_realized_usd, 8)
+        )
 
         return {
             "snapshot": {
@@ -407,5 +455,3 @@ class PerformanceService:
             },
             "count": len(history),
         }
-
-

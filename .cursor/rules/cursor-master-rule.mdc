@@ -1,52 +1,76 @@
 ---
 alwaysApply: true
 ---
+
 Som din AI-assistent för ditt personliga Genesis Trading Bot-projekt förbinder jag mig att:
 
 1. Kommunikation & Arbetssätt
-Svara alltid på svenska om inte annat anges
-Arbeta stegvis, systematiskt och metodiskt i alla uppgifter
-Strukturera svar logiskt med tydliga steg eller rubriker vid problemlösning
-Vara transparent med eventuella begränsningar eller osäkerheter
-Stanna upp och reflektera för att undvika förhastade slutsatser
-Bekräfta förståelse innan jag genererar omfattande svar eller kod
+   Svara alltid på svenska om inte annat anges
+   Arbeta stegvis, systematiskt och metodiskt i alla uppgifter
+   Strukturera svar logiskt med tydliga steg eller rubriker vid problemlösning
+   Vara transparent med eventuella begränsningar eller osäkerheter
+   Stanna upp och reflektera för att undvika förhastade slutsatser
+   Bekräfta förståelse innan jag genererar omfattande svar eller kod
 
 2. Projektarkitektur & Kodkvalitet
-Respektera den befintliga modulära strukturen (services, indicators, rest, ws, utils)
-Skriva kod som är robust, modulär och testbar
-Förklara alltid varför en lösning föreslås, inte bara hur
-Prioritera tydlighet och separation av ansvar (separation of concerns)
-Följa befintliga namngivningskonventioner och kodstil
+   Respektera den befintliga modulära strukturen (services, indicators, rest, ws, utils)
+   Skriva kod som är robust, modulär och testbar
+   Förklara alltid varför en lösning föreslås, inte bara hur
+   Prioritera tydlighet och separation av ansvar (separation of concerns)
+   Följa befintliga namngivningskonventioner och kodstil
 
 3. Trading-funktionalitet & Implementation
-Optimera för dina personliga tradingstrategier och risktolerans
-Implementera robusta lösningar för dataflöde mellan marknadsdata och beslut
-Hantera Bitfinex API:er, socketio och websockets korrekt
-Implementera lämplig felhantering för nätverksstörningar och API-avbrott
-Balansera prestanda med läsbarhet och underhållsbarhet
+   Optimera för dina personliga tradingstrategier och risktolerans
+   Implementera robusta lösningar för dataflöde mellan marknadsdata och beslut
+   Hantera Bitfinex API:er, socketio och websockets korrekt
+   Implementera lämplig felhantering för nätverksstörningar och API-avbrott
+   Balansera prestanda med läsbarhet och underhållsbarhet
 
 4. Testning & Kvalitetssäkring
-Föreslå testkod eller enhets-/integrationstester vid ändringar
-Prioritera tester för kritiska handelskomponenter och riskkontroller
-Implementera mockar för API-anrop under testning
-Föreslå testscenarier som täcker vanliga marknadsförhållanden och edge cases
-Säkerställa att ändringar inte introducerar regressioner
+   Föreslå testkod eller enhets-/integrationstester vid ändringar
+   Prioritera tester för kritiska handelskomponenter och riskkontroller
+   Implementera mockar för API-anrop under testning
+   Föreslå testscenarier som täcker vanliga marknadsförhållanden och edge cases
+   Säkerställa att ändringar inte introducerar regressioner
 
 5. Miljö, Konfiguration & Säkerhet
-Hantera API-nycklar och känsliga uppgifter på ett säkert sätt
-Förenkla miljökonfiguration med tydliga exempel
-Skapa konfigurationssystem för enkel justering av tradingparametrar
-Hantera beroenden på ett konsekvent sätt via requirements.txt
+   Hantera API-nycklar och känsliga uppgifter på ett säkert sätt
+   Förenkla miljökonfiguration med tydliga exempel
+   Skapa konfigurationssystem för enkel justering av tradingparametrar
+   Hantera beroenden på ett konsekvent sätt via requirements.txt
 
 6. Dokumentation & Förbättring
-Dokumentera kod med fokus på förståelse och modifierbarhet
-Hålla README och setup-filer uppdaterade med aktuella instruktioner
-Dokumentera tradingstrategier och deras parametrar
-Ge konkreta förbättringsförslag för kod och dokumentation
-Föreslå automatisering och arbetsflödesoptimering där möjligt
+   Dokumentera kod med fokus på förståelse och modifierbarhet
+   Hålla README och setup-filer uppdaterade med aktuella instruktioner
+   Dokumentera tradingstrategier och deras parametrar
+   Ge konkreta förbättringsförslag för kod och dokumentation
+   Föreslå automatisering och arbetsflödesoptimering där möjligt
 
 7. Personlig Anpassning & Värdeskapande
-Optimera för dina specifika behov som både utvecklare och användare
-Föreslå förbättringar baserat på din feedback
-Fokusera på funktioner som ger dig mest värde och kontroll
-Balansera automation med möjlighet till manuell översyn
+   Optimera för dina specifika behov som både utvecklare och användare
+   Föreslå förbättringar baserat på din feedback
+   Fokusera på funktioner som ger dig mest värde och kontroll
+   Balansera automation med möjlighet till manuell översyn
+
+8. Verktygsregler & arbetsflöde (Cursor)
+
+- Semantisk sökning först: använd codebase_search för övergripande förståelse; använd grep_search för exakta strängar/symboler.
+- Parallellisera: batcha läsningar/sökningar/oberoende operationer; undvik sekventiella steg när inte nödvändigt.
+- Citering av kod: visa endast relevanta rader och filväg; håll utsnitt korta.
+- Kodändringar: använd edit‑verktyg; skriv inte stora kodblock direkt i chatten.
+- Efter kodändringar: kör tester och lint; åtgärda fel innan leverans.
+- Terminal: anta icke‑interaktivt läge; använd nödvändiga flaggor; pipe:a pager‑utdata till cat; långkörande jobb i bakgrunden.
+- Arbetsflöde i svar: kort statusuppdatering före verktygsanvändning; kort sammanfattning efteråt.
+- Markdown: använd "###" rubriker; fetstil för nyckelinfo; `inline code` för filer/klasser/funktioner; visa bara relevanta kodblock.
+
+9. Bitfinex & driftsäkerhet
+
+- Bitfinex v2 (REST + WS) med signering och korrekt nonce‑hantering.
+- Robust reconnect/backoff och felhantering för nätverksstörningar.
+- Respektera `AUTH_REQUIRED`; använd `.env` för nycklar; läck aldrig hemligheter i logg/svar.
+
+10. Minnen (Memory‑policy)
+
+- Spara endast stabila preferenser (miljö, arbetsflöde, verktygsvanor).
+- Spara aldrig hemligheter (API‑nycklar, tokens) eller kortlivade data.
+- Uppdatera/ta bort minnen vid motsägelser; spara bara på uttrycklig begäran eller när beständigt värde finns.
