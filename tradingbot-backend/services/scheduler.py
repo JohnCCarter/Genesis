@@ -14,6 +14,8 @@ import asyncio
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
+from config.settings import Settings
+from utils.candle_cache import candle_cache
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -34,6 +36,7 @@ class SchedulerService:
         self._task: Optional[asyncio.Task] = None
         self._running: bool = False
         self._last_snapshot_at: Optional[datetime] = None
+        self._last_retention_at: Optional[datetime] = None
 
     def start(self) -> None:
         """Starta bakgrundsloopen om den inte redan körs."""
@@ -68,6 +71,8 @@ class SchedulerService:
                     next_run_at = now.replace(microsecond=0) + timedelta(
                         seconds=self.snapshot_interval_seconds
                     )
+                # Kör cache-retention högst en gång per 6 timmar
+                await self._maybe_enforce_cache_retention(now)
                 # Sov en kort stund för att inte spinna
                 await asyncio.sleep(1)
             except asyncio.CancelledError:
@@ -105,6 +110,29 @@ class SchedulerService:
                 pass
         except Exception as e:
             logger.warning(f"Kunde inte ta equity-snapshot: {e}")
+
+    async def _maybe_enforce_cache_retention(self, now: datetime) -> None:
+        """Enforce TTL/retention på candle-cache med låg frekvens.
+
+        Läser inställningar vid varje körning så ändringar i .env fångas.
+        Kör endast om minst 6 timmar förflutit sedan senaste körning.
+        """
+        try:
+            if self._last_retention_at and (now - self._last_retention_at) < timedelta(
+                hours=6
+            ):
+                return
+            s = Settings()
+            days = int(getattr(s, "CANDLE_CACHE_RETENTION_DAYS", 0) or 0)
+            max_rows = int(getattr(s, "CANDLE_CACHE_MAX_ROWS_PER_PAIR", 0) or 0)
+            if days <= 0 and max_rows <= 0:
+                return
+            removed = candle_cache.enforce_retention(days, max_rows)
+            self._last_retention_at = now
+            if removed:
+                logger.info(f"🧹 Candle-cache retention: tog bort {removed} rader")
+        except Exception as e:
+            logger.warning(f"Retention fel: {e}")
 
 
 # En global instans som kan återanvändas av applikationen

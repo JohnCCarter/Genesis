@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="sv">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Risk-baserat orderpanel</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        margin: 24px;
+        color: #1b1f23;
+      }
+      .card {
+        max-width: 880px;
+        border: 1px solid #e1e4e8;
+        border-radius: 8px;
+        padding: 16px;
+      }
+      label {
+        display: block;
+        font-weight: 600;
+        margin-top: 12px;
+      }
+      input,
+      select {
+        width: 100%;
+        padding: 8px;
+        margin-top: 6px;
+        box-sizing: border-box;
+      }
+      button {
+        margin-top: 16px;
+        padding: 10px 16px;
+        border: 0;
+        border-radius: 6px;
+        background: #2ea44f;
+        color: #fff;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #2c974b;
+      }
+      .row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+      .output {
+        margin-top: 16px;
+        background: #f6f8fa;
+        padding: 12px;
+        border-radius: 6px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      }
+      .muted {
+        color: #6a737d;
+        font-size: 12px;
+      }
+      .subtitle {
+        margin-top: 4px;
+        color: #4a5568;
+        font-size: 14px;
+      }
+      .inline {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .mini {
+        width: 120px;
+      }
+      .grid-3 {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 12px;
+      }
+      .kpi {
+        background: #f6f8fa;
+        border-radius: 6px;
+        padding: 10px;
+      }
+      .kpi .label {
+        font-size: 12px;
+        color: #6a737d;
+      }
+      .kpi .value {
+        font-size: 18px;
+        font-weight: 700;
+      }
+    </style>
+    <script>
+      function headersWithToken() {
+        const token = (document.getElementById("token").value || "").trim();
+        const headers = { "Content-Type": "application/json" };
+        if (token) headers["Authorization"] = "Bearer " + token;
+        return headers;
+      }
+
+      function syncRiskInputs(from) {
+        const num = document.getElementById("risk");
+        const rng = document.getElementById("riskRange");
+        if (from === "num") rng.value = num.value;
+        else num.value = rng.value;
+        document.getElementById("riskVal").textContent = parseFloat(
+          rng.value
+        ).toFixed(1);
+      }
+
+      async function loadSymbols() {
+        try {
+          const res = await fetch(
+            "/api/v2/market/symbols?test_only=true&format=v2",
+            { headers: headersWithToken() }
+          );
+          if (!res.ok) return;
+          const arr = await res.json();
+          const dl = document.getElementById("symbols");
+          if (Array.isArray(arr)) {
+            dl.innerHTML = "";
+            arr.slice(0, 200).forEach((s) => {
+              const opt = document.createElement("option");
+              opt.value = s;
+              dl.appendChild(opt);
+            });
+          }
+        } catch (e) {
+          // tyst fel
+        }
+      }
+
+      async function calc() {
+        const symbol = document.getElementById("symbol").value.trim();
+        const risk = parseFloat(document.getElementById("risk").value);
+        const timeframe = document.getElementById("timeframe").value;
+        const side = document.getElementById("side").value;
+        const slMult = parseFloat(document.getElementById("sl").value);
+        const tpMult = parseFloat(document.getElementById("tp").value);
+        const overridePrice = document.getElementById("price").value;
+
+        const payload = {
+          symbol,
+          risk_percent: risk,
+          side,
+          timeframe,
+          atr_multiplier_sl: slMult,
+          atr_multiplier_tp: tpMult,
+        };
+        if (overridePrice && !isNaN(parseFloat(overridePrice))) {
+          payload.price = parseFloat(overridePrice);
+        }
+
+        const res = await fetch("/api/v2/risk/position-size", {
+          method: "POST",
+          headers: headersWithToken(),
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+
+        // Visa relevanta fält i små KPI-rutor
+        const size = data.size ?? 0;
+        const alloc = data.quote_alloc ?? 0;
+        const q = data.quote_currency ?? "";
+        const qt = data.quote_total ?? null;
+        const price = data.price ?? null;
+        const sl = data.atr_sl ?? null;
+        const tp = data.atr_tp ?? null;
+        document.getElementById("kpi-size").textContent = `${size}`;
+        document.getElementById("kpi-alloc").textContent = `${alloc} ${q}`;
+        document.getElementById("kpi-price").textContent = price
+          ? `${price}`
+          : "-";
+        // Visa total quote balans om känd
+        try {
+          const qtEl = document.getElementById("kpi-qt");
+          const qcEl = document.getElementById("kpi-qc");
+          if (qtEl) qtEl.textContent = qt != null ? `${qt} ${q}` : "-";
+          if (qcEl) qcEl.textContent = q || "-";
+        } catch {}
+        document.getElementById("kpi-sl").textContent = sl ? `${sl}` : "-";
+        document.getElementById("kpi-tp").textContent = tp ? `${tp}` : "-";
+
+        document.getElementById("out").textContent = JSON.stringify(
+          { request: payload, response: data },
+          null,
+          2
+        );
+      }
+
+      function init() {
+        // Bind events
+        document
+          .getElementById("riskRange")
+          .addEventListener("input", () => syncRiskInputs("range"));
+        document
+          .getElementById("risk")
+          .addEventListener("input", () => syncRiskInputs("num"));
+        document.getElementById("symbol").addEventListener("keydown", (e) => {
+          if (e.key === "Enter") calc();
+        });
+        // Lazy load symbols (valfritt)
+        loadSymbols();
+        // Sätt initial visning
+        syncRiskInputs("num");
+      }
+
+      async function toggleCoreMode(enable) {
+        try {
+          const headers = headersWithToken();
+          const res = await fetch("/api/v2/mode/core", {
+            method: "POST",
+            headers,
+            body: JSON.stringify({ enabled: !!enable }),
+          });
+          const data = await res.json();
+          document.getElementById("coreStatus").textContent = data.core_mode
+            ? "På"
+            : "Av";
+        } catch (e) {}
+      }
+
+      async function fetchCoreMode() {
+        try {
+          const headers = headersWithToken();
+          const res = await fetch("/api/v2/mode/core", { headers });
+          const data = await res.json();
+          document.getElementById("coreStatus").textContent = data.core_mode
+            ? "På"
+            : "Av";
+        } catch (e) {}
+      }
+    </script>
+  </head>
+  <body>
+    <h2>Risk-baserat orderpanel</h2>
+    <div class="card">
+      <div class="row">
+        <div>
+          <label>Kärnläge (Core mode)</label>
+          <div class="inline">
+            <span class="muted"
+              >Status: <strong id="coreStatus">-</strong></span
+            >
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label for="symbol">Symbol (v2)</label>
+          <input
+            id="symbol"
+            placeholder="tBTCUSD"
+            value="tBTCUSD"
+            list="symbols"
+          />
+          <datalist id="symbols">
+            <option value="tBTCUSD"></option>
+            <option value="tETHUSD"></option>
+            <option value="tSOLUSD"></option>
+            <option value="tXRPUSD"></option>
+            <option value="tADAUSD"></option>
+          </datalist>
+        </div>
+        <div>
+          <label for="risk">Risk %</label>
+          <div class="inline">
+            <input
+              class="mini"
+              id="risk"
+              type="number"
+              step="0.1"
+              value="1.0"
+            />
+            <input
+              id="riskRange"
+              type="range"
+              min="0.1"
+              max="10"
+              value="1.0"
+              step="0.1"
+            />
+            <span class="muted">(<span id="riskVal">1.0</span>%)</span>
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label for="timeframe">Timeframe</label>
+          <select id="timeframe">
+            <option value="1m">1m</option>
+            <option value="5m">5m</option>
+            <option value="15m">15m</option>
+            <option value="1h">1h</option>
+            <option value="1D">1D</option>
+          </select>
+        </div>
+        <div>
+          <label for="side">Side</label>
+          <select id="side">
+            <option value="buy">buy</option>
+            <option value="sell">sell</option>
+          </select>
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label for="sl">ATR SL‑multiplikator</label>
+          <input id="sl" type="number" step="0.1" value="1.5" />
+        </div>
+        <div>
+          <label for="tp">ATR TP‑multiplikator</label>
+          <input id="tp" type="number" step="0.1" value="3.0" />
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label for="price"
+            >Pris (valfritt, lämna tomt för auto från ticker)</label
+          >
+          <input
+            id="price"
+            type="number"
+            step="0.00000001"
+            placeholder="auto"
+          />
+        </div>
+        <div>
+          <label for="token"
+            >Bearer token (lämna tomt om AUTH_REQUIRED=False)</label
+          >
+          <input id="token" placeholder="optional JWT" />
+        </div>
+      </div>
+      <button onclick="calc()">Beräkna storlek</button>
+
+      <div class="grid-3" style="margin-top: 12px">
+        <div class="kpi">
+          <div class="label">Storlek</div>
+          <div class="value" id="kpi-size">-</div>
+        </div>
+        <div class="kpi">
+          <div class="label">Allokering</div>
+          <div class="value" id="kpi-alloc">-</div>
+        </div>
+        <div class="kpi">
+          <div class="label">Pris</div>
+          <div class="value" id="kpi-price">-</div>
+        </div>
+      </div>
+      <div class="grid-3" style="margin-top: 8px">
+        <div class="kpi">
+          <div class="label">Quote total</div>
+          <div class="value" id="kpi-qt">-</div>
+        </div>
+        <div class="kpi">
+          <div class="label">Quote valuta</div>
+          <div class="value" id="kpi-qc">-</div>
+        </div>
+      </div>
+      <div class="grid-3" style="margin-top: 12px">
+        <div class="kpi">
+          <div class="label">ATR SL</div>
+          <div class="value" id="kpi-sl">-</div>
+        </div>
+        <div class="kpi">
+          <div class="label">ATR TP</div>
+          <div class="value" id="kpi-tp">-</div>
+        </div>
+        <div class="kpi">
+          <div class="label">Notis</div>
+          <div class="value" style="font-size: 12px; font-weight: 500">
+            Endast beräkning – ingen order skickas
+          </div>
+        </div>
+      </div>
+      <pre class="output" id="out">{}</pre>
+    </div>
+    <script>
+      init();
+      fetchCoreMode();
+    </script>
+  </body>
+</html>

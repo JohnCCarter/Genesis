@@ -10,7 +10,7 @@ import json
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional
 
-import websockets
+import websockets  # pylint: disable=import-error,no-name-in-module
 
 from config.settings import Settings
 from utils.logger import get_logger
@@ -61,7 +61,10 @@ class BitfinexWebSocketService:
         """Ansluter till Bitfinex WebSocket."""
         try:
             logger.info("🔌 Ansluter till Bitfinex WebSocket...")
-            self.websocket = await websockets.connect(self.ws_url)
+            # websockets.connect har dynamiska attribut i runtime; tysta pylint no-member här
+            self.websocket = await websockets.connect(  # pylint: disable=no-member
+                self.ws_url
+            )
             self.is_connected = True
             logger.info("✅ Ansluten till Bitfinex WebSocket")
             # Starta lyssnare i bakgrunden direkt för att fånga auth-ack

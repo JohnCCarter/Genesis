@@ -1,0 +1,20 @@
+version: "3.9"
+services:
+  backend:
+    build:
+      context: ./tradingbot-backend
+      dockerfile: Dockerfile
+    container_name: genesis-backend
+    env_file:
+      - ./tradingbot-backend/.env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./tradingbot-backend/config:/app/config
+      - ./tradingbot-backend/tradingbot.log:/app/tradingbot.log
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+

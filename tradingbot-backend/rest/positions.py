@@ -171,17 +171,43 @@ class PositionsService:
             }
             headers = build_auth_headers(order_endpoint, order_payload)
 
-            async with httpx.AsyncClient() as client:
-                logger.info(
-                    f"🌐 REST API: Stänger position via reduce-only MARKET för {symbol} ({close_amount})"
-                )
-                response = await client.post(
-                    f"{self.base_url}/{order_endpoint}",
-                    headers=headers,
-                    json=order_payload,
-                )
-                response.raise_for_status()
-                result = response.json()
+            timeout = Settings().ORDER_HTTP_TIMEOUT
+            retries = max(int(Settings().ORDER_MAX_RETRIES), 0)
+            backoff_base = max(int(Settings().ORDER_BACKOFF_BASE_MS), 0) / 1000.0
+            backoff_max = max(int(Settings().ORDER_BACKOFF_MAX_MS), 0) / 1000.0
+            last_exc = None
+            result = None
+            for attempt in range(retries + 1):
+                try:
+                    async with httpx.AsyncClient(timeout=timeout) as client:
+                        logger.info(
+                            f"🌐 REST API: Stänger position via reduce-only MARKET för {symbol} ({close_amount})"
+                        )
+                        response = await client.post(
+                            f"{self.base_url}/{order_endpoint}",
+                            headers=headers,
+                            json=order_payload,
+                        )
+                        if response.status_code in (429, 500, 502, 503, 504):
+                            raise httpx.HTTPStatusError(
+                                "server busy", request=None, response=response
+                            )
+                        response.raise_for_status()
+                        result = response.json()
+                        break
+                except Exception as e:
+                    last_exc = e
+                    if attempt < retries:
+                        import asyncio
+                        import random
+
+                        delay = min(
+                            backoff_max, backoff_base * (2**attempt)
+                        ) + random.uniform(0, 0.1)
+                        await asyncio.sleep(delay)
+                        continue
+                    else:
+                        raise
                 logger.info(f"✅ REST API: Reduce-only order skickad för {symbol}")
                 return {
                     "success": True,

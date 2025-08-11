@@ -10,14 +10,14 @@ from datetime import datetime
 
 import socketio
 import uvicorn
-from fastapi import FastAPI, Response
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
 from config.settings import Settings
 from rest.routes import router as rest_router
 from services.bitfinex_websocket import bitfinex_ws
-from services.metrics import render_prometheus_text
+from services.metrics import observe_latency, render_prometheus_text
 from utils.logger import get_logger
 from ws.manager import socket_app
 
@@ -33,18 +33,21 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("🚀 TradingBot Backend startar...")
 
-    # Starta WebSocket-anslutning
+    # Starta Bitfinex WebSocket-anslutning (behålls även i CORE_MODE)
     try:
         await bitfinex_ws.connect()
         logger.info("✅ WebSocket-anslutning etablerad")
     except Exception as e:
         logger.warning(f"⚠️ WebSocket-anslutning misslyckades: {e}")
 
-    # Starta enklare scheduler (equity snapshots)
+    # Starta scheduler endast om ej CORE_MODE
     try:
-        from services.scheduler import scheduler
+        if not Settings().CORE_MODE:
+            from services.scheduler import scheduler
 
-        scheduler.start()
+            scheduler.start()
+        else:
+            logger.info("CORE_MODE aktivt: hoppar över scheduler")
     except Exception as e:
         logger.warning(f"⚠️ Kunde inte starta scheduler: {e}")
 
@@ -60,11 +63,12 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"⚠️ Fel vid stängning av WebSocket: {e}")
 
-    # Stoppa scheduler
+    # Stoppa scheduler om den körs
     try:
-        from services.scheduler import scheduler
+        if not Settings().CORE_MODE:
+            from services.scheduler import scheduler
 
-        await scheduler.stop()
+            await scheduler.stop()
     except Exception as e:
         logger.warning(f"⚠️ Fel vid stopp av scheduler: {e}")
 
@@ -140,14 +144,57 @@ async def ws_test_page() -> FileResponse:
     return FileResponse(path)
 
 
+@app.get("/risk-panel")
+async def risk_panel_page() -> FileResponse:
+    import os
+
+    base_dir = os.path.dirname(__file__)
+    path = os.path.join(base_dir, "risk_panel.html")
+    return FileResponse(path)
+
+
 @app.get("/metrics")
 async def metrics() -> Response:
     txt = render_prometheus_text()
     return Response(content=txt, media_type="text/plain; version=0.0.4")
 
 
-# Wrappar hela applikationen med Socket.IO på path "/ws/socket.io"
-app = socketio.ASGIApp(socket_app, other_asgi_app=app, socketio_path="/ws/socket.io")
+# Enkel ASGI-middleware för latens per endpoint
+@app.middleware("http")
+async def latency_middleware(request: Request, call_next):
+    import time
+
+    start = time.perf_counter()
+    response = await call_next(request)
+    duration_ms = int((time.perf_counter() - start) * 1000)
+    try:
+        # path-template fås enklast via scope/route (kan vara None i root-asgi)
+        path_template = getattr(getattr(request, "scope", {}), "get", lambda *_: None)(
+            "path"
+        )
+        # Försök att hämta route.path_params/template från request.scope["route"].path
+        route = request.scope.get("route")
+        if route is not None:
+            path_template = getattr(route, "path", path_template)
+        observe_latency(
+            path=path_template or request.url.path,
+            method=request.method,
+            status_code=getattr(response, "status_code", 0),
+            duration_ms=duration_ms,
+        )
+    except Exception:
+        pass
+    return response
+
+
+# Wrappar endast Socket.IO när Core Mode inte är aktivt
+if not settings.CORE_MODE:
+    app = socketio.ASGIApp(
+        socket_app, other_asgi_app=app, socketio_path="/ws/socket.io"
+    )
+    logger.info("Socket.IO UI aktiverad")
+else:
+    logger.info("CORE_MODE: Socket.IO UI avstängd")
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True, log_level="info")

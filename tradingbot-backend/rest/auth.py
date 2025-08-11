@@ -137,6 +137,24 @@ async def place_order(order: dict) -> dict:
                 f"Ogiltig sidetyp: {type(side)} – förväntade str eller None"
             )
 
+        # Extra flaggor (Reduce-Only/Post-Only/flags)
+        try:
+            if bool(order.get("reduce_only")):
+                bitfinex_order["reduce_only"] = True
+        except Exception:
+            pass
+        try:
+            # Bitfinex fält heter ofta "postonly" i API:t
+            if bool(order.get("post_only")) or bool(order.get("postonly")):
+                bitfinex_order["postonly"] = True
+        except Exception:
+            pass
+        try:
+            if order.get("flags") is not None:
+                bitfinex_order["flags"] = int(order.get("flags"))
+        except Exception:
+            pass
+
         logger.info(f"🌐 REST API: Lägger order på {url}")
         logger.info(f"📋 Order data: {bitfinex_order}")
 
@@ -155,8 +173,9 @@ async def place_order(order: dict) -> dict:
             "🔍 DEBUG: API Secret is %s",
             "set" if settings.BITFINEX_API_SECRET else "not set",
         )
-        logger.info(f"🔍 DEBUG: Headers: {redact_headers(headers)}")
-        logger.info(f"🔍 DEBUG: Payload: {bitfinex_order}")
+        # Sänk till debug-nivå för att undvika onödigt verbos i prod
+        logger.debug("🔍 DEBUG: Headers: %s", redact_headers(headers))
+        logger.debug("🔍 DEBUG: Payload: %s", bitfinex_order)
 
         # Under pytest: respektera monkeypatch om den satt
         if os.environ.get("PYTEST_CURRENT_TEST"):
@@ -178,22 +197,51 @@ async def place_order(order: dict) -> dict:
 
             response = _DummyResp()
         else:
+            import asyncio
+            import random
+
             import httpx
 
-            async with httpx.AsyncClient() as client:
-                response = await client.post(
-                    url, content=body_json.encode("utf-8"), headers=headers
-                )
+            timeout = settings.ORDER_HTTP_TIMEOUT
+            retries = max(int(settings.ORDER_MAX_RETRIES), 0)
+            backoff_base = max(int(settings.ORDER_BACKOFF_BASE_MS), 0) / 1000.0
+            backoff_max = max(int(settings.ORDER_BACKOFF_MAX_MS), 0) / 1000.0
+            last_exc = None
+            t0 = datetime.now().timestamp()
+            for attempt in range(retries + 1):
+                try:
+                    async with httpx.AsyncClient(timeout=timeout) as client:
+                        response = await client.post(
+                            url, content=body_json.encode("utf-8"), headers=headers
+                        )
+                        if response.status_code in (429, 500, 502, 503, 504):
+                            raise httpx.HTTPStatusError(
+                                "server busy", request=None, response=response
+                            )
+                        response.raise_for_status()
+                        break
+                except Exception as e:
+                    last_exc = e
+                    if attempt < retries:
+                        delay = min(
+                            backoff_max, backoff_base * (2**attempt)
+                        ) + random.uniform(0, 0.1)
+                        await asyncio.sleep(delay)
+                        continue
+                    else:
+                        raise
+            t1 = datetime.now().timestamp()
 
-            logger.info(f"🔍 DEBUG: Response Status: {response.status_code}")
-            logger.info(f"🔍 DEBUG: Response Headers: {response.headers}")
-            logger.info(f"🔍 DEBUG: Response Text: {response.text}")
+            logger.debug("🔍 DEBUG: Response Status: %s", response.status_code)
+            logger.debug("🔍 DEBUG: Response Headers: %s", response.headers)
+            logger.debug("🔍 DEBUG: Response Text: %s", response.text)
 
             if response.status_code == 500:
                 # Logga detaljerad felinformation
-                logger.error(f"Bitfinex API Error: {response.status_code}")
-                logger.error(f"Response Headers: {response.headers}")
-                logger.error(f"Response Text: {response.text}")
+                logger.error("Bitfinex API Error: %s", response.status_code)
+                # Felhuvuden/texter kan vara verbosa; logga på debug
+                logger.debug("Response Headers: %s", response.headers)
+                logger.debug("Response Text: %s", response.text)
                 return {
                     "error": f"Bitfinex API Error: {response.status_code} - {response.text}"
                 }
@@ -202,6 +250,16 @@ async def place_order(order: dict) -> dict:
 
             result = response.json()
             logger.info(f"✅ REST API: Order lagd framgångsrikt: {result}")
+            try:
+                # Exportera enkel latens-metric
+                from services.metrics import inc, metrics_store
+
+                elapsed_ms = int((t1 - t0) * 1000)
+                metrics_store["order_submit_ms"] = (
+                    metrics_store.get("order_submit_ms", 0) + elapsed_ms
+                )
+            except Exception:
+                pass
             return result
 
     except Exception as e:
@@ -243,12 +301,39 @@ async def cancel_order(order_id: int) -> dict:
         )
         headers = build_auth_headers(endpoint, payload_str=body_json)
 
+        import asyncio
+        import random
+
         import httpx
 
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                url, content=body_json.encode("utf-8"), headers=headers
-            )
+        timeout = settings.ORDER_HTTP_TIMEOUT
+        retries = max(int(settings.ORDER_MAX_RETRIES), 0)
+        backoff_base = max(int(settings.ORDER_BACKOFF_BASE_MS), 0) / 1000.0
+        backoff_max = max(int(settings.ORDER_BACKOFF_MAX_MS), 0) / 1000.0
+        last_exc = None
+        response = None
+        for attempt in range(retries + 1):
+            try:
+                async with httpx.AsyncClient(timeout=timeout) as client:
+                    response = await client.post(
+                        url, content=body_json.encode("utf-8"), headers=headers
+                    )
+                    if response.status_code in (429, 500, 502, 503, 504):
+                        raise httpx.HTTPStatusError(
+                            "server busy", request=None, response=response
+                        )
+                    response.raise_for_status()
+                    break
+            except Exception as e:
+                last_exc = e
+                if attempt < retries:
+                    delay = min(
+                        backoff_max, backoff_base * (2**attempt)
+                    ) + random.uniform(0, 0.1)
+                    await asyncio.sleep(delay)
+                    continue
+                else:
+                    return {"error": f"order_cancel_failed:{e}"}
 
             logger.info(f"🔍 DEBUG: Response Status: {response.status_code}")
             logger.info(f"🔍 DEBUG: Response Text: {response.text}")

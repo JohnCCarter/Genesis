@@ -93,6 +93,21 @@
         padding: 6px 8px;
         color: #333;
       }
+      .advanced-panel {
+        margin: 8px 0 12px;
+      }
+      .advanced-panel > summary {
+        cursor: pointer;
+        font-weight: 600;
+      }
+      .advanced-panel .caret {
+        display: inline-block;
+        margin-right: 6px;
+        transition: transform 0.2s ease;
+      }
+      .advanced-panel[open] .caret {
+        transform: rotate(90deg);
+      }
     </style>
   </head>
   <body>
@@ -111,17 +126,20 @@
     ></div>
     <h1>TradingBot WebSocket Test</h1>
 
-    <div class="small" style="margin: 8px 0">
-      <label
-        ><input id="toggleAdvanced" type="checkbox" /> Visa avancerat</label
-      >
-    </div>
+    <!-- Statusraden kvar högst upp; flik för Advanced flyttas till botten -->
     <div id="miniStatus" class="small statusbar" style="margin: 8px 0"></div>
 
-    <div>
+    <div class="row">
       <button id="getTokenBtn">1. Hämta Token</button>
       <button id="connectBtn" disabled>2. Anslut WebSocket</button>
       <button id="disconnectBtn" disabled>3. Koppla från</button>
+      <button
+        id="openRiskPanelBtn"
+        class="advanced"
+        title="Öppna riskpanel i ny flik"
+      >
+        Riskpanel
+      </button>
     </div>
 
     <div style="margin-top: 20px">
@@ -136,9 +154,15 @@
       >
         <div>
           <label>Symbol</label><br />
-          <input id="symbolInput" value="tTESTBTC:TESTUSD" />
           <button id="loadSymbolsBtn" disabled>Hämta symboler</button>
-          <select id="symbolsSelect" disabled></select>
+          <select id="symbolsSelect" disabled>
+            <option value="tTESTBTC:TESTUSD">tTESTBTC:TESTUSD</option>
+            <option value="tBTCUSD">tBTCUSD</option>
+            <option value="tETHUSD">tETHUSD</option>
+            <option value="tSOLUSD">tSOLUSD</option>
+            <option value="tXRPUSD">tXRPUSD</option>
+            <option value="tADAUSD">tADAUSD</option>
+          </select>
         </div>
         <div>
           <label>Amount</label><br />
@@ -632,7 +656,14 @@
       <div id="tradeCounterArea" style="margin-top: 8px"></div>
     </div>
 
-    <div style="margin-top: 20px">
+    <details class="advanced-panel" id="advancedPanel">
+      <summary><span class="caret">▸</span>Avancerat</summary>
+      <div class="small" style="opacity: 0.7; margin-top: 6px">
+        Växlar bara UI; backend orörd
+      </div>
+    </details>
+
+    <div style="margin-top: 12px">
       <h3>Log:</h3>
       <div class="toolbar">
         <button id="clearLogBtn">Rensa logg</button>
@@ -647,24 +678,51 @@
       let socket = null;
       let token = null;
 
-      // Simple/Advanced toggle
-      const advToggle = document.getElementById("toggleAdvanced");
-      function applyAdvancedVisibility() {
-        const show = !!(advToggle && advToggle.checked);
+      // Mode selector (Default/Advanced) – togglar show-advanced
+      const tabDefault = document.getElementById("tabDefault");
+      const tabAdvanced = document.getElementById("tabAdvanced");
+      function applyMode(mode) {
+        const isAdvanced = mode === "advanced";
+        document.body.classList.toggle("show-advanced", isAdvanced);
         try {
-          localStorage.setItem("showAdvanced", show ? "1" : "0");
+          localStorage.setItem("uiMode", isAdvanced ? "advanced" : "default");
         } catch {}
-        document.body.classList.toggle("show-advanced", show);
       }
-      (function initAdvanced() {
+      (function initMode() {
+        let mode = "default";
         try {
-          const saved = localStorage.getItem("showAdvanced");
-          const show = saved === "1";
-          if (advToggle) advToggle.checked = show;
+          const url = new URL(window.location.href);
+          const q = (url.searchParams.get("mode") || "").toLowerCase();
+          if (q === "advanced") mode = "advanced";
+          else {
+            const saved = (localStorage.getItem("uiMode") || "").toLowerCase();
+            if (saved === "advanced") mode = "advanced";
+          }
         } catch {}
-        applyAdvancedVisibility();
-        if (advToggle)
-          advToggle.addEventListener("change", applyAdvancedVisibility);
+        applyMode(mode);
+        if (tabDefault)
+          tabDefault.addEventListener("click", () => applyMode("default"));
+        if (tabAdvanced)
+          tabAdvanced.addEventListener("click", () => applyMode("advanced"));
+      })();
+
+      // Kollapsbar sektion "Avancerat" som visar/döljer advanced-UI
+      (function setupAdvancedPanel() {
+        try {
+          const panel = document.getElementById("advancedPanel");
+          const saved = (localStorage.getItem("uiMode") || "").toLowerCase();
+          if (saved === "advanced") {
+            document.body.classList.add("show-advanced");
+            panel.setAttribute("open", "open");
+          }
+          panel.addEventListener("toggle", () => {
+            const isOpen = panel.open;
+            document.body.classList.toggle("show-advanced", isOpen);
+            try {
+              localStorage.setItem("uiMode", isOpen ? "advanced" : "default");
+            } catch {}
+          });
+        } catch {}
       })();
 
       async function updateMiniStatus() {
@@ -1040,6 +1098,20 @@
         }
       });
 
+      // Open risk panel
+      document
+        .getElementById("openRiskPanelBtn")
+        .addEventListener("click", () => {
+          try {
+            const url = `${location.protocol}//${location.host}/risk-panel`;
+            window.open(url, "_blank");
+          } catch (e) {
+            log(
+              "Kunde inte öppna riskpanel: " + (e && e.message ? e.message : e)
+            );
+          }
+        });
+
       // REST helpers
       async function restFetch(path, options = {}) {
         if (!token) throw new Error("Ingen token");
@@ -1279,17 +1351,33 @@
         .getElementById("loadSymbolsBtn")
         .addEventListener("click", async () => {
           try {
-            const arr = await restFetch(
-              `/api/v2/market/symbols?test_only=true&format=v2`
-            );
             const sel = document.getElementById("symbolsSelect");
+            const prev = sel.value;
+            let arr = [];
+            try {
+              arr = await restFetch(
+                `/api/v2/market/symbols?test_only=true&format=v2`
+              );
+            } catch {}
             sel.innerHTML = "";
+            // fallback om API misslyckas
+            if (!Array.isArray(arr) || !arr.length) {
+              arr = [
+                "tTESTBTC:TESTUSD",
+                "tBTCUSD",
+                "tETHUSD",
+                "tSOLUSD",
+                "tXRPUSD",
+                "tADAUSD",
+              ];
+            }
             arr.forEach((s) => {
               const opt = document.createElement("option");
               opt.value = s;
               opt.textContent = s;
               sel.appendChild(opt);
             });
+            sel.value = prev && arr.includes(prev) ? prev : arr[0];
             // Fyll snabbpanelens select också
             const qsel = document.getElementById("quickSymbolsSelect");
             if (qsel) {
@@ -1304,13 +1392,12 @@
               if (!qsel._bound) {
                 qsel.addEventListener("change", () => {
                   const v = qsel.value;
-                  document.getElementById("quickSymbol").value = v;
                   [
-                    "symbolInput",
                     "sizeSymbol",
                     "autoSymbol",
                     "btSymbol",
                     "brSymbol",
+                    "quickSymbol",
                     "strategySymbol",
                   ].forEach((id) => {
                     const el = document.getElementById(id);
@@ -1321,12 +1408,11 @@
               }
             }
             logSection("Symbols loaded", { count: arr.length });
+            sel.dispatchEvent(new Event("change"));
             sel.addEventListener("change", () => {
               const v = sel.value;
-              document.getElementById("symbolInput").value = v;
-              document.getElementById("sizeSymbol").value = v;
-              // Synka övriga symbolfält
               [
+                "sizeSymbol",
                 "autoSymbol",
                 "btSymbol",
                 "brSymbol",

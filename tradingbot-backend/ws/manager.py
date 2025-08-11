@@ -322,6 +322,17 @@ class WebSocketManager:
             try:
                 # När auth OK, aktivera DMS
                 await self.bitfinex_ws.enable_dead_man_switch(timeout_ms=60000)
+                # Försök återregistrera brackets genom att bygga om child-index från sparad state
+                try:
+                    from services.bracket_manager import bracket_manager
+
+                    # _load_state körs i init; child_to_group är redan byggd vid import
+                    # Här kan vi logga hur många aktiva brackets som finns
+                    logger.info(
+                        f"BracketManager återhämtning: {len(bracket_manager.groups)} grupper aktiva efter reconnect"
+                    )
+                except Exception as ie:
+                    logger.warning(f"BracketManager återhämtning misslyckades: {ie}")
             except Exception as e:
                 logger.warning(f"Kunde inte aktivera DMS: {e}")
 

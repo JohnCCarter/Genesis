@@ -7,6 +7,7 @@ Inkluderar konfigurerad loggning med olika nivåer och formatering.
 
 import logging
 import os
+import re
 import sys
 from datetime import datetime
 from typing import Optional
@@ -19,8 +20,32 @@ class SafeFormatter(logging.Formatter):
     Denna formatter ersätter icke-stödda tecken med '?' så loggningen inte kraschar.
     """
 
+    _REDACT_PATTERNS = [
+        # Authorization: Bearer <token>
+        (re.compile(r"(?i)(Authorization\s*:\s*Bearer\s+)([^\s]+)"), r"\1[REDACTED]"),
+        (re.compile(r"(?i)Bearer\s+[A-Za-z0-9\-\._~\+\/]+=*"), "Bearer [REDACTED]"),
+        # Bitfinex headers
+        (re.compile(r"(?i)(bfx-apikey\"?\s*:\s*)(\"?)[^\",\s]+\2"), r"\1[REDACTED]"),
+        (re.compile(r"(?i)(bfx-signature\"?\s*:\s*)(\"?)[^\",\s]+\2"), r"\1[REDACTED]"),
+        # Generic tokens
+        (re.compile(r"(?i)(access_token\"?\s*:\s*)(\"?)[^\",\s]+\2"), r"\1[REDACTED]"),
+        (re.compile(r"(?i)(refresh_token\"?\s*:\s*)(\"?)[^\",\s]+\2"), r"\1[REDACTED]"),
+    ]
+
+    @classmethod
+    def _redact(cls, text: str) -> str:
+        try:
+            out = text
+            for pattern, repl in cls._REDACT_PATTERNS:
+                out = pattern.sub(repl, out)
+            return out
+        except Exception:
+            return text
+
     def format(self, record: logging.LogRecord) -> str:
         msg = super().format(record)
+        # Redigera potentiellt känsliga mönster
+        msg = self._redact(msg)
         encoding = getattr(sys.stdout, "encoding", "utf-8") or "utf-8"
         try:
             # Försök round-trip i aktuell encoding; ersätt otillåtna tecken

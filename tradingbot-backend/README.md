@@ -181,7 +181,7 @@ Notiser skickas även via Socket.IO som `notification`-event.
 
 ### (Legacy) Scraper
 
-Scraper-relaterade filer och dokumentation har arkiverats och flyttats till `docs/legacy/`.
+Scraper-relaterade filer och dokumentation har arkiverats och flyttats till `docs/legacy/` och behövs inte i runtime. För att hålla Docker‑images små är `docs/legacy/` exkluderat i `.dockerignore`. Vid behov av full dokumentationsdata, hantera det i en separat artefakt/repo.
 
 ### Models
 
@@ -373,7 +373,7 @@ Projektet följer en modulär struktur där varje modul har ett specifikt ansvar
 
 ### Exempel (arkiverade)
 
-Exempel-skript har flyttats till `docs/legacy/examples/` för referens.
+Exempel-skript har flyttats till `docs/legacy/examples/` för referens och är inte en del av produktion.
 
 ### Bidra
 

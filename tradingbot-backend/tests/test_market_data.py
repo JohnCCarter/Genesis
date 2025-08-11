@@ -131,6 +131,15 @@ async def test_api_endpoints():
 
         print("🎉 Alla API-endpoint-tester godkända!")
 
+        # Testa metrics endpoint (root) och kontrollera att latens-metrik syns
+        print("📈 Testar /metrics (root) ...")
+        resp = client.get("/metrics")
+        assert resp.status_code == 200
+        body = resp.text
+        assert "tradingbot_orders_total" in body
+        # Efter att vi gjort några GET:ar borde request-latency finnas
+        assert "tradingbot_request_latency_ms_count" in body
+
     except Exception as e:
         pytest.fail(f"API-test fel: {e}")
 

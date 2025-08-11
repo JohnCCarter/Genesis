@@ -10,7 +10,7 @@ import logging
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 try:
-    from scraper.bitfinex_docs import BitfinexDocsScraper
+    from scraper.bitfinex_docs import BitfinexDocsScraper  # pylint: disable=E0401
 except Exception:
     BitfinexDocsScraper = None  # type: ignore
 from utils.logger import get_logger
@@ -166,6 +166,15 @@ class OrderValidator:
                         return False, "Pris måste vara större än noll för limit orders"
                 except (ValueError, TypeError):
                     return False, f"Ogiltigt prisformat: {price}"
+
+        # Tolerera kända flaggor (reduce_only/post_only/flags) utan hård validering här
+        try:
+            _ = bool(order.get("reduce_only"))
+            _ = bool(order.get("post_only")) or bool(order.get("postonly"))
+            if order.get("flags") is not None:
+                int(order.get("flags"))
+        except Exception:
+            return False, "Ogiltiga flaggor (reduce_only/post_only/flags)"
 
         return True, None
 

@@ -95,7 +95,8 @@ class TradingWindowService:
         if not windows:
             return False
 
-        current_t = now.timetz() if tz else now.time()
+        # Använd en naive time-of-day för jämförelse mot reglernas tider (som är naive)
+        current_t = now.time()
         for start, end in windows:
             t_start, t_end = _parse_time(start), _parse_time(end)
             if t_start <= current_t <= t_end:

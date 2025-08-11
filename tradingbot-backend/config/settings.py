@@ -24,6 +24,7 @@ class Settings(_BaseSettings):
     """Konfigurationsklass för applikationsinställningar."""
 
     # Applikationskonfiguration
+    CORE_MODE: bool = False  # Enkel drift: endast kärnfunktioner aktiva
     HOST: str = "0.0.0.0"
     PORT: int = 8000
     DEBUG: bool = True
@@ -72,6 +73,10 @@ class Settings(_BaseSettings):
     # Persistensfil för trade counter
     TRADE_COUNTER_FILE: str = "config/trade_counter.json"
 
+    # Bracket/OCO state (persistens för GID-gruppering och återhämtning)
+    BRACKET_STATE_FILE: str = "config/bracket_state.json"
+    BRACKET_PARTIAL_ADJUST: bool = False
+
     # Circuit Breaker
     CB_ENABLED: bool = True
     CB_ERROR_WINDOW_SECONDS: int = 60
@@ -89,6 +94,23 @@ class Settings(_BaseSettings):
 
     # Exchange ID
     EXCHANGE_ID: Optional[str] = None
+
+    # Nätverksinställningar (timeouts/retries)
+    DATA_HTTP_TIMEOUT: float = 10.0
+    DATA_MAX_RETRIES: int = 3
+    DATA_BACKOFF_BASE_MS: int = 250
+    DATA_BACKOFF_MAX_MS: int = 2000
+    ORDER_HTTP_TIMEOUT: float = 15.0
+    ORDER_MAX_RETRIES: int = 2
+    ORDER_BACKOFF_BASE_MS: int = 300
+    ORDER_BACKOFF_MAX_MS: int = 2000
+
+    # Candle cache retention
+    CANDLE_CACHE_RETENTION_DAYS: int = 7
+    CANDLE_CACHE_MAX_ROWS_PER_PAIR: int = 10000
+
+    # Metrics security
+    METRICS_ACCESS_TOKEN: Optional[str] = None
 
     # Säkerställ absolut sökväg till .env oavsett var processen startas
     _BASE_DIR = _os.path.dirname(_os.path.dirname(__file__))

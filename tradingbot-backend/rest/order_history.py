@@ -195,6 +195,79 @@ class OrderHistoryService:
         self.settings = Settings()
         self.base_url = self.settings.BITFINEX_API_URL
 
+    async def _signed_post_with_retry(
+        self, endpoint: str, body: Optional[Dict[str, Any]] = None
+    ) -> httpx.Response:
+        """
+        Skicka ett signerat POST-anrop med timeout och retry/backoff.
+
+        Återanvänder DATA_* inställningar för timeout/retries.
+        Signerar på exakt samma JSON-sträng som skickas.
+        """
+        import asyncio
+        import random
+
+        # Bygg deterministisk JSON och signera den exakta strängen
+        body = body or {}
+        body_json = json.dumps(body, separators=(",", ":"), ensure_ascii=False)
+        headers = build_auth_headers(endpoint, payload_str=body_json)
+
+        timeout = getattr(self.settings, "DATA_HTTP_TIMEOUT", 15.0)
+        retries = max(int(getattr(self.settings, "DATA_MAX_RETRIES", 2) or 0), 0)
+        backoff_base = (
+            max(int(getattr(self.settings, "DATA_BACKOFF_BASE_MS", 250) or 0), 0)
+            / 1000.0
+        )
+        backoff_max = (
+            max(int(getattr(self.settings, "DATA_BACKOFF_MAX_MS", 2000) or 0), 0)
+            / 1000.0
+        )
+
+        last_exc: Optional[Exception] = None
+        response: Optional[httpx.Response] = None
+        for attempt in range(retries + 1):
+            try:
+                async with httpx.AsyncClient(timeout=timeout) as client:
+                    response = await client.post(
+                        f"{self.base_url}/{endpoint}",
+                        content=body_json.encode("utf-8"),
+                        headers=headers,
+                    )
+                    # Retrybara statuskoder
+                    if response.status_code in (429, 500, 502, 503, 504):
+                        # Lyft generiskt fel för att trigga retry utan att skapa HTTPStatusError med None-request
+                        raise httpx.HTTPError("server busy")
+                    response.raise_for_status()
+                    return response
+            except Exception as e:
+                last_exc = e
+                if attempt < retries:
+                    delay = min(
+                        backoff_max, backoff_base * (2**attempt)
+                    ) + random.uniform(0, 0.1)
+                    await asyncio.sleep(delay)
+                    continue
+                break
+
+        # Om vi hamnar här, kasta sista undantaget om svar finns
+        if response is not None:
+            try:
+                # Trunkera text för att undvika stora loggar
+                text = response.text or ""
+                if len(text) > 300:
+                    text = text[:300] + "... [truncated]"
+                logger.error(
+                    "Bitfinex API fel %s på %s: %s",
+                    response.status_code,
+                    endpoint,
+                    text,
+                )
+            except Exception:
+                pass
+        if last_exc:
+            raise last_exc
+        raise RuntimeError("unknown_http_error")
+
     async def get_orders_history(
         self,
         limit: int = 25,
@@ -224,26 +297,17 @@ class OrderHistoryService:
             if end_time:
                 payload["end"] = end_time
 
-            headers = build_auth_headers(endpoint, payload)
+            logger.info(
+                f"🌐 REST API: Hämtar orderhistorik från {self.base_url}/{endpoint}"
+            )
+            response = await self._signed_post_with_retry(endpoint, payload)
+            orders_data = response.json()
+            logger.info(f"✅ REST API: Hämtade {len(orders_data)} historiska ordrar")
 
-            async with httpx.AsyncClient() as client:
-                logger.info(
-                    f"🌐 REST API: Hämtar orderhistorik från {self.base_url}/{endpoint}"
-                )
-                response = await client.post(
-                    f"{self.base_url}/{endpoint}", headers=headers, json=payload
-                )
-                response.raise_for_status()
-
-                orders_data = response.json()
-                logger.info(
-                    f"✅ REST API: Hämtade {len(orders_data)} historiska ordrar"
-                )
-
-                orders = [
-                    OrderHistoryItem.from_bitfinex_data(order) for order in orders_data
-                ]
-                return orders
+            orders = [
+                OrderHistoryItem.from_bitfinex_data(order) for order in orders_data
+            ]
+            return orders
 
         except Exception as e:
             logger.error(f"Fel vid hämtning av orderhistorik: {e}")
@@ -261,22 +325,15 @@ class OrderHistoryService:
         """
         try:
             endpoint = f"auth/r/order/{order_id}/trades"
-            headers = build_auth_headers(endpoint)
+            logger.info(f"🌐 REST API: Hämtar trades för order {order_id}")
+            response = await self._signed_post_with_retry(endpoint, {})
+            trades_data = response.json()
+            logger.info(
+                f"✅ REST API: Hämtade {len(trades_data)} trades för order {order_id}"
+            )
 
-            async with httpx.AsyncClient() as client:
-                logger.info(f"🌐 REST API: Hämtar trades för order {order_id}")
-                response = await client.post(
-                    f"{self.base_url}/{endpoint}", headers=headers
-                )
-                response.raise_for_status()
-
-                trades_data = response.json()
-                logger.info(
-                    f"✅ REST API: Hämtade {len(trades_data)} trades för order {order_id}"
-                )
-
-                trades = [TradeItem.from_bitfinex_data(trade) for trade in trades_data]
-                return trades
+            trades = [TradeItem.from_bitfinex_data(trade) for trade in trades_data]
+            return trades
 
         except Exception as e:
             logger.error(f"Fel vid hämtning av trades för order {order_id}: {e}")
@@ -301,24 +358,15 @@ class OrderHistoryService:
                 endpoint = f"auth/r/trades/{symbol}/hist"
 
             payload = {"limit": limit} if limit else {}
-            headers = build_auth_headers(endpoint, payload)
+            logger.info(
+                f"🌐 REST API: Hämtar handelshistorik från {self.base_url}/{endpoint}"
+            )
+            response = await self._signed_post_with_retry(endpoint, payload)
+            trades_data = response.json()
+            logger.info(f"✅ REST API: Hämtade {len(trades_data)} historiska trades")
 
-            async with httpx.AsyncClient() as client:
-                logger.info(
-                    f"🌐 REST API: Hämtar handelshistorik från {self.base_url}/{endpoint}"
-                )
-                response = await client.post(
-                    f"{self.base_url}/{endpoint}", headers=headers, json=payload
-                )
-                response.raise_for_status()
-
-                trades_data = response.json()
-                logger.info(
-                    f"✅ REST API: Hämtade {len(trades_data)} historiska trades"
-                )
-
-                trades = [TradeItem.from_bitfinex_data(trade) for trade in trades_data]
-                return trades
+            trades = [TradeItem.from_bitfinex_data(trade) for trade in trades_data]
+            return trades
 
         except Exception as e:
             logger.error(f"Fel vid hämtning av handelshistorik: {e}")
@@ -343,24 +391,15 @@ class OrderHistoryService:
                 endpoint = f"auth/r/ledgers/{currency}/hist"
 
             payload = {"limit": limit} if limit else {}
-            headers = build_auth_headers(endpoint, payload)
+            logger.info(f"🌐 REST API: Hämtar ledger från {self.base_url}/{endpoint}")
+            response = await self._signed_post_with_retry(endpoint, payload)
+            ledgers_data = response.json()
+            logger.info(f"✅ REST API: Hämtade {len(ledgers_data)} ledger-poster")
 
-            async with httpx.AsyncClient() as client:
-                logger.info(
-                    f"🌐 REST API: Hämtar ledger från {self.base_url}/{endpoint}"
-                )
-                response = await client.post(
-                    f"{self.base_url}/{endpoint}", headers=headers, json=payload
-                )
-                response.raise_for_status()
-
-                ledgers_data = response.json()
-                logger.info(f"✅ REST API: Hämtade {len(ledgers_data)} ledger-poster")
-
-                ledgers = [
-                    LedgerEntry.from_bitfinex_data(ledger) for ledger in ledgers_data
-                ]
-                return ledgers
+            ledgers = [
+                LedgerEntry.from_bitfinex_data(ledger) for ledger in ledgers_data
+            ]
+            return ledgers
 
         except Exception as e:
             logger.error(f"Fel vid hämtning av ledger: {e}")

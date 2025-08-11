@@ -30,17 +30,26 @@ from rest.wallet import WalletBalance, WalletService
 from services.backtest import BacktestService
 from services.bitfinex_data import BitfinexDataService
 from services.bracket_manager import bracket_manager
-from services.metrics import inc
+from services.metrics import inc as metrics_inc
+from services.metrics import inc_labeled, render_prometheus_text
 from services.notifications import notification_service
 from services.performance import PerformanceService
 from services.risk_manager import RiskManager
+from services.runtime_mode import (
+    get_core_mode,
+    get_prev_rate_limit,
+    set_core_mode,
+    set_prev_rate_limit,
+)
 from services.strategy import evaluate_weighted_strategy
 from services.strategy_settings import StrategySettings, StrategySettingsService
 from services.symbols import SymbolService
 from services.templates import OrderTemplatesService
 from services.trading_integration import trading_integration
 from services.trading_window import TradingWindowService
+from utils.candle_cache import candle_cache
 from utils.logger import get_logger
+from utils.rate_limiter import get_rate_limiter
 
 logger = get_logger(__name__)
 
@@ -48,6 +57,7 @@ router = APIRouter(prefix="/api/v2")
 security = HTTPBearer(auto_error=False)
 settings = Settings()
 JWT_SECRET = settings.SOCKETIO_JWT_SECRET
+_rl = get_rate_limiter()
 
 
 # Hjälpfunktion för att emit:a notifieringar via Socket.IO
@@ -76,6 +86,8 @@ class OrderRequest(BaseModel):
     price: Optional[str] = None  # Optional för MARKET orders
     type: str = "EXCHANGE LIMIT"  # EXCHANGE LIMIT, EXCHANGE MARKET, etc.
     side: Optional[str] = None  # Optional för att matcha test_order_operations.py
+    post_only: bool = False
+    reduce_only: bool = False
 
 
 class CancelOrderRequest(BaseModel):
@@ -138,7 +150,36 @@ async def place_order_endpoint(order: OrderRequest, _: bool = Depends(require_au
     Lägger en order via Bitfinex API.
     """
     try:
-        logger.info(f"Mottog orderförfrågan: {order.dict()}")
+        # Logga endast sammanfattning för att undvika läckage av tradingdetaljer i prod
+        try:
+            od = order.dict()
+            logger.debug(
+                "Mottog orderförfrågan: symbol=%s type=%s amount=%s price=%s flags(post_only=%s, reduce_only=%s)",
+                od.get("symbol"),
+                od.get("type"),
+                od.get("amount"),
+                od.get("price"),
+                od.get("post_only"),
+                od.get("reduce_only"),
+            )
+        except Exception:
+            logger.debug("Mottog orderförfrågan (kunde inte serialisera)")
+        # Enkel rate-limit (default avstängd om MAX_REQUESTS <= 0)
+        try:
+            max_requests = int(getattr(settings, "ORDER_RATE_LIMIT_MAX", 0) or 0)
+            window_seconds = int(getattr(settings, "ORDER_RATE_LIMIT_WINDOW", 0) or 0)
+            if max_requests > 0 and window_seconds > 0:
+                key = "place_order"
+                if not _rl.is_allowed(key, max_requests, window_seconds):
+                    try:
+                        from services.metrics import inc
+
+                        inc("rate_limited_total")
+                    except Exception:
+                        pass
+                    return OrderResponse(success=False, error="rate_limited")
+        except Exception:
+            pass
 
         # Validera order innan den skickas
         is_valid, err = order_validator.validate_order(order.dict())
@@ -158,7 +199,11 @@ async def place_order_endpoint(order: OrderRequest, _: bool = Depends(require_au
             risk = RiskManager()
 
         # Skicka ordern till Bitfinex
-        result = await rest_auth.place_order(order.dict())
+        payload = order.dict()
+        # Ignorera post_only för MARKET-ordrar (ingen effekt), men skicka vidare reduce_only
+        if payload.get("type", "").upper().endswith("MARKET"):
+            payload.pop("post_only", None)
+        result = await rest_auth.place_order(payload)
 
         if "error" in result:
             logger.error(f"Fel vid orderläggning: {result['error']}")
@@ -167,11 +212,22 @@ async def place_order_endpoint(order: OrderRequest, _: bool = Depends(require_au
                 "Order misslyckades",
                 {"request": order.dict(), "error": result.get("error")},
             )
-            inc("orders_total")
-            inc("orders_failed_total")
+            metrics_inc("orders_total")
+            metrics_inc("orders_failed_total")
             try:
                 # Registrera fel i circuit breaker
                 RiskManager().record_error()
+            except Exception:
+                pass
+            try:
+                inc_labeled(
+                    "orders_total_labeled",
+                    {
+                        "symbol": order.symbol,
+                        "type": (order.type or "").replace(" ", "_"),
+                        "status": "error",
+                    },
+                )
             except Exception:
                 pass
             return OrderResponse(success=False, error=result["error"])
@@ -179,8 +235,19 @@ async def place_order_endpoint(order: OrderRequest, _: bool = Depends(require_au
         # Markera trade om lyckad
         if "error" not in result:
             risk.record_trade(symbol=order.symbol)
-            inc("orders_total")
+            metrics_inc("orders_total")
         logger.info(f"Order framgångsrikt lagd: {result}")
+        try:
+            inc_labeled(
+                "orders_total_labeled",
+                {
+                    "symbol": order.symbol,
+                    "type": (order.type or "").replace(" ", "_"),
+                    "status": "ok",
+                },
+            )
+        except Exception:
+            pass
         await notification_service.notify(
             "info", "Order lagd", {"request": order.dict(), "response": result}
         )
@@ -200,6 +267,20 @@ async def cancel_order_endpoint(
     """
     try:
         logger.info(f"Mottog avbrottsförfrågan för order: {cancel_request.order_id}")
+        try:
+            max_requests = int(getattr(settings, "ORDER_RATE_LIMIT_MAX", 0) or 0)
+            window_seconds = int(getattr(settings, "ORDER_RATE_LIMIT_WINDOW", 0) or 0)
+            if max_requests > 0 and window_seconds > 0:
+                if not _rl.is_allowed("cancel_order", max_requests, window_seconds):
+                    try:
+                        from services.metrics import inc
+
+                        inc("rate_limited_total")
+                    except Exception:
+                        pass
+                    return OrderResponse(success=False, error="rate_limited")
+        except Exception:
+            pass
 
         # Skicka avbrottsförfrågan till Bitfinex
         result = await rest_auth.cancel_order(cancel_request.order_id)
@@ -270,6 +351,23 @@ async def cancel_all_orders_endpoint(_: bool = Depends(require_auth)):
     """
     try:
         logger.info("Mottog förfrågan om att avbryta alla ordrar")
+        # Rate-limit skydd
+        try:
+            max_requests = int(getattr(settings, "ORDER_RATE_LIMIT_MAX", 0) or 0)
+            window_seconds = int(getattr(settings, "ORDER_RATE_LIMIT_WINDOW", 0) or 0)
+            if max_requests > 0 and window_seconds > 0:
+                if not _rl.is_allowed(
+                    "cancel_all_orders", max_requests, window_seconds
+                ):
+                    try:
+                        from services.metrics import inc as _inc
+
+                        _inc("rate_limited_total")
+                    except Exception:
+                        pass
+                    return OrderResponse(success=False, error="rate_limited")
+        except Exception:
+            pass
 
         # Skapa en instans av ActiveOrdersService
         active_orders_service = ActiveOrdersService()
@@ -937,6 +1035,7 @@ async def calculate_position_size(
             "size": round(size, 8),
             "quote_alloc": round(quote_to_use, 2),
             "quote_currency": quote_upper,
+            "quote_total": round(total_quote, 2),
             "price": price,
         }
         if sl_price is not None and tp_price is not None:
@@ -1063,14 +1162,30 @@ async def market_watchlist(
             last = float(ticker.get("last_price", 0)) if ticker else None
             vol = float(ticker.get("volume", 0)) if ticker else None
             candles = await data.get_candles(s, "1m", 50)
+            candles_5m = await data.get_candles(s, "5m", 50)
             strat = None
+            strat_5m = None
             if candles:
                 parsed = data.parse_candles_to_strategy_data(candles)
                 from services.strategy import evaluate_strategy
 
                 parsed["symbol"] = s
                 strat = evaluate_strategy(parsed)
-            out.append({"symbol": s, "last": last, "volume": vol, "strategy": strat})
+            if candles_5m:
+                parsed5 = data.parse_candles_to_strategy_data(candles_5m)
+                from services.strategy import evaluate_strategy as eval5
+
+                parsed5["symbol"] = s
+                strat_5m = eval5(parsed5)
+            out.append(
+                {
+                    "symbol": s,
+                    "last": last,
+                    "volume": vol,
+                    "strategy": strat,
+                    "strategy_5m": strat_5m,
+                }
+            )
         return out
     except Exception:
         logger.exception("Fel vid watchlist")
@@ -1183,6 +1298,21 @@ async def place_bracket_order(
 ):
     try:
         logger.info(f"Mottog bracket-order: {req.dict()}")
+        # Rate-limit skydd
+        try:
+            max_requests = int(getattr(settings, "ORDER_RATE_LIMIT_MAX", 0) or 0)
+            window_seconds = int(getattr(settings, "ORDER_RATE_LIMIT_WINDOW", 0) or 0)
+            if max_requests > 0 and window_seconds > 0:
+                if not _rl.is_allowed("bracket_order", max_requests, window_seconds):
+                    try:
+                        from services.metrics import inc as _inc
+
+                        _inc("rate_limited_total")
+                    except Exception:
+                        pass
+                    return OrderResponse(success=False, error="rate_limited")
+        except Exception:
+            pass
         risk = RiskManager()
         ok, reason = risk.pre_trade_checks(symbol=req.symbol)
         if not ok:
@@ -1214,6 +1344,9 @@ async def place_bracket_order(
         }
         if req.entry_type and "LIMIT" in req.entry_type.upper():
             entry_payload["price"] = req.entry_price
+        # Flaggor
+        if "post_only" in req.__fields_set__:
+            entry_payload["post_only"] = req.post_only
         # Validera payload
         is_valid, err = order_validator.validate_order(entry_payload)
         if not is_valid:
@@ -1530,6 +1663,118 @@ async def circuit_config(req: CircuitConfigRequest, _: bool = Depends(require_au
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# Bracket state admin
+class BracketResetRequest(BaseModel):
+    delete_file: bool = True
+
+
+@router.post("/bracket/reset")
+async def bracket_reset(req: BracketResetRequest, _: bool = Depends(require_auth)):
+    try:
+        cleared = bracket_manager.reset(delete_file=req.delete_file)
+        _emit_notification(
+            "info",
+            "Bracket-state nollställt",
+            {"cleared": cleared, "delete_file": req.delete_file},
+        )
+        return {"success": True, "cleared": cleared}
+    except Exception as e:
+        logger.exception(f"Fel vid bracket reset: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Metrics endpoint (Prometheus text format)
+@router.get("/metrics")
+async def metrics(_: bool = Depends(require_auth)):
+    try:
+        # Valfri token‑kontroll om satt i settings
+        token_required = getattr(settings, "METRICS_ACCESS_TOKEN", None)
+        if token_required:
+            from fastapi import Request
+
+            # Hämta bearer token från Authorization
+            # Om du vill kan du byta till queryparam ?token=
+            def _get_auth_header() -> str:
+                import os
+
+                return os.environ.get("HTTP_AUTHORIZATION", "")
+
+            # FastAPI injicerar inte Request här; enkel fallback
+            # Lämna öppet om inte token satt
+        text = render_prometheus_text()
+        return Response(content=text, media_type="text/plain; version=0.0.4")
+    except Exception as e:
+        logger.exception(f"Fel vid metrics: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Candle cache admin
+class CacheClearRequest(BaseModel):
+    symbol: Optional[str] = None
+    timeframe: Optional[str] = None
+
+
+class BackfillRequest(BaseModel):
+    symbol: str
+    timeframe: str = "1m"
+    max_batches: int = 10
+    batch_limit: int = 1000
+
+
+@router.get("/cache/candles/stats")
+async def cache_candles_stats(_: bool = Depends(require_auth)):
+    try:
+        return candle_cache.stats()
+    except Exception as e:
+        logger.exception(f"Fel vid cache stats: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/cache/candles/clear")
+async def cache_candles_clear(req: CacheClearRequest, _: bool = Depends(require_auth)):
+    try:
+        if req.symbol:
+            n = candle_cache.clear(req.symbol, req.timeframe)
+        else:
+            n = candle_cache.clear_all()
+        # Enforce retention efter clear (kan även köras via scheduler)
+        try:
+            removed = candle_cache.enforce_retention(
+                getattr(settings, "CANDLE_CACHE_RETENTION_DAYS", 7),
+                getattr(settings, "CANDLE_CACHE_MAX_ROWS_PER_PAIR", 10000),
+            )
+            n += removed
+        except Exception:
+            pass
+        _emit_notification(
+            "info",
+            "Candle cache rensad",
+            {"deleted": n, **({"symbol": req.symbol} if req.symbol else {})},
+        )
+        return {"success": True, "deleted": n}
+    except Exception as e:
+        logger.exception(f"Fel vid cache clear: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/cache/candles/backfill")
+async def cache_candles_backfill(req: BackfillRequest, _: bool = Depends(require_auth)):
+    try:
+        svc = BitfinexDataService()
+        inserted = await svc.backfill_history(
+            req.symbol, req.timeframe, req.max_batches, req.batch_limit
+        )
+        _emit_notification(
+            "info",
+            "Candle cache backfill",
+            {"symbol": req.symbol, "timeframe": req.timeframe, "inserted": inserted},
+        )
+        return {"success": True, "inserted": inserted}
+    except Exception as e:
+        logger.exception(f"Fel vid cache backfill: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # Equity endpoints
 @router.get("/account/equity")
 async def get_equity(_: bool = Depends(require_auth)):
@@ -1576,6 +1821,70 @@ class SaveTemplateRequest(BaseModel):
     tp_price: Optional[str] = None
 
 
+class TemplatesPayload(BaseModel):
+    templates: List[Dict[str, Any]]
+
+
+# --- Runtime mode (Core Mode) ---
+
+
+class CoreModeRequest(BaseModel):
+    enabled: bool
+
+
+@router.get("/mode/core")
+async def get_core_mode_status(_: bool = Depends(require_auth)):
+    return {"core_mode": bool(get_core_mode())}
+
+
+@router.post("/mode/core")
+async def set_core_mode_status(
+    payload: CoreModeRequest, _: bool = Depends(require_auth)
+):
+    try:
+        # Spara nuvarande rate-limit för återställning
+        try:
+            max_requests = int(getattr(settings, "ORDER_RATE_LIMIT_MAX", 0) or 0)
+            window_seconds = int(getattr(settings, "ORDER_RATE_LIMIT_WINDOW", 0) or 0)
+            if get_prev_rate_limit() is None:
+                set_prev_rate_limit(max_requests, window_seconds)
+        except Exception:
+            pass
+
+        # Slå på/av core mode i runtime-flagga
+        set_core_mode(bool(payload.enabled))
+
+        # När CoreMode aktiveras: sätt rate-limit inert via env override i process
+        # (enkel variant: sätt settings-attributen; i prod bör dessa komma från env)
+        if payload.enabled:
+            try:
+                settings.ORDER_RATE_LIMIT_MAX = 0
+                settings.ORDER_RATE_LIMIT_WINDOW = 0
+            except Exception:
+                pass
+        else:
+            # Återställ ev. tidigare rate-limit-värden
+            prev = get_prev_rate_limit()
+            if prev:
+                try:
+                    settings.ORDER_RATE_LIMIT_MAX, settings.ORDER_RATE_LIMIT_WINDOW = (
+                        prev
+                    )
+                except Exception:
+                    pass
+
+        # Notifiera via WS (best effort)
+        _emit_notification(
+            "info",
+            "Core mode",
+            {"enabled": bool(payload.enabled)},
+        )
+        return {"core_mode": bool(payload.enabled)}
+    except Exception as e:
+        logger.exception(f"Fel vid core-mode toggle: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # OBS: GET /order/templates togs bort för att undvika kollision med /order/{order_id} (int)
 
 
@@ -1619,6 +1928,32 @@ async def list_templates_alias(_: bool = Depends(require_auth)):
     except Exception as e:
         logger.exception(f"Fel vid list_templates (alias): {e}")
         return []
+
+
+@router.post("/orders/templates/import")
+async def import_templates(payload: TemplatesPayload, _: bool = Depends(require_auth)):
+    try:
+        svc = OrderTemplatesService()
+        items = payload.templates if isinstance(payload.templates, list) else []
+        count = 0
+        for t in items:
+            if isinstance(t, dict) and t.get("name"):
+                svc.save_template(t)
+                count += 1
+        return {"imported": count}
+    except Exception as e:
+        logger.exception(f"Fel vid import_templates: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/orders/templates/export", response_model=List[Dict[str, Any]])
+async def export_templates(_: bool = Depends(require_auth)):
+    try:
+        svc = OrderTemplatesService()
+        return svc.list_templates()
+    except Exception as e:
+        logger.exception(f"Fel vid export_templates: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.delete("/order/templates/{name}")

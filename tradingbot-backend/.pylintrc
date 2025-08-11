@@ -1,0 +1,21 @@
+[MASTER]
+ignore=docs,readme_docs,docs/legacy
+jobs=0
+
+[FORMAT]
+max-line-length=120
+
+[MESSAGES CONTROL]
+disable=missing-docstring,too-few-public-methods,too-many-arguments,too-many-locals,logging-fstring-interpolation
+
+[TYPECHECK]
+ignored-modules=pydantic
+ignored-classes=BaseModel
+
+[BASIC]
+good-names=_,e,i,j,k,ex,ok,rm,s
+
+[REPORTS]
+score=no
+
+
