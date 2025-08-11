@@ -217,11 +217,15 @@ Invoke-RestMethod -Uri http://127.0.0.1:8000/api/v2/wallets -Headers $h | Conver
 
 - Backend kan kräva JWT för både REST och Socket.IO enligt `AUTH_REQUIRED` i `.env`.
 - Hämta en access token via:
+
   - `POST /api/v2/auth/ws-token` med payload:
+
     ```json
     { "user_id": "frontend_user", "scope": "read", "expiry_hours": 1 }
     ```
+
   - Svaret innehåller `access_token` som används i `Authorization: Bearer <token>`.
+
 - Socket.IO: Skicka samma Bearer-token i `Authorization` headern när du ansluter, eller som query `?token=...` i utveckling.
 
 ## WebSocket-test (Socket.IO)

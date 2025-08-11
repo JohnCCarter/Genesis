@@ -143,11 +143,11 @@ venv/
 ENV/
 env.bak/
 venv.bak/
-config/*.json
-!config/trading_rules.json
-!config/strategy_settings.json
-!config/order_templates.json
-!config/performance_history.json
+tradingbot-backend/config/*.json
+!tradingbot-backend/config/trading_rules.json
+!tradingbot-backend/config/strategy_settings.json
+!tradingbot-backend/config/order_templates.json
+!tradingbot-backend/config/performance_history.json
 
 # Spyder project settings
 .spyderproject
@@ -213,3 +213,53 @@ __marimo__/
 
 # Bitfinex nonce-tracking
 .nonce_tracker.json
+
+# Trading Bot specific exclusions
+# Temporary token files (may contain test data)
+tmp_*.json
+tmp_token.json
+tmp_ws_token.json
+
+# Test files that may contain sensitive data
+test_direct_bitfinex.py
+simple_socketio_server.py
+simple_ws_test_server.py
+ws_test.html
+
+# Debug and development files
+debug_settings.py
+
+# Performance and monitoring files
+*.perf
+*.profile
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Log files (additional patterns)
+logs/
+*.log.*
+tradingbot.log
