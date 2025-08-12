@@ -74,7 +74,11 @@ def evaluate_weighted_strategy(data: Dict[str, str]) -> Dict[str, Any]:
     # ATR är riktningsneutral i weighted bedömning
     atr_score = 0
 
-    weighted_score = weights["ema"] * ema_score + weights["rsi"] * rsi_score + weights["atr"] * atr_score
+    weighted_score = (
+        weights["ema"] * ema_score
+        + weights["rsi"] * rsi_score
+        + weights["atr"] * atr_score
+    )
 
     if weighted_score > 0:
         final_signal = "buy"
@@ -169,7 +173,11 @@ def evaluate_strategy(data: Dict[str, List[float]]) -> Dict[str, Any]:
 
         # Härleder enkla riktade signaler och använder viktad strategi
         try:
-            ema_sig = "buy" if current_price > ema else ("sell" if current_price < ema else "neutral")
+            ema_sig = (
+                "buy"
+                if current_price > ema
+                else ("sell" if current_price < ema else "neutral")
+            )
             rsi_sig = "buy" if rsi < 30 else ("sell" if rsi > 70 else "neutral")
             # ATR beskriver volatilitet – markera som "high" eller "low" (riktningsneutral för viktningen)
             # Enkel heuristik: hög volatilitet om ATR > 2% av priset

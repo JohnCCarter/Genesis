@@ -26,7 +26,9 @@ def calculate_rsi(prices: List[float], period: int = 14) -> Optional[float]:
         float: RSI-värde eller None om otillräcklig data
     """
     if len(prices) < period + 1:
-        logger.warning(f"Otillräcklig data för RSI-beräkning. Kräver {period + 1}, fick {len(prices)}")
+        logger.warning(
+            f"Otillräcklig data för RSI-beräkning. Kräver {period + 1}, fick {len(prices)}"
+        )
         return None
 
     series = pd.Series(prices)

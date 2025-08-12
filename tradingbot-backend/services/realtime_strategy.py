@@ -40,7 +40,9 @@ class RealtimeStrategyService:
                 self.signal_callbacks[symbol] = callback
 
             # Starta WebSocket-övervakning
-            await bitfinex_ws.subscribe_with_strategy_evaluation(symbol, self._handle_strategy_result)
+            await bitfinex_ws.subscribe_with_strategy_evaluation(
+                symbol, self._handle_strategy_result
+            )
 
             self.active_symbols.add(symbol)
             self.is_running = True
@@ -88,7 +90,9 @@ class RealtimeStrategyService:
             self.strategy_results[symbol] = result
 
             # Logga signal
-            logger.info(f"🎯 {symbol}: {signal} @ ${price:,.2f} - {result.get('reason', '')}")
+            logger.info(
+                f"🎯 {symbol}: {signal} @ ${price:,.2f} - {result.get('reason', '')}"
+            )
 
             # Anropa callback om den finns
             if symbol in self.signal_callbacks:

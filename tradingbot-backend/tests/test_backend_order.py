@@ -1,6 +1,8 @@
 import pytest
 
-pytestmark = pytest.mark.skip(reason="Legacy HTTP tests – skipped; use manual smoke tests in README")
+pytestmark = pytest.mark.skip(
+    reason="Legacy HTTP tests – skipped; use manual smoke tests in README"
+)
 import hashlib
 import hmac
 import json
@@ -84,7 +86,9 @@ def test_direct_bitfinex():
             print(f"  Mängd: {payload['amount']}")
             print(f"  Pris: {payload['price']}")
             print("\n📈 SVAR FRÅN BITFINEX:")
-            print(f"  Order ID: {result[0] if isinstance(result, list) and len(result) > 0 else 'N/A'}")
+            print(
+                f"  Order ID: {result[0] if isinstance(result, list) and len(result) > 0 else 'N/A'}"
+            )
             print(f"  Fullständigt svar: {json.dumps(result, indent=2)}")
             print("=" * 50)
         except Exception as e:
@@ -125,7 +129,9 @@ def test_backend_market_order():
     print(f"🔍 Side: {order_data['side']}")
 
     try:
-        response = requests.post(f"{BACKEND_URL}/order", json=order_data, headers=headers)
+        response = requests.post(
+            f"{BACKEND_URL}/order", json=order_data, headers=headers
+        )
 
         print(f"🔍 Status: {response.status_code}")
         print(f"🔍 Svar: {response.text}")
@@ -141,7 +147,9 @@ def test_backend_market_order():
             print(f"  Mängd: {order_data['amount']}")
             print(f"  Sida: {order_data['side']}")
             print("\n📈 SVAR FRÅN BITFINEX:")
-            print(f"  Order ID: {result[0] if isinstance(result, list) and len(result) > 0 else 'N/A'}")
+            print(
+                f"  Order ID: {result[0] if isinstance(result, list) and len(result) > 0 else 'N/A'}"
+            )
             print(f"  Fullständigt svar: {json.dumps(result, indent=2)}")
             print("=" * 50)
         elif response.status_code == 400:
@@ -160,8 +168,12 @@ def test_backend_market_order():
                 if "error" in error_json:
                     print(f"Felmeddelande: {error_json['error']}")
                     if "apikey: invalid" in str(error_json):
-                        print("\n⚠️ API-NYCKEL PROBLEM: Bitfinex accepterar inte API-nyckeln")
-                        print("Kontrollera att rätt nyckel används och att den har rätt behörigheter")
+                        print(
+                            "\n⚠️ API-NYCKEL PROBLEM: Bitfinex accepterar inte API-nyckeln"
+                        )
+                        print(
+                            "Kontrollera att rätt nyckel används och att den har rätt behörigheter"
+                        )
             except:
                 pass
             print("=" * 50)
@@ -205,7 +217,9 @@ def test_backend_limit_order():
         print(f"🔍 Side: {order_data['side']}")
 
     try:
-        response = requests.post(f"{BACKEND_URL}/order", json=order_data, headers=headers)
+        response = requests.post(
+            f"{BACKEND_URL}/order", json=order_data, headers=headers
+        )
 
         print(f"🔍 Status: {response.status_code}")
         print(f"🔍 Svar: {response.text}")
@@ -221,7 +235,9 @@ def test_backend_limit_order():
             print(f"  Mängd: {order_data['amount']}")
             print(f"  Pris: {order_data['price']}")
             print("\n📈 SVAR FRÅN BITFINEX:")
-            print(f"  Order ID: {result[0] if isinstance(result, list) and len(result) > 0 else 'N/A'}")
+            print(
+                f"  Order ID: {result[0] if isinstance(result, list) and len(result) > 0 else 'N/A'}"
+            )
             print(f"  Fullständigt svar: {json.dumps(result, indent=2)}")
             print("=" * 50)
         elif response.status_code == 400:
@@ -240,8 +256,12 @@ def test_backend_limit_order():
                 if "error" in error_json:
                     print(f"Felmeddelande: {error_json['error']}")
                     if "apikey: invalid" in str(error_json):
-                        print("\n⚠️ API-NYCKEL PROBLEM: Bitfinex accepterar inte API-nyckeln")
-                        print("Kontrollera att rätt nyckel används och att den har rätt behörigheter")
+                        print(
+                            "\n⚠️ API-NYCKEL PROBLEM: Bitfinex accepterar inte API-nyckeln"
+                        )
+                        print(
+                            "Kontrollera att rätt nyckel används och att den har rätt behörigheter"
+                        )
             except:
                 pass
             print("=" * 50)

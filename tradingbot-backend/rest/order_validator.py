@@ -158,7 +158,9 @@ class OrderValidator:
         # Kontrollera om det är en paper trading symbol
         is_paper_symbol = symbol in self.paper_symbol_names
         if not is_paper_symbol and symbol.startswith("tTEST"):
-            logger.warning(f"Symbol {symbol} börjar med 'tTEST' men är inte registrerad som paper trading symbol")
+            logger.warning(
+                f"Symbol {symbol} börjar med 'tTEST' men är inte registrerad som paper trading symbol"
+            )
 
         # Validera krävda parametrar för ordertypen
         required_params = self.order_types[order_type].get("required_params", [])
@@ -236,7 +238,10 @@ class OrderValidator:
         if base_currency and quote_currency:
             # Sök efter matchande paper trading symbol
             for paper_symbol in self.paper_symbol_names:
-                if "TEST" + base_currency in paper_symbol or base_currency in paper_symbol:
+                if (
+                    "TEST" + base_currency in paper_symbol
+                    or base_currency in paper_symbol
+                ):
                     return paper_symbol
 
             # Fallback till standard test symbol
@@ -277,7 +282,9 @@ class OrderValidator:
                 formatted_order["side"] = "buy"  # Fallback
 
         # Konvertera amount till string om det är ett nummer
-        if "amount" in formatted_order and not isinstance(formatted_order["amount"], str):
+        if "amount" in formatted_order and not isinstance(
+            formatted_order["amount"], str
+        ):
             formatted_order["amount"] = str(formatted_order["amount"])
 
         # Konvertera price till string om det är ett nummer och inte None

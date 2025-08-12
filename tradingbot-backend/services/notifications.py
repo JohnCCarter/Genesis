@@ -35,7 +35,9 @@ class NotificationService:
             logger.warning(f"Telegram-notis misslyckades: {e}")
             return False
 
-    async def notify(self, level: str, title: str, payload: Optional[Dict[str, Any]] = None) -> None:
+    async def notify(
+        self, level: str, title: str, payload: Optional[Dict[str, Any]] = None
+    ) -> None:
         # Socket.IO broadcast
         try:
             from ws.manager import socket_app

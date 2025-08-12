@@ -5,7 +5,9 @@ from contextlib import closing
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 
-_DB_DEFAULT = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config", "candles.sqlite3")
+_DB_DEFAULT = os.path.join(
+    os.path.dirname(os.path.dirname(__file__)), "config", "candles.sqlite3"
+)
 
 
 class CandleCache:
@@ -31,7 +33,9 @@ class CandleCache:
                 ) WITHOUT ROWID
                 """
             )
-            conn.execute("CREATE INDEX IF NOT EXISTS ix_candles_symbol_tf_mts ON candles(symbol, timeframe, mts)")
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS ix_candles_symbol_tf_mts ON candles(symbol, timeframe, mts)"
+            )
             conn.commit()
 
     def store(self, symbol: str, timeframe: str, candles: Iterable[List]) -> int:
@@ -98,7 +102,9 @@ class CandleCache:
                 """,
                 (int(limit_symbols),),
             ).fetchall()
-        items = [{"symbol": r[0], "timeframe": r[1], "rows": int(r[2])} for r in rows_by_pair]
+        items = [
+            {"symbol": r[0], "timeframe": r[1], "rows": int(r[2])} for r in rows_by_pair
+        ]
         return {"total_rows": int(total_rows), "top": items}
 
     def clear_all(self) -> int:
@@ -128,7 +134,9 @@ class CandleCache:
         with closing(sqlite3.connect(self.db_path)) as conn:
             # 1) Rensa äldre än max_days
             if max_days and max_days > 0:
-                cutoff = int((datetime.utcnow() - timedelta(days=max_days)).timestamp() * 1000)
+                cutoff = int(
+                    (datetime.utcnow() - timedelta(days=max_days)).timestamp() * 1000
+                )
                 cur = conn.execute(
                     "DELETE FROM candles WHERE mts < ?",
                     (cutoff,),

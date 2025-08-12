@@ -30,7 +30,9 @@ class RiskManager:
         self._error_events = _CB_ERROR_EVENTS
         self._circuit_opened_at_ref = lambda: _CB_OPENED_AT
 
-    def pre_trade_checks(self, *, symbol: Optional[str] = None) -> Tuple[bool, Optional[str]]:
+    def pre_trade_checks(
+        self, *, symbol: Optional[str] = None
+    ) -> Tuple[bool, Optional[str]]:
         if self.trading_window.is_paused():
             return False, "trading_paused"
         if not self.trading_window.is_open():
@@ -40,8 +42,12 @@ class RiskManager:
             limits = self.trading_window.get_limits()
             # Föredra alltid reglernas värde även om det är 0 (0 = inaktiverad)
             limit_from_rules = int(limits.get("max_trades_per_symbol_per_day", 0) or 0)
-            limit_from_settings = int(getattr(self.settings, "MAX_TRADES_PER_SYMBOL_PER_DAY", 0) or 0)
-            active_limit = limit_from_rules if limit_from_rules >= 0 else limit_from_settings
+            limit_from_settings = int(
+                getattr(self.settings, "MAX_TRADES_PER_SYMBOL_PER_DAY", 0) or 0
+            )
+            active_limit = (
+                limit_from_rules if limit_from_rules >= 0 else limit_from_settings
+            )
             if symbol and active_limit > 0:
                 per_symbol = self.trade_counter.stats().get("per_symbol", {})
                 if per_symbol.get(symbol.upper(), 0) >= active_limit:
@@ -111,7 +117,9 @@ class RiskManager:
                             "warning",
                             "Circuit breaker aktiverad",
                             {
-                                "since": (_CB_OPENED_AT.isoformat() if _CB_OPENED_AT else None),
+                                "since": (
+                                    _CB_OPENED_AT.isoformat() if _CB_OPENED_AT else None
+                                ),
                                 "errors_in_window": len(self._error_events),
                                 "window_seconds": self.settings.CB_ERROR_WINDOW_SECONDS,
                             },
@@ -130,7 +138,11 @@ class RiskManager:
             "open": self.trading_window.is_open(),
             "paused": self.trading_window.is_paused(),
             "limits": self.trading_window.get_limits(),
-            "next_open": (self.trading_window.next_open().isoformat() if self.trading_window.next_open() else None),
+            "next_open": (
+                self.trading_window.next_open().isoformat()
+                if self.trading_window.next_open()
+                else None
+            ),
             "trades": self.trade_counter.stats(),
             "circuit": {
                 "enabled": bool(self.settings.CB_ENABLED),
@@ -143,7 +155,9 @@ class RiskManager:
         }
 
     # --- Circuit Breaker controls ---
-    def circuit_reset(self, *, resume: bool = True, clear_errors: bool = True, notify: bool = True) -> Dict[str, Any]:
+    def circuit_reset(
+        self, *, resume: bool = True, clear_errors: bool = True, notify: bool = True
+    ) -> Dict[str, Any]:
         """Återställ circuit breaker: rensa fel och återuppta handel om så önskas."""
         try:
             if clear_errors:

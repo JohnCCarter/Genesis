@@ -23,7 +23,10 @@ class ActiveOrdersService:
 
     def __init__(self):
         self.settings = Settings()
-        self.base_url = getattr(self.settings, "BITFINEX_AUTH_API_URL", None) or self.settings.BITFINEX_API_URL
+        self.base_url = (
+            getattr(self.settings, "BITFINEX_AUTH_API_URL", None)
+            or self.settings.BITFINEX_API_URL
+        )
 
     async def get_active_orders(self) -> List[OrderResponse]:
         """
@@ -39,7 +42,9 @@ class ActiveOrdersService:
             headers = build_auth_headers(endpoint, payload_str=empty_json)
 
             async with httpx.AsyncClient() as client:
-                logger.info(f"🌐 REST API: Hämtar aktiva ordrar från {self.base_url}/{endpoint}")
+                logger.info(
+                    f"🌐 REST API: Hämtar aktiva ordrar från {self.base_url}/{endpoint}"
+                )
                 response = await client.post(
                     f"{self.base_url}/{endpoint}",
                     headers=headers,
@@ -50,7 +55,9 @@ class ActiveOrdersService:
                 orders_data = response.json()
                 logger.info(f"✅ REST API: Hämtade {len(orders_data)} aktiva ordrar")
 
-                orders = [OrderResponse.from_bitfinex_data(order) for order in orders_data]
+                orders = [
+                    OrderResponse.from_bitfinex_data(order) for order in orders_data
+                ]
                 return orders
 
         except Exception as e:
@@ -70,7 +77,9 @@ class ActiveOrdersService:
         orders = await self.get_active_orders()
         return [order for order in orders if order.symbol.lower() == symbol.lower()]
 
-    async def get_active_orders_by_type(self, order_type: OrderType) -> List[OrderResponse]:
+    async def get_active_orders_by_type(
+        self, order_type: OrderType
+    ) -> List[OrderResponse]:
         """
         Hämtar aktiva ordrar av en specifik typ.
 
@@ -118,7 +127,9 @@ class ActiveOrdersService:
 
         return None
 
-    async def get_order_by_client_id(self, client_order_id: int) -> Optional[OrderResponse]:
+    async def get_order_by_client_id(
+        self, client_order_id: int
+    ) -> Optional[OrderResponse]:
         """
         Hämtar en specifik order baserat på klient-ID.
 
@@ -172,7 +183,9 @@ class ActiveOrdersService:
 
             async with httpx.AsyncClient() as client:
                 logger.info(f"🌐 REST API: Uppdaterar order {order_id}")
-                response = await client.post(f"{self.base_url}/{endpoint}", headers=headers, json=payload)
+                response = await client.post(
+                    f"{self.base_url}/{endpoint}", headers=headers, json=payload
+                )
                 response.raise_for_status()
 
                 result = response.json()
@@ -201,7 +214,9 @@ class ActiveOrdersService:
 
             async with httpx.AsyncClient() as client:
                 logger.info("🌐 REST API: Avbryter alla ordrar")
-                response = await client.post(f"{self.base_url}/{endpoint}", headers=headers)
+                response = await client.post(
+                    f"{self.base_url}/{endpoint}", headers=headers
+                )
                 try:
                     response.raise_for_status()
                     result = response.json()
@@ -227,9 +242,15 @@ class ActiveOrdersService:
                     try:
                         cancel_endpoint = "auth/w/order/cancel"
                         payload = {"id": order.id}
-                        body_json = json.dumps(payload, separators=(",", ":"), ensure_ascii=False)
-                        cancel_headers = build_auth_headers(cancel_endpoint, payload_str=body_json)
-                        logger.info(f"🌐 REST API: Fallback – avbryter order {order.id}")
+                        body_json = json.dumps(
+                            payload, separators=(",", ":"), ensure_ascii=False
+                        )
+                        cancel_headers = build_auth_headers(
+                            cancel_endpoint, payload_str=body_json
+                        )
+                        logger.info(
+                            f"🌐 REST API: Fallback – avbryter order {order.id}"
+                        )
                         resp = await client.post(
                             f"{self.base_url}/{cancel_endpoint}",
                             headers=cancel_headers,
@@ -239,7 +260,9 @@ class ActiveOrdersService:
                         results.append({"id": order.id, "success": True})
                     except Exception as ex:
                         logger.error(f"Fel vid avbrytning av order {order.id}: {ex}")
-                        results.append({"id": order.id, "success": False, "error": str(ex)})
+                        results.append(
+                            {"id": order.id, "success": False, "error": str(ex)}
+                        )
 
             num_success = len([r for r in results if r.get("success")])
             return {
@@ -282,12 +305,18 @@ class ActiveOrdersService:
                     headers = build_auth_headers(endpoint, payload)
 
                     async with httpx.AsyncClient() as client:
-                        logger.info(f"🌐 REST API: Avbryter order {order.id} för {symbol}")
-                        response = await client.post(f"{self.base_url}/{endpoint}", headers=headers, json=payload)
+                        logger.info(
+                            f"🌐 REST API: Avbryter order {order.id} för {symbol}"
+                        )
+                        response = await client.post(
+                            f"{self.base_url}/{endpoint}", headers=headers, json=payload
+                        )
                         response.raise_for_status()
 
                         result = response.json()
-                        logger.info(f"✅ REST API: Order {order.id} avbruten framgångsrikt")
+                        logger.info(
+                            f"✅ REST API: Order {order.id} avbruten framgångsrikt"
+                        )
                         results.append({"id": order.id, "success": True})
 
                 except Exception as e:
@@ -334,7 +363,9 @@ async def get_order_by_client_id(client_order_id: int) -> Optional[OrderResponse
     return await active_orders_service.get_order_by_client_id(client_order_id)
 
 
-async def update_order(order_id: int, price: Optional[float] = None, amount: Optional[float] = None) -> Dict[str, Any]:
+async def update_order(
+    order_id: int, price: Optional[float] = None, amount: Optional[float] = None
+) -> Dict[str, Any]:
     return await active_orders_service.update_order(order_id, price, amount)
 
 

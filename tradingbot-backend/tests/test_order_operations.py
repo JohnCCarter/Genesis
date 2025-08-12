@@ -1,6 +1,8 @@
 import pytest
 
-pytestmark = pytest.mark.skip(reason="Legacy HTTP tests – skipped; use manual smoke tests in README")
+pytestmark = pytest.mark.skip(
+    reason="Legacy HTTP tests – skipped; use manual smoke tests in README"
+)
 import hashlib
 import hmac
 import json
@@ -36,7 +38,9 @@ def _build_authentication_headers(endpoint: str, payload=None):
     body = json.dumps(payload) if payload else ""
     message = raw_path + nonce + body
 
-    signature = hmac.new(API_SECRET.encode("utf8"), msg=message.encode("utf8"), digestmod=hashlib.sha384).hexdigest()
+    signature = hmac.new(
+        API_SECRET.encode("utf8"), msg=message.encode("utf8"), digestmod=hashlib.sha384
+    ).hexdigest()
 
     return {"bfx-apikey": API_KEY, "bfx-nonce": nonce, "bfx-signature": signature}
 

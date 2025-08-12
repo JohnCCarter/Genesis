@@ -46,7 +46,9 @@ class MarginInfo(BaseModel):
             net_value=float(data[3]),
             required_margin=float(data[4]),
             leverage=leverage,
-            margin_limits=(data[5] if len(data) > 5 and isinstance(data[5], list) else []),
+            margin_limits=(
+                data[5] if len(data) > 5 and isinstance(data[5], list) else []
+            ),
         )
 
 
@@ -74,7 +76,10 @@ class MarginService:
 
     def __init__(self):
         self.settings = Settings()
-        self.base_url = getattr(self.settings, "BITFINEX_AUTH_API_URL", None) or self.settings.BITFINEX_API_URL
+        self.base_url = (
+            getattr(self.settings, "BITFINEX_AUTH_API_URL", None)
+            or self.settings.BITFINEX_API_URL
+        )
 
     def _convert_v1_to_v2_format(self, v1_data: Dict[str, Any]) -> List[Any]:
         """
@@ -106,7 +111,9 @@ class MarginService:
             ]
 
             # Lägg till margin_limits om det finns
-            if "margin_limits" in v1_data and isinstance(v1_data["margin_limits"], list):
+            if "margin_limits" in v1_data and isinstance(
+                v1_data["margin_limits"], list
+            ):
                 v2_format.append(v1_data["margin_limits"])
 
             return v2_format
@@ -129,17 +136,27 @@ class MarginService:
 
             async with httpx.AsyncClient() as client:
                 try:
-                    logger.info(f"🌐 REST API: Försöker hämta margin-info från {self.base_url}/{endpoint}")
-                    response = await client.post(f"{self.base_url}/{endpoint}", headers=headers)
+                    logger.info(
+                        f"🌐 REST API: Försöker hämta margin-info från {self.base_url}/{endpoint}"
+                    )
+                    response = await client.post(
+                        f"{self.base_url}/{endpoint}", headers=headers
+                    )
                     response.raise_for_status()
                     # v2 base svar: [ 'base', [USER_PL, USER_SWAPS, MARGIN_BALANCE, MARGIN_NET, MARGIN_MIN] ]
                     raw = response.json()
-                    if isinstance(raw, list) and len(raw) >= 2 and isinstance(raw[1], list):
+                    if (
+                        isinstance(raw, list)
+                        and len(raw) >= 2
+                        and isinstance(raw[1], list)
+                    ):
                         data = raw[1]
                     else:
                         data = [0, 0, 0, 0, 0]
                     margin_data = [data[2], data[0], data[1], data[3], data[4]]
-                    logger.info("✅ REST API: Hämtade margin-information (base) från v2 API")
+                    logger.info(
+                        "✅ REST API: Hämtade margin-information (base) från v2 API"
+                    )
                 except httpx.HTTPStatusError as e:
                     # Om v2 API misslyckas, försök med v1 API endpoint
                     if e.response.status_code in (404, 400, 500):
@@ -151,11 +168,15 @@ class MarginService:
                             v1_endpoint = "margin_infos"
                             v1_base_url = "https://api.bitfinex.com/v1"
                             v1_headers = build_auth_headers(v1_endpoint, v1=True)
-                            v1_response = await client.post(f"{v1_base_url}/{v1_endpoint}", headers=v1_headers)
+                            v1_response = await client.post(
+                                f"{v1_base_url}/{v1_endpoint}", headers=v1_headers
+                            )
                             v1_response.raise_for_status()
                             v1_data = v1_response.json()
                             margin_data = self._convert_v1_to_v2_format(v1_data)
-                            logger.info("✅ REST API: Hämtade margin-information från v1 API")
+                            logger.info(
+                                "✅ REST API: Hämtade margin-information från v1 API"
+                            )
                         except Exception as e1:
                             logger.error(f"❌ v1 margin API misslyckades: {e1}")
                             # Fallback – returnera neutral struktur så flödet inte kraschar
@@ -257,7 +278,11 @@ class MarginService:
             "margin_usage_percent": margin_usage,
             "margin_level": margin_level,
             "leverage": await self.get_leverage(),
-            "status": ("healthy" if margin_level >= 2.0 else "warning" if margin_level >= 1.5 else "danger"),
+            "status": (
+                "healthy"
+                if margin_level >= 2.0
+                else "warning" if margin_level >= 1.5 else "danger"
+            ),
         }
 
 

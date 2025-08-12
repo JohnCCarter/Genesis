@@ -88,8 +88,12 @@ def render_prometheus_text() -> str:
                         "status": str(status),
                     }
                 )
-                lines.append(f"tradingbot_request_latency_ms_count{labels} {int(bucket.get('count', 0))}")
-                lines.append(f"tradingbot_request_latency_ms_sum{labels} {int(bucket.get('sum_ms', 0))}")
+                lines.append(
+                    f"tradingbot_request_latency_ms_count{labels} {int(bucket.get('count', 0))}"
+                )
+                lines.append(
+                    f"tradingbot_request_latency_ms_sum{labels} {int(bucket.get('sum_ms', 0))}"
+                )
             except Exception:
                 continue
     except Exception:

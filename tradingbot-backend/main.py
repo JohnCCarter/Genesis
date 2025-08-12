@@ -45,8 +45,12 @@ async def lifespan(app: FastAPI):
                 for sym in symbols:
                     # registrera callback för strategi/ticker om inte finns
                     if sym not in getattr(bitfinex_ws, "strategy_callbacks", {}):
-                        bitfinex_ws.strategy_callbacks[sym] = bitfinex_ws._handle_ticker_with_strategy
-                    await bitfinex_ws.subscribe_ticker(sym, bitfinex_ws._handle_ticker_with_strategy)
+                        bitfinex_ws.strategy_callbacks[sym] = (
+                            bitfinex_ws._handle_ticker_with_strategy
+                        )
+                    await bitfinex_ws.subscribe_ticker(
+                        sym, bitfinex_ws._handle_ticker_with_strategy
+                    )
         except Exception as e:
             logger.warning(f"⚠️ Misslyckades auto‑subscribe WS tickers: {e}")
     except Exception as e:
@@ -196,7 +200,9 @@ async def metrics(request: Request) -> Response:
     basic_pass = _os.getenv("METRICS_BASIC_AUTH_PASS")
     access_token = _os.getenv("METRICS_ACCESS_TOKEN")
 
-    restrictions_configured = bool(ip_allowlist_raw or (basic_user and basic_pass) or access_token)
+    restrictions_configured = bool(
+        ip_allowlist_raw or (basic_user and basic_pass) or access_token
+    )
 
     if restrictions_configured:
         client_ip = None
@@ -209,7 +215,9 @@ async def metrics(request: Request) -> Response:
 
         # 1) IP allowlist
         if ip_allowlist_raw and client_ip:
-            allowed_ips = {ip.strip() for ip in ip_allowlist_raw.split(",") if ip.strip()}
+            allowed_ips = {
+                ip.strip() for ip in ip_allowlist_raw.split(",") if ip.strip()
+            }
             if client_ip in allowed_ips:
                 allowed = True
 
@@ -248,9 +256,9 @@ async def metrics(request: Request) -> Response:
                 try:
                     decoded = base64.b64decode(b64).decode("utf-8")
                     username, password = decoded.split(":", 1)
-                    if hmac.compare_digest(username, str(basic_user)) and hmac.compare_digest(
-                        password, str(basic_pass)
-                    ):
+                    if hmac.compare_digest(
+                        username, str(basic_user)
+                    ) and hmac.compare_digest(password, str(basic_pass)):
                         allowed = True
                 except Exception:
                     pass

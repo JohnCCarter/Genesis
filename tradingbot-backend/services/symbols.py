@@ -16,7 +16,9 @@ logger = get_logger(__name__)
 class SymbolService:
     def __init__(self) -> None:
         base_dir = os.path.dirname(os.path.dirname(__file__))  # tradingbot-backend/
-        self.file_path = os.path.join(base_dir, "docs", "legacy", "bitfinex_docs", "extracted", "symbols.json")
+        self.file_path = os.path.join(
+            base_dir, "docs", "legacy", "bitfinex_docs", "extracted", "symbols.json"
+        )
         self._cache: List[str] = []
 
     def _load(self) -> List[str]:

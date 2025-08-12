@@ -16,7 +16,9 @@ logger = get_logger(__name__)
 
 
 class BacktestService:
-    async def run(self, symbol: str, timeframe: str, limit: int = 500, tz_offset_minutes: int = 0) -> Dict[str, Any]:
+    async def run(
+        self, symbol: str, timeframe: str, limit: int = 500, tz_offset_minutes: int = 0
+    ) -> Dict[str, Any]:
         data = BitfinexDataService()
         candles = await data.get_candles(symbol, timeframe, limit)
         if not candles:
@@ -55,7 +57,9 @@ class BacktestService:
             ts_ms = None
             try:
                 idx_in_candles = len(candles) - len(closes) + i
-                idx_in_candles = idx_in_candles if 0 <= idx_in_candles < len(candles) else i
+                idx_in_candles = (
+                    idx_in_candles if 0 <= idx_in_candles < len(candles) else i
+                )
                 ts_ms = int(candles[idx_in_candles][0])
             except Exception:
                 ts_ms = None
@@ -75,7 +79,9 @@ class BacktestService:
                         heatmap_sum.setdefault(dow, {})
                         heatmap_cnt.setdefault(dow, {})
                         heatmap_wins.setdefault(dow, {})
-                        heatmap_sum[dow][hour] = heatmap_sum[dow].get(hour, 0.0) + (factor - 1.0)
+                        heatmap_sum[dow][hour] = heatmap_sum[dow].get(hour, 0.0) + (
+                            factor - 1.0
+                        )
                         heatmap_cnt[dow][hour] = heatmap_cnt[dow].get(hour, 0) + 1
                         if factor - 1.0 > 0:
                             heatmap_wins[dow][hour] = heatmap_wins[dow].get(hour, 0) + 1
@@ -103,7 +109,9 @@ class BacktestService:
                         heatmap_sum.setdefault(dow, {})
                         heatmap_cnt.setdefault(dow, {})
                         heatmap_wins.setdefault(dow, {})
-                        heatmap_sum[dow][hour] = heatmap_sum[dow].get(hour, 0.0) + (factor - 1.0)
+                        heatmap_sum[dow][hour] = heatmap_sum[dow].get(hour, 0.0) + (
+                            factor - 1.0
+                        )
                         heatmap_cnt[dow][hour] = heatmap_cnt[dow].get(hour, 0) + 1
                         if factor - 1.0 > 0:
                             heatmap_wins[dow][hour] = heatmap_wins[dow].get(hour, 0) + 1

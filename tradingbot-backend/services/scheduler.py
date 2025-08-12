@@ -68,7 +68,9 @@ class SchedulerService:
                 now = datetime.now(timezone.utc)
                 if now >= next_run_at:
                     await self._safe_run_equity_snapshot(reason="interval")
-                    next_run_at = now.replace(microsecond=0) + timedelta(seconds=self.snapshot_interval_seconds)
+                    next_run_at = now.replace(microsecond=0) + timedelta(
+                        seconds=self.snapshot_interval_seconds
+                    )
                 # Kör cache-retention högst en gång per 6 timmar
                 await self._maybe_enforce_cache_retention(now)
                 # Sov en kort stund för att inte spinna
@@ -116,7 +118,9 @@ class SchedulerService:
         Kör endast om minst 6 timmar förflutit sedan senaste körning.
         """
         try:
-            if self._last_retention_at and (now - self._last_retention_at) < timedelta(hours=6):
+            if self._last_retention_at and (now - self._last_retention_at) < timedelta(
+                hours=6
+            ):
                 return
             s = Settings()
             days = int(getattr(s, "CANDLE_CACHE_RETENTION_DAYS", 0) or 0)

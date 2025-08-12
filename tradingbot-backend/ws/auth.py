@@ -21,8 +21,12 @@ logger = get_logger(__name__)
 # Bitfinex WebSocket API credentials - separata nycklar för WebSocket
 settings = Settings()
 # Logga status (utan att visa nycklarna)
-logger.info(f"WebSocket API Key status: {'✅ Konfigurerad' if settings.BITFINEX_WS_API_KEY else '❌ Saknas'}")
-logger.info(f"WebSocket API Secret status: {'✅ Konfigurerad' if settings.BITFINEX_WS_API_SECRET else '❌ Saknas'}")
+logger.info(
+    f"WebSocket API Key status: {'✅ Konfigurerad' if settings.BITFINEX_WS_API_KEY else '❌ Saknas'}"
+)
+logger.info(
+    f"WebSocket API Secret status: {'✅ Konfigurerad' if settings.BITFINEX_WS_API_SECRET else '❌ Saknas'}"
+)
 
 
 def build_ws_auth_payload() -> str:
@@ -149,7 +153,9 @@ def validate_token(token: str) -> Dict[str, Any]:
             logger.warning(f"Token har löpt ut för användare {payload.get('sub')}")
             return None
 
-        logger.info(f"{token_type.capitalize()}-token validerad för användare {payload.get('sub')}")
+        logger.info(
+            f"{token_type.capitalize()}-token validerad för användare {payload.get('sub')}"
+        )
         return payload
 
     except jwt.ExpiredSignatureError:
@@ -237,7 +243,9 @@ def authenticate_socket_io(environ) -> bool:
     """
     try:
         # Detaljerad loggning för debugging
-        logger.info(f"Socket.IO anslutningsförsök från {environ.get('REMOTE_ADDR', 'okänd')}")
+        logger.info(
+            f"Socket.IO anslutningsförsök från {environ.get('REMOTE_ADDR', 'okänd')}"
+        )
         logger.info(f"HTTP_USER_AGENT: {environ.get('HTTP_USER_AGENT', 'okänd')}")
 
         # Hämta Authorization-header
@@ -252,17 +260,23 @@ def authenticate_socket_io(environ) -> bool:
             token_param = params.get("token", [None])[0]
 
             if token_param:
-                logger.warning("⚠️ Token skickades via URL-parameter istället för Authorization-header")
+                logger.warning(
+                    "⚠️ Token skickades via URL-parameter istället för Authorization-header"
+                )
                 auth_header = f"Bearer {token_param}"
             else:
-                logger.warning("❌ Ingen Authorization-header eller token-parameter hittades")
+                logger.warning(
+                    "❌ Ingen Authorization-header eller token-parameter hittades"
+                )
                 return False
 
         # Extrahera token från Authorization-header (format: "Bearer TOKEN")
         if auth_header.startswith("Bearer "):
             token = auth_header[7:]  # Ta bort "Bearer " prefix
         else:
-            logger.warning("❌ Felaktigt format på Authorization-header (måste vara 'Bearer TOKEN')")
+            logger.warning(
+                "❌ Felaktigt format på Authorization-header (måste vara 'Bearer TOKEN')"
+            )
             return False
 
         # Validera token
@@ -278,7 +292,9 @@ def authenticate_socket_io(environ) -> bool:
 
         # Tillåt max 5 minuters drift mellan klient och server
         if abs(current_time - token_iat) > 300:
-            logger.warning(f"⚠️ Möjlig NTP-drift detekterad. Server: {current_time}, Token: {token_iat}")
+            logger.warning(
+                f"⚠️ Möjlig NTP-drift detekterad. Server: {current_time}, Token: {token_iat}"
+            )
             # Vi tillåter det ändå men loggar varningen
 
         # Sätt användarinformation i environ för senare användning

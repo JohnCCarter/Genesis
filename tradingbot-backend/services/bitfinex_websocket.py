@@ -26,7 +26,10 @@ class BitfinexWebSocketService:
     def __init__(self):
         self.settings = Settings()
         # Standard: använd auth-URI (api) som bas. Publika subar kan specialhanteras vid behov.
-        self.ws_url = getattr(self.settings, "BITFINEX_WS_AUTH_URI", None) or self.settings.BITFINEX_WS_URI
+        self.ws_url = (
+            getattr(self.settings, "BITFINEX_WS_AUTH_URI", None)
+            or self.settings.BITFINEX_WS_URI
+        )
         self.websocket = None
         self.is_connected = False
         self.is_authenticated = False
@@ -38,7 +41,9 @@ class BitfinexWebSocketService:
         self.latest_prices = {}  # Spara senaste priser
         self.price_history = {}  # Spara pris-historik för strategi
         self._last_tick_ts = {}  # symbol -> last tick timestamp
-        self.latest_ticker_frames = {}  # symbol -> senaste fulla ticker-dict (bid/ask/vol/high/low)
+        self.latest_ticker_frames = (
+            {}
+        )  # symbol -> senaste fulla ticker-dict (bid/ask/vol/high/low)
         # Throttle/log-state för strategiutvärdering per symbol
         self._last_eval_ts = {}  # symbol -> senast evaluerad (epoch sek)
         self._last_strategy_signal = {}  # symbol -> senaste signal
@@ -110,7 +115,9 @@ class BitfinexWebSocketService:
             try:
                 await self._asyncio.wait_for(self._auth_event.wait(), timeout=10)
             except Exception:
-                logger.warning("⚠️ Ingen auth-bekräftelse inom timeout. Fortsätter utan auth.")
+                logger.warning(
+                    "⚠️ Ingen auth-bekräftelse inom timeout. Fortsätter utan auth."
+                )
         except Exception as e:
             logger.warning(f"⚠️ Kunde inte skicka WS auth: {e}")
 
@@ -294,7 +301,9 @@ class BitfinexWebSocketService:
             self.subscriptions[key] = msg
             if callback:
                 self.callbacks[key] = callback
-            logger.info(f"📖 Prenumererar på orderbok {symbol} {precision}/{freq}/{length}")
+            logger.info(
+                f"📖 Prenumererar på orderbok {symbol} {precision}/{freq}/{length}"
+            )
         except Exception as e:
             logger.error(f"❌ Orderbok-prenumeration misslyckades: {e}")
 
@@ -408,7 +417,9 @@ class BitfinexWebSocketService:
             last_sig = self._last_strategy_signal.get(symbol)
             last_reason = self._last_strategy_reason.get(symbol)
             last_log = float(self._last_strategy_log_ts.get(symbol, 0))
-            changed = result.get("signal") != last_sig or result.get("reason") != last_reason
+            changed = (
+                result.get("signal") != last_sig or result.get("reason") != last_reason
+            )
 
             # Underlätta: spamma inte "Otillräcklig data" annat än var 60s om oförändrat
             reason = str(result.get("reason", ""))
@@ -417,7 +428,9 @@ class BitfinexWebSocketService:
                 min_interval = 60.0
 
             if changed or (now_s - last_log) >= min_interval:
-                logger.info(f"🎯 Strategiutvärdering för {symbol}: {result['signal']} - {result['reason']}")
+                logger.info(
+                    f"🎯 Strategiutvärdering för {symbol}: {result['signal']} - {result['reason']}"
+                )
                 self._last_strategy_signal[symbol] = result.get("signal")
                 self._last_strategy_reason[symbol] = result.get("reason")
                 self._last_strategy_log_ts[symbol] = now_s
@@ -485,7 +498,11 @@ class BitfinexWebSocketService:
                 chan = info.get("channel")
                 symbol = info.get("symbol") or "unknown"
                 # Normalisera ticker-frame till dict
-                if chan == "ticker" and isinstance(message_data, list) and len(message_data) >= 7:
+                if (
+                    chan == "ticker"
+                    and isinstance(message_data, list)
+                    and len(message_data) >= 7
+                ):
                     norm = {
                         "symbol": symbol,
                         "bid": message_data[0],
@@ -541,10 +558,14 @@ class BitfinexWebSocketService:
 
             if event == "subscribed":
                 chan = data.get("channel")
-                chan_id = data.get("chanId") or data.get("chanid") or data.get("chan_id")
+                chan_id = (
+                    data.get("chanId") or data.get("chanid") or data.get("chan_id")
+                )
                 symbol = data.get("symbol")
                 key = data.get("key")
-                logger.info(f"✅ Prenumeration bekräftad: channel={chan} symbol={symbol or key} chanId={chan_id}")
+                logger.info(
+                    f"✅ Prenumeration bekräftad: channel={chan} symbol={symbol or key} chanId={chan_id}"
+                )
                 cb_key = None
                 if chan == "ticker" and symbol:
                     cb_key = f"ticker|{symbol}"
@@ -560,7 +581,9 @@ class BitfinexWebSocketService:
                             break
                 try:
                     if chan_id is not None and cb_key and cb_key in self.callbacks:
-                        self.channel_callbacks[int(chan_id)] = self.callbacks.get(cb_key)
+                        self.channel_callbacks[int(chan_id)] = self.callbacks.get(
+                            cb_key
+                        )
                         self.channel_info[int(chan_id)] = {
                             "channel": chan,
                             "symbol": symbol,

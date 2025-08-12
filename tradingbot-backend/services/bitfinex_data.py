@@ -32,7 +32,10 @@ class BitfinexDataService:
     def __init__(self):
         self.settings = Settings()
         # Använd publik bas-URL för public endpoints
-        self.base_url = getattr(self.settings, "BITFINEX_PUBLIC_API_URL", None) or self.settings.BITFINEX_API_URL
+        self.base_url = (
+            getattr(self.settings, "BITFINEX_PUBLIC_API_URL", None)
+            or self.settings.BITFINEX_API_URL
+        )
 
     async def get_candles(
         self, symbol: str = "tBTCUSD", timeframe: str = "1m", limit: int = 100
@@ -96,7 +99,9 @@ class BitfinexDataService:
                 except Exception as e:
                     last_exc = e
                     if attempt < retries:
-                        delay = min(backoff_max, backoff_base * (2**attempt)) + random.uniform(0, 0.1)
+                        delay = min(
+                            backoff_max, backoff_base * (2**attempt)
+                        ) + random.uniform(0, 0.1)
                         await asyncio.sleep(delay)
                         continue
                     break
@@ -155,7 +160,9 @@ class BitfinexDataService:
                             asset = m.group(1)
                             eff_symbol = f"t{asset}UST"
             # Enkel TTL‑cache för ticker (per eff_symbol)
-            _ttl = max(int(getattr(self.settings, "TICKER_CACHE_TTL_SECS", 10) or 10), 1)
+            _ttl = max(
+                int(getattr(self.settings, "TICKER_CACHE_TTL_SECS", 10) or 10), 1
+            )
             cache_key = f"ticker::{eff_symbol}"
             entry = _TICKER_CACHE.get(cache_key)
             now = time.time()
@@ -174,8 +181,12 @@ class BitfinexDataService:
 
             # 0) Om WS har färsk ticker för eff_symbol, använd den och hoppa REST
             try:
-                ws_stale_secs = int(getattr(self.settings, "WS_TICKER_STALE_SECS", 10) or 10)
-                ws_warmup_ms = int(getattr(self.settings, "WS_TICKER_WARMUP_MS", 400) or 400)
+                ws_stale_secs = int(
+                    getattr(self.settings, "WS_TICKER_STALE_SECS", 10) or 10
+                )
+                ws_warmup_ms = int(
+                    getattr(self.settings, "WS_TICKER_WARMUP_MS", 400) or 400
+                )
                 # använd last_tick_ts om tillgängligt
                 import time as _t
 
@@ -188,7 +199,11 @@ class BitfinexDataService:
                     if last_ts:
                         last_price = bitfinex_ws.latest_prices.get(s)
                         break
-                if last_ts and (_t.time() - float(last_ts)) <= ws_stale_secs and last_price is not None:
+                if (
+                    last_ts
+                    and (_t.time() - float(last_ts)) <= ws_stale_secs
+                    and last_price is not None
+                ):
                     # Fyll från senaste fulla WS‑ticker-frame om tillgänglig
                     bid = None
                     ask = None
@@ -219,27 +234,43 @@ class BitfinexDataService:
                 # 0b) Auto-subscribe om inte färsk WS-data och vi inte redan sub:at
                 try:
                     sub_key = f"ticker|{eff_symbol}"
-                    already_subscribed = sub_key in getattr(bitfinex_ws, "subscriptions", {})
+                    already_subscribed = sub_key in getattr(
+                        bitfinex_ws, "subscriptions", {}
+                    )
                     if not already_subscribed:
                         # registrera strategi/ticker-callback om inte finns
-                        if eff_symbol not in getattr(bitfinex_ws, "strategy_callbacks", {}):
-                            bitfinex_ws.strategy_callbacks[eff_symbol] = bitfinex_ws._handle_ticker_with_strategy
-                        await bitfinex_ws.subscribe_ticker(eff_symbol, bitfinex_ws._handle_ticker_with_strategy)
+                        if eff_symbol not in getattr(
+                            bitfinex_ws, "strategy_callbacks", {}
+                        ):
+                            bitfinex_ws.strategy_callbacks[eff_symbol] = (
+                                bitfinex_ws._handle_ticker_with_strategy
+                            )
+                        await bitfinex_ws.subscribe_ticker(
+                            eff_symbol, bitfinex_ws._handle_ticker_with_strategy
+                        )
                         # Vänta kort på första tick innan REST-fallback
                         warmup_deadline = _t.time() + (ws_warmup_ms / 1000.0)
                         while _t.time() < warmup_deadline:
                             last_ts = None
                             last_price = None
                             for s in cand_syms:
-                                last_ts = getattr(bitfinex_ws, "_last_tick_ts", {}).get(s)
+                                last_ts = getattr(bitfinex_ws, "_last_tick_ts", {}).get(
+                                    s
+                                )
                                 if last_ts:
                                     last_price = bitfinex_ws.latest_prices.get(s)
                                     break
-                            if last_ts and (_t.time() - float(last_ts)) <= ws_stale_secs and last_price is not None:
+                            if (
+                                last_ts
+                                and (_t.time() - float(last_ts)) <= ws_stale_secs
+                                and last_price is not None
+                            ):
                                 frame = None
                                 bid = ask = high = low = volume = None
                                 for s in cand_syms:
-                                    frame = getattr(bitfinex_ws, "latest_ticker_frames", {}).get(s)
+                                    frame = getattr(
+                                        bitfinex_ws, "latest_ticker_frames", {}
+                                    ).get(s)
                                     if frame:
                                         break
                                 if isinstance(frame, dict):
@@ -341,7 +372,9 @@ class BitfinexDataService:
                     except Exception as e:
                         last_exc = e
                         if attempt < retries:
-                            delay = min(backoff_max, backoff_base * (2**attempt)) + random.uniform(0, 0.1)
+                            delay = min(
+                                backoff_max, backoff_base * (2**attempt)
+                            ) + random.uniform(0, 0.1)
                             await asyncio.sleep(delay)
                             continue
                         break
@@ -379,7 +412,9 @@ class BitfinexDataService:
                         logger.info("🌐 REST API: Hämtar tickers (batch)")
                         resp = await client.get(url)
                         if resp.status_code in (429, 500, 502, 503, 504):
-                            raise httpx.HTTPStatusError("server busy", request=resp.request, response=resp)
+                            raise httpx.HTTPStatusError(
+                                "server busy", request=resp.request, response=resp
+                            )
                         resp.raise_for_status()
                         data = resp.json()
                         # Uppdatera cache och ev. latest_prices med snapshot
@@ -404,8 +439,13 @@ class BitfinexDataService:
                                 }
                                 # Om WS inte levererar ännu, fyll latest_prices som snapshot
                                 try:
-                                    if out["last_price"] is not None and sy not in bitfinex_ws.latest_prices:
-                                        bitfinex_ws.latest_prices[sy] = out["last_price"]
+                                    if (
+                                        out["last_price"] is not None
+                                        and sy not in bitfinex_ws.latest_prices
+                                    ):
+                                        bitfinex_ws.latest_prices[sy] = out[
+                                            "last_price"
+                                        ]
                                 except Exception:
                                     pass
                         except Exception:
@@ -414,7 +454,9 @@ class BitfinexDataService:
                 except Exception as e:
                     last_exc = e
                     if attempt < retries:
-                        delay = min(backoff_max, backoff_base * (2**attempt)) + random.uniform(0, 0.1)
+                        delay = min(
+                            backoff_max, backoff_base * (2**attempt)
+                        ) + random.uniform(0, 0.1)
                         await asyncio.sleep(delay)
                         continue
                     break
@@ -431,7 +473,9 @@ class BitfinexDataService:
         """
         try:
             url = f"{self.base_url}/platform/status"
-            async with httpx.AsyncClient(timeout=self.settings.DATA_HTTP_TIMEOUT) as client:
+            async with httpx.AsyncClient(
+                timeout=self.settings.DATA_HTTP_TIMEOUT
+            ) as client:
                 resp = await client.get(url)
                 resp.raise_for_status()
                 return resp.json()
@@ -447,7 +491,9 @@ class BitfinexDataService:
             # Enklare variant: configs/symbols kan kräva parse; Bitfinex har olika config endpoints.
             # Vi använder /conf för att hämta t.ex. 'pub:list:pair:exchange'
             url = f"{self.base_url}/conf/pub:list:pair:exchange"
-            async with httpx.AsyncClient(timeout=self.settings.DATA_HTTP_TIMEOUT) as client:
+            async with httpx.AsyncClient(
+                timeout=self.settings.DATA_HTTP_TIMEOUT
+            ) as client:
                 resp = await client.get(url)
                 resp.raise_for_status()
                 data = resp.json()
@@ -510,14 +556,18 @@ class BitfinexDataService:
                         async with httpx.AsyncClient(timeout=timeout) as client:
                             resp = await client.get(url, params=params)
                             if resp.status_code in (429, 500, 502, 503, 504):
-                                raise httpx.HTTPStatusError("server busy", request=resp.request, response=resp)
+                                raise httpx.HTTPStatusError(
+                                    "server busy", request=resp.request, response=resp
+                                )
                             resp.raise_for_status()
                             candles = resp.json() or []
                             break
                     except Exception as e:
                         last_exc = e
                         if attempt < retries:
-                            delay = min(backoff_max, backoff_base * (2**attempt)) + random.uniform(0, 0.1)
+                            delay = min(
+                                backoff_max, backoff_base * (2**attempt)
+                            ) + random.uniform(0, 0.1)
                             await asyncio.sleep(delay)
                             continue
                         break
@@ -542,7 +592,9 @@ class BitfinexDataService:
             logger.warning("Backfill fel: %s", e)
             return 0
 
-    def parse_candles_to_strategy_data(self, candles: List[List]) -> Dict[str, List[float]]:
+    def parse_candles_to_strategy_data(
+        self, candles: List[List]
+    ) -> Dict[str, List[float]]:
         """
         Konverterar candlestick-data till format för strategiutvärdering.
 
