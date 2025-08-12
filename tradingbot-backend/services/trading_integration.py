@@ -6,42 +6,13 @@ Inkluderar integration mellan marknadsdata, strategier, orderhantering och posit
 """
 
 import asyncio
-import json
 from datetime import datetime
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, Optional
 
-from models.api_models import (
-    Candle,
-    MarginInfo,
-    OrderResponse,
-    OrderSide,
-    OrderType,
-    Position,
-    Ticker,
-    WalletBalance,
-)
-from rest.active_orders import (
-    cancel_orders_by_symbol,
-    get_active_orders,
-    get_active_orders_by_symbol,
-    update_order,
-)
 from rest.auth import place_order
 from rest.margin import get_leverage, get_margin_info, get_margin_status
-from rest.positions import (
-    close_position,
-    get_long_positions,
-    get_position_by_symbol,
-    get_positions,
-    get_short_positions,
-)
-from rest.wallet import (
-    get_exchange_wallets,
-    get_margin_wallets,
-    get_total_balance_usd,
-    get_wallet_by_type_and_currency,
-    get_wallets,
-)
+from rest.positions import get_positions
+from rest.wallet import get_total_balance_usd, get_wallets
 from services.bitfinex_data import bitfinex_data
 from services.metrics import inc
 from services.realtime_strategy import realtime_strategy

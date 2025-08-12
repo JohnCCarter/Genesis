@@ -7,11 +7,9 @@ följer Bitfinex API-krav om strikt ökande värden.
 """
 
 import json
-import os
 import time
 from datetime import datetime
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from utils.logger import get_logger
 from utils.nonce_manager import NONCE_FILE, get_nonce
@@ -30,9 +28,9 @@ def get_last_nonces() -> Dict[str, int]:
         return {}
 
     try:
-        with open(NONCE_FILE, "r") as f:
+        with open(NONCE_FILE) as f:
             return json.load(f)
-    except (json.JSONDecodeError, IOError) as e:
+    except (OSError, json.JSONDecodeError) as e:
         logger.error(f"Fel vid läsning av nonce-fil: {e}")
         return {}
 
@@ -62,9 +60,7 @@ def test_nonce_generation(key_id: str, count: int = 10) -> List[Tuple[str, int]]
     return results
 
 
-def validate_nonce_format(
-    nonce: str, api_type: str = "rest"
-) -> Tuple[bool, Optional[str]]:
+def validate_nonce_format(nonce: str, api_type: str = "rest") -> Tuple[bool, Optional[str]]:
     """
     Validerar formatet på ett nonce-värde.
 
@@ -138,12 +134,8 @@ def print_nonce_statistics(key_id: str, count: int = 5):
 
         print(f"  {i+1}. Nonce: {nonce}")
         print(f"     Differens: +{diff}")
-        print(
-            f"     Giltig för REST API: {'✅' if is_valid_rest else '❌'} {rest_error or ''}"
-        )
-        print(
-            f"     Giltig för WebSocket API: {'✅' if is_valid_ws else '❌'} {ws_error or ''}"
-        )
+        print(f"     Giltig för REST API: {'✅' if is_valid_rest else '❌'} {rest_error or ''}")
+        print(f"     Giltig för WebSocket API: {'✅' if is_valid_ws else '❌'} {ws_error or ''}")
 
     # Visa tid- och värdeinfo
     now = datetime.now()

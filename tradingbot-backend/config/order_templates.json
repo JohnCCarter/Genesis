@@ -9,6 +9,26 @@
       "price": "10000",
       "sl_price": "9500",
       "tp_price": "10500"
+    },
+    {
+      "name": "1",
+      "symbol": "tTESTAVAX:TESTUSD",
+      "side": "buy",
+      "type": "EXCHANGE MARKET",
+      "amount": "0.001",
+      "price": "0",
+      "sl_price": "9500",
+      "tp_price": "10500"
+    },
+    {
+      "name": "2",
+      "symbol": "tTESTAVAX:TESTUSD",
+      "side": "buy",
+      "type": "EXCHANGE MARKET",
+      "amount": "0.001",
+      "price": "0",
+      "sl_price": "9500",
+      "tp_price": "10500"
     }
   ]
 }

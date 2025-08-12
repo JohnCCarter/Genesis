@@ -6,17 +6,14 @@ som finns tillgängliga i tradingboten.
 """
 
 import asyncio
-import json
 import os
 import sys
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
 
 # Lägg till projektets rotmapp i Python-sökvägen
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from rest.positions import (
-    Position,
     close_position,
     get_long_positions,
     get_position_by_symbol,
@@ -24,7 +21,6 @@ from rest.positions import (
     get_short_positions,
 )
 from rest.positions_history import (
-    PositionHistory,
     claim_position,
     get_positions_audit,
     get_positions_history,

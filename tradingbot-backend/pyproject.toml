@@ -1,0 +1,38 @@
+[tool.ruff]
+line-length = 120
+target-version = "py39"
+exclude = [
+    ".git",
+    "__pycache__",
+    ".pytest_cache",
+    ".venv",
+    "venv",
+    "cache",
+    "cache/**",
+    "scraper",
+    "scraper/**",
+    "docs",
+    "docs/**",
+    "examples",
+    "examples/**",
+    "tests",
+    "tests/**",
+    "ws",
+    "ws/**",
+    "simple_ws_test_server.py",
+    "test_direct_bitfinex.py",
+]
+
+[tool.ruff.lint]
+# Match Flake8 ignores (and logging f-string rule) to keep current baseline quiet
+# Removed W503 to support older Ruff versions that don't recognize this selector
+ignore = ["E203", "E402", "F401", "F541", "F841", "G004", "E501"]
+select = ["E", "F", "W", "B", "I"]
+
+[tool.ruff.format]
+quote-style = "preserve"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "lf"
+
+

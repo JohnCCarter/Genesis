@@ -1,5 +1,3 @@
-import asyncio
-
 import pytest
 
 
@@ -36,7 +34,6 @@ async def test_bracket_manager_cancels_sibling_on_fill(monkeypatch):
 @pytest.mark.asyncio
 async def test_bracket_entry_partial_adjusts_protectives(monkeypatch):
     # Patcha ActiveOrdersService.get_order_by_id och update_order
-    from services import bracket_manager as bm_mod
     from services.bracket_manager import BracketManager
 
     class DummyOrder:
@@ -60,7 +57,6 @@ async def test_bracket_entry_partial_adjusts_protectives(monkeypatch):
 
     # Patcha ActiveOrdersService metoder via modulnamn
     import rest.active_orders as ao
-    import services.bracket_manager as mod
 
     class FakeAOSvc:
         async def get_order_by_id(self, order_id: int):

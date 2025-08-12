@@ -16,9 +16,7 @@ logger = get_logger(__name__)
 class SymbolService:
     def __init__(self) -> None:
         base_dir = os.path.dirname(os.path.dirname(__file__))  # tradingbot-backend/
-        self.file_path = os.path.join(
-            base_dir, "docs", "legacy", "bitfinex_docs", "extracted", "symbols.json"
-        )
+        self.file_path = os.path.join(base_dir, "docs", "legacy", "bitfinex_docs", "extracted", "symbols.json")
         self._cache: List[str] = []
 
     def _load(self) -> List[str]:
@@ -26,7 +24,7 @@ class SymbolService:
             return self._cache
         symbols: List[str] = []
         try:
-            with open(self.file_path, "r", encoding="utf-8") as f:
+            with open(self.file_path, encoding="utf-8") as f:
                 data = json.load(f)
             # Hantera både [[...]] och [...]
             if isinstance(data, list) and len(data) == 1 and isinstance(data[0], list):

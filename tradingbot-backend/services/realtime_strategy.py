@@ -5,13 +5,9 @@ Denna modul hanterar realtids strategiutvärdering baserat på live tick-data.
 Inkluderar automatisk signalgenerering och WebSocket-integration.
 """
 
-import asyncio
-import json
-from datetime import datetime
-from typing import Any, Callable, Dict, List, Optional
+from typing import Callable, Dict, List, Optional
 
 from services.bitfinex_websocket import bitfinex_ws
-from services.strategy import evaluate_strategy
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -44,9 +40,7 @@ class RealtimeStrategyService:
                 self.signal_callbacks[symbol] = callback
 
             # Starta WebSocket-övervakning
-            await bitfinex_ws.subscribe_with_strategy_evaluation(
-                symbol, self._handle_strategy_result
-            )
+            await bitfinex_ws.subscribe_with_strategy_evaluation(symbol, self._handle_strategy_result)
 
             self.active_symbols.add(symbol)
             self.is_running = True
@@ -94,9 +88,7 @@ class RealtimeStrategyService:
             self.strategy_results[symbol] = result
 
             # Logga signal
-            logger.info(
-                f"🎯 {symbol}: {signal} @ ${price:,.2f} - {result.get('reason', '')}"
-            )
+            logger.info(f"🎯 {symbol}: {signal} @ ${price:,.2f} - {result.get('reason', '')}")
 
             # Anropa callback om den finns
             if symbol in self.signal_callbacks:

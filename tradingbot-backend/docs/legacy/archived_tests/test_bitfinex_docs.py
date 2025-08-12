@@ -12,7 +12,6 @@ Dessa tester verifierar att dokumentations-scrapern fungerar korrekt
 och kan hämta relevant information från Bitfinex API-dokumentation.
 """
 
-import json
 import os
 import sys
 import unittest

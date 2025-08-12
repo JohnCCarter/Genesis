@@ -1138,7 +1138,13 @@
         .getElementById("placeOrderBtn")
         .addEventListener("click", async () => {
           try {
-            const symbol = document.getElementById("symbolInput").value.trim();
+            const symEl =
+              document.getElementById("symbolsSelect") ||
+              document.getElementById("quickSymbol") ||
+              document.getElementById("sizeSymbol");
+            const symbol = (
+              symEl && symEl.value ? symEl.value : "tBTCUSD"
+            ).trim();
             const amount = document.getElementById("amountInput").value.trim();
             const price = document.getElementById("priceInput").value.trim();
             let type = document.getElementById("typeSelect").value;
@@ -1431,8 +1437,11 @@
         .getElementById("getTickerBtn")
         .addEventListener("click", async () => {
           try {
-            const symbol =
-              document.getElementById("symbolInput").value || "tBTCUSD";
+            const symEl =
+              document.getElementById("symbolsSelect") ||
+              document.getElementById("quickSymbol") ||
+              document.getElementById("sizeSymbol");
+            const symbol = symEl && symEl.value ? symEl.value : "tBTCUSD";
             const resp = await restFetch(
               `/api/v2/market/ticker/${encodeURIComponent(symbol)}`
             );
@@ -1445,8 +1454,11 @@
         .getElementById("getCandlesBtn")
         .addEventListener("click", async () => {
           try {
-            const symbol =
-              document.getElementById("symbolInput").value || "tBTCUSD";
+            const symEl =
+              document.getElementById("symbolsSelect") ||
+              document.getElementById("quickSymbol") ||
+              document.getElementById("sizeSymbol");
+            const symbol = symEl && symEl.value ? symEl.value : "tBTCUSD";
             const resp = await restFetch(
               `/api/v2/market/candles/${encodeURIComponent(
                 symbol

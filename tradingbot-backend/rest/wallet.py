@@ -5,8 +5,7 @@ Denna modul hanterar plånboksinformation från Bitfinex API.
 Inkluderar funktioner för att hämta plånbokssaldon och hantera plånbokstransaktioner.
 """
 
-import json
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
 import httpx
 from pydantic import BaseModel
@@ -47,7 +46,7 @@ class WalletService:
 
     def __init__(self):
         self.settings = Settings()
-        self.base_url = self.settings.BITFINEX_API_URL
+        self.base_url = getattr(self.settings, "BITFINEX_AUTH_API_URL", None) or self.settings.BITFINEX_API_URL
 
     async def get_wallets(self) -> List[WalletBalance]:
         """
@@ -61,29 +60,21 @@ class WalletService:
             headers = build_auth_headers(endpoint)
 
             async with httpx.AsyncClient() as client:
-                logger.info(
-                    f"🌐 REST API: Hämtar plånböcker från {self.base_url}/{endpoint}"
-                )
-                response = await client.post(
-                    f"{self.base_url}/{endpoint}", headers=headers
-                )
+                logger.info(f"🌐 REST API: Hämtar plånböcker från {self.base_url}/{endpoint}")
+                response = await client.post(f"{self.base_url}/{endpoint}", headers=headers)
                 response.raise_for_status()
 
                 wallets_data = response.json()
                 logger.info(f"✅ REST API: Hämtade {len(wallets_data)} plånböcker")
 
-                wallets = [
-                    WalletBalance.from_bitfinex_data(wallet) for wallet in wallets_data
-                ]
+                wallets = [WalletBalance.from_bitfinex_data(wallet) for wallet in wallets_data]
                 return wallets
 
         except Exception as e:
             logger.error(f"Fel vid hämtning av plånböcker: {e}")
             raise
 
-    async def get_wallet_by_type_and_currency(
-        self, wallet_type: str, currency: str
-    ) -> Optional[WalletBalance]:
+    async def get_wallet_by_type_and_currency(self, wallet_type: str, currency: str) -> Optional[WalletBalance]:
         """
         Hämtar en specifik plånbok baserat på typ och valuta.
 
@@ -97,10 +88,7 @@ class WalletService:
         wallets = await self.get_wallets()
 
         for wallet in wallets:
-            if (
-                wallet.wallet_type.lower() == wallet_type.lower()
-                and wallet.currency.lower() == currency.lower()
-            ):
+            if wallet.wallet_type.lower() == wallet_type.lower() and wallet.currency.lower() == currency.lower():
                 return wallet
 
         return None
@@ -113,9 +101,7 @@ class WalletService:
             Lista med WalletBalance-objekt för exchange-plånböcker
         """
         wallets = await self.get_wallets()
-        return [
-            wallet for wallet in wallets if wallet.wallet_type.lower() == "exchange"
-        ]
+        return [wallet for wallet in wallets if wallet.wallet_type.lower() == "exchange"]
 
     async def get_margin_wallets(self) -> List[WalletBalance]:
         """
@@ -162,9 +148,7 @@ async def get_wallets() -> List[WalletBalance]:
     return await wallet_service.get_wallets()
 
 
-async def get_wallet_by_type_and_currency(
-    wallet_type: str, currency: str
-) -> Optional[WalletBalance]:
+async def get_wallet_by_type_and_currency(wallet_type: str, currency: str) -> Optional[WalletBalance]:
     return await wallet_service.get_wallet_by_type_and_currency(wallet_type, currency)
 
 

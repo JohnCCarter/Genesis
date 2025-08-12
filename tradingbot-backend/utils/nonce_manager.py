@@ -1,5 +1,4 @@
 import json
-import os
 import time
 from pathlib import Path
 from threading import Lock
@@ -16,7 +15,7 @@ def get_nonce(key_id: str) -> str:
     with _lock:
         try:
             if NONCE_FILE.exists():
-                with open(NONCE_FILE, "r") as f:
+                with open(NONCE_FILE) as f:
                     data = json.load(f)
             else:
                 data = {}
@@ -33,7 +32,7 @@ def get_nonce(key_id: str) -> str:
 
             return str(new_nonce)
 
-        except (json.JSONDecodeError, IOError) as e:
+        except (OSError, json.JSONDecodeError) as e:
             # Om filen är korrupt, starta om med nuvarande tid
             print(f"⚠️  Nonce-fil problem: {e}. Startar om med nuvarande tid.")
             new_nonce = now
@@ -43,7 +42,7 @@ def get_nonce(key_id: str) -> str:
                 NONCE_FILE.parent.mkdir(exist_ok=True)
                 with open(NONCE_FILE, "w") as f:
                     json.dump(data, f)
-            except IOError:
+            except OSError:
                 print("❌ Kunde inte skapa nonce-fil. Använder nuvarande tid.")
 
             return str(new_nonce)

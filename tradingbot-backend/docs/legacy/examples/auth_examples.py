@@ -5,10 +5,8 @@ Detta skript visar exempel på hur man kan använda autentiseringsinformation
 från BitfinexAuthScraper för både REST och WebSocket API.
 """
 
-import json
 import os
 import sys
-from datetime import datetime
 
 # Lägg till projektets rot i Python-sökvägen
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

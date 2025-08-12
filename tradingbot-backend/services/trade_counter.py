@@ -7,14 +7,15 @@ from __future__ import annotations
 import json
 import os
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 from typing import Dict, Optional
 
 from config.settings import Settings
+from services.trading_window import TradingWindowService
 from utils.logger import get_logger
 
 try:
-    from zoneinfo import ZoneInfo
+    from zoneinfo import ZoneInfo  # type: ignore
 except Exception:  # pragma: no cover
     ZoneInfo = None  # type: ignore
 
@@ -31,10 +32,13 @@ class TradeCounterState:
 class TradeCounterService:
     def __init__(self, settings: Optional[Settings] = None):
         self.settings = settings or Settings()
-        self.tz = ZoneInfo(self.settings.TIMEZONE) if ZoneInfo else None
+        has_zoneinfo = ZoneInfo is not None
+        self.tz = ZoneInfo(self.settings.TIMEZONE) if has_zoneinfo else None
         self.state = TradeCounterState(day=self._today())
         # Per-symbol räknare (persistens)
         self.symbol_counts: Dict[str, int] = {}
+        # Läser dynamiska gränser (max trades/dag, cooldown) via TradingWindow
+        self.trading_window = TradingWindowService(self.settings)
         self._load_state()
 
     def _now(self) -> datetime:
@@ -52,11 +56,11 @@ class TradeCounterService:
 
     def can_execute(self) -> bool:
         self._reset_if_new_day()
-        if self.state.count >= self.settings.MAX_TRADES_PER_DAY:
+        if self.state.count >= self._max_per_day_current():
             return False
         if self.state.last_trade_ts:
             elapsed = (self._now() - self.state.last_trade_ts).total_seconds()
-            if elapsed < self.settings.TRADE_COOLDOWN_SECONDS:
+            if elapsed < self._cooldown_seconds_current():
                 return False
         return True
 
@@ -77,12 +81,11 @@ class TradeCounterService:
         return {
             "day": self.state.day.isoformat(),
             "count": self.state.count,
-            "max_per_day": self.settings.MAX_TRADES_PER_DAY,
-            "cooldown_seconds": self.settings.TRADE_COOLDOWN_SECONDS,
+            "max_per_day": self._max_per_day_current(),
+            "cooldown_seconds": self._cooldown_seconds_current(),
             "cooldown_active": (
                 self.state.last_trade_ts is not None
-                and (self._now() - self.state.last_trade_ts).total_seconds()
-                < self.settings.TRADE_COOLDOWN_SECONDS
+                and ((self._now() - self.state.last_trade_ts).total_seconds() < self._cooldown_seconds_current())
             ),
             "per_symbol": self.symbol_counts.copy(),
         }
@@ -100,7 +103,7 @@ class TradeCounterService:
             path = self._abs_counter_path()
             if not os.path.exists(path):
                 return
-            with open(path, "r", encoding="utf-8") as f:
+            with open(path, encoding="utf-8") as f:
                 data = json.load(f)
             day_str = data.get("day")
             if day_str:
@@ -110,10 +113,7 @@ class TradeCounterService:
                 except Exception:
                     self.state.day = self._today()
             self.state.count = int(data.get("count", 0))
-            self.symbol_counts = {
-                str(k).upper(): int(v)
-                for k, v in (data.get("per_symbol", {}) or {}).items()
-            }
+            self.symbol_counts = {str(k).upper(): int(v) for k, v in (data.get("per_symbol", {}) or {}).items()}
         except Exception:
             # korrupt fil – börja om
             self.state = TradeCounterState(day=self._today())
@@ -131,3 +131,26 @@ class TradeCounterService:
                 json.dump(payload, f, ensure_ascii=False, indent=2)
         except Exception:
             pass
+
+    # --- Dynamiska gränser från TradingWindow ---
+    def _max_per_day_current(self) -> int:
+        """Returnera gällande max trades per dag, prioriterat från TradingWindow-regler."""
+        try:
+            limits = self.trading_window.get_limits()
+            val = int((limits or {}).get("max_trades_per_day", 0) or 0)
+            if val > 0:
+                return val
+        except Exception:
+            pass
+        return int(getattr(self.settings, "MAX_TRADES_PER_DAY", 0) or 0)
+
+    def _cooldown_seconds_current(self) -> int:
+        """Returnera gällande cooldown i sekunder, prioriterat från TradingWindow-regler om definierad."""
+        try:
+            limits = self.trading_window.get_limits()
+            val = int((limits or {}).get("trade_cooldown_seconds", 0) or 0)
+            if val > 0:
+                return val
+        except Exception:
+            pass
+        return int(getattr(self.settings, "TRADE_COOLDOWN_SECONDS", 0) or 0)

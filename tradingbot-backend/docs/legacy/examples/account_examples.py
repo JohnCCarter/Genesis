@@ -6,26 +6,20 @@ som finns tillgängliga i tradingboten.
 """
 
 import asyncio
-import json
 import os
 import sys
-from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from rest.margin import get_leverage, get_margin_info
 from rest.order_history import (
-    LedgerEntry,
-    OrderHistoryItem,
-    TradeItem,
     get_ledgers,
     get_order_trades,
     get_orders_history,
     get_trades_history,
 )
-from rest.positions import Position, get_position_by_symbol, get_positions
-from rest.wallet import WalletBalance, get_wallet_by_type_and_currency, get_wallets
+from rest.positions import get_position_by_symbol, get_positions
+from rest.wallet import get_wallet_by_type_and_currency, get_wallets
 from utils.logger import get_logger
 
 logger = get_logger(__name__)

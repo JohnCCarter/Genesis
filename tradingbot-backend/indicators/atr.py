@@ -14,9 +14,7 @@ from utils.logger import get_logger
 logger = get_logger(__name__)
 
 
-def calculate_atr(
-    highs: List[float], lows: List[float], closes: List[float], period: int = 14
-) -> Optional[float]:
+def calculate_atr(highs: List[float], lows: List[float], closes: List[float], period: int = 14) -> Optional[float]:
     """
     Beräknar Average True Range (ATR).
 

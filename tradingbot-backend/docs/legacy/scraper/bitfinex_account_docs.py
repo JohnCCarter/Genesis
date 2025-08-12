@@ -12,11 +12,10 @@ import re
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 import requests
 from bs4 import BeautifulSoup
-from scraper.bitfinex_docs import BitfinexDocsScraper
 
 # Konfigurera loggning
 logging.basicConfig(
@@ -650,7 +649,7 @@ def main():
 
     # Generera kodexempel
     examples = scraper.generate_account_code_examples()
-    logger.info(f"Genererade kodexempel för wallet, positions och margin endpoints")
+    logger.info("Genererade kodexempel för wallet, positions och margin endpoints")
 
     logger.info("Skrapning av konto-relaterad dokumentation slutförd.")
 

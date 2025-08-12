@@ -49,19 +49,13 @@ class TradingWindowService:
         try:
             # Säkerställ att config-katalogen finns innan läsning/skrivning
             cfg_path = self._abs_rules_path()
-            with open(cfg_path, "r", encoding="utf-8") as f:
+            with open(cfg_path, encoding="utf-8") as f:
                 data = json.load(f)
             return TradingRules(
                 timezone=data.get("timezone", self.settings.TIMEZONE),
                 windows=data.get("windows", {}),
-                max_trades_per_day=int(
-                    data.get("max_trades_per_day", self.settings.MAX_TRADES_PER_DAY)
-                ),
-                trade_cooldown_seconds=int(
-                    data.get(
-                        "trade_cooldown_seconds", self.settings.TRADE_COOLDOWN_SECONDS
-                    )
-                ),
+                max_trades_per_day=int(data.get("max_trades_per_day", self.settings.MAX_TRADES_PER_DAY)),
+                trade_cooldown_seconds=int(data.get("trade_cooldown_seconds", self.settings.TRADE_COOLDOWN_SECONDS)),
                 paused=bool(data.get("paused", self.settings.TRADING_PAUSED)),
                 max_trades_per_symbol_per_day=int(
                     data.get(
@@ -72,16 +66,38 @@ class TradingWindowService:
             )
         except FileNotFoundError:
             logger.warning("TRADING_RULES_FILE saknas – använder default från Settings")
-            return TradingRules(
-                timezone=self.settings.TIMEZONE,
-                windows={w: [] for w in WEEKDAY_KEYS},
-                max_trades_per_day=self.settings.MAX_TRADES_PER_DAY,
-                trade_cooldown_seconds=self.settings.TRADE_COOLDOWN_SECONDS,
-                paused=self.settings.TRADING_PAUSED,
-                max_trades_per_symbol_per_day=getattr(
-                    self.settings, "MAX_TRADES_PER_SYMBOL_PER_DAY", 0
-                ),
+        except Exception as e:
+            # Korrupt JSON eller annan I/O – självläka med default och skriv om filen
+            logger.warning(
+                "Kunde inte läsa trading rules (%s) – initierar default och skriver om filen",
+                e,
             )
+        # Default-regler och skriv till fil
+        default_rules = TradingRules(
+            timezone=self.settings.TIMEZONE,
+            windows={w: [] for w in WEEKDAY_KEYS},
+            max_trades_per_day=self.settings.MAX_TRADES_PER_DAY,
+            trade_cooldown_seconds=self.settings.TRADE_COOLDOWN_SECONDS,
+            paused=self.settings.TRADING_PAUSED,
+            max_trades_per_symbol_per_day=getattr(self.settings, "MAX_TRADES_PER_SYMBOL_PER_DAY", 0),
+        )
+        try:
+            cfg_path = self._abs_rules_path()
+            os.makedirs(os.path.dirname(cfg_path), exist_ok=True)
+            payload = {
+                "timezone": default_rules.timezone,
+                "windows": default_rules.windows,
+                "max_trades_per_day": default_rules.max_trades_per_day,
+                "trade_cooldown_seconds": default_rules.trade_cooldown_seconds,
+                "paused": default_rules.paused,
+                "max_trades_per_symbol_per_day": getattr(default_rules, "max_trades_per_symbol_per_day", 0),
+            }
+            with open(cfg_path, "w", encoding="utf-8") as f:
+                json.dump(payload, f, ensure_ascii=False, indent=2)
+        except Exception:
+            # Ignorera skrivfel – återvänd default i minne
+            pass
+        return default_rules
 
     def is_open(self, now: Optional[datetime] = None) -> bool:
         if self.rules.paused:
@@ -114,9 +130,7 @@ class TradingWindowService:
             windows = self.rules.windows.get(weekday, [])
             for start, _ in windows:
                 t_start = _parse_time(start)
-                candidate_dt = candidate_day.replace(
-                    hour=t_start.hour, minute=t_start.minute, second=0, microsecond=0
-                )
+                candidate_dt = candidate_day.replace(hour=t_start.hour, minute=t_start.minute, second=0, microsecond=0)
                 if candidate_dt >= now:
                     return candidate_dt
         return None
@@ -125,9 +139,7 @@ class TradingWindowService:
         return {
             "max_trades_per_day": self.rules.max_trades_per_day,
             "trade_cooldown_seconds": self.rules.trade_cooldown_seconds,
-            "max_trades_per_symbol_per_day": getattr(
-                self.rules, "max_trades_per_symbol_per_day", 0
-            ),
+            "max_trades_per_symbol_per_day": getattr(self.rules, "max_trades_per_symbol_per_day", 0),
         }
 
     def is_paused(self) -> bool:
@@ -155,13 +167,8 @@ class TradingWindowService:
             self.rules.windows = windows
         if paused is not None:
             self.rules.paused = paused
-        if (
-            max_trades_per_symbol_per_day is not None
-            and max_trades_per_symbol_per_day >= 0
-        ):
-            self.rules.max_trades_per_symbol_per_day = int(
-                max_trades_per_symbol_per_day
-            )
+        if max_trades_per_symbol_per_day is not None and max_trades_per_symbol_per_day >= 0:
+            self.rules.max_trades_per_symbol_per_day = int(max_trades_per_symbol_per_day)
         if max_trades_per_day is not None and max_trades_per_day > 0:
             self.rules.max_trades_per_day = int(max_trades_per_day)
         if trade_cooldown_seconds is not None and trade_cooldown_seconds >= 0:
@@ -174,9 +181,7 @@ class TradingWindowService:
             "max_trades_per_day": self.rules.max_trades_per_day,
             "trade_cooldown_seconds": self.rules.trade_cooldown_seconds,
             "paused": self.rules.paused,
-            "max_trades_per_symbol_per_day": getattr(
-                self.rules, "max_trades_per_symbol_per_day", 0
-            ),
+            "max_trades_per_symbol_per_day": getattr(self.rules, "max_trades_per_symbol_per_day", 0),
         }
         cfg_path = self._abs_rules_path()
         os.makedirs(os.path.dirname(cfg_path), exist_ok=True)
@@ -236,13 +241,8 @@ class TradingWindowService:
                 if not isinstance(pair, (list, tuple)) or len(pair) != 2:
                     raise ValueError(f"Fel format för intervall i {day}: {pair}")
                 start, end = pair[0], pair[1]
-                if not (
-                    self._is_valid_time_string(start)
-                    and self._is_valid_time_string(end)
-                ):
+                if not (self._is_valid_time_string(start) and self._is_valid_time_string(end)):
                     raise ValueError(f"Ogiltigt tidsformat i {day}: {start}-{end}")
                 t_start, t_end = _parse_time(start), _parse_time(end)
                 if not (t_start < t_end):
-                    raise ValueError(
-                        f"Start måste vara före slut i {day}: {start}-{end}"
-                    )
+                    raise ValueError(f"Start måste vara före slut i {day}: {start}-{end}")

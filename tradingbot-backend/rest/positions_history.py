@@ -5,7 +5,6 @@ Denna modul hanterar historiska positioner från Bitfinex API.
 Inkluderar funktioner för att hämta positionshistorik och hantera positionsdata.
 """
 
-import json
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
@@ -83,7 +82,7 @@ class PositionsHistoryService:
 
     def __init__(self):
         self.settings = Settings()
-        self.base_url = self.settings.BITFINEX_API_URL
+        self.base_url = getattr(self.settings, "BITFINEX_AUTH_API_URL", None) or self.settings.BITFINEX_API_URL
 
     async def get_positions_history(
         self, start: Optional[int] = None, end: Optional[int] = None, limit: int = 50
@@ -114,23 +113,14 @@ class PositionsHistoryService:
             headers = build_auth_headers(endpoint, payload)
 
             async with httpx.AsyncClient() as client:
-                logger.info(
-                    f"🌐 REST API: Hämtar positionshistorik från {self.base_url}/{endpoint}"
-                )
-                response = await client.post(
-                    f"{self.base_url}/{endpoint}", headers=headers, json=payload
-                )
+                logger.info(f"🌐 REST API: Hämtar positionshistorik från {self.base_url}/{endpoint}")
+                response = await client.post(f"{self.base_url}/{endpoint}", headers=headers, json=payload)
                 response.raise_for_status()
 
                 positions_data = response.json()
-                logger.info(
-                    f"✅ REST API: Hämtade {len(positions_data)} historiska positioner"
-                )
+                logger.info(f"✅ REST API: Hämtade {len(positions_data)} historiska positioner")
 
-                positions = [
-                    PositionHistory.from_bitfinex_data(position)
-                    for position in positions_data
-                ]
+                positions = [PositionHistory.from_bitfinex_data(position) for position in positions_data]
                 return positions
 
         except Exception as e:
@@ -149,23 +139,14 @@ class PositionsHistoryService:
             headers = build_auth_headers(endpoint)
 
             async with httpx.AsyncClient() as client:
-                logger.info(
-                    f"🌐 REST API: Hämtar positionsögonblicksbild från {self.base_url}/{endpoint}"
-                )
-                response = await client.post(
-                    f"{self.base_url}/{endpoint}", headers=headers
-                )
+                logger.info(f"🌐 REST API: Hämtar positionsögonblicksbild från {self.base_url}/{endpoint}")
+                response = await client.post(f"{self.base_url}/{endpoint}", headers=headers)
                 response.raise_for_status()
 
                 positions_data = response.json()
-                logger.info(
-                    f"✅ REST API: Hämtade {len(positions_data)} positioner i ögonblicksbilden"
-                )
+                logger.info(f"✅ REST API: Hämtade {len(positions_data)} positioner i ögonblicksbilden")
 
-                positions = [
-                    PositionHistory.from_bitfinex_data(position)
-                    for position in positions_data
-                ]
+                positions = [PositionHistory.from_bitfinex_data(position) for position in positions_data]
                 return positions
 
         except Exception as e:
@@ -192,7 +173,7 @@ class PositionsHistoryService:
             Lista med PositionHistory-objekt
         """
         try:
-            endpoint = f"auth/r/positions/audit"
+            endpoint = "auth/r/positions/audit"
 
             # Skapa payload med filter
             payload = {"id": symbol}
@@ -206,23 +187,14 @@ class PositionsHistoryService:
             headers = build_auth_headers(endpoint, payload)
 
             async with httpx.AsyncClient() as client:
-                logger.info(
-                    f"🌐 REST API: Hämtar positionsrevision för {symbol} från {self.base_url}/{endpoint}"
-                )
-                response = await client.post(
-                    f"{self.base_url}/{endpoint}", headers=headers, json=payload
-                )
+                logger.info(f"🌐 REST API: Hämtar positionsrevision för {symbol} från {self.base_url}/{endpoint}")
+                response = await client.post(f"{self.base_url}/{endpoint}", headers=headers, json=payload)
                 response.raise_for_status()
 
                 positions_data = response.json()
-                logger.info(
-                    f"✅ REST API: Hämtade {len(positions_data)} positionsrevisioner"
-                )
+                logger.info(f"✅ REST API: Hämtade {len(positions_data)} positionsrevisioner")
 
-                positions = [
-                    PositionHistory.from_bitfinex_data(position)
-                    for position in positions_data
-                ]
+                positions = [PositionHistory.from_bitfinex_data(position) for position in positions_data]
                 return positions
 
         except Exception as e:
@@ -246,15 +218,11 @@ class PositionsHistoryService:
 
             async with httpx.AsyncClient() as client:
                 logger.info(f"🌐 REST API: Gör anspråk på position {position_id}")
-                response = await client.post(
-                    f"{self.base_url}/{endpoint}", headers=headers, json=payload
-                )
+                response = await client.post(f"{self.base_url}/{endpoint}", headers=headers, json=payload)
                 response.raise_for_status()
 
                 result = response.json()
-                logger.info(
-                    f"✅ REST API: Anspråk på position {position_id} framgångsrikt"
-                )
+                logger.info(f"✅ REST API: Anspråk på position {position_id} framgångsrikt")
 
                 return result
 
@@ -262,9 +230,7 @@ class PositionsHistoryService:
             logger.error(f"Fel vid anspråk på position: {e}")
             raise
 
-    async def update_position_funding_type(
-        self, symbol: str, funding_type: int
-    ) -> Dict[str, Any]:
+    async def update_position_funding_type(self, symbol: str, funding_type: int) -> Dict[str, Any]:
         """
         Uppdaterar finansieringstypen för en position.
 
@@ -281,18 +247,12 @@ class PositionsHistoryService:
             headers = build_auth_headers(endpoint, payload)
 
             async with httpx.AsyncClient() as client:
-                logger.info(
-                    f"🌐 REST API: Uppdaterar finansieringstyp för position {symbol} till {funding_type}"
-                )
-                response = await client.post(
-                    f"{self.base_url}/{endpoint}", headers=headers, json=payload
-                )
+                logger.info(f"🌐 REST API: Uppdaterar finansieringstyp för position {symbol} till {funding_type}")
+                response = await client.post(f"{self.base_url}/{endpoint}", headers=headers, json=payload)
                 response.raise_for_status()
 
                 result = response.json()
-                logger.info(
-                    f"✅ REST API: Finansieringstyp för position {symbol} uppdaterad framgångsrikt"
-                )
+                logger.info(f"✅ REST API: Finansieringstyp för position {symbol} uppdaterad framgångsrikt")
 
                 return result
 
@@ -319,18 +279,12 @@ async def get_positions_snapshot() -> List[PositionHistory]:
 async def get_positions_audit(
     symbol: str, start: Optional[int] = None, end: Optional[int] = None, limit: int = 50
 ) -> List[PositionHistory]:
-    return await positions_history_service.get_positions_audit(
-        symbol, start, end, limit
-    )
+    return await positions_history_service.get_positions_audit(symbol, start, end, limit)
 
 
 async def claim_position(position_id: str) -> Dict[str, Any]:
     return await positions_history_service.claim_position(position_id)
 
 
-async def update_position_funding_type(
-    symbol: str, funding_type: int
-) -> Dict[str, Any]:
-    return await positions_history_service.update_position_funding_type(
-        symbol, funding_type
-    )
+async def update_position_funding_type(symbol: str, funding_type: int) -> Dict[str, Any]:
+    return await positions_history_service.update_position_funding_type(symbol, funding_type)

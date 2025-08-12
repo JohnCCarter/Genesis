@@ -5,11 +5,8 @@ Detta skript visar hur man använder de centraliserade Pydantic-modellerna
 för att hantera data i tradingboten.
 """
 
-import asyncio
 import os
 import sys
-from datetime import datetime
-from typing import Any, Dict, List, Optional
 
 # Lägg till projektets rotmapp i Python-sökvägen
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -17,11 +14,9 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from models.api_models import (
     ApiResponse,
     Candle,
-    MarginInfo,
     OrderRequest,
     OrderResponse,
     OrderSide,
-    OrderStatus,
     OrderType,
     Position,
     PositionStatus,

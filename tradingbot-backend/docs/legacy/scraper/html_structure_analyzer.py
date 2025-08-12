@@ -1,10 +1,8 @@
-import html
 import json
 import logging
-import os
 import re
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from bs4 import BeautifulSoup
 

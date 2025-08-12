@@ -23,7 +23,7 @@ class OrderTemplatesService:
     def _load(self) -> Dict[str, Any]:
         try:
             if os.path.exists(self.file_path):
-                with open(self.file_path, "r", encoding="utf-8") as f:
+                with open(self.file_path, encoding="utf-8") as f:
                     data = json.load(f)
                     # Om filen råkar vara en lista, wrappa den i {"templates": ...}
                     if isinstance(data, list):
@@ -78,9 +78,7 @@ class OrderTemplatesService:
             data = self._load()
             items = data.get("templates", [])
             name_norm = str(name or "").strip().lower()
-            kept = [
-                t for t in items if str(t.get("name", "")).strip().lower() != name_norm
-            ]
+            kept = [t for t in items if str(t.get("name", "")).strip().lower() != name_norm]
             if len(kept) != len(items):
                 data["templates"] = kept
                 self._save(data)

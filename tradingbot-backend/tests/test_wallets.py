@@ -1,8 +1,6 @@
 import pytest
 
-pytestmark = pytest.mark.skip(
-    reason="Legacy HTTP tests – skipped; use manual smoke tests in README"
-)
+pytestmark = pytest.mark.skip(reason="Legacy HTTP tests – skipped; use manual smoke tests in README")
 """
 Test Wallets - TradingBot Backend
 
@@ -57,7 +55,7 @@ def test_get_wallets():
 
     headers = {"Content-Type": "application/json", **build_auth_headers(endpoint)}
 
-    print(f"\n📋 Hämtar plånboksinformation...")
+    print("\n📋 Hämtar plånboksinformation...")
 
     response = requests.post(f"{API}/{endpoint}", headers=headers)
 

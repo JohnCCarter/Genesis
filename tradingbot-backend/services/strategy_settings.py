@@ -33,7 +33,7 @@ class StrategySettings:
         return asdict(self)
 
     @staticmethod
-    def from_dict(data: Dict) -> "StrategySettings":
+    def from_dict(data: Dict) -> StrategySettings:
         return StrategySettings(
             ema_weight=float(data.get("ema_weight", 0.4)),
             rsi_weight=float(data.get("rsi_weight", 0.4)),
@@ -43,7 +43,7 @@ class StrategySettings:
             atr_period=int(data.get("atr_period", 14)),
         )
 
-    def normalized(self) -> "StrategySettings":
+    def normalized(self) -> StrategySettings:
         total = max(self.ema_weight + self.rsi_weight + self.atr_weight, 1e-9)
         return StrategySettings(
             ema_weight=self.ema_weight / total,
@@ -67,7 +67,7 @@ class StrategySettingsService:
 
     def _load_overrides(self) -> Dict[str, Dict[str, Any]]:
         try:
-            with open(self.overrides_path, "r", encoding="utf-8") as f:
+            with open(self.overrides_path, encoding="utf-8") as f:
                 data = json.load(f)
                 if isinstance(data, dict):
                     return data
@@ -89,13 +89,11 @@ class StrategySettingsService:
 
     def get_settings(self, symbol: Optional[str] = None) -> StrategySettings:
         try:
-            with open(self.file_path, "r", encoding="utf-8") as f:
+            with open(self.file_path, encoding="utf-8") as f:
                 data = json.load(f)
                 base = StrategySettings.from_dict(data)
         except FileNotFoundError:
-            logger.info(
-                "Inga strategiinställningar hittades – använder default och skapar fil."
-            )
+            logger.info("Inga strategiinställningar hittades – använder default och skapar fil.")
             base = StrategySettings()
             self.save_settings(base)
         except FileNotFoundError:
@@ -120,9 +118,7 @@ class StrategySettingsService:
                 logger.warning(f"Kunde inte applicera symboloverride för {symbol}: {e}")
         return base.normalized()
 
-    def save_settings(
-        self, settings_obj: StrategySettings, symbol: Optional[str] = None
-    ) -> StrategySettings:
+    def save_settings(self, settings_obj: StrategySettings, symbol: Optional[str] = None) -> StrategySettings:
         try:
             normalized = settings_obj.normalized()
             if symbol:

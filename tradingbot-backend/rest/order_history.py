@@ -50,9 +50,7 @@ class OrderHistoryItem(BaseModel):
             original_amount=float(data[5]),
             price=float(data[6]),
             avg_execution_price=float(data[7]) if data[7] is not None else None,
-            created_at=(
-                datetime.fromtimestamp(data[8] / 1000) if data[8] else datetime.now()
-            ),
+            created_at=(datetime.fromtimestamp(data[8] / 1000) if data[8] else datetime.now()),
             updated_at=datetime.fromtimestamp(data[9] / 1000) if data[9] else None,
             is_cancelled=bool(data[10]),
             is_hidden=bool(data[11]),
@@ -114,11 +112,7 @@ class TradeItem(BaseModel):
                 fee = try_float(data[8])
                 fee_currency = str(data[9]) if len(data) > 9 else ""
             # Fall 2: tidsstämpel på index 2 (ms)
-            elif (
-                len(data) >= 9
-                and isinstance(data[2], (int, float))
-                and float(data[2]) > 10_000_000_000
-            ):
+            elif len(data) >= 9 and isinstance(data[2], (int, float)) and float(data[2]) > 10_000_000_000:
                 # [id, sym, mts, orderId, execId, amount, price, fee, feeCur]
                 mts_create = int(data[2])
                 order_id = int(data[3]) if len(data) > 3 and data[3] is not None else 0
@@ -141,9 +135,7 @@ class TradeItem(BaseModel):
         except Exception as e:
             raise ValueError(f"Kunde inte tolka tradedata: {data} ({e})")
 
-        executed_at = (
-            datetime.fromtimestamp(mts_create / 1000) if mts_create else datetime.now()
-        )
+        executed_at = datetime.fromtimestamp(mts_create / 1000) if mts_create else datetime.now()
 
         return cls(
             id=trade_id,
@@ -181,9 +173,7 @@ class LedgerEntry(BaseModel):
             amount=float(data[2]),
             balance=float(data[3]),
             description=data[4],
-            created_at=(
-                datetime.fromtimestamp(data[5] / 1000) if data[5] else datetime.now()
-            ),
+            created_at=(datetime.fromtimestamp(data[5] / 1000) if data[5] else datetime.now()),
             wallet_type=data[6],
         )
 
@@ -193,11 +183,9 @@ class OrderHistoryService:
 
     def __init__(self):
         self.settings = Settings()
-        self.base_url = self.settings.BITFINEX_API_URL
+        self.base_url = getattr(self.settings, "BITFINEX_AUTH_API_URL", None) or self.settings.BITFINEX_API_URL
 
-    async def _signed_post_with_retry(
-        self, endpoint: str, body: Optional[Dict[str, Any]] = None
-    ) -> httpx.Response:
+    async def _signed_post_with_retry(self, endpoint: str, body: Optional[Dict[str, Any]] = None) -> httpx.Response:
         """
         Skicka ett signerat POST-anrop med timeout och retry/backoff.
 
@@ -214,14 +202,8 @@ class OrderHistoryService:
 
         timeout = getattr(self.settings, "DATA_HTTP_TIMEOUT", 15.0)
         retries = max(int(getattr(self.settings, "DATA_MAX_RETRIES", 2) or 0), 0)
-        backoff_base = (
-            max(int(getattr(self.settings, "DATA_BACKOFF_BASE_MS", 250) or 0), 0)
-            / 1000.0
-        )
-        backoff_max = (
-            max(int(getattr(self.settings, "DATA_BACKOFF_MAX_MS", 2000) or 0), 0)
-            / 1000.0
-        )
+        backoff_base = max(int(getattr(self.settings, "DATA_BACKOFF_BASE_MS", 250) or 0), 0) / 1000.0
+        backoff_max = max(int(getattr(self.settings, "DATA_BACKOFF_MAX_MS", 2000) or 0), 0) / 1000.0
 
         last_exc: Optional[Exception] = None
         response: Optional[httpx.Response] = None
@@ -242,9 +224,7 @@ class OrderHistoryService:
             except Exception as e:
                 last_exc = e
                 if attempt < retries:
-                    delay = min(
-                        backoff_max, backoff_base * (2**attempt)
-                    ) + random.uniform(0, 0.1)
+                    delay = min(backoff_max, backoff_base * (2**attempt)) + random.uniform(0, 0.1)
                     await asyncio.sleep(delay)
                     continue
                 break
@@ -297,16 +277,12 @@ class OrderHistoryService:
             if end_time:
                 payload["end"] = end_time
 
-            logger.info(
-                f"🌐 REST API: Hämtar orderhistorik från {self.base_url}/{endpoint}"
-            )
+            logger.info(f"🌐 REST API: Hämtar orderhistorik från {self.base_url}/{endpoint}")
             response = await self._signed_post_with_retry(endpoint, payload)
             orders_data = response.json()
             logger.info(f"✅ REST API: Hämtade {len(orders_data)} historiska ordrar")
 
-            orders = [
-                OrderHistoryItem.from_bitfinex_data(order) for order in orders_data
-            ]
+            orders = [OrderHistoryItem.from_bitfinex_data(order) for order in orders_data]
             return orders
 
         except Exception as e:
@@ -328,9 +304,7 @@ class OrderHistoryService:
             logger.info(f"🌐 REST API: Hämtar trades för order {order_id}")
             response = await self._signed_post_with_retry(endpoint, {})
             trades_data = response.json()
-            logger.info(
-                f"✅ REST API: Hämtade {len(trades_data)} trades för order {order_id}"
-            )
+            logger.info(f"✅ REST API: Hämtade {len(trades_data)} trades för order {order_id}")
 
             trades = [TradeItem.from_bitfinex_data(trade) for trade in trades_data]
             return trades
@@ -339,9 +313,7 @@ class OrderHistoryService:
             logger.error(f"Fel vid hämtning av trades för order {order_id}: {e}")
             raise
 
-    async def get_trades_history(
-        self, symbol: Optional[str] = None, limit: int = 25
-    ) -> List[TradeItem]:
+    async def get_trades_history(self, symbol: Optional[str] = None, limit: int = 25) -> List[TradeItem]:
         """
         Hämtar handelshistorik från Bitfinex.
 
@@ -358,9 +330,7 @@ class OrderHistoryService:
                 endpoint = f"auth/r/trades/{symbol}/hist"
 
             payload = {"limit": limit} if limit else {}
-            logger.info(
-                f"🌐 REST API: Hämtar handelshistorik från {self.base_url}/{endpoint}"
-            )
+            logger.info(f"🌐 REST API: Hämtar handelshistorik från {self.base_url}/{endpoint}")
             response = await self._signed_post_with_retry(endpoint, payload)
             trades_data = response.json()
             logger.info(f"✅ REST API: Hämtade {len(trades_data)} historiska trades")
@@ -372,9 +342,7 @@ class OrderHistoryService:
             logger.error(f"Fel vid hämtning av handelshistorik: {e}")
             raise
 
-    async def get_ledgers(
-        self, currency: Optional[str] = None, limit: int = 25
-    ) -> List[LedgerEntry]:
+    async def get_ledgers(self, currency: Optional[str] = None, limit: int = 25) -> List[LedgerEntry]:
         """
         Hämtar ledger-poster från Bitfinex.
 
@@ -396,9 +364,7 @@ class OrderHistoryService:
             ledgers_data = response.json()
             logger.info(f"✅ REST API: Hämtade {len(ledgers_data)} ledger-poster")
 
-            ledgers = [
-                LedgerEntry.from_bitfinex_data(ledger) for ledger in ledgers_data
-            ]
+            ledgers = [LedgerEntry.from_bitfinex_data(ledger) for ledger in ledgers_data]
             return ledgers
 
         except Exception as e:
@@ -421,15 +387,11 @@ async def get_order_trades(order_id: int) -> List[TradeItem]:
     return await order_history_service.get_order_trades(order_id)
 
 
-async def get_trades_history(
-    symbol: Optional[str] = None, limit: int = 25
-) -> List[TradeItem]:
+async def get_trades_history(symbol: Optional[str] = None, limit: int = 25) -> List[TradeItem]:
     return await order_history_service.get_trades_history(symbol, limit)
 
 
-async def get_ledgers(
-    currency: Optional[str] = None, limit: int = 25
-) -> List[LedgerEntry]:
+async def get_ledgers(currency: Optional[str] = None, limit: int = 25) -> List[LedgerEntry]:
     return await order_history_service.get_ledgers(currency, limit)
 
 
@@ -443,26 +405,20 @@ if __name__ == "__main__":
             orders = await get_orders_history(10)
             print(f"Senaste {len(orders)} ordrar:")
             for order in orders:
-                print(
-                    f"  {order.id}: {order.symbol} {order.type} {order.amount} @ {order.price} ({order.status})"
-                )
+                print(f"  {order.id}: {order.symbol} {order.type} {order.amount} @ {order.price} ({order.status})")
 
             # Om det finns ordrar, hämta trades för den första
             if orders:
                 trades = await get_order_trades(orders[0].id)
                 print(f"\nTrades för order {orders[0].id}:")
                 for trade in trades:
-                    print(
-                        f"  {trade.id}: {trade.amount} @ {trade.price} (Fee: {trade.fee} {trade.fee_currency})"
-                    )
+                    print(f"  {trade.id}: {trade.amount} @ {trade.price} (Fee: {trade.fee} {trade.fee_currency})")
 
             # Hämta senaste 5 ledger-poster för USD
             ledgers = await get_ledgers("USD", 5)
             print(f"\nSenaste {len(ledgers)} ledger-poster för USD:")
             for ledger in ledgers:
-                print(
-                    f"  {ledger.id}: {ledger.amount} {ledger.currency} - {ledger.description}"
-                )
+                print(f"  {ledger.id}: {ledger.amount} {ledger.currency} - {ledger.description}")
 
         except Exception as e:
             print(f"Fel: {e}")

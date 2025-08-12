@@ -4,10 +4,6 @@ Strategy Tests - TradingBot Backend
 Denna modul testar tradingstrategier och tekniska indikatorer.
 """
 
-from typing import Any, Dict, List
-
-import pytest
-
 from indicators.atr import calculate_atr
 from indicators.ema import calculate_ema
 from indicators.rsi import calculate_rsi

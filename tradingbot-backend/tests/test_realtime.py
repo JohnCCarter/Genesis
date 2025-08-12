@@ -1,17 +1,12 @@
 import pytest
 
-pytestmark = pytest.mark.skip(
-    reason="Legacy realtime integration test – skipped in current backend focus"
-)
+pytestmark = pytest.mark.skip(reason="Legacy realtime integration test – skipped in current backend focus")
 """
 Realtime Tests - TradingBot Backend
 
 Denna modul testar realtids WebSocket-funktionalitet och live strategiutvärdering.
 """
 
-import asyncio
-import json
-from typing import Any, Dict
 
 import pytest
 

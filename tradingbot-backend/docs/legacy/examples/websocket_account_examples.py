@@ -6,10 +6,8 @@ för att få realtidsuppdateringar om plånböcker och positioner.
 """
 
 import asyncio
-import json
 import os
 import sys
-from pprint import pprint
 
 # Lägg till projektets rot i Python-sökvägen
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

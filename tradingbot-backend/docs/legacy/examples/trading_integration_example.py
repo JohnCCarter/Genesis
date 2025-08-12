@@ -8,7 +8,6 @@ olika delar av tradingboten för att skapa en komplett tradingfunktionalitet.
 import asyncio
 import os
 import sys
-from datetime import datetime
 from typing import Any, Dict
 
 # Lägg till projektets rotmapp i Python-sökvägen
@@ -27,7 +26,7 @@ async def signal_callback(result: Dict[str, Any]):
     price = result.get("current_price", 0)
     reason = result.get("reason", "")
 
-    print(f"\n=== Ny Trading Signal ===")
+    print("\n=== Ny Trading Signal ===")
     print(f"Symbol: {symbol}")
     print(f"Signal: {signal}")
     print(f"Pris: ${price:,.2f}")

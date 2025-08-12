@@ -6,8 +6,7 @@ Använder information från scraper-modulen för att validera ordertyper,
 symboler och parametrar.
 """
 
-import logging
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, Optional, Tuple
 
 try:
     from scraper.bitfinex_docs import BitfinexDocsScraper  # pylint: disable=E0401
@@ -87,14 +86,42 @@ class OrderValidator:
                 "required_params": ["symbol", "amount", "price"],
                 "optional_params": ["flags"],
             },
+            # Margin-ordrar (utan EXCHANGE-prefix)
+            "LIMIT": {
+                "name": "LIMIT",
+                "description": "Limit order för margin wallets",
+                "required_params": ["symbol", "amount", "price"],
+                "optional_params": ["flags"],
+            },
+            "MARKET": {
+                "name": "MARKET",
+                "description": "Market order för margin wallets",
+                "required_params": ["symbol", "amount"],
+                "optional_params": ["price", "flags"],
+            },
         }
 
-        # Grundläggande symboler
-        self.symbols = [
-            {"symbol": "tBTCUSD"},
-            {"symbol": "tETHUSD"},
-            {"symbol": "tTESTBTC:TESTUSD", "is_paper": True},
-            {"symbol": "tTESTETH:TESTUSD", "is_paper": True},
+        # Grundläggande symboler (inkl. de testsymboler du använder)
+        test_syms = [
+            "tTESTADA:TESTUSD",
+            "tTESTALGO:TESTUSD",
+            "tTESTAPT:TESTUSD",
+            "tTESTAVAX:TESTUSD",
+            "tTESTBTC:TESTUSD",
+            "tTESTBTC:TESTUSDT",
+            "tTESTDOGE:TESTUSD",
+            "tTESTDOT:TESTUSD",
+            "tTESTEOS:TESTUSD",
+            "tTESTETH:TESTUSD",
+            "tTESTFIL:TESTUSD",
+            "tTESTLTC:TESTUSD",
+            "tTESTNEAR:TESTUSD",
+            "tTESTSOL:TESTUSD",
+            "tTESTXAUT:TESTUSD",
+            "tTESTXTZ:TESTUSD",
+        ]
+        self.symbols = [{"symbol": "tBTCUSD"}, {"symbol": "tETHUSD"}] + [
+            {"symbol": s, "is_paper": True} for s in test_syms
         ]
         self.symbol_names = [s["symbol"] for s in self.symbols]
 
@@ -131,9 +158,7 @@ class OrderValidator:
         # Kontrollera om det är en paper trading symbol
         is_paper_symbol = symbol in self.paper_symbol_names
         if not is_paper_symbol and symbol.startswith("tTEST"):
-            logger.warning(
-                f"Symbol {symbol} börjar med 'tTEST' men är inte registrerad som paper trading symbol"
-            )
+            logger.warning(f"Symbol {symbol} börjar med 'tTEST' men är inte registrerad som paper trading symbol")
 
         # Validera krävda parametrar för ordertypen
         required_params = self.order_types[order_type].get("required_params", [])
@@ -211,10 +236,7 @@ class OrderValidator:
         if base_currency and quote_currency:
             # Sök efter matchande paper trading symbol
             for paper_symbol in self.paper_symbol_names:
-                if (
-                    "TEST" + base_currency in paper_symbol
-                    or base_currency in paper_symbol
-                ):
+                if "TEST" + base_currency in paper_symbol or base_currency in paper_symbol:
                     return paper_symbol
 
             # Fallback till standard test symbol
@@ -255,9 +277,7 @@ class OrderValidator:
                 formatted_order["side"] = "buy"  # Fallback
 
         # Konvertera amount till string om det är ett nummer
-        if "amount" in formatted_order and not isinstance(
-            formatted_order["amount"], str
-        ):
+        if "amount" in formatted_order and not isinstance(formatted_order["amount"], str):
             formatted_order["amount"] = str(formatted_order["amount"])
 
         # Konvertera price till string om det är ett nummer och inte None

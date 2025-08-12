@@ -2,7 +2,6 @@ import html
 import json
 import logging
 import os
-import re
 import shutil
 from typing import Any, Dict, List, Optional, Tuple, Union
 

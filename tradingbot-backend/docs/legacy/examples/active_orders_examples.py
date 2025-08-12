@@ -6,24 +6,19 @@ som finns tillgängliga i tradingboten.
 """
 
 import asyncio
-import json
 import os
 import sys
-from datetime import datetime
-from typing import Any, Dict, List, Optional
 
 # Lägg till projektets rotmapp i Python-sökvägen
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from models.api_models import OrderResponse, OrderSide, OrderType
+from models.api_models import OrderSide, OrderType
 from rest.active_orders import (
-    cancel_all_orders,
     cancel_orders_by_symbol,
     get_active_orders,
     get_active_orders_by_side,
     get_active_orders_by_symbol,
     get_active_orders_by_type,
-    get_order_by_client_id,
     get_order_by_id,
     update_order,
 )
@@ -79,7 +74,7 @@ async def get_active_orders_by_symbol_example():
             else:
                 print(f"Inga aktiva ordrar för {symbol}")
         except Exception as e:
-            print(f"\n=== Aktiva Ordrar för symbol ===")
+            print("\n=== Aktiva Ordrar för symbol ===")
             print(f"Kunde inte hämta aktiva ordrar för symbol: {e}")
             print(
                 "OBS: Detta kan bero på att ditt konto inte har några aktiva ordrar eller att du använder ett testkonto."
@@ -109,7 +104,7 @@ async def get_active_orders_by_type_example():
             else:
                 print(f"Inga aktiva {order_type.value}-ordrar")
         except Exception as e:
-            print(f"\n=== Aktiva Ordrar efter typ ===")
+            print("\n=== Aktiva Ordrar efter typ ===")
             print(f"Kunde inte hämta aktiva ordrar efter typ: {e}")
             print(
                 "OBS: Detta kan bero på att ditt konto inte har några aktiva ordrar eller att du använder ett testkonto."
@@ -139,7 +134,7 @@ async def get_active_orders_by_side_example():
             else:
                 print(f"Inga aktiva {side.value}-ordrar")
         except Exception as e:
-            print(f"\n=== Aktiva Ordrar efter sida ===")
+            print("\n=== Aktiva Ordrar efter sida ===")
             print(f"Kunde inte hämta aktiva ordrar efter sida: {e}")
             print(
                 "OBS: Detta kan bero på att ditt konto inte har några aktiva ordrar eller att du använder ett testkonto."
@@ -205,7 +200,7 @@ async def place_and_update_order_example():
             # Hämta den uppdaterade ordern
             updated_order = await get_order_by_id(order_id)
             if updated_order:
-                print(f"\n=== Uppdaterad Order ===")
+                print("\n=== Uppdaterad Order ===")
                 print(
                     f"{updated_order.id}: {updated_order.symbol} - {updated_order.amount} @ {updated_order.price} ({updated_order.status})"
                 )

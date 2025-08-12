@@ -1,14 +1,14 @@
 """
 TradingBot Backend - Huvudapplikation
 
-Denna fil innehåller huvudapplikationen för tradingbot-backend med FastAPI och Socket.IO.
-Hanterar startup, shutdown och routing till olika moduler.
+Denna fil innehåller huvudapplikationen för tradingbot-backend med FastAPI och
+Socket.IO. Hanterar startup, shutdown och routing till olika moduler.
 """
 
+import importlib
 from contextlib import asynccontextmanager
 from datetime import datetime
 
-import socketio
 import uvicorn
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -37,6 +37,18 @@ async def lifespan(app: FastAPI):
     try:
         await bitfinex_ws.connect()
         logger.info("✅ WebSocket-anslutning etablerad")
+        # Auto‑subscribe tickers från settings (om angivna)
+        try:
+            sub_raw = (Settings().WS_SUBSCRIBE_SYMBOLS or "").strip()
+            if sub_raw:
+                symbols = [s.strip() for s in sub_raw.split(",") if s.strip()]
+                for sym in symbols:
+                    # registrera callback för strategi/ticker om inte finns
+                    if sym not in getattr(bitfinex_ws, "strategy_callbacks", {}):
+                        bitfinex_ws.strategy_callbacks[sym] = bitfinex_ws._handle_ticker_with_strategy
+                    await bitfinex_ws.subscribe_ticker(sym, bitfinex_ws._handle_ticker_with_strategy)
+        except Exception as e:
+            logger.warning(f"⚠️ Misslyckades auto‑subscribe WS tickers: {e}")
     except Exception as e:
         logger.warning(f"⚠️ WebSocket-anslutning misslyckades: {e}")
 
@@ -76,12 +88,18 @@ async def lifespan(app: FastAPI):
 # Skapa FastAPI-applikation
 
 
-# Skapa FastAPI-applikation – flytta inställningsloggningen UTANFÖR app=FastAPI(...)
+# Skapa FastAPI-applikation – loggning före app-instans för tydlighet
 settings = Settings()
 
 logger.info("🔑 Kontroll vid startup:")
-logger.info("    BITFINEX_API_KEY: %s", "✅" if settings.BITFINEX_API_KEY else "❌")
-logger.info("    API_SECRET status: %s", "✅" if settings.BITFINEX_API_SECRET else "❌")
+logger.info(
+    "    BITFINEX_API_KEY: %s",
+    "✅" if settings.BITFINEX_API_KEY else "❌",
+)
+logger.info(
+    "    API_SECRET status: %s",
+    "✅" if settings.BITFINEX_API_SECRET else "❌",
+)
 
 app = FastAPI(
     title="TradingBot Backend",
@@ -154,9 +172,99 @@ async def risk_panel_page() -> FileResponse:
 
 
 @app.get("/metrics")
-async def metrics() -> Response:
+async def metrics(request: Request) -> Response:
+    """Prometheus metrics (root) med valfritt skydd via miljövariabler.
+
+    Mekanismer (någon räcker):
+    - METRICS_ACCESS_TOKEN: Bearer-token eller query-param ?token
+    - METRICS_BASIC_AUTH_USER/PASS: HTTP Basic Auth
+    - METRICS_IP_ALLOWLIST: kommaseparerad lista av tillåtna IP
+
+    Om ingen är satt: endpointen är publik (för tester/bakåtkompatibilitet).
+    """
+
+    # Läs settings vid request-time så test kan styra via env
+    import base64
+    import hmac
+
+    # Läs direkt från processens miljö (inte via Settings/.env) för att
+    # möjliggöra testernas monkeypatch av env-variabler.
+    import os as _os
+
+    ip_allowlist_raw = (_os.getenv("METRICS_IP_ALLOWLIST", "") or "").strip()
+    basic_user = _os.getenv("METRICS_BASIC_AUTH_USER")
+    basic_pass = _os.getenv("METRICS_BASIC_AUTH_PASS")
+    access_token = _os.getenv("METRICS_ACCESS_TOKEN")
+
+    restrictions_configured = bool(ip_allowlist_raw or (basic_user and basic_pass) or access_token)
+
+    if restrictions_configured:
+        client_ip = None
+        try:
+            client_ip = request.client.host if request.client else None
+        except Exception:
+            client_ip = None
+
+        allowed = False
+
+        # 1) IP allowlist
+        if ip_allowlist_raw and client_ip:
+            allowed_ips = {ip.strip() for ip in ip_allowlist_raw.split(",") if ip.strip()}
+            if client_ip in allowed_ips:
+                allowed = True
+
+        # 2) Bearer token eller query-param token
+        if not allowed and access_token:
+            auth_header = request.headers.get(
+                "authorization",
+                "",
+            )
+            bearer_token = None
+            if auth_header.lower().startswith("bearer "):
+                bearer_token = auth_header.split(" ", 1)[1].strip()
+            query_token = request.query_params.get("token")
+            token_match = False
+            if query_token:
+                token_match = hmac.compare_digest(
+                    str(query_token),
+                    str(access_token),
+                )
+            if not token_match and bearer_token:
+                token_match = hmac.compare_digest(
+                    str(bearer_token),
+                    str(access_token),
+                )
+            if token_match:
+                allowed = True
+
+        # 3) Basic auth
+        if not allowed and basic_user and basic_pass:
+            auth_header = request.headers.get(
+                "authorization",
+                "",
+            )
+            if auth_header.lower().startswith("basic "):
+                b64 = auth_header.split(" ", 1)[1].strip()
+                try:
+                    decoded = base64.b64decode(b64).decode("utf-8")
+                    username, password = decoded.split(":", 1)
+                    if hmac.compare_digest(username, str(basic_user)) and hmac.compare_digest(
+                        password, str(basic_pass)
+                    ):
+                        allowed = True
+                except Exception:
+                    pass
+
+        if not allowed:
+            # 401 om Basic Auth är konfigurerat, annars 403
+            status_code = 401 if (basic_user and basic_pass) else 403
+            return Response(status_code=status_code)
+
     txt = render_prometheus_text()
-    return Response(content=txt, media_type="text/plain; version=0.0.4")
+    return Response(
+        content=txt,
+        media_type="text/plain; version=0.0.4",
+    )
 
 
 # Enkel ASGI-middleware för latens per endpoint
@@ -169,10 +277,13 @@ async def latency_middleware(request: Request, call_next):
     duration_ms = int((time.perf_counter() - start) * 1000)
     try:
         # path-template fås enklast via scope/route (kan vara None i root-asgi)
-        path_template = getattr(getattr(request, "scope", {}), "get", lambda *_: None)(
-            "path"
-        )
-        # Försök att hämta route.path_params/template från request.scope["route"].path
+        path_template = getattr(
+            getattr(request, "scope", {}),
+            "get",
+            lambda *_: None,
+        )("path")
+        # Försök att hämta route.path_params/template från
+        # request.scope["route"].path
         route = request.scope.get("route")
         if route is not None:
             path_template = getattr(route, "path", path_template)
@@ -189,12 +300,21 @@ async def latency_middleware(request: Request, call_next):
 
 # Wrappar endast Socket.IO när Core Mode inte är aktivt
 if not settings.CORE_MODE:
-    app = socketio.ASGIApp(
-        socket_app, other_asgi_app=app, socketio_path="/ws/socket.io"
+    _socketio = importlib.import_module("socketio")
+    app = _socketio.ASGIApp(
+        socket_app,
+        other_asgi_app=app,
+        socketio_path="/ws/socket.io",
     )
     logger.info("Socket.IO UI aktiverad")
 else:
     logger.info("CORE_MODE: Socket.IO UI avstängd")
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True, log_level="info")
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=True,
+        log_level="info",
+    )

@@ -4,10 +4,7 @@ WebSocket Order Handler - TradingBot Backend
 Denna modul hanterar orderoperationer via Bitfinex WebSocket API.
 """
 
-import hashlib
-import hmac
 import json
-from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 
 from rest.order_validator import order_validator

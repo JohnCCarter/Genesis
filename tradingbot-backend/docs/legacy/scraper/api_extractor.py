@@ -1,13 +1,9 @@
-import html
 import json
 import logging
-import os
 import re
 import shutil
 from pathlib import Path
-from typing import Any, Dict, List, Optional
-
-from bs4 import BeautifulSoup
+from typing import Any, Dict, List
 
 # Konfigurera loggning
 logging.basicConfig(

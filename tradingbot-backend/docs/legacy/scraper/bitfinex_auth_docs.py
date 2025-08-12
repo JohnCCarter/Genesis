@@ -13,11 +13,10 @@ import re
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 import requests
 from bs4 import BeautifulSoup
-from scraper.bitfinex_docs import BitfinexDocsScraper
 
 # Konfigurera loggning
 logging.basicConfig(

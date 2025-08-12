@@ -172,9 +172,7 @@ async def place_order_endpoint(order: OrderRequest, _: bool = Depends(require_au
                 key = "place_order"
                 if not _rl.is_allowed(key, max_requests, window_seconds):
                     try:
-                        from services.metrics import inc
-
-                        inc("rate_limited_total")
+                        metrics_inc("rate_limited_total")
                     except Exception:
                         pass
                     return OrderResponse(success=False, error="rate_limited")
@@ -273,9 +271,7 @@ async def cancel_order_endpoint(
             if max_requests > 0 and window_seconds > 0:
                 if not _rl.is_allowed("cancel_order", max_requests, window_seconds):
                     try:
-                        from services.metrics import inc
-
-                        inc("rate_limited_total")
+                        metrics_inc("rate_limited_total")
                     except Exception:
                         pass
                     return OrderResponse(success=False, error="rate_limited")
@@ -987,12 +983,78 @@ async def calculate_position_size(
 
         # Hämta pris
         price = req.price
+        price_source = None
         if price is None:
-            data = BitfinexDataService()
-            ticker = await data.get_ticker(req.symbol)
-            if not ticker:
+            # 1) Försök via WS public (primär)
+            try:
+                import re
+
+                from services.bitfinex_websocket import bitfinex_ws
+
+                eff = req.symbol
+                m = re.match(r"^tTEST([A-Z0-9]+):TESTUSD$", eff)
+                if m:
+                    eff = f"t{m.group(1)}USD"
+                else:
+                    m = re.match(r"^tTESTUSD:TEST([A-Z0-9]+)$", eff)
+                    if m:
+                        eff = f"t{m.group(1)}USD"
+                    else:
+                        m = re.match(r"^tTEST([A-Z0-9]+)USD$", eff)
+                        if m:
+                            eff = f"t{m.group(1)}USD"
+                        else:
+                            m = re.match(r"^tUSD:TEST([A-Z0-9]+)$", eff)
+                            if m:
+                                eff = f"t{m.group(1)}USD"
+
+                # Starta WS vid behov och prenumerera på ticker
+                if not getattr(bitfinex_ws, "is_connected", False):
+                    await bitfinex_ws.connect()
+
+                async def _cb(t):
+                    try:
+                        sym = t.get("symbol") or eff
+                        lp = t.get("last_price")
+                        if lp is not None:
+                            bitfinex_ws.latest_prices[sym] = lp
+                    except Exception:
+                        pass
+
+                await bitfinex_ws.subscribe_ticker(eff, _cb)
+
+                # Kort väntan för första tick
+                await asyncio.sleep(0.25)
+                ws_p = bitfinex_ws.latest_prices.get(eff)
+                if ws_p:
+                    price = float(ws_p)
+                    price_source = "ws"
+            except Exception:
+                pass
+
+            # 2) REST public ticker (fallback)
+            if price is None or price <= 0:
+                data = BitfinexDataService()
+                ticker = await data.get_ticker(req.symbol)
+                if ticker:
+                    price = float(ticker.get("last_price", 0))
+                    if price and price > 0:
+                        price_source = price_source or "ticker"
+
+            # 3) Candle close (sista fallback)
+            if not price or price <= 0:
+                data = BitfinexDataService()
+                candles = await data.get_candles(req.symbol, req.timeframe, limit=1)
+                if candles and len(candles) > 0:
+                    try:
+                        # Bitfinex candle: [MTS, OPEN, CLOSE, HIGH, LOW, VOLUME]
+                        price = float(candles[-1][2])
+                        if price and price > 0:
+                            price_source = price_source or "candle"
+                    except Exception:
+                        price = 0
+            if not price or price <= 0:
                 return {"size": 0.0, "reason": "no_price"}
-            price = float(ticker.get("last_price", 0))
         if price <= 0:
             return {"size": 0.0, "reason": "invalid_price"}
 
@@ -1038,6 +1100,8 @@ async def calculate_position_size(
             "quote_total": round(total_quote, 2),
             "price": price,
         }
+        if price_source:
+            resp["price_source"] = price_source
         if sl_price is not None and tp_price is not None:
             resp.update(
                 {
@@ -1083,6 +1147,60 @@ async def market_ticker(symbol: str, _: bool = Depends(require_auth)):
         raise
     except Exception as e:
         logger.exception(f"Fel vid ticker: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/market/tickers")
+async def market_tickers(symbols: str, _: bool = Depends(require_auth)):
+    """Batch-hämtning av tickers. Query-param symbols är komma-separerad lista.
+
+    Ex: /api/v2/market/tickers?symbols=tBTCUSD,tETHUSD
+    """
+    try:
+        data = BitfinexDataService()
+        syms = [s.strip() for s in (symbols or "").split(",") if s.strip()]
+        if not syms:
+            raise HTTPException(status_code=400, detail="symbols required")
+        result = await data.get_tickers(syms)
+        if result is None:
+            raise HTTPException(status_code=502, detail="Kunde inte hämta tickers")
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Fel vid tickers (batch): {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/platform/status")
+async def platform_status(_: bool = Depends(require_auth)):
+    """Hälsa/underhållsläge från Bitfinex public REST."""
+    try:
+        data = BitfinexDataService()
+        st = await data.get_platform_status()
+        if st is None:
+            return {"status": "unknown"}
+        # Format från Bitfinex: [1] eller [0]
+        up = bool(st[0]) if isinstance(st, list) and st else False
+        return {"status": "up" if up else "maintenance", "raw": st}
+    except Exception as e:
+        logger.exception(f"Fel vid platform status: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/market/symbols/config")
+async def market_symbols_config(format: str = "v2", _: bool = Depends(require_auth)):
+    """Symbol-lista via Bitfinex public Configs. OBS: innehåller inte TEST-symboler."""
+    try:
+        data = BitfinexDataService()
+        pairs = await data.get_configs_symbols()
+        if not pairs:
+            return []
+        if format.lower() in ("v2", "t", "bitfinex_v2"):
+            return [f"t{p}" for p in pairs]
+        return pairs
+    except Exception as e:
+        logger.exception(f"Fel vid configs symbols: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -1157,10 +1275,17 @@ async def market_watchlist(
         else:
             syms = svc.get_symbols(test_only=True, fmt="v2")[:10]
         out = []
+
+        def _safe_float(val):
+            try:
+                return float(val) if val is not None else None
+            except Exception:
+                return None
+
         for s in syms:
             ticker = await data.get_ticker(s)
-            last = float(ticker.get("last_price", 0)) if ticker else None
-            vol = float(ticker.get("volume", 0)) if ticker else None
+            last = _safe_float(ticker.get("last_price")) if ticker else None
+            vol = _safe_float(ticker.get("volume")) if ticker else None
             candles = await data.get_candles(s, "1m", 50)
             candles_5m = await data.get_candles(s, "5m", 50)
             strat = None
@@ -1690,7 +1815,6 @@ async def metrics(_: bool = Depends(require_auth)):
         # Valfri token‑kontroll om satt i settings
         token_required = getattr(settings, "METRICS_ACCESS_TOKEN", None)
         if token_required:
-            from fastapi import Request
 
             # Hämta bearer token från Authorization
             # Om du vill kan du byta till queryparam ?token=
