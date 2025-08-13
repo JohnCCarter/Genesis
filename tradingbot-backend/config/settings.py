@@ -48,6 +48,11 @@ class Settings(_BaseSettings):
     # Bakåtkompatibel (används ej längre om de två ovan finns)
     BITFINEX_WS_URI: str = "wss://api.bitfinex.com/ws/2"
 
+    # WS multi-socket (publika kanaler)
+    WS_USE_POOL: bool = True
+    WS_MAX_SUBS_PER_SOCKET: int = 200
+    WS_PUBLIC_SOCKETS_MAX: int = 3
+
     # Lista över symboler att auto‑subscriba vid startup (komma‑separerad)
     WS_SUBSCRIBE_SYMBOLS: Optional[str] = None
 

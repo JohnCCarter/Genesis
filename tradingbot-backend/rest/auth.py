@@ -160,6 +160,7 @@ async def place_order(order: dict) -> dict:
 
         # Skapa headers och skicka riktig API-anrop
         # Förbered JSON-body deterministiskt och signera på exakt samma sträng
+        # Bitfinex kräver att symbol är giltig tPAIR (utan TEST) och att amount har rätt tecken
         body_json = json.dumps(
             bitfinex_order, separators=(",", ":"), ensure_ascii=False
         )

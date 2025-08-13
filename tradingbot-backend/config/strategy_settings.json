@@ -1,7 +1,7 @@
 {
-  "ema_weight": 0.5681818181818181,
+  "ema_weight": 0.5681818181818182,
   "rsi_weight": 0.3977272727272727,
-  "atr_weight": 0.03409090909090909,
+  "atr_weight": 0.034090909090909095,
   "ema_period": 14,
   "rsi_period": 14,
   "atr_period": 14

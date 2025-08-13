@@ -35,8 +35,11 @@ class BitfinexWebSocketService:
         self.is_authenticated = False
         self.subscriptions = {}
         self.callbacks = {}
+        # OBS: chanId är per‑socket. Använd ws‑namespacing
         self.channel_callbacks = {}
         self.channel_info = {}
+        self._chan_callbacks = {}  # (ws, chanId) -> callback
+        self._chan_info = {}  # (ws, chanId) -> {channel, symbol, key}
         self.private_event_callbacks = {}
         self.latest_prices = {}  # Spara senaste priser
         self.price_history = {}  # Spara pris-historik för strategi
@@ -58,6 +61,8 @@ class BitfinexWebSocketService:
         # Aktivitetsspårning och notifiering
         self.active_tickers = set()
         self._live_notified = set()
+        # Spåra önskade symboler (rå input) för auto-resubscribe
+        self._requested_symbols = set()
         # WS Margin state
         self.margin_base = None  # type: ignore[assignment]
         self.margin_sym: Dict[str, list] = {}
@@ -65,6 +70,155 @@ class BitfinexWebSocketService:
         self._last_margin_sym_ts: Dict[str, float] = {}
         # Registrera default-handler för margin info updates (miu)
         self.private_event_callbacks["miu"] = self._handle_miu
+        # Periodisk symbol-refresh (configs) loop-task
+        self._symbol_refresh_task = None
+        self._symbol_refresh_interval = 3600.0
+
+        # Pool för publika sockets (skalning). Index 0 reserveras implicit av self.websocket vid behov.
+        self._pool_public: list = []
+        self._pool_sub_counts: dict = {}  # ws -> antal subs
+        self._pool_enabled: bool = bool(getattr(self.settings, "WS_USE_POOL", True))
+        # Spårning av subkey -> ws/chanId för unsubscribe
+        self._sub_socket: Dict[str, Any] = {}
+        self._chanid_by_subkey: Dict[tuple, int] = {}
+        self._pool_max_sockets: int = int(
+            getattr(self.settings, "WS_PUBLIC_SOCKETS_MAX", 3)
+        )
+        self._pool_max_subs: int = int(
+            getattr(self.settings, "WS_MAX_SUBS_PER_SOCKET", 200)
+        )
+
+    async def _get_public_socket(self):
+        """
+        Hämta en lämplig public‑socket att sub:a på, skapa ny vid behov.
+        """
+        try:
+            if not self._pool_enabled:
+                # Använd huvudsocket
+                if not self.is_connected:
+                    await self.connect()
+                return self.websocket
+            # Rensa döda sockets
+            self._pool_public = [ws for ws in self._pool_public if ws and not ws.closed]
+            # Välj socket med minst subs
+            best = None
+            best_cnt = 1 << 30
+            for ws in self._pool_public:
+                cnt = int(self._pool_sub_counts.get(ws, 0))
+                if cnt < best_cnt:
+                    best = ws
+                    best_cnt = cnt
+            # Skapa ny om ingen finns eller om alla passerat gräns och vi kan skala ut
+            if best is None or (
+                best_cnt >= self._pool_max_subs
+                and len(self._pool_public) < self._pool_max_sockets
+            ):
+                # öppna ny public‑socket
+                ws = await self._open_public_socket()
+                if ws:
+                    self._pool_public.append(ws)
+                    self._pool_sub_counts[ws] = 0
+                    best = ws
+                    best_cnt = 0
+            # Säkerställ minst en socket
+            if best is None:
+                ws = await self._open_public_socket()
+                if ws:
+                    self._pool_public.append(ws)
+                    self._pool_sub_counts[ws] = 0
+                    best = ws
+            return best
+        except Exception:
+            # Fallback till huvudsocket
+            if not self.is_connected:
+                await self.connect()
+            return self.websocket
+
+    async def _open_public_socket(self):
+        try:
+            uri = (
+                getattr(self.settings, "BITFINEX_WS_PUBLIC_URI", None)
+                or self.settings.BITFINEX_WS_URI
+            )
+            ws = await ws_connect(uri)
+            asyncio.create_task(self._listen_loop(ws))
+            logger.info("🧩 Öppnade ny public WS socket")
+            return ws
+        except Exception as e:
+            logger.warning("Kunde inte öppna public socket: %s", e)
+            return None
+
+    def get_pool_status(self) -> Dict[str, Any]:
+        """Returnerar status för WS‑pool och huvudsocket."""
+        try:
+            sockets = []
+            for idx, ws in enumerate(self._pool_public):
+                try:
+                    sockets.append(
+                        {
+                            "index": idx,
+                            "subs": int(self._pool_sub_counts.get(ws, 0)),
+                            "closed": bool(getattr(ws, "closed", False)),
+                        }
+                    )
+                except Exception:
+                    sockets.append({"index": idx, "subs": 0, "closed": True})
+            totals = {"ticker": 0, "trades": 0, "candles": 0, "book": 0}
+            try:
+                for key in list(self.subscriptions.keys()):
+                    if key.startswith("ticker|"):
+                        totals["ticker"] += 1
+                    elif key.startswith("trades|"):
+                        totals["trades"] += 1
+                    elif key.startswith("candles|"):
+                        totals["candles"] += 1
+                    elif key.startswith("book|"):
+                        totals["book"] += 1
+            except Exception:
+                pass
+            return {
+                "pool_enabled": bool(self._pool_enabled),
+                "pool_max_sockets": int(self._pool_max_sockets),
+                "pool_max_subs": int(self._pool_max_subs),
+                "pool_sockets": sockets,
+                "totals": totals,
+                "main": {
+                    "connected": bool(self.is_connected),
+                    "authenticated": bool(self.is_authenticated),
+                },
+            }
+        except Exception:
+            return {
+                "pool_enabled": bool(self._pool_enabled),
+                "pool_sockets": [],
+                "totals": {},
+                "main": {
+                    "connected": bool(self.is_connected),
+                    "authenticated": bool(self.is_authenticated),
+                },
+            }
+
+    async def _listen_loop(self, ws):
+        try:
+            async for message in ws:
+                try:
+                    data = json.loads(message)
+                    # Markera aktuell ws för chanId‑routning
+                    self._current_incoming_ws = ws
+                    # Vi återanvänder channel‑callbacks från huvudobjektet; Bitfinex skickar chanId per socket.
+                    if isinstance(data, list) and len(data) > 1:
+                        await self._handle_channel_message(data)
+                    elif isinstance(data, dict):
+                        await self._handle_event_message(data)
+                except Exception as e:
+                    logger.debug("Pool socket parse fel: %s", e)
+                finally:
+                    try:
+                        self._current_incoming_ws = None
+                    except Exception:
+                        pass
+        except Exception as e:
+            logger.warning("Pool socket stängd: %s", e)
 
     # Publikt API för andra moduler
     def register_handler(self, event_code: str, callback: Callable[[Any], Any]):
@@ -142,6 +296,23 @@ class BitfinexWebSocketService:
                 return s
             base = s[1:-3]
             quote = s[-3:]
+            # Hämta currency sym-map (fwd) från REST-configs och applicera (ex. ALGO->ALG)
+            try:
+                from services.bitfinex_data import BitfinexDataService
+
+                svc = BitfinexDataService()
+                fwd, _ = await svc.get_currency_symbol_map()
+                mapped = fwd.get(base.upper())
+                if mapped and mapped.upper() != base.upper():
+                    base = mapped
+                else:
+                    # Fallback för kända avvikelser om configs ej hjälper
+                    if base.upper() == "ALGO":
+                        base = "ALG"
+            except Exception:
+                # Fallback för kända avvikelser
+                if base.upper() == "ALGO":
+                    base = "ALG"
             # Enkel cache i instansen
             now_ts = None
             try:
@@ -171,18 +342,22 @@ class BitfinexWebSocketService:
             # Om vi inte har parlistan, returnera original
             if not pairs:
                 return s
-            combo_usd = f"{base}USD"
-            combo_ust = f"{base}UST"
-            if combo_usd in pairs:
-                return f"t{combo_usd}"
-            if combo_ust in pairs and quote == "USD":
-                # Byt till UST om USD saknas
-                alt = f"t{combo_ust}"
-                try:
-                    logger.info("🔁 WS symbol fallback: %s → %s", s, alt)
-                except Exception:
-                    pass
-                return alt
+            # Kandidater att testa i ordning (med och utan kolon)
+            candidates = [
+                f"{base}{quote}",
+                f"{base}:{quote}",
+            ]
+            if quote == "USD":
+                candidates += [f"{base}UST", f"{base}:UST"]
+            for cand in candidates:
+                if cand in pairs:
+                    eff = f"t{cand}"
+                    if eff != s:
+                        try:
+                            logger.info("🔁 WS symbol fallback: %s → %s", s, eff)
+                        except Exception:
+                            pass
+                    return eff
             return s
         except Exception:
             return eff_symbol
@@ -213,6 +388,19 @@ class BitfinexWebSocketService:
             self._asyncio.create_task(self.listen_for_messages())
             # Försök autentisera om nycklar finns
             await self.authenticate()
+            # Starta symbol-refresh i bakgrunden (ej under pytest)
+            try:
+                import os as _os
+
+                if (
+                    not _os.environ.get("PYTEST_CURRENT_TEST")
+                    and not self._symbol_refresh_task
+                ):
+                    self._symbol_refresh_task = self._asyncio.create_task(
+                        self._symbol_refresh_loop()
+                    )
+            except Exception:
+                pass
             return True
         except Exception as e:
             logger.error(f"❌ WebSocket-anslutning misslyckades: {e}")
@@ -409,6 +597,29 @@ class BitfinexWebSocketService:
         self._live_notified.clear()
         self.margin_base = None
         self.margin_sym.clear()
+        # Stoppa symbol-refresh loop
+        try:
+            if self._symbol_refresh_task:
+                self._symbol_refresh_task.cancel()
+        except Exception:
+            pass
+        finally:
+            self._symbol_refresh_task = None
+        # Stäng poolsockets
+        try:
+            for ws in list(self._pool_public):
+                try:
+                    await ws.close()
+                except Exception:
+                    pass
+            self._pool_public.clear()
+            self._pool_sub_counts.clear()
+            self._sub_socket.clear()
+            self._chan_callbacks.clear()
+            self._chan_info.clear()
+            self._chanid_by_subkey.clear()
+        except Exception:
+            pass
 
     async def subscribe_ticker(self, symbol: str, callback: Callable):
         """
@@ -421,10 +632,22 @@ class BitfinexWebSocketService:
         try:
             if not self.is_connected:
                 await self.connect()
-            # Normalisera testsymboler till publikt giltiga symboler
-            eff_symbol = self._normalize_public_symbol(symbol)
-            # Välj närmaste giltiga symbol (USD ↔ UST) baserat på configs
-            eff_symbol = await self._choose_available_pair(eff_symbol)
+            # Central resolve via SymbolService
+            try:
+                from services.symbols import SymbolService
+
+                sym_svc = SymbolService()
+                await sym_svc.refresh()
+                eff_symbol = sym_svc.resolve(symbol)
+                if not sym_svc.listed(eff_symbol):
+                    logger.warning(
+                        "⛔ WS skip subscribe: pair_not_listed %s", eff_symbol
+                    )
+                    return
+            except Exception:
+                # Fallback till tidigare lokala normalisering + choose_available_pair
+                eff_symbol = self._normalize_public_symbol(symbol)
+                eff_symbol = await self._choose_available_pair(eff_symbol)
             # Dedupe: hoppa över om redan aktiv eller pending (per eff_symbol)
             key = f"ticker|{eff_symbol}"
             if eff_symbol in self.active_tickers or key in self.subscriptions:
@@ -433,6 +656,25 @@ class BitfinexWebSocketService:
                 if key not in self.callbacks:
                     self.callbacks[key] = callback
                 return
+            # Registrera önskad symbol (rå) för framtida refresh/resubscribe
+            try:
+                self._requested_symbols.add(symbol)
+            except Exception:
+                pass
+            # Verifiera att paret finns i configs; annars hoppa över och logga en gång
+            try:
+                pair = eff_symbol[1:] if eff_symbol.startswith("t") else eff_symbol
+                pairs = None
+                cache = getattr(self, "_pairs_cache", None)
+                if cache and isinstance(cache, dict):
+                    pairs = cache.get("pairs")
+                if isinstance(pairs, list) and pair not in pairs:
+                    logger.warning(
+                        "⛔ WS skip subscribe: pair_not_listed %s", eff_symbol
+                    )
+                    return
+            except Exception:
+                pass
             # Skapa subscription-meddelande
             subscribe_msg = {
                 "event": "subscribe",
@@ -440,17 +682,88 @@ class BitfinexWebSocketService:
                 "symbol": eff_symbol,
             }
 
-            if not self.websocket:
+            # Skicka över poolad socket
+            target_ws = await self._get_public_socket()
+            if not target_ws:
                 logger.warning("WS subscribe_ticker: ingen anslutning")
                 return
-            await self.websocket.send(json.dumps(subscribe_msg))
+            await target_ws.send(json.dumps(subscribe_msg))
             self.subscriptions[key] = subscribe_msg
             self.callbacks[key] = callback
+            try:
+                self._pool_sub_counts[target_ws] = (
+                    int(self._pool_sub_counts.get(target_ws, 0)) + 1
+                )
+            except Exception:
+                pass
+            # Markera var subben ligger (för unsubscribe)
+            try:
+                self._sub_socket[key] = target_ws
+            except Exception:
+                pass
 
             logger.info("📊 Prenumererar på ticker för %s", eff_symbol)
 
         except Exception as e:
             logger.error(f"❌ Ticker-prenumeration misslyckades: {e}")
+
+    async def unsubscribe(self, sub_key: str):
+        """Avsluta en prenumeration med sub_key (t.ex. 'ticker|tBTCUSD', 'trades|tBTCUSD', 'candles|trade:1m:tBTCUSD')."""
+        try:
+            ws = self._sub_socket.get(sub_key)
+            if not ws:
+                return
+            chan_id = self._chanid_by_subkey.get((ws, sub_key))
+            if chan_id is None:
+                return
+            msg = {"event": "unsubscribe", "chanId": chan_id}
+            await ws.send(json.dumps(msg))
+            # Lokalt cleanup
+            try:
+                self._pool_sub_counts[ws] = max(
+                    0, int(self._pool_sub_counts.get(ws, 0)) - 1
+                )
+            except Exception:
+                pass
+            self._sub_socket.pop(sub_key, None)
+            self._chanid_by_subkey.pop((ws, sub_key), None)
+            # Ta bort callback/info
+            self._chan_callbacks.pop((ws, chan_id), None)
+            self._chan_info.pop((ws, chan_id), None)
+            self.subscriptions.pop(sub_key, None)
+            self.callbacks.pop(sub_key, None)
+            logger.info("🔕 Unsubscribed %s (chanId=%s)", sub_key, chan_id)
+        except Exception as e:
+            logger.warning("Unsubscribe fel för %s: %s", sub_key, e)
+
+    async def _symbol_refresh_loop(self):
+        """Refreshar configs periodiskt och resubscribe:ar saknade listade par för önskade symboler."""
+        try:
+            from services.symbols import SymbolService
+
+            sym_svc = SymbolService()
+            while True:
+                try:
+                    await sym_svc.refresh()
+                    desired = list(getattr(self, "_requested_symbols", []))
+                    for raw in desired:
+                        eff = sym_svc.resolve(raw)
+                        if not sym_svc.listed(eff):
+                            continue
+                        key = f"ticker|{eff}"
+                        if key not in self.subscriptions:
+                            try:
+                                logger.info("🔄 WS resubscribe: %s (eff=%s)", raw, eff)
+                                await self.subscribe_ticker(
+                                    raw, self._handle_ticker_with_strategy
+                                )
+                            except Exception:
+                                pass
+                except Exception as ie:
+                    logger.warning("Symbol refresh loop fel: %s", ie)
+                await self._asyncio.sleep(float(self._symbol_refresh_interval))
+        except Exception:
+            return
 
     async def subscribe_trades(self, symbol: str, callback: Callable):
         """
@@ -464,21 +777,51 @@ class BitfinexWebSocketService:
             if not self.is_connected:
                 await self.connect()
 
-            eff_symbol = self._normalize_public_symbol(symbol)
-            eff_symbol = await self._choose_available_pair(eff_symbol)
+            try:
+                from services.symbols import SymbolService
+
+                sym_svc = SymbolService()
+                await sym_svc.refresh()
+                eff_symbol = sym_svc.resolve(symbol)
+                if not sym_svc.listed(eff_symbol):
+                    logger.warning("⛔ WS skip trades: pair_not_listed %s", eff_symbol)
+                    return
+            except Exception:
+                eff_symbol = self._normalize_public_symbol(symbol)
+                eff_symbol = await self._choose_available_pair(eff_symbol)
             subscribe_msg = {
                 "event": "subscribe",
                 "channel": "trades",
                 "symbol": eff_symbol,
             }
 
-            if not self.websocket:
+            # Verifiera att paret finns
+            try:
+                pair = eff_symbol[1:] if eff_symbol.startswith("t") else eff_symbol
+                pairs = None
+                cache = getattr(self, "_pairs_cache", None)
+                if cache and isinstance(cache, dict):
+                    pairs = cache.get("pairs")
+                if isinstance(pairs, list) and pair not in pairs:
+                    logger.warning("⛔ WS skip trades: pair_not_listed %s", eff_symbol)
+                    return
+            except Exception:
+                pass
+            target_ws = await self._get_public_socket()
+            if not target_ws:
                 logger.warning("WS subscribe_trades: ingen anslutning")
                 return
-            await self.websocket.send(json.dumps(subscribe_msg))
+            await target_ws.send(json.dumps(subscribe_msg))
             key = f"trades|{eff_symbol}"
             self.subscriptions[key] = subscribe_msg
             self.callbacks[key] = callback
+            try:
+                self._pool_sub_counts[target_ws] = (
+                    int(self._pool_sub_counts.get(target_ws, 0)) + 1
+                )
+                self._sub_socket[key] = target_ws
+            except Exception:
+                pass
 
             logger.info("💱 Prenumererar på trades för %s", eff_symbol)
 
@@ -514,17 +857,52 @@ class BitfinexWebSocketService:
             if not self.is_connected:
                 await self.connect()
 
-            eff_symbol = self._normalize_public_symbol(symbol)
-            eff_symbol = await self._choose_available_pair(eff_symbol)
+            try:
+                from services.symbols import SymbolService
+
+                sym_svc = SymbolService()
+                await sym_svc.refresh()
+                eff_symbol = sym_svc.resolve(symbol)
+                if not sym_svc.listed(eff_symbol):
+                    logger.warning("⛔ WS skip candles: pair_not_listed %s", eff_symbol)
+                    return
+            except Exception:
+                eff_symbol = self._normalize_public_symbol(symbol)
+                eff_symbol = await self._choose_available_pair(eff_symbol)
             ckey = f"trade:{timeframe}:{eff_symbol}"
             msg = {"event": "subscribe", "channel": "candles", "key": ckey}
-            if not self.websocket:
+            # Verifiera att par finns
+            # Verifiera att paret finns
+            try:
+                pair = eff_symbol[1:] if eff_symbol.startswith("t") else eff_symbol
+                pairs = None
+                cache = getattr(self, "_pairs_cache", None)
+                if cache and isinstance(cache, dict):
+                    pairs = cache.get("pairs")
+                if isinstance(pairs, list):
+                    # candles använder key trade:tf:tPAIR → kontrollera par
+                    if pair not in pairs:
+                        logger.warning(
+                            "⛔ WS skip candles: pair_not_listed %s", eff_symbol
+                        )
+                        return
+            except Exception:
+                pass
+            target_ws = await self._get_public_socket()
+            if not target_ws:
                 logger.warning("WS subscribe_candles: ingen anslutning")
                 return
-            await self.websocket.send(json.dumps(msg))
+            await target_ws.send(json.dumps(msg))
             sub_key = f"candles|{ckey}"
             self.subscriptions[sub_key] = msg
             self.callbacks[sub_key] = callback
+            try:
+                self._pool_sub_counts[target_ws] = (
+                    int(self._pool_sub_counts.get(target_ws, 0)) + 1
+                )
+                self._sub_socket[sub_key] = target_ws
+            except Exception:
+                pass
             logger.info("🕯️ Prenumererar på candles %s", ckey)
         except Exception as e:
             logger.error(f"❌ Candles-prenumeration misslyckades: {e}")
@@ -542,8 +920,18 @@ class BitfinexWebSocketService:
             if not self.is_connected:
                 await self.connect()
 
-            eff_symbol = self._normalize_public_symbol(symbol)
-            eff_symbol = await self._choose_available_pair(eff_symbol)
+            try:
+                from services.symbols import SymbolService
+
+                sym_svc = SymbolService()
+                await sym_svc.refresh()
+                eff_symbol = sym_svc.resolve(symbol)
+                if not sym_svc.listed(eff_symbol):
+                    logger.warning("⛔ WS skip book: pair_not_listed %s", eff_symbol)
+                    return
+            except Exception:
+                eff_symbol = self._normalize_public_symbol(symbol)
+                eff_symbol = await self._choose_available_pair(eff_symbol)
             msg = {
                 "event": "subscribe",
                 "channel": "book",
@@ -555,6 +943,18 @@ class BitfinexWebSocketService:
             if not self.websocket:
                 logger.warning("WS subscribe_book: ingen anslutning")
                 return
+            # Verifiera att paret finns
+            try:
+                pair = eff_symbol[1:] if eff_symbol.startswith("t") else eff_symbol
+                pairs = None
+                cache = getattr(self, "_pairs_cache", None)
+                if cache and isinstance(cache, dict):
+                    pairs = cache.get("pairs")
+                if isinstance(pairs, list) and pair not in pairs:
+                    logger.warning("⛔ WS skip book: pair_not_listed %s", eff_symbol)
+                    return
+            except Exception:
+                pass
             await self.websocket.send(json.dumps(msg))
             key = f"book|{eff_symbol}|{precision}|{freq}|{length}"
             self.subscriptions[key] = msg
@@ -709,6 +1109,7 @@ class BitfinexWebSocketService:
             async for message in self.websocket:
                 try:
                     data = json.loads(message)
+                    self._current_incoming_ws = self.websocket
 
                     # Hantera olika meddelandetyper
                     if isinstance(data, list) and len(data) > 1:
@@ -720,6 +1121,11 @@ class BitfinexWebSocketService:
                     logger.warning("⚠️ Kunde inte parsa WebSocket-meddelande")
                 except Exception as e:
                     logger.error(f"❌ Fel vid hantering av WebSocket-meddelande: {e}")
+                finally:
+                    try:
+                        self._current_incoming_ws = None
+                    except Exception:
+                        pass
 
         except ConnectionClosed:
             logger.warning("⚠️ WebSocket-anslutning stängd")
@@ -751,13 +1157,25 @@ class BitfinexWebSocketService:
                     logger.debug(f"ℹ️ Oväntat privat meddelande: {data}")
                 return
 
-            # Publika kanaler via chanId‑mapping
-            cb = self.channel_callbacks.get(int(channel_id))
+            # Publika kanaler via chanId‑mapping (per socket)
+            # För pooled sockets kan vi inte veta ws‑objektet här direkt; Bitfinex chanId är per socket.
+            # Heuristik: om meddelandet kommer via huvudlyssnaren (self.listen_for_messages) använd self.websocket,
+            # annars har _listen_loop(ws) redan kallat _handle_channel_message i samma kontext.
+            current_ws = getattr(self, "_current_incoming_ws", None)
+            if current_ws is None:
+                current_ws = self.websocket
+            cb = self._chan_callbacks.get(
+                (current_ws, int(channel_id))
+            ) or self.channel_callbacks.get(int(channel_id))
             if cb:
                 # Ignorera heartbeat
                 if message_data == "hb":
                     return
-                info = self.channel_info.get(int(channel_id)) or {}
+                info = (
+                    self._chan_info.get((current_ws, int(channel_id)))
+                    or self.channel_info.get(int(channel_id))
+                    or {}
+                )
                 chan = info.get("channel")
                 symbol = info.get("symbol") or "unknown"
                 # Normalisera ticker-frame till dict
@@ -844,14 +1262,21 @@ class BitfinexWebSocketService:
                             break
                 try:
                     if chan_id is not None and cb_key and cb_key in self.callbacks:
-                        self.channel_callbacks[int(chan_id)] = self.callbacks.get(
+                        # Hitta socket från subkey
+                        ws = self._sub_socket.get(cb_key)
+                        if ws is None:
+                            # fallback till huvudsocket
+                            ws = self.websocket
+                        self._chan_callbacks[(ws, int(chan_id))] = self.callbacks.get(
                             cb_key
                         )
-                        self.channel_info[int(chan_id)] = {
+                        self._chan_info[(ws, int(chan_id))] = {
                             "channel": chan,
                             "symbol": symbol,
                             "key": key,
                         }
+                        # För snabb lookup åt andra hållet
+                        self._chanid_by_subkey[(ws, cb_key)] = int(chan_id)
                 except Exception:
                     pass
             elif event == "auth":
@@ -916,6 +1341,43 @@ class BitfinexWebSocketService:
                     logger.info(f"📡 WS margin live: {symbol}")
         except Exception as e:
             logger.warning(f"⚠️ Kunde inte hantera miu: {e}")
+
+    async def margin_calc_if_needed(self, symbol: str) -> dict:
+        """
+        Skicka WS calc (miu: sym) om buy/sell saknas (None) i margin_sym.
+        Returnerar enkel status om calc skickades.
+        """
+        try:
+            # Resolve symbol så vi använder eff_symbol i WS
+            eff = symbol
+            try:
+                from services.symbols import SymbolService
+
+                svc = SymbolService()
+                await svc.refresh()
+                eff = svc.resolve(symbol)
+            except Exception:
+                pass
+            arr = (self.margin_sym or {}).get(eff)
+            need = not (
+                isinstance(arr, list)
+                and len(arr) >= 4
+                and arr[2] is not None
+                and arr[3] is not None
+            )
+            if not need:
+                return {"requested": False, "reason": "fields_present"}
+            if not await self.ensure_authenticated():
+                return {"requested": False, "error": "ws_not_authenticated"}
+            # Bitfinex CALC input för margin kräver lista av nycklar, t.ex. [["margin_base"],["margin_sym_tBTCUSD"]]
+            keys = [["margin_base"], [f"margin_sym_{eff}"]]
+            msg = [0, "calc", None, keys]
+            await self.send(msg)
+            logger.info("🧮 WS margin calc begärd för %s", eff)
+            return {"requested": True}
+        except Exception as e:
+            logger.error("WS margin calc fel: %s", e)
+            return {"requested": False, "error": str(e)}
 
     async def start_listening(self):
         """Startar WebSocket-lyssnare i bakgrunden."""

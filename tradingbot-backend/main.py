@@ -37,11 +37,25 @@ async def lifespan(app: FastAPI):
     try:
         await bitfinex_ws.connect()
         logger.info("✅ WebSocket-anslutning etablerad")
+        # WS‑auth direkt om nycklar finns så att privata flöden (t.ex. margin miu) fungerar
+        try:
+            await bitfinex_ws.ensure_authenticated()
+        except Exception as e:
+            logger.warning(f"⚠️ WS‑auth misslyckades: {e}")
         # Auto‑subscribe tickers från settings (om angivna)
         try:
             sub_raw = (Settings().WS_SUBSCRIBE_SYMBOLS or "").strip()
             if sub_raw:
                 symbols = [s.strip() for s in sub_raw.split(",") if s.strip()]
+                # Filtrera bort icke-listade innan prenumeration
+                try:
+                    from services.symbols import SymbolService
+
+                    svc = SymbolService()
+                    await svc.refresh()
+                    symbols = [s for s in symbols if svc.listed(svc.resolve(s))]
+                except Exception:
+                    pass
                 for sym in symbols:
                     # registrera callback för strategi/ticker om inte finns
                     if sym not in getattr(bitfinex_ws, "strategy_callbacks", {}):
@@ -51,6 +65,32 @@ async def lifespan(app: FastAPI):
                     await bitfinex_ws.subscribe_ticker(
                         sym, bitfinex_ws._handle_ticker_with_strategy
                     )
+                # Audit-logg: WS live/REST only
+                try:
+                    from services.bitfinex_data import BitfinexDataService
+
+                    data = BitfinexDataService()
+                    for s in symbols:
+                        eff = s
+                        try:
+                            eff = svc.resolve(s)  # type: ignore[name-defined]
+                        except Exception:
+                            pass
+                        live = eff in getattr(bitfinex_ws, "active_tickers", set())
+                        logger.info(
+                            "🔍 Startup audit: %s → %s via %s",
+                            s,
+                            eff,
+                            "WS" if live else "REST only",
+                        )
+                        if not live:
+                            # värm upp REST‑cache tyst
+                            try:
+                                _ = await data.get_ticker(s)
+                            except Exception:
+                                pass
+                except Exception:
+                    pass
         except Exception as e:
             logger.warning(f"⚠️ Misslyckades auto‑subscribe WS tickers: {e}")
     except Exception as e:

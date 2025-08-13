@@ -32,15 +32,28 @@ Single-user roadmap (Måste → Nice-to-have → Backlog). Fokus: stabil drift, 
   - [x] README – snabbstart, AUTH_REQUIRED/JWT, viktiga endpoints (uppdaterad med nya endpoints och UI)
 
 - [x] WS privata flöden (kanal 0)
+
   - [x] on/ou/oc/te/tu registrerade i `ws/manager.py`
   - [x] DMS aktiveras vid `auth`; tester lagda
+
+- [x] WS‑orders (snabb vinst i drift)
+
+  - [x] Endpoints: `/api/v2/ws/order/update`, `/api/v2/ws/orders/cancel-multi`, `/api/v2/ws/orders/ops`
+  - [x] UI‑knappar i `ws_test.html` för ou/oc‑multi/ops
+
+- [x] Symbolhantering och validering (WS‑först, REST fallback)
+  - [x] Central `SymbolService` med live `/conf` parlistor och alias
+  - [x] Filtrera bort icke‑listade par i API (`/market/symbols`, `/market/watchlist`)
+  - [x] Startup WS‑subscribe filtrerar bort icke‑listade par
+  - [x] `OrderValidator` använder configs/fallback (scraper avstängd, INFO‑logg)
 
 ## Nice-to-have
 
 - [x] Orderflaggor du faktiskt använder (t.ex. Reduce‑Only; Post‑Only vid behov)
 - [x] Risk-baserat orderpanel (UI): % av balans + ATR-beräkning som förhandsvisning
   - [x] Minimal UI-prototyp `risk_panel.html` som anropar `/api/v2/risk/position-size`
-  - [x] UI‑puts: symbol‑datalist, risk‑slider, KPI (size/alloc/price/quote total)
+  - [x] UI‑puts: symbol‑dropdown (från `/market/symbols`), risk‑slider, KPI (size/alloc/price/quote total)
+  - [x] Ta bort Core‑mode block från panelen (mindre brus)
 - [ ] Bracket/OCO förbättringar
   - [x] Robust parsing av Bitfinex‑svar (list/dict) för entry/SL/TP
   - [x] Partial fills (step sizing, cleanup)
@@ -64,6 +77,19 @@ Single-user roadmap (Måste → Nice-to-have → Backlog). Fokus: stabil drift, 
   - [x] Templates import/export endpoints
   - [x] Watchlist MTF-preview (1m + 5m)
   - [ ] Hotkeys (deferred)
+
+### Nästa steg (prioriterade)
+
+- [x] REST (auth) fler endpoints: funding/transfer/movements
+- [x] Marginstatus i UI (källa: WS live / REST fallback) + köp/sälj/Tradable per symbol
+- [x] WS margin: skicka `calc` input om null‑fält returneras
+- [x] WS skalning: multi‑socket pool vid många feeds (> ~250) – ticker/trades/candles
+- [x] "Resync"‑knapp i UI: re‑subscribe + REST snapshot
+- [x] Startup audit: logga per `.env`‑symbol om "WS" eller "REST only"
+- [x] WS pool status endpoint + UI‑knapp
+- [ ] ChanId per socket – ytterligare härdning och tests (coverage)
+- [x] Unsubscribe via UI på watchlist (Stop‑knappen kopplad till unsubscribe)
+- [x] Pool metrics (Prometheus) och varningar när socket närmar sig max subs
 
 ## Klart i UI
 

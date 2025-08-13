@@ -1,20 +1,40 @@
 {
   "timezone": "Europe/Stockholm",
   "windows": {
-    "mon": [],
-    "tue": [
+    "mon": [
       [
-        "00:00",
-        "23:59"
+        "08:00",
+        "17:00"
       ]
     ],
-    "wed": [],
-    "thu": [],
-    "fri": [],
+    "tue": [
+      [
+        "08:00",
+        "17:00"
+      ]
+    ],
+    "wed": [
+      [
+        "08:00",
+        "22:00"
+      ]
+    ],
+    "thu": [
+      [
+        "08:00",
+        "17:00"
+      ]
+    ],
+    "fri": [
+      [
+        "08:00",
+        "16:00"
+      ]
+    ],
     "sat": [],
     "sun": []
   },
-  "max_trades_per_day": 50,
+  "max_trades_per_day": 100,
   "trade_cooldown_seconds": 60,
   "paused": false,
   "max_trades_per_symbol_per_day": 1

@@ -200,6 +200,11 @@
         <button id="getTickerBtn" disabled>Hämta ticker</button>
         <button id="getCandlesBtn" disabled>Hämta candles</button>
         <button id="watchlistBtn" class="advanced" disabled>Watchlist</button>
+        <button id="resyncBtn" class="advanced" disabled>Resync</button>
+        <button id="marginCalcBtn" class="advanced" disabled>
+          Margin calc
+        </button>
+        <button id="wsPoolBtn" class="advanced" disabled>WS Pool</button>
         <button id="perfBtn" class="advanced" disabled>Performance</button>
         <button id="perfDetailBtn" class="advanced" disabled>
           Perf detail
@@ -295,15 +300,30 @@
       <div class="row">
         <div>
           <label>Update: Order ID</label><br />
-          <input id="wsUpdateId" type="number" placeholder="12345" style="width: 120px" />
+          <input
+            id="wsUpdateId"
+            type="number"
+            placeholder="12345"
+            style="width: 120px"
+          />
         </div>
         <div>
           <label>Nytt pris</label><br />
-          <input id="wsUpdatePrice" type="text" placeholder="10000" style="width: 120px" />
+          <input
+            id="wsUpdatePrice"
+            type="text"
+            placeholder="10000"
+            style="width: 120px"
+          />
         </div>
         <div>
           <label>Ny mängd</label><br />
-          <input id="wsUpdateAmount" type="text" placeholder="0.001" style="width: 120px" />
+          <input
+            id="wsUpdateAmount"
+            type="text"
+            placeholder="0.001"
+            style="width: 120px"
+          />
         </div>
         <button id="wsUpdateBtn" disabled>WS Update (ou)</button>
       </div>
@@ -314,16 +334,27 @@
         </div>
         <div>
           <label>cids</label><br />
-          <input id="wsCancelCids" placeholder="1001,1002" style="width: 160px" />
+          <input
+            id="wsCancelCids"
+            placeholder="1001,1002"
+            style="width: 160px"
+          />
         </div>
         <div>
           <label>cid_date (YYYY‑MM‑DD)</label><br />
-          <input id="wsCancelDate" placeholder="2025-01-01" style="width: 140px" />
+          <input
+            id="wsCancelDate"
+            placeholder="2025-01-01"
+            style="width: 140px"
+          />
         </div>
         <button id="wsCancelMultiBtn" disabled>WS Cancel‑multi</button>
       </div>
       <div style="margin-top: 8px">
-        <label>OPS (JSON) – t.ex. [["oc", {"id":123}], ["ou", {"id":124, "price":"10000"}]]</label>
+        <label
+          >OPS (JSON) – t.ex. [["oc", {"id":123}], ["ou", {"id":124,
+          "price":"10000"}]]</label
+        >
         <textarea id="wsOpsInput" style="width: 100%; height: 100px"></textarea>
         <div class="row" style="margin-top: 6px">
           <button id="wsOpsBtn" disabled>Skicka OPS</button>
@@ -1015,20 +1046,22 @@
             const qsel = document.getElementById("quickSymbolsSelect");
             if (qsel) qsel.disabled = false;
             document.getElementById("watchlistBtn").disabled = false;
+            const rbtn = document.getElementById("resyncBtn");
+            if (rbtn) rbtn.disabled = false;
+            const mbtn = document.getElementById("marginCalcBtn");
+            if (mbtn) mbtn.disabled = false;
             document.getElementById("perfBtn").disabled = false;
             document.getElementById("perfDetailBtn").disabled = false;
             document.getElementById("equityBtn").disabled = false;
             document.getElementById("equitySnapBtn").disabled = false;
             document.getElementById("equityHistBtn").disabled = false;
+            const poolBtn = document.getElementById("wsPoolBtn");
+            if (poolBtn) poolBtn.disabled = false;
             document.getElementById("placeBracketBtn").disabled = false;
             document.getElementById("saveTplBtn").disabled = false;
             document.getElementById("listTplBtn").disabled = false;
             // Aktivera WS‑orders UI
-            const wsIds = [
-              "wsUpdateBtn",
-              "wsCancelMultiBtn",
-              "wsOpsBtn",
-            ];
+            const wsIds = ["wsUpdateBtn", "wsCancelMultiBtn", "wsOpsBtn"];
             wsIds.forEach((id) => {
               const el = document.getElementById(id);
               if (el) el.disabled = false;
@@ -1186,40 +1219,58 @@
       }
 
       // --- WS‑orders actions ---
-      document.getElementById("wsUpdateBtn").addEventListener("click", async () => {
-        try {
-          const order_id = parseInt(
-            (document.getElementById("wsUpdateId").value || "0").trim(),
-            10
-          );
-          if (!order_id) throw new Error("order_id saknas");
-          const priceRaw = (document.getElementById("wsUpdatePrice").value || "").trim();
-          const amountRaw = (document.getElementById("wsUpdateAmount").value || "").trim();
-          const body = { order_id };
-          if (priceRaw) body.price = parseFloat(priceRaw);
-          if (amountRaw) body.amount = parseFloat(amountRaw);
-          const resp = await restFetch("/api/v2/ws/order/update", {
-            method: "POST",
-            body: JSON.stringify(body),
-          });
-          logSection("WS update", resp, "success");
-        } catch (e) {
-          logSection("WS update error", { message: e.message }, "error");
-        }
-      });
+      document
+        .getElementById("wsUpdateBtn")
+        .addEventListener("click", async () => {
+          try {
+            const order_id = parseInt(
+              (document.getElementById("wsUpdateId").value || "0").trim(),
+              10
+            );
+            if (!order_id) throw new Error("order_id saknas");
+            const priceRaw = (
+              document.getElementById("wsUpdatePrice").value || ""
+            ).trim();
+            const amountRaw = (
+              document.getElementById("wsUpdateAmount").value || ""
+            ).trim();
+            const body = { order_id };
+            if (priceRaw) body.price = parseFloat(priceRaw);
+            if (amountRaw) body.amount = parseFloat(amountRaw);
+            const resp = await restFetch("/api/v2/ws/order/update", {
+              method: "POST",
+              body: JSON.stringify(body),
+            });
+            logSection("WS update", resp, "success");
+          } catch (e) {
+            logSection("WS update error", { message: e.message }, "error");
+          }
+        });
 
       document
         .getElementById("wsCancelMultiBtn")
         .addEventListener("click", async () => {
           try {
-            const idsStr = (document.getElementById("wsCancelIds").value || "").trim();
-            const cidsStr = (document.getElementById("wsCancelCids").value || "").trim();
-            const cid_date = (document.getElementById("wsCancelDate").value || "").trim();
+            const idsStr = (
+              document.getElementById("wsCancelIds").value || ""
+            ).trim();
+            const cidsStr = (
+              document.getElementById("wsCancelCids").value || ""
+            ).trim();
+            const cid_date = (
+              document.getElementById("wsCancelDate").value || ""
+            ).trim();
             const ids = idsStr
-              ? idsStr.split(",").map((s) => parseInt(s.trim(), 10)).filter((n) => !isNaN(n))
+              ? idsStr
+                  .split(",")
+                  .map((s) => parseInt(s.trim(), 10))
+                  .filter((n) => !isNaN(n))
               : undefined;
             const cids = cidsStr
-              ? cidsStr.split(",").map((s) => parseInt(s.trim(), 10)).filter((n) => !isNaN(n))
+              ? cidsStr
+                  .split(",")
+                  .map((s) => parseInt(s.trim(), 10))
+                  .filter((n) => !isNaN(n))
               : undefined;
             const body = { ids, cids };
             if (cid_date) body.cid_date = cid_date;
@@ -1229,29 +1280,37 @@
             });
             logSection("WS cancel-multi", resp, "success");
           } catch (e) {
-            logSection("WS cancel-multi error", { message: e.message }, "error");
+            logSection(
+              "WS cancel-multi error",
+              { message: e.message },
+              "error"
+            );
           }
         });
 
-      document.getElementById("wsOpsBtn").addEventListener("click", async () => {
-        try {
-          const raw = (document.getElementById("wsOpsInput").value || "").trim();
-          if (!raw) throw new Error("OPS JSON saknas");
-          let ops = null;
+      document
+        .getElementById("wsOpsBtn")
+        .addEventListener("click", async () => {
           try {
-            ops = JSON.parse(raw);
+            const raw = (
+              document.getElementById("wsOpsInput").value || ""
+            ).trim();
+            if (!raw) throw new Error("OPS JSON saknas");
+            let ops = null;
+            try {
+              ops = JSON.parse(raw);
+            } catch (e) {
+              throw new Error("Ogiltig JSON i OPS");
+            }
+            const resp = await restFetch("/api/v2/ws/orders/ops", {
+              method: "POST",
+              body: JSON.stringify({ ops }),
+            });
+            logSection("WS ops", resp, "success");
           } catch (e) {
-            throw new Error("Ogiltig JSON i OPS");
+            logSection("WS ops error", { message: e.message }, "error");
           }
-          const resp = await restFetch("/api/v2/ws/orders/ops", {
-            method: "POST",
-            body: JSON.stringify({ ops }),
-          });
-          logSection("WS ops", resp, "success");
-        } catch (e) {
-          logSection("WS ops error", { message: e.message }, "error");
-        }
-      });
+        });
 
       document
         .getElementById("placeOrderBtn")
@@ -1937,16 +1996,44 @@
               card.style.borderRadius = "6px";
               card.style.padding = "8px";
               card.style.background = "#fff";
+              // Badge helpers
+              const listed = row.listed === true;
+              const wsLive = row.ws_live === true;
+              const badge = listed
+                ? wsLive
+                  ? '<span class="badge success">WS</span>'
+                  : '<span class="badge info">REST</span>'
+                : '<span class="badge warn">NOT LISTED</span>';
+              const marginHtml = (function () {
+                const st = row.margin_status;
+                if (!st) return "";
+                const src = st.source || "-";
+                const tr =
+                  st.tradable != null ? Number(st.tradable).toFixed(4) : "-";
+                const bs =
+                  st.buy != null || st.sell != null
+                    ? `(B:${st.buy ?? "-"} / S:${st.sell ?? "-"})`
+                    : "";
+                return `<div class="small">margin: ${src} tradable=${tr} ${bs}</div>`;
+              })();
               card.innerHTML = `
                 <div style="display:flex;justify-content:space-between;align-items:center">
-                  <div><strong>${row.symbol}</strong><div class="small">pris: ${
-                row.last ?? "-"
-              }</div></div>
+                  <div><strong>${row.symbol}</strong>
+                    <div class="small">eff: ${
+                      row.eff_symbol || row.symbol
+                    } ${badge}
+                    </div>
+                    <div class="small">pris: ${row.last ?? "-"}</div>
+                    ${marginHtml}
+                  </div>
                   <div>
                     <button data-s="${
                       row.symbol
                     }" class="wl-start">Start</button>
                     <button data-s="${row.symbol}" class="wl-stop">Stop</button>
+                    <button data-s="${
+                      row.symbol
+                    }" class="wl-resync">Resync</button>
                   </div>
                 </div>
               `;
@@ -1979,6 +2066,16 @@
                     body: JSON.stringify({ symbol: sym }),
                   });
                   logSection("Auto stop", { symbol: sym }, "success");
+                  // WS unsubscribe (ticker)
+                  await restFetch("/api/v2/ws/unsubscribe", {
+                    method: "POST",
+                    body: JSON.stringify({ channel: "ticker", symbol: sym }),
+                  });
+                  logSection(
+                    "WS unsubscribe",
+                    { channel: "ticker", symbol: sym },
+                    "success"
+                  );
                 } catch (e) {
                   logSection(
                     "Auto stop error",
@@ -1986,10 +2083,71 @@
                     "error"
                   );
                 }
+              } else if (t.classList.contains("wl-resync")) {
+                try {
+                  await restFetch(
+                    `/api/v2/market/resync/${encodeURIComponent(sym)}`,
+                    { method: "POST" }
+                  );
+                  logSection("Resync", { symbol: sym }, "success");
+                } catch (e) {
+                  logSection("Resync error", { message: e.message }, "error");
+                }
               }
             };
           } catch (e) {
             logSection("Watchlist error", { message: e.message }, "error");
+          }
+        });
+
+      // Top-level resync button (uses selected symbol)
+      document
+        .getElementById("resyncBtn")
+        .addEventListener("click", async () => {
+          try {
+            const symEl =
+              document.getElementById("symbolsSelect") ||
+              document.getElementById("quickSymbol") ||
+              document.getElementById("sizeSymbol");
+            const sym = symEl && symEl.value ? symEl.value : "tBTCUSD";
+            await restFetch(
+              `/api/v2/market/resync/${encodeURIComponent(sym)}`,
+              { method: "POST" }
+            );
+            logSection("Resync", { symbol: sym }, "success");
+          } catch (e) {
+            logSection("Resync error", { message: e.message }, "error");
+          }
+        });
+
+      // Margin calc trigger
+      document
+        .getElementById("marginCalcBtn")
+        .addEventListener("click", async () => {
+          try {
+            const symEl =
+              document.getElementById("symbolsSelect") ||
+              document.getElementById("quickSymbol") ||
+              document.getElementById("sizeSymbol");
+            const sym = symEl && symEl.value ? symEl.value : "tBTCUSD";
+            const ok = await restFetch(
+              `/api/v2/margin/status/${encodeURIComponent(sym)}`
+            );
+            logSection("Margin status", ok, "success");
+          } catch (e) {
+            logSection("Margin calc error", { message: e.message }, "error");
+          }
+        });
+
+      // WS pool status
+      document
+        .getElementById("wsPoolBtn")
+        .addEventListener("click", async () => {
+          try {
+            const st = await restFetch(`/api/v2/ws/pool/status`);
+            logSection("WS Pool", st, "success");
+          } catch (e) {
+            logSection("WS Pool error", { message: e.message }, "error");
           }
         });
 

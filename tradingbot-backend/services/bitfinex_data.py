@@ -8,7 +8,7 @@ Inkluderar candlestick-data, ticker-information och orderbook-data.
 import asyncio
 import random
 import time
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 import httpx
 
@@ -24,6 +24,14 @@ logger = get_logger(__name__)
 _TICKER_CACHE: Dict[str, Dict] = {}
 # In-flight lås per symbol för att samköra REST-förfrågningar
 _TICKER_LOCKS: Dict[str, asyncio.Lock] = {}
+
+# Config caches (enkla TTL-cacher i process)
+_CONFIG_PAIRS_CACHE: Dict[str, object] = {}
+_CURRENCY_MAP_CACHE: Dict[str, object] = {}
+
+# Not-listed throttling (skip REST för par som inte listas)
+_NOT_LISTED_SEEN: Dict[str, float] = {}
+_NOT_LISTED_TTL_SECS: int = 600
 
 
 class BitfinexDataService:
@@ -123,42 +131,22 @@ class BitfinexDataService:
             Dict med ticker-data eller None vid fel
         """
         try:
-            import re
+            import time as _t
+            from services.symbols import SymbolService
 
             symbol = (symbol or "").strip()
-            # Normalisera testsymboler till kolonformat tTESTASSET:TESTUSD
-            m = re.match(r"^tTEST([A-Z0-9]+)USD$", symbol)
-            if m:
-                asset = m.group(1)
-                symbol = f"tTEST{asset}:TESTUSD"
-            m = re.match(r"^tUSD:TEST([A-Z0-9]+)$", symbol)
-            if m:
-                asset = m.group(1)
-                symbol = f"tTESTUSD:TEST{asset}"
-
-            # Mappa testsymbol till verklig Bitfinex-symbol för pris (fallback)
-            # tTESTBTC:TESTUSD -> tBTCUSD, tTESTUSD:TESTBTC -> tBTCUSD
-            # tTESTBTC:TESTUSDT -> tBTCUST (Bitfinex ticker använder UST för Tether)
-            eff_symbol = symbol
-            m = re.match(r"^tTEST([A-Z0-9]+):TESTUSD$", eff_symbol)
-            if m:
-                asset = m.group(1)
-                eff_symbol = f"t{asset}USD"
-            else:
-                m = re.match(r"^tTESTUSD:TEST([A-Z0-9]+)$", eff_symbol)
-                if m:
-                    asset = m.group(1)
-                    eff_symbol = f"t{asset}USD"
-                else:
-                    m = re.match(r"^tTEST([A-Z0-9]+):TESTUSDT$", eff_symbol)
-                    if m:
-                        asset = m.group(1)
-                        eff_symbol = f"t{asset}UST"
-                    else:
-                        m = re.match(r"^tTESTUSDT:TEST([A-Z0-9]+)$", eff_symbol)
-                        if m:
-                            asset = m.group(1)
-                            eff_symbol = f"t{asset}UST"
+            # Central resolve/listed via SymbolService
+            sym_svc = SymbolService()
+            await sym_svc.refresh()
+            eff_symbol = sym_svc.resolve(symbol)
+            if not sym_svc.listed(eff_symbol):
+                # Throttle not-listed logs/attempts
+                now_ts = _t.time()
+                prev = float(_NOT_LISTED_SEEN.get(eff_symbol, 0) or 0)
+                if (now_ts - prev) >= float(_NOT_LISTED_TTL_SECS):
+                    logger.info("skip REST ticker: pair_not_listed %s", eff_symbol)
+                    _NOT_LISTED_SEEN[eff_symbol] = now_ts
+                return None
             # Enkel TTL‑cache för ticker (per eff_symbol)
             _ttl = max(
                 int(getattr(self.settings, "TICKER_CACHE_TTL_SECS", 10) or 10), 1
@@ -485,25 +473,96 @@ class BitfinexDataService:
 
     async def get_configs_symbols(self) -> Optional[List[str]]:
         """
-        Hämta symboler via REST public Configs (ersätta statisk lista).
+        Hämta lista med giltiga tradingpar via REST public Configs.
+        Slår ihop exchange + margin listor (multi-request) och returnerar som t.ex. ["BTCUSD","ETHUSD"].
         """
         try:
-            # Enklare variant: configs/symbols kan kräva parse; Bitfinex har olika config endpoints.
-            # Vi använder /conf för att hämta t.ex. 'pub:list:pair:exchange'
-            url = f"{self.base_url}/conf/pub:list:pair:exchange"
+            import time as _t
+
+            ttl = 3600.0
+            now = _t.time()
+            # TTL‑cache
+            if _CONFIG_PAIRS_CACHE:
+                ts = float(_CONFIG_PAIRS_CACHE.get("ts", 0) or 0)
+                pairs = _CONFIG_PAIRS_CACHE.get("pairs")
+                if pairs and (now - ts) <= ttl:
+                    return list(pairs)  # type: ignore[return-value]
+
+            # Multi-request för exchange + margin
+            url = f"{self.base_url}/conf/pub:list:pair:exchange,pub:list:pair:margin"
             async with httpx.AsyncClient(
                 timeout=self.settings.DATA_HTTP_TIMEOUT
             ) as client:
                 resp = await client.get(url)
                 resp.raise_for_status()
-                data = resp.json()
-                # Förväntat format: [["BTCUSD","ETHUSD",...]]
-                if isinstance(data, list) and data and isinstance(data[0], list):
-                    return [str(s) for s in data[0]]
-                return None
+                data = resp.json() or []
+                pairs: List[str] = []
+                # data är en lista av listor; slå ihop
+                if isinstance(data, list):
+                    for arr in data:
+                        if isinstance(arr, list):
+                            for p in arr:
+                                try:
+                                    s = str(p)
+                                    if s and s not in pairs:
+                                        pairs.append(s)
+                                except Exception:
+                                    pass
+                if pairs:
+                    _CONFIG_PAIRS_CACHE.clear()
+                    _CONFIG_PAIRS_CACHE.update({"ts": now, "pairs": pairs})
+                return pairs
         except Exception as e:
             logger.warning("Fel vid hämtning av configs symbols: %s", e)
             return None
+
+    async def get_currency_symbol_map(self) -> Tuple[Dict[str, str], Dict[str, str]]:
+        """Hämta currency symbol alias‑karta via Configs.
+
+        Returnerar två mappar (fwd, rev):
+        - fwd: RAW -> API (ex. ALGO -> ALG)
+        - rev: API -> RAW (ex. ALG -> ALGO)
+        """
+        try:
+            import time as _t
+
+            ttl = 3600.0
+            now = _t.time()
+            if _CURRENCY_MAP_CACHE:
+                ts = float(_CURRENCY_MAP_CACHE.get("ts", 0) or 0)
+                fwd = _CURRENCY_MAP_CACHE.get("fwd")
+                rev = _CURRENCY_MAP_CACHE.get("rev")
+                if fwd and rev and (now - ts) <= ttl:
+                    return fwd, rev  # type: ignore[return-value]
+
+            url = f"{self.base_url}/conf/pub:map:currency:sym"
+            async with httpx.AsyncClient(
+                timeout=self.settings.DATA_HTTP_TIMEOUT
+            ) as client:
+                resp = await client.get(url)
+                resp.raise_for_status()
+                data = resp.json() or []
+                fwd: Dict[str, str] = {}
+                rev: Dict[str, str] = {}
+                # Förväntat format: [[ [RAW, API], [RAW, API], ... ]]
+                if isinstance(data, list) and data and isinstance(data[0], list):
+                    for row in data[0]:
+                        if (
+                            isinstance(row, list)
+                            and len(row) >= 2
+                            and isinstance(row[0], str)
+                            and isinstance(row[1], str)
+                        ):
+                            raw = row[0].upper()
+                            api = row[1].upper()
+                            fwd[raw] = api
+                            rev[api] = raw
+                _CURRENCY_MAP_CACHE.clear()
+                _CURRENCY_MAP_CACHE.update({"ts": now, "fwd": fwd, "rev": rev})
+                return fwd, rev
+        except Exception as e:
+            logger.warning("Fel vid hämtning av currency sym‑map: %s", e)
+            return {}, {}
 
     async def backfill_history(
         self,

@@ -20,6 +20,13 @@ metrics_store: Dict[str, Any] = {
     "request_latency": {},
     # generiska counters med labels: name -> { label_key -> count }
     "counters": {},
+    # ws pool metrics
+    "ws_pool": {
+        "enabled": 0,
+        "max_sockets": 0,
+        "max_subs": 0,
+        "sockets": [],  # list of {subs:int, closed:int}
+    },
 }
 
 
@@ -105,6 +112,33 @@ def render_prometheus_text() -> str:
         for metric_name, label_map in ctrs.items():
             for label_str, value in label_map.items():
                 lines.append(f"tradingbot_{metric_name}{label_str} {int(value)}")
+    except Exception:
+        pass
+
+    # WS pool metrics
+    try:
+        pool = metrics_store.get("ws_pool", {}) or {}
+        lines.append(f"tradingbot_ws_pool_enabled {1 if pool.get('enabled') else 0}")
+        lines.append(
+            f"tradingbot_ws_pool_max_sockets {int(pool.get('max_sockets', 0))}"
+        )
+        lines.append(f"tradingbot_ws_pool_max_subs {int(pool.get('max_subs', 0))}")
+        # per-socket
+        socks = pool.get("sockets") or []
+        for idx, s in enumerate(socks):
+            labels = _labels_to_str({"index": str(idx)})
+            lines.append(
+                f"tradingbot_ws_pool_socket_subs{labels} {int(s.get('subs', 0))}"
+            )
+            lines.append(
+                f"tradingbot_ws_pool_socket_closed{labels} {1 if s.get('closed') else 0}"
+            )
+            # varningsflagga: nära max_subs (>= 90%)
+            max_subs = int(pool.get("max_subs", 0) or 0)
+            warn = (
+                1 if (max_subs and int(s.get("subs", 0)) >= int(0.9 * max_subs)) else 0
+            )
+            lines.append(f"tradingbot_ws_pool_socket_near_capacity{labels} {warn}")
     except Exception:
         pass
 

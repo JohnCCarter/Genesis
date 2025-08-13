@@ -141,14 +141,19 @@
           );
           if (!res.ok) return;
           const arr = await res.json();
-          const dl = document.getElementById("symbols");
+          const sel = document.getElementById("symbol");
+          if (!sel) return;
+          const prev = sel.value || "";
           if (Array.isArray(arr)) {
-            dl.innerHTML = "";
+            sel.innerHTML = "";
             arr.slice(0, 200).forEach((s) => {
               const opt = document.createElement("option");
               opt.value = s;
-              dl.appendChild(opt);
+              opt.textContent = s;
+              sel.appendChild(opt);
             });
+            if (prev && arr.includes(prev)) sel.value = prev;
+            else if (arr.length) sel.value = arr[0];
           }
         } catch (e) {
           // tyst fel
@@ -218,6 +223,37 @@
         );
       }
 
+      async function loadMarginStatus() {
+        try {
+          const symbol = document.getElementById("symbol").value.trim();
+          const res = await fetch(
+            `/api/v2/margin/status/${encodeURIComponent(symbol)}`,
+            {
+              headers: headersWithToken(),
+            }
+          );
+          if (!res.ok) return;
+          const data = await res.json();
+          const src = (data && data.source) || "-";
+          const trad =
+            data && data.tradable != null
+              ? toPlainDecimalString(Number(data.tradable))
+              : "-";
+          const bs =
+            data && (data.buy != null || data.sell != null)
+              ? `B:${data.buy ?? "-"} / S:${data.sell ?? "-"}`
+              : "-";
+          const sEl = document.getElementById("kpi-m-src");
+          const tEl = document.getElementById("kpi-m-trad");
+          const bEl = document.getElementById("kpi-m-bs");
+          if (sEl) sEl.textContent = src;
+          if (tEl) tEl.textContent = trad;
+          if (bEl) bEl.textContent = bs;
+        } catch (e) {
+          // tyst
+        }
+      }
+
       function init() {
         // Bind events
         document
@@ -226,7 +262,11 @@
         document
           .getElementById("risk")
           .addEventListener("input", () => syncRiskInputs("num"));
-        document.getElementById("symbol").addEventListener("keydown", (e) => {
+        const symEl = document.getElementById("symbol");
+        symEl.addEventListener("change", () => {
+          loadMarginStatus();
+        });
+        symEl.addEventListener("keydown", (e) => {
           if (e.key === "Enter") calc();
         });
         const priceInput = document.getElementById("price");
@@ -237,33 +277,11 @@
         loadSymbols();
         // Sätt initial visning
         syncRiskInputs("num");
+        // Försök hämta margin-status initialt
+        setTimeout(loadMarginStatus, 200);
       }
 
-      async function toggleCoreMode(enable) {
-        try {
-          const headers = headersWithToken();
-          const res = await fetch("/api/v2/mode/core", {
-            method: "POST",
-            headers,
-            body: JSON.stringify({ enabled: !!enable }),
-          });
-          const data = await res.json();
-          document.getElementById("coreStatus").textContent = data.core_mode
-            ? "På"
-            : "Av";
-        } catch (e) {}
-      }
-
-      async function fetchCoreMode() {
-        try {
-          const headers = headersWithToken();
-          const res = await fetch("/api/v2/mode/core", { headers });
-          const data = await res.json();
-          document.getElementById("coreStatus").textContent = data.core_mode
-            ? "På"
-            : "Av";
-        } catch (e) {}
-      }
+      // Core mode UI borttagen
     </script>
   </head>
   <body>
@@ -271,30 +289,8 @@
     <div class="card">
       <div class="row">
         <div>
-          <label>Kärnläge (Core mode)</label>
-          <div class="inline">
-            <span class="muted"
-              >Status: <strong id="coreStatus">-</strong></span
-            >
-          </div>
-        </div>
-      </div>
-      <div class="row">
-        <div>
           <label for="symbol">Symbol (v2)</label>
-          <input
-            id="symbol"
-            placeholder="tBTCUSD"
-            value="tBTCUSD"
-            list="symbols"
-          />
-          <datalist id="symbols">
-            <option value="tBTCUSD"></option>
-            <option value="tETHUSD"></option>
-            <option value="tSOLUSD"></option>
-            <option value="tXRPUSD"></option>
-            <option value="tADAUSD"></option>
-          </datalist>
+          <select id="symbol"></select>
         </div>
         <div>
           <label for="risk">Risk %</label>
@@ -385,6 +381,20 @@
       </div>
       <div class="grid-3" style="margin-top: 8px">
         <div class="kpi">
+          <div class="label">Margin källa</div>
+          <div class="value" id="kpi-m-src">-</div>
+        </div>
+        <div class="kpi">
+          <div class="label">Tradable</div>
+          <div class="value" id="kpi-m-trad">-</div>
+        </div>
+        <div class="kpi">
+          <div class="label">Buy/Sell</div>
+          <div class="value" id="kpi-m-bs">-</div>
+        </div>
+      </div>
+      <div class="grid-3" style="margin-top: 8px">
+        <div class="kpi">
           <div class="label">Quote total</div>
           <div class="value" id="kpi-qt">-</div>
         </div>
@@ -413,7 +423,6 @@
     </div>
     <script>
       init();
-      fetchCoreMode();
     </script>
   </body>
 </html>

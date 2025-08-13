@@ -33,9 +33,12 @@ class OrderValidator:
         """
         Laddar nödvändig data från scrapern.
         """
+        # Om scraper saknas (förväntat i detta projektläge), använd fallback tyst
+        if not self.scraper:
+            logger.info("OrderValidator: scraper inaktiv – använder fallback-data")
+            self._setup_fallback_data()
+            return
         try:
-            if not self.scraper:
-                raise RuntimeError("Scraper ej tillgänglig")
             # Ladda ordertyper
             self.order_types = self.scraper.fetch_order_types()
             logger.info(f"Laddade {len(self.order_types)} ordertyper")
@@ -51,15 +54,16 @@ class OrderValidator:
             logger.info(f"Laddade {len(self.paper_symbols)} paper trading symboler")
 
         except Exception as e:
-            logger.error(f"Fel vid laddning av Bitfinex API-data: {e}")
-            # Fallback till grundläggande validering om scraper misslyckas
+            logger.warning(
+                f"OrderValidator: kunde inte ladda scraper-data, fallback används: {e}"
+            )
             self._setup_fallback_data()
 
     def _setup_fallback_data(self) -> None:
         """
         Sätter upp grundläggande fallback-data om scrapern misslyckas.
         """
-        logger.warning("Använder fallback-data för ordervalidering")
+        logger.info("Använder fallback-data för ordervalidering")
 
         # Grundläggande ordertyper
         self.order_types = {
@@ -120,9 +124,21 @@ class OrderValidator:
             "tTESTXAUT:TESTUSD",
             "tTESTXTZ:TESTUSD",
         ]
-        self.symbols = [{"symbol": "tBTCUSD"}, {"symbol": "tETHUSD"}] + [
-            {"symbol": s, "is_paper": True} for s in test_syms
-        ]
+        # Bygg live-lista via SymbolService om möjligt
+        try:
+            from services.symbols import SymbolService
+            import asyncio as _asyncio
+
+            svc = SymbolService()
+            # Kör refresh synkront i denna tråd (validation anropas sällan och tidig init är ok)
+            _asyncio.get_event_loop().run_until_complete(svc.refresh())
+            live_pairs = getattr(svc, "_pairs", [])  # ex. ["BTCUSD","ETHUSD",...]
+            live = [{"symbol": f"t{p}"} for p in live_pairs]
+        except Exception:
+            live = [{"symbol": "tBTCUSD"}, {"symbol": "tETHUSD"}]
+
+        # Inkludera alltid TEST‑symboler i fallback (paper trading)
+        self.symbols = live + [{"symbol": s, "is_paper": True} for s in test_syms]
         self.symbol_names = [s["symbol"] for s in self.symbols]
 
         # Paper trading symboler

@@ -18,6 +18,7 @@ from indicators.atr import calculate_atr
 from rest import auth as rest_auth
 from rest.active_orders import ActiveOrdersService
 from rest.margin import MarginService
+from rest.funding import FundingService
 from rest.order_history import (
     LedgerEntry,
     OrderHistoryItem,
@@ -33,6 +34,7 @@ from services.bracket_manager import bracket_manager
 from services.metrics import inc as metrics_inc
 from services.metrics import inc_labeled, render_prometheus_text
 from services.notifications import notification_service
+from services.bitfinex_websocket import bitfinex_ws
 from services.performance import PerformanceService
 from services.risk_manager import RiskManager
 from services.runtime_mode import (
@@ -130,6 +132,12 @@ class WSOrderOpsRequest(BaseModel):
     ops: List[Any]
 
 
+class WSUnsubscribeRequest(BaseModel):
+    channel: str  # ticker|trades|candles
+    symbol: str  # tPAIR
+    timeframe: Optional[str] = None  # för candles, t.ex. 1m/5m
+
+
 class BracketOrderRequest(BaseModel):
     """Request för bracket-order (entry + valfri SL/TP)."""
 
@@ -216,6 +224,22 @@ async def place_order_endpoint(order: OrderRequest, _: bool = Depends(require_au
 
         # Skicka ordern till Bitfinex
         payload = order.dict()
+        # Mappa symbol – hoppa över mapping och listed‑check för TEST‑par (paper trading)
+        try:
+            sym_in = str(payload.get("symbol", ""))
+            if not sym_in.startswith("tTEST"):
+                from services.symbols import SymbolService as _SS
+
+                _svc = _SS()
+                await _svc.refresh()
+                eff = _svc.resolve(sym_in)
+                if not _svc.listed(eff):
+                    return OrderResponse(
+                        success=False, error="validation_error:pair_not_listed"
+                    )
+                payload["symbol"] = eff
+        except Exception:
+            pass
         # Ignorera post_only för MARKET-ordrar (ingen effekt), men skicka vidare reduce_only
         if payload.get("type", "").upper().endswith("MARKET"):
             payload.pop("post_only", None)
@@ -563,6 +587,52 @@ async def get_wallets_endpoint(_: bool = Depends(require_auth)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# Funding/Transfer endpoints
+class TransferRequest(BaseModel):
+    from_wallet: str
+    to_wallet: str
+    currency: str
+    amount: str
+
+
+@router.post("/funding/transfer")
+async def funding_transfer(req: TransferRequest, _: bool = Depends(require_auth)):
+    try:
+        svc = FundingService()
+        res = await svc.transfer(
+            req.from_wallet, req.to_wallet, req.currency, req.amount
+        )
+        if isinstance(res, dict) and res.get("error"):
+            raise HTTPException(status_code=502, detail=res.get("error"))
+        return res
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Fel vid transfer: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/funding/movements")
+async def funding_movements(
+    currency: Optional[str] = None,
+    start: Optional[int] = None,
+    end: Optional[int] = None,
+    limit: Optional[int] = None,
+    _: bool = Depends(require_auth),
+):
+    try:
+        svc = FundingService()
+        res = await svc.movements(currency=currency, start=start, end=end, limit=limit)
+        if isinstance(res, dict) and res.get("error"):
+            raise HTTPException(status_code=502, detail=res.get("error"))
+        return res
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Fel vid movements: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/wallets/balance")
 async def get_wallets_balance_endpoint(
     currency: Optional[str] = None, _: bool = Depends(require_auth)
@@ -750,6 +820,36 @@ async def get_margin_status_endpoint(_: bool = Depends(require_auth)):
 
     except Exception as e:
         logger.exception(f"Fel vid hämtning av margin-status: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/margin/status/{symbol}")
+async def get_margin_status_symbol(symbol: str, _: bool = Depends(require_auth)):
+    try:
+        margin_service = MarginService()
+        # 1) WS/REST sammanfattning
+        base = await margin_service.get_symbol_margin_status(symbol)
+        # 2) Om source none/rest och tradable saknas, försök direktslag mot v2 sym (med tom body för korrekt signering)
+        if (not base) or (
+            isinstance(base, dict)
+            and base.get("tradable") in (None, 0, 0.0)
+            and base.get("source") != "ws"
+        ):
+            try:
+                lim = await margin_service.get_margin_limit_by_pair(symbol)
+                if lim:
+                    base = {
+                        "symbol": symbol,
+                        "source": base.get("source", "rest"),  # type: ignore[union-attr]
+                        "tradable": float(lim.tradable_balance),
+                        "buy": base.get("buy"),  # type: ignore[union-attr]
+                        "sell": base.get("sell"),  # type: ignore[union-attr]
+                    }
+            except Exception:
+                pass
+        return base
+    except Exception as e:
+        logger.exception(f"Fel vid hämtning av margin-status (symbol): {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -1305,6 +1405,23 @@ async def market_candles(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# Resync endpoint: re‑subscribe + REST snapshot fetch
+@router.post("/market/resync/{symbol}")
+async def market_resync(symbol: str, _: bool = Depends(require_auth)):
+    try:
+        # WS re-subscribe (idempotent skydd finns i subscribe)
+        await bitfinex_ws.subscribe_ticker(
+            symbol, bitfinex_ws._handle_ticker_with_strategy
+        )
+        # Trigger omedelbar REST snapshot (värms upp cache)
+        data = BitfinexDataService()
+        _ = await data.get_ticker(symbol)
+        return {"success": True}
+    except Exception as e:
+        logger.exception(f"Fel vid resync: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # Health endpoint
 @router.get("/health")
 async def health(_: bool = Depends(require_auth)):
@@ -1315,9 +1432,47 @@ async def health(_: bool = Depends(require_auth)):
             "rest": True,
             "ws_connected": bool(bitfinex_ws.is_connected),
             "ws_authenticated": bool(bitfinex_ws.is_authenticated),
+            "ws_pool": bitfinex_ws.get_pool_status(),
         }
     except Exception as e:
         logger.exception(f"Health error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/ws/pool/status")
+async def ws_pool_status(_: bool = Depends(require_auth)):
+    try:
+        from services.bitfinex_websocket import bitfinex_ws
+
+        return bitfinex_ws.get_pool_status()
+    except Exception as e:
+        logger.exception(f"WS pool status error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/ws/unsubscribe")
+async def ws_unsubscribe(req: WSUnsubscribeRequest, _: bool = Depends(require_auth)):
+    try:
+        from services.bitfinex_websocket import bitfinex_ws
+
+        chan = (req.channel or "").lower()
+        sym = req.symbol
+        if chan == "ticker":
+            sub_key = f"ticker|{sym}"
+        elif chan == "trades":
+            sub_key = f"trades|{sym}"
+        elif chan == "candles":
+            tf = req.timeframe or "1m"
+            ckey = f"trade:{tf}:{sym}"
+            sub_key = f"candles|{ckey}"
+        else:
+            raise HTTPException(status_code=400, detail="invalid_channel")
+        await bitfinex_ws.unsubscribe(sub_key)
+        return {"success": True, "sub_key": sub_key}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"WS unsubscribe error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -1328,7 +1483,23 @@ async def market_symbols(
 ):
     try:
         svc = SymbolService()
-        return svc.get_symbols(test_only=test_only, fmt=format)
+        # Säkerställ färska configs för att kunna filtrera bort icke-listade
+        try:
+            await svc.refresh()
+        except Exception:
+            pass
+        arr = svc.get_symbols(test_only=test_only, fmt=format)
+        # Filtrera bort symboler som inte är listade (efter resolve)
+        filtered: list[str] = []
+        for s in arr:
+            try:
+                eff = svc.resolve(s)
+                if svc.listed(eff):
+                    filtered.append(s)
+            except Exception:
+                # Om något går fel, inkludera inte symbolen
+                pass
+        return filtered
     except Exception as e:
         logger.exception(f"Fel vid symbols: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -1342,10 +1513,25 @@ async def market_watchlist(
     try:
         svc = SymbolService()
         data = BitfinexDataService()
+        # Refresh live configs/aliases
+        try:
+            await svc.refresh()
+        except Exception:
+            pass
         if symbols:
             syms = [s.strip() for s in symbols.split(",") if s.strip()]
         else:
-            syms = svc.get_symbols(test_only=True, fmt="v2")[:10]
+            # Förvald lista: WS_SUBSCRIBE_SYMBOLS om satt, annars test‑symboler (legacy)
+            try:
+                from config.settings import Settings as _S
+
+                env_syms = (_S().WS_SUBSCRIBE_SYMBOLS or "").strip()
+                if env_syms:
+                    syms = [s.strip() for s in env_syms.split(",") if s.strip()]
+                else:
+                    syms = svc.get_symbols(test_only=True, fmt="v2")[:10]
+            except Exception:
+                syms = svc.get_symbols(test_only=True, fmt="v2")[:10]
         out = []
 
         def _safe_float(val):
@@ -1354,10 +1540,61 @@ async def market_watchlist(
             except Exception:
                 return None
 
+        # WS live check
+        try:
+            from services.bitfinex_websocket import bitfinex_ws
+
+            ws_live_set = set(bitfinex_ws.active_tickers or [])
+        except Exception:
+            ws_live_set = set()
+
         for s in syms:
+            eff = s
+            listed = None
+            try:
+                eff = svc.resolve(s)
+                listed = bool(svc.listed(eff))
+            except Exception:
+                listed = None
+            # Visa icke-listade symboler om de efterfrågas eller finns i WS_SUBSCRIBE_SYMBOLS
+            show_unlisted = False
+            try:
+                from config.settings import Settings as _S2
+
+                env_syms = _S2().WS_SUBSCRIBE_SYMBOLS or ""
+                if s in [x.strip() for x in env_syms.split(",") if x.strip()]:
+                    show_unlisted = True
+            except Exception:
+                pass
+            if listed is False and not show_unlisted:
+                continue
             ticker = await data.get_ticker(s)
             last = _safe_float(ticker.get("last_price")) if ticker else None
             vol = _safe_float(ticker.get("volume")) if ticker else None
+            ws_live = eff in ws_live_set
+            # Marginstatus (WS först, REST fallback)
+            try:
+                from rest.margin import MarginService as _MS
+
+                ms = _MS()
+                margin_status = await ms.get_symbol_margin_status(s)
+                # Om none → försök trigga WS calc och re‑pröva snabbt
+                if (
+                    not margin_status
+                    or margin_status.get("source") == "none"
+                    or margin_status.get("tradable") in (None, 0, 0.0)
+                ):
+                    try:
+                        from services.bitfinex_websocket import bitfinex_ws as _ws
+
+                        await _ws.margin_calc_if_needed(s)
+                        # kort väntan för uppdatering
+                        await asyncio.sleep(0.15)
+                        margin_status = await ms.get_symbol_margin_status(s)
+                    except Exception:
+                        pass
+            except Exception:
+                margin_status = None
             candles = await data.get_candles(s, "1m", 50)
             candles_5m = await data.get_candles(s, "5m", 50)
             strat = None
@@ -1377,6 +1614,10 @@ async def market_watchlist(
             out.append(
                 {
                     "symbol": s,
+                    "eff_symbol": eff,
+                    "listed": listed,
+                    "ws_live": ws_live,
+                    "margin_status": margin_status,
                     "last": last,
                     "volume": vol,
                     "strategy": strat,
@@ -1897,6 +2138,26 @@ async def metrics(_: bool = Depends(require_auth)):
 
             # FastAPI injicerar inte Request här; enkel fallback
             # Lämna öppet om inte token satt
+        # Uppdatera ws_pool metrics innan rendering
+        try:
+            from services.bitfinex_websocket import bitfinex_ws as _ws
+            from services.metrics import metrics_store as _ms
+
+            st = _ws.get_pool_status()
+            _ms["ws_pool"] = {
+                "enabled": 1 if st.get("pool_enabled") else 0,
+                "max_sockets": int(st.get("pool_max_sockets", 0) or 0),
+                "max_subs": int(st.get("pool_max_subs", 0) or 0),
+                "sockets": [
+                    {
+                        "subs": int(x.get("subs", 0) or 0),
+                        "closed": 1 if x.get("closed") else 0,
+                    }
+                    for x in (st.get("pool_sockets") or [])
+                ],
+            }
+        except Exception:
+            pass
         text = render_prometheus_text()
         return Response(content=text, media_type="text/plain; version=0.0.4")
     except Exception as e:

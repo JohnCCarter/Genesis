@@ -132,7 +132,8 @@ class MarginService:
         try:
             # Försök först med v2 API endpoint (base)
             endpoint = "auth/r/info/margin/base"
-            headers = build_auth_headers(endpoint)
+            body_json = "{}"
+            headers = build_auth_headers(endpoint, payload_str=body_json)
 
             async with httpx.AsyncClient() as client:
                 try:
@@ -140,7 +141,9 @@ class MarginService:
                         f"🌐 REST API: Försöker hämta margin-info från {self.base_url}/{endpoint}"
                     )
                     response = await client.post(
-                        f"{self.base_url}/{endpoint}", headers=headers
+                        f"{self.base_url}/{endpoint}",
+                        headers=headers,
+                        content=body_json.encode("utf-8"),
                     )
                     response.raise_for_status()
                     # v2 base svar: [ 'base', [USER_PL, USER_SWAPS, MARGIN_BALANCE, MARGIN_NET, MARGIN_MIN] ]
@@ -225,11 +228,55 @@ class MarginService:
         Returns:
             MarginLimitInfo-objekt eller None om symbolen inte hittas
         """
-        margin_limits = await self.get_margin_limits()
+        # 1) Försök via redan hämtade limits från base (om de finns)
+        try:
+            margin_limits = await self.get_margin_limits()
+            for limit in margin_limits:
+                if limit.on_pair.lower() == pair.lower():
+                    return limit
+        except Exception:
+            pass
 
-        for limit in margin_limits:
-            if limit.on_pair.lower() == pair.lower():
-                return limit
+        # 2) Direkt v2‑endpoint för symbol: auth/r/info/margin/sym:tPAIR
+        try:
+            eff = pair
+            if not eff.startswith("t"):
+                eff = f"t{eff}"
+            key = f"sym:{eff}"
+            endpoint = f"auth/r/info/margin/{key}"
+            body_json = "{}"
+            headers = build_auth_headers(endpoint, payload_str=body_json)
+            async with httpx.AsyncClient() as client:
+                logger.info(
+                    f"🌐 REST API: Hämta margin-info (symbol) från {self.base_url}/{endpoint}"
+                )
+                resp = await client.post(
+                    f"{self.base_url}/{endpoint}",
+                    headers=headers,
+                    content=body_json.encode("utf-8"),
+                )
+                resp.raise_for_status()
+                raw = resp.json()
+                # Förväntat format: [ 'sym', 'tPAIR', [TRADABLE, GROSS, BUY, SELL, ...] ]
+                if (
+                    isinstance(raw, list)
+                    and len(raw) >= 3
+                    and str(raw[0]).lower() == "sym"
+                    and isinstance(raw[2], list)
+                ):
+                    arr = raw[2]
+                    tradable = (
+                        float(arr[0]) if len(arr) > 0 and arr[0] is not None else 0.0
+                    )
+                    # initial_margin/margin_requirements okända här; sätt 0 som placeholder
+                    return MarginLimitInfo(
+                        on_pair=eff,
+                        initial_margin=0.0,
+                        tradable_balance=tradable,
+                        margin_requirements=0.0,
+                    )
+        except Exception as e:
+            logger.debug("Margin sym v2 misslyckades: %s", e)
 
         return None
 
@@ -284,6 +331,75 @@ class MarginService:
                 else "warning" if margin_level >= 1.5 else "danger"
             ),
         }
+
+    async def get_symbol_margin_status(self, symbol: str) -> Dict[str, Any]:
+        """
+        Per‑symbol marginstatus. WS (miu:sym) i första hand, REST margin_limits som fallback.
+        Returnerar nycklar: { source, tradable, buy, sell } (buy/sell endast om WS finns).
+        """
+        try:
+            # Normalisera/resolve symbol
+            eff = symbol
+            try:
+                from services.symbols import SymbolService
+
+                svc = SymbolService()
+                await svc.refresh()
+                eff = svc.resolve(symbol)
+            except Exception:
+                pass
+
+            # WS‑först: läs miu:sym arr om tillgängligt
+            try:
+                from services.bitfinex_websocket import bitfinex_ws
+
+                arr = (bitfinex_ws.margin_sym or {}).get(eff)
+                if isinstance(arr, list) and arr:
+                    # Försök tolka fält: [tradable, gross, buy, sell, ...]
+                    tradable = (
+                        float(arr[0]) if len(arr) >= 1 and arr[0] is not None else None
+                    )
+                    buy = (
+                        float(arr[2]) if len(arr) >= 3 and arr[2] is not None else None
+                    )
+                    sell = (
+                        float(arr[3]) if len(arr) >= 4 and arr[3] is not None else None
+                    )
+                    return {
+                        "symbol": eff,
+                        "source": "ws",
+                        "tradable": tradable,
+                        "buy": buy,
+                        "sell": sell,
+                    }
+            except Exception:
+                pass
+
+            # REST fallback: margin_limits
+            try:
+                limit = await self.get_margin_limit_by_pair(eff)
+                if limit:
+                    return {
+                        "symbol": eff,
+                        "source": "rest",
+                        "tradable": float(limit.tradable_balance),
+                        "buy": None,
+                        "sell": None,
+                    }
+            except Exception:
+                pass
+
+            # Sist: tom struktur
+            return {
+                "symbol": eff,
+                "source": "none",
+                "tradable": None,
+                "buy": None,
+                "sell": None,
+            }
+        except Exception as e:
+            logger.error(f"Fel vid symbol margin status: {e}")
+            return {"symbol": symbol, "source": "error"}
 
 
 # Skapa en global instans av MarginService
