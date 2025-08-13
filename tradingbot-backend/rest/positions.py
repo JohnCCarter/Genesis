@@ -8,9 +8,8 @@ Inkluderar funktioner för att hämta aktiva positioner och hantera positioner.
 from typing import Any, Dict, List, Optional
 
 import httpx
-from pydantic import BaseModel
-
 from config.settings import Settings
+from pydantic import BaseModel
 from rest.auth import build_auth_headers
 from utils.logger import get_logger
 

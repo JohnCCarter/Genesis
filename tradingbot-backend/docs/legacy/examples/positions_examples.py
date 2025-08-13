@@ -13,13 +13,20 @@ from datetime import datetime, timedelta
 # Lägg till projektets rotmapp i Python-sökvägen
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from rest.positions import (close_position, get_long_positions,
-                            get_position_by_symbol, get_positions,
-                            get_short_positions)
-from rest.positions_history import (claim_position, get_positions_audit,
-                                    get_positions_history,
-                                    get_positions_snapshot,
-                                    update_position_funding_type)
+from rest.positions import (
+    close_position,
+    get_long_positions,
+    get_position_by_symbol,
+    get_positions,
+    get_short_positions,
+)
+from rest.positions_history import (
+    claim_position,
+    get_positions_audit,
+    get_positions_history,
+    get_positions_snapshot,
+    update_position_funding_type,
+)
 from utils.logger import get_logger
 
 logger = get_logger(__name__)

@@ -7,7 +7,6 @@ from __future__ import annotations
 from typing import Any, Dict, Optional
 
 import httpx
-
 from config.settings import Settings
 from utils.logger import get_logger
 

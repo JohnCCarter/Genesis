@@ -10,11 +10,10 @@ import json
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional
 
-from websockets.client import connect as ws_connect  # type: ignore[attr-defined]
-from websockets.exceptions import ConnectionClosed  # type: ignore[attr-defined]
-
 from config.settings import Settings
 from utils.logger import get_logger
+from websockets.client import connect as ws_connect  # type: ignore[attr-defined]
+from websockets.exceptions import ConnectionClosed  # type: ignore[attr-defined]
 from ws.auth import build_ws_auth_payload
 
 logger = get_logger(__name__)

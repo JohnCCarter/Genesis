@@ -9,12 +9,11 @@ import asyncio
 from typing import Any, Dict, List, Optional
 
 import jwt
+from config.settings import Settings
 from fastapi import APIRouter, Depends, HTTPException, Response
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from pydantic import BaseModel
-
-from config.settings import Settings
 from indicators.atr import calculate_atr
+from pydantic import BaseModel
 from rest import auth as rest_auth
 from rest.active_orders import ActiveOrdersService
 from rest.funding import FundingService

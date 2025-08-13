@@ -12,7 +12,6 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from scraper.bitfinex_auth_docs import BitfinexAuthScraper
-
 from utils.logger import get_logger
 
 logger = get_logger("auth_examples")
