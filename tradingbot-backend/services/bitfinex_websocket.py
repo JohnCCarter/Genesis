@@ -98,6 +98,38 @@ class BitfinexWebSocketService:
         except Exception:
             return False
 
+    # --- Hjälpare: normalisera publika symbols för TEST‑par till riktiga Bitfinex‑symbols ---
+    @staticmethod
+    def _normalize_public_symbol(symbol: str) -> str:
+        try:
+            import re as _re
+
+            s = (symbol or "").strip()
+            # tTESTBTC:TESTUSD -> tBTCUSD
+            m = _re.match(r"^tTEST([A-Z0-9]+):TESTUSD$", s)
+            if m:
+                return f"t{m.group(1)}USD"
+            # tTESTUSD:TESTBTC -> tBTCUSD
+            m = _re.match(r"^tTESTUSD:TEST([A-Z0-9]+)$", s)
+            if m:
+                return f"t{m.group(1)}USD"
+            # tTESTBTC:TESTUSDT -> tBTCUST (Bitfinex använder UST för USDT i tikers)
+            m = _re.match(r"^tTEST([A-Z0-9]+):TESTUSDT$", s)
+            if m:
+                return f"t{m.group(1)}UST"
+            # tTESTUSDT:TESTBTC -> tBTCUST
+            m = _re.match(r"^tTESTUSDT:TEST([A-Z0-9]+)$", s)
+            if m:
+                return f"t{m.group(1)}UST"
+            # tTEST<ASSET>USD (utan kolontecken) -> t<ASSET>USD
+            m = _re.match(r"^tTEST([A-Z0-9]+)USD$", s)
+            if m:
+                return f"t{m.group(1)}USD"
+            # Fallback: redan giltig Bitfinex symbol
+            return s
+        except Exception:
+            return symbol
+
     async def send(self, payload: Any):
         """Skicka rått WS-meddelande. Accepterar dict (json.dumps) eller str."""
         try:
@@ -192,7 +224,9 @@ class BitfinexWebSocketService:
         try:
             msg = [0, "ou", None, payload]
             await self.send(msg)
-            logger.info(f"📝 WS ou skickad: id=%s price=%s amount=%s", order_id, price, amount)
+            logger.info(
+                f"📝 WS ou skickad: id=%s price=%s amount=%s", order_id, price, amount
+            )
             return {"success": True, "sent": True}
         except Exception as e:
             logger.error(f"❌ WS ou fel: {e}")
@@ -230,9 +264,7 @@ class BitfinexWebSocketService:
         try:
             msg = [0, "oc_multi", None, items]
             await self.send(msg)
-            logger.info(
-                "🧹 WS oc_multi skickad: ids=%s cids=%s", ids or [], cids or []
-            )
+            logger.info("🧹 WS oc_multi skickad: ids=%s cids=%s", ids or [], cids or [])
             return {"success": True, "count": len(items)}
         except Exception as e:
             logger.error(f"❌ WS oc_multi fel: {e}")
@@ -332,10 +364,12 @@ class BitfinexWebSocketService:
         try:
             if not self.is_connected:
                 await self.connect()
-            # Dedupe: hoppa över om redan aktiv eller pending
-            key = f"ticker|{symbol}"
-            if symbol in self.active_tickers or key in self.subscriptions:
-                logger.info(f"ℹ️ Ticker redan aktiv/pending: {symbol}")
+            # Normalisera testsymboler till publikt giltiga symboler
+            eff_symbol = self._normalize_public_symbol(symbol)
+            # Dedupe: hoppa över om redan aktiv eller pending (per eff_symbol)
+            key = f"ticker|{eff_symbol}"
+            if eff_symbol in self.active_tickers or key in self.subscriptions:
+                logger.info("ℹ️ Ticker redan aktiv/pending: %s", eff_symbol)
                 # Säkerställ callback är satt
                 if key not in self.callbacks:
                     self.callbacks[key] = callback
@@ -344,7 +378,7 @@ class BitfinexWebSocketService:
             subscribe_msg = {
                 "event": "subscribe",
                 "channel": "ticker",
-                "symbol": symbol,
+                "symbol": eff_symbol,
             }
 
             if not self.websocket:
@@ -354,7 +388,7 @@ class BitfinexWebSocketService:
             self.subscriptions[key] = subscribe_msg
             self.callbacks[key] = callback
 
-            logger.info(f"📊 Prenumererar på ticker för {symbol}")
+            logger.info("📊 Prenumererar på ticker för %s", eff_symbol)
 
         except Exception as e:
             logger.error(f"❌ Ticker-prenumeration misslyckades: {e}")
@@ -371,21 +405,22 @@ class BitfinexWebSocketService:
             if not self.is_connected:
                 await self.connect()
 
+            eff_symbol = self._normalize_public_symbol(symbol)
             subscribe_msg = {
                 "event": "subscribe",
                 "channel": "trades",
-                "symbol": symbol,
+                "symbol": eff_symbol,
             }
 
             if not self.websocket:
                 logger.warning("WS subscribe_trades: ingen anslutning")
                 return
             await self.websocket.send(json.dumps(subscribe_msg))
-            key = f"trades|{symbol}"
+            key = f"trades|{eff_symbol}"
             self.subscriptions[key] = subscribe_msg
             self.callbacks[key] = callback
 
-            logger.info(f"💱 Prenumererar på trades för {symbol}")
+            logger.info("💱 Prenumererar på trades för %s", eff_symbol)
 
         except Exception as e:
             logger.error(f"❌ Trades-prenumeration misslyckades: {e}")
@@ -419,7 +454,8 @@ class BitfinexWebSocketService:
             if not self.is_connected:
                 await self.connect()
 
-            ckey = f"trade:{timeframe}:{symbol}"
+            eff_symbol = self._normalize_public_symbol(symbol)
+            ckey = f"trade:{timeframe}:{eff_symbol}"
             msg = {"event": "subscribe", "channel": "candles", "key": ckey}
             if not self.websocket:
                 logger.warning("WS subscribe_candles: ingen anslutning")
@@ -428,7 +464,7 @@ class BitfinexWebSocketService:
             sub_key = f"candles|{ckey}"
             self.subscriptions[sub_key] = msg
             self.callbacks[sub_key] = callback
-            logger.info(f"🕯️ Prenumererar på candles {ckey}")
+            logger.info("🕯️ Prenumererar på candles %s", ckey)
         except Exception as e:
             logger.error(f"❌ Candles-prenumeration misslyckades: {e}")
 
@@ -445,10 +481,11 @@ class BitfinexWebSocketService:
             if not self.is_connected:
                 await self.connect()
 
+            eff_symbol = self._normalize_public_symbol(symbol)
             msg = {
                 "event": "subscribe",
                 "channel": "book",
-                "symbol": symbol,
+                "symbol": eff_symbol,
                 "prec": precision,
                 "freq": freq,
                 "len": length,
@@ -457,12 +494,16 @@ class BitfinexWebSocketService:
                 logger.warning("WS subscribe_book: ingen anslutning")
                 return
             await self.websocket.send(json.dumps(msg))
-            key = f"book|{symbol}|{precision}|{freq}|{length}"
+            key = f"book|{eff_symbol}|{precision}|{freq}|{length}"
             self.subscriptions[key] = msg
             if callback:
                 self.callbacks[key] = callback
             logger.info(
-                f"📖 Prenumererar på orderbok {symbol} {precision}/{freq}/{length}"
+                "📖 Prenumererar på orderbok %s %s/%s/%s",
+                eff_symbol,
+                precision,
+                freq,
+                length,
             )
         except Exception as e:
             logger.error(f"❌ Orderbok-prenumeration misslyckades: {e}")
@@ -770,7 +811,9 @@ class BitfinexWebSocketService:
                 if "subscribe: dup" in msg:
                     logger.info("ℹ️ WS: prenumeration redan aktiv (dup)")
                 else:
-                    logger.error(f"❌ WebSocket-fel: {msg}")
+                    # Försök inkludera symbol/key för felsökning
+                    sym = data.get("symbol") or data.get("key") or "?"
+                    logger.error("❌ WebSocket-fel: %s (sym=%s)", msg, sym)
             elif event == "info":
                 logger.info(f"ℹ️ WebSocket-info: {data.get('msg', 'no message')}")
 
