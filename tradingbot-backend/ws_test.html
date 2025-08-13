@@ -291,6 +291,47 @@
     </div>
 
     <div style="margin-top: 20px">
+      <h3>WS‑orders</h3>
+      <div class="row">
+        <div>
+          <label>Update: Order ID</label><br />
+          <input id="wsUpdateId" type="number" placeholder="12345" style="width: 120px" />
+        </div>
+        <div>
+          <label>Nytt pris</label><br />
+          <input id="wsUpdatePrice" type="text" placeholder="10000" style="width: 120px" />
+        </div>
+        <div>
+          <label>Ny mängd</label><br />
+          <input id="wsUpdateAmount" type="text" placeholder="0.001" style="width: 120px" />
+        </div>
+        <button id="wsUpdateBtn" disabled>WS Update (ou)</button>
+      </div>
+      <div class="row" style="margin-top: 8px">
+        <div>
+          <label>Cancel‑multi: ids</label><br />
+          <input id="wsCancelIds" placeholder="123,124" style="width: 200px" />
+        </div>
+        <div>
+          <label>cids</label><br />
+          <input id="wsCancelCids" placeholder="1001,1002" style="width: 160px" />
+        </div>
+        <div>
+          <label>cid_date (YYYY‑MM‑DD)</label><br />
+          <input id="wsCancelDate" placeholder="2025-01-01" style="width: 140px" />
+        </div>
+        <button id="wsCancelMultiBtn" disabled>WS Cancel‑multi</button>
+      </div>
+      <div style="margin-top: 8px">
+        <label>OPS (JSON) – t.ex. [["oc", {"id":123}], ["ou", {"id":124, "price":"10000"}]]</label>
+        <textarea id="wsOpsInput" style="width: 100%; height: 100px"></textarea>
+        <div class="row" style="margin-top: 6px">
+          <button id="wsOpsBtn" disabled>Skicka OPS</button>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top: 20px">
       <h3>Order Templates</h3>
       <div class="row">
         <div>
@@ -982,6 +1023,16 @@
             document.getElementById("placeBracketBtn").disabled = false;
             document.getElementById("saveTplBtn").disabled = false;
             document.getElementById("listTplBtn").disabled = false;
+            // Aktivera WS‑orders UI
+            const wsIds = [
+              "wsUpdateBtn",
+              "wsCancelMultiBtn",
+              "wsOpsBtn",
+            ];
+            wsIds.forEach((id) => {
+              const el = document.getElementById(id);
+              if (el) el.disabled = false;
+            });
             const brTplRefreshBtn = document.getElementById("brTplRefreshBtn");
             const brTplApplyBtn = document.getElementById("brTplApplyBtn");
             const brTplDeleteBtn = document.getElementById("brTplDeleteBtn");
@@ -1133,6 +1184,74 @@
         }
         return res.json();
       }
+
+      // --- WS‑orders actions ---
+      document.getElementById("wsUpdateBtn").addEventListener("click", async () => {
+        try {
+          const order_id = parseInt(
+            (document.getElementById("wsUpdateId").value || "0").trim(),
+            10
+          );
+          if (!order_id) throw new Error("order_id saknas");
+          const priceRaw = (document.getElementById("wsUpdatePrice").value || "").trim();
+          const amountRaw = (document.getElementById("wsUpdateAmount").value || "").trim();
+          const body = { order_id };
+          if (priceRaw) body.price = parseFloat(priceRaw);
+          if (amountRaw) body.amount = parseFloat(amountRaw);
+          const resp = await restFetch("/api/v2/ws/order/update", {
+            method: "POST",
+            body: JSON.stringify(body),
+          });
+          logSection("WS update", resp, "success");
+        } catch (e) {
+          logSection("WS update error", { message: e.message }, "error");
+        }
+      });
+
+      document
+        .getElementById("wsCancelMultiBtn")
+        .addEventListener("click", async () => {
+          try {
+            const idsStr = (document.getElementById("wsCancelIds").value || "").trim();
+            const cidsStr = (document.getElementById("wsCancelCids").value || "").trim();
+            const cid_date = (document.getElementById("wsCancelDate").value || "").trim();
+            const ids = idsStr
+              ? idsStr.split(",").map((s) => parseInt(s.trim(), 10)).filter((n) => !isNaN(n))
+              : undefined;
+            const cids = cidsStr
+              ? cidsStr.split(",").map((s) => parseInt(s.trim(), 10)).filter((n) => !isNaN(n))
+              : undefined;
+            const body = { ids, cids };
+            if (cid_date) body.cid_date = cid_date;
+            const resp = await restFetch("/api/v2/ws/orders/cancel-multi", {
+              method: "POST",
+              body: JSON.stringify(body),
+            });
+            logSection("WS cancel-multi", resp, "success");
+          } catch (e) {
+            logSection("WS cancel-multi error", { message: e.message }, "error");
+          }
+        });
+
+      document.getElementById("wsOpsBtn").addEventListener("click", async () => {
+        try {
+          const raw = (document.getElementById("wsOpsInput").value || "").trim();
+          if (!raw) throw new Error("OPS JSON saknas");
+          let ops = null;
+          try {
+            ops = JSON.parse(raw);
+          } catch (e) {
+            throw new Error("Ogiltig JSON i OPS");
+          }
+          const resp = await restFetch("/api/v2/ws/orders/ops", {
+            method: "POST",
+            body: JSON.stringify({ ops }),
+          });
+          logSection("WS ops", resp, "success");
+        } catch (e) {
+          logSection("WS ops error", { message: e.message }, "error");
+        }
+      });
 
       document
         .getElementById("placeOrderBtn")
