@@ -112,6 +112,24 @@ class OrderResponse(BaseModel):
     data: Optional[Any] = None
 
 
+# --- WS order requestmodeller ---
+class WSOrderUpdateRequest(BaseModel):
+    order_id: int
+    price: Optional[float] = None
+    amount: Optional[float] = None
+    extra: Optional[Dict[str, Any]] = None
+
+
+class WSCancelMultiRequest(BaseModel):
+    ids: Optional[List[int]] = None
+    cids: Optional[List[int]] = None
+    cid_date: Optional[str] = None  # YYYY-MM-DD
+
+
+class WSOrderOpsRequest(BaseModel):
+    ops: List[Any]
+
+
 class BracketOrderRequest(BaseModel):
     """Request för bracket-order (entry + valfri SL/TP)."""
 
@@ -337,6 +355,60 @@ async def update_order_endpoint(
 
     except Exception as e:
         logger.exception(f"Oväntat fel vid uppdatering av order: {e}")
+        return OrderResponse(success=False, error=str(e))
+
+
+# --- WS order endpoints ---
+@router.post("/ws/order/update", response_model=OrderResponse)
+async def ws_order_update(
+    payload: WSOrderUpdateRequest, _: bool = Depends(require_auth)
+):
+    try:
+        from services.bitfinex_websocket import bitfinex_ws
+
+        result = await bitfinex_ws.order_update(
+            order_id=payload.order_id,
+            price=payload.price,
+            amount=payload.amount,
+            extra=payload.extra,
+        )
+        if not result.get("success"):
+            return OrderResponse(success=False, error=str(result.get("error")))
+        return OrderResponse(success=True, data=result)
+    except Exception as e:
+        logger.exception(f"WS order update fel: {e}")
+        return OrderResponse(success=False, error=str(e))
+
+
+@router.post("/ws/orders/cancel-multi", response_model=OrderResponse)
+async def ws_order_cancel_multi(
+    payload: WSCancelMultiRequest, _: bool = Depends(require_auth)
+):
+    try:
+        from services.bitfinex_websocket import bitfinex_ws
+
+        result = await bitfinex_ws.order_cancel_multi(
+            ids=payload.ids, cids=payload.cids, cid_date=payload.cid_date
+        )
+        if not result.get("success"):
+            return OrderResponse(success=False, error=str(result.get("error")))
+        return OrderResponse(success=True, data=result)
+    except Exception as e:
+        logger.exception(f"WS cancel-multi fel: {e}")
+        return OrderResponse(success=False, error=str(e))
+
+
+@router.post("/ws/orders/ops", response_model=OrderResponse)
+async def ws_order_ops(payload: WSOrderOpsRequest, _: bool = Depends(require_auth)):
+    try:
+        from services.bitfinex_websocket import bitfinex_ws
+
+        result = await bitfinex_ws.order_ops(payload.ops)
+        if not result.get("success"):
+            return OrderResponse(success=False, error=str(result.get("error")))
+        return OrderResponse(success=True, data=result)
+    except Exception as e:
+        logger.exception(f"WS ops fel: {e}")
         return OrderResponse(success=False, error=str(e))
 
 

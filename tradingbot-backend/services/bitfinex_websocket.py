@@ -71,6 +71,33 @@ class BitfinexWebSocketService:
         """Registrera callback för privat kanal 0-event (t.ex. 'ws','wu','ps','pu','on','oc','te','tu','auth')."""
         self.private_event_callbacks[event_code] = callback
 
+    async def ensure_authenticated(self) -> bool:
+        """Säkerställ att WS är ansluten och autentiserad.
+
+        Returns:
+            bool: True om ansluten och autentiserad, annars False
+        """
+        try:
+            if not self.is_connected:
+                ok = await self.connect()
+                if not ok:
+                    return False
+            if not self.is_authenticated:
+                # Försök auth igen och vänta kort på ack
+                try:
+                    # Nollställ event och försök igen
+                    try:
+                        self._auth_event.clear()
+                    except Exception:
+                        pass
+                    await self.authenticate()
+                    await self._asyncio.wait_for(self._auth_event.wait(), timeout=5)
+                except Exception:
+                    pass
+            return bool(self.is_connected and self.is_authenticated)
+        except Exception:
+            return False
+
     async def send(self, payload: Any):
         """Skicka rått WS-meddelande. Accepterar dict (json.dumps) eller str."""
         try:
@@ -132,6 +159,139 @@ class BitfinexWebSocketService:
             logger.info(f"⚙️ WS conf skickad med flags={flags}")
         except Exception as e:
             logger.warning(f"⚠️ Kunde inte skicka conf: {e}")
+
+    # --- WS Orderkommandon ---
+    async def order_update(
+        self,
+        order_id: int,
+        price: Optional[float] = None,
+        amount: Optional[float] = None,
+        extra: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """Skicka WS order update (ou) för att uppdatera pris/mängd/flags.
+
+        Args:
+            order_id: ID för ordern
+            price: nytt pris (valfritt)
+            amount: ny mängd (valfritt)
+            extra: extra fält att inkludera (t.ex. flags)
+
+        Returns:
+            Dict med status
+        """
+        payload: Dict[str, Any] = {"id": int(order_id)}
+        if price is not None:
+            payload["price"] = str(price)
+        if amount is not None:
+            payload["amount"] = str(amount)
+        if isinstance(extra, dict):
+            payload.update(extra)
+
+        if not await self.ensure_authenticated():
+            return {"success": False, "error": "ws_not_authenticated"}
+        try:
+            msg = [0, "ou", None, payload]
+            await self.send(msg)
+            logger.info(f"📝 WS ou skickad: id=%s price=%s amount=%s", order_id, price, amount)
+            return {"success": True, "sent": True}
+        except Exception as e:
+            logger.error(f"❌ WS ou fel: {e}")
+            return {"success": False, "error": str(e)}
+
+    async def order_cancel_multi(
+        self,
+        ids: Optional[List[int]] = None,
+        cids: Optional[List[int]] = None,
+        cid_date: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Skicka WS oc_multi för att avbryta flera ordrar.
+
+        Stödjer både id-lista och cid+cid_date-lista.
+        """
+        items: List[Dict[str, Any]] = []
+        if ids:
+            for oid in ids:
+                try:
+                    items.append({"id": int(oid)})
+                except Exception:
+                    pass
+        if cids:
+            # Bitfinex kräver cid_date (YYYY-MM-DD) tillsammans med cid
+            for cid in cids:
+                entry = {"cid": int(cid)}
+                if cid_date:
+                    entry["cid_date"] = cid_date
+                items.append(entry)
+
+        if not items:
+            return {"success": False, "error": "no_items"}
+        if not await self.ensure_authenticated():
+            return {"success": False, "error": "ws_not_authenticated"}
+        try:
+            msg = [0, "oc_multi", None, items]
+            await self.send(msg)
+            logger.info(
+                "🧹 WS oc_multi skickad: ids=%s cids=%s", ids or [], cids or []
+            )
+            return {"success": True, "count": len(items)}
+        except Exception as e:
+            logger.error(f"❌ WS oc_multi fel: {e}")
+            return {"success": False, "error": str(e)}
+
+    async def order_ops(self, ops: List[Any]) -> Dict[str, Any]:
+        """Skicka WS ops (batch av ['on'|'oc'|'ou', payload]).
+
+        Args:
+            ops: lista av operationer, var och en antingen [code, payload]
+                 eller dict {"code": code, "payload": {...}}
+        """
+        if not isinstance(ops, list) or not ops:
+            return {"success": False, "error": "empty_ops"}
+        if not await self.ensure_authenticated():
+            return {"success": False, "error": "ws_not_authenticated"}
+
+        # Normalisera och sanera payloads (amount/price -> str)
+        normalized: List[List[Any]] = []
+        allowed = {"on", "oc", "ou"}
+        for item in ops:
+            try:
+                if isinstance(item, (list, tuple)) and len(item) >= 2:
+                    code = str(item[0])
+                    data = dict(item[1])
+                elif isinstance(item, dict) and "code" in item and "payload" in item:
+                    code = str(item.get("code"))
+                    data = dict(item.get("payload") or {})
+                else:
+                    continue
+                code_l = code.lower()
+                if code_l not in allowed:
+                    continue
+                # Konvertera pris/amount till str enligt Bitfinex-krav
+                if "price" in data and data["price"] is not None:
+                    data["price"] = str(data["price"])
+                if "amount" in data and data["amount"] is not None:
+                    data["amount"] = str(data["amount"])
+                # id/cid till int om möjligt
+                for key in ("id", "cid"):
+                    if key in data and data[key] is not None:
+                        try:
+                            data[key] = int(data[key])
+                        except Exception:
+                            pass
+                normalized.append([code_l, data])
+            except Exception:
+                pass
+
+        if not normalized:
+            return {"success": False, "error": "no_valid_ops"}
+        try:
+            msg = [0, "ops", None, normalized]
+            await self.send(msg)
+            logger.info("📦 WS ops skickad: %s operationer", len(normalized))
+            return {"success": True, "count": len(normalized)}
+        except Exception as e:
+            logger.error(f"❌ WS ops fel: {e}")
+            return {"success": False, "error": str(e)}
 
     async def enable_dead_man_switch(self, timeout_ms: int = 60000):
         """Aktiverar Dead Man's Switch (auto-cancel vid frånkoppling)."""
