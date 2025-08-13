@@ -10,9 +10,6 @@ import os
 import sys
 from datetime import datetime, timedelta
 
-# Lägg till projektets rotmapp i Python-sökvägen
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 from rest.positions import (
     close_position,
     get_long_positions,
@@ -28,6 +25,9 @@ from rest.positions_history import (
     update_position_funding_type,
 )
 from utils.logger import get_logger
+
+# Lägg till projektets rotmapp i Python-sökvägen
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 logger = get_logger(__name__)
 

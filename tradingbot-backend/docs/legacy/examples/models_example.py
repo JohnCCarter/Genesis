@@ -8,9 +8,6 @@ för att hantera data i tradingboten.
 import os
 import sys
 
-# Lägg till projektets rotmapp i Python-sökvägen
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 from models.api_models import (
     ApiResponse,
     Candle,
@@ -25,6 +22,9 @@ from models.api_models import (
     WalletType,
 )
 from utils.logger import get_logger
+
+# Lägg till projektets rotmapp i Python-sökvägen
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 logger = get_logger(__name__)
 

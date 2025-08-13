@@ -9,8 +9,6 @@ import asyncio
 import os
 import sys
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 from rest.margin import get_leverage, get_margin_info
 from rest.order_history import (
     get_ledgers,
@@ -21,6 +19,8 @@ from rest.order_history import (
 from rest.positions import get_position_by_symbol, get_positions
 from rest.wallet import get_wallet_by_type_and_currency, get_wallets
 from utils.logger import get_logger
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 logger = get_logger(__name__)
 

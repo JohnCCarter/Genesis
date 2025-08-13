@@ -9,9 +9,6 @@ import asyncio
 import os
 import sys
 
-# Lägg till projektets rotmapp i Python-sökvägen
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 from models.api_models import OrderSide, OrderType
 from rest.active_orders import (
     cancel_orders_by_symbol,
@@ -24,6 +21,9 @@ from rest.active_orders import (
 )
 from rest.auth import place_order
 from utils.logger import get_logger
+
+# Lägg till projektets rotmapp i Python-sökvägen
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 logger = get_logger(__name__)
 

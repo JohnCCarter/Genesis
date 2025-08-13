@@ -36,3 +36,7 @@ skip-magic-trailing-comma = false
 line-ending = "lf"
 
 
+[tool.isort]
+profile = "black"
+line_length = 120
+src_paths = ["tradingbot-backend"]
