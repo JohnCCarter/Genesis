@@ -27,6 +27,22 @@ metrics_store: Dict[str, Any] = {
         "max_subs": 0,
         "sockets": [],  # list of {subs:int, closed:int}
     },
+    # rolling validation snapshot
+    "prob_validation": {
+        # aggregate latest values
+        "brier": None,
+        "logloss": None,
+        # optional per symbol/tf latest
+        "by": {},  # key: "tPAIR|tf" -> {"brier": x, "logloss": y, "ts": epoch}
+        # rolling windows (per size)
+        "rolling": {},  # key: "window_min" -> list of {ts,brier,logloss}
+    },
+    # retraining status
+    "prob_retrain": {
+        "last_success": None,
+        "last_error": None,
+        "events": 0,
+    },
 }
 
 
@@ -40,9 +56,13 @@ def inc(metric_name: str, by: int = 1) -> None:
 def _labels_to_str(labels: Dict[str, str]) -> str:
     # Enkel label-escaping för Prometheus-formatteringen
     def esc(value: str) -> str:
-        return str(value).replace("\\", "\\\\").replace("\n", " ").replace('"', '\\"')
+        v = str(value).replace("\\", "\\\\")
+        v = v.replace("\n", " ")
+        return v.replace('"', '\\"')
 
-    parts = [f'{k}="{esc(v)}"' for k, v in labels.items()]
+    parts = []
+    for k, v in labels.items():
+        parts.append(f'{k}="{esc(v)}"')
     return "{" + ",".join(parts) + "}"
 
 
@@ -51,7 +71,9 @@ def observe_latency(path: str, method: str, status_code: int, duration_ms: int) 
     try:
         # Trimma querydel och normalisera enklare path
         path_sanitized = str(path or "").split("?", 1)[0]
-        key = f"{method.upper()}|{path_sanitized}|{int(status_code)}"
+        method_u = method.upper()
+        status_i = int(status_code)
+        key = f"{method_u}|{path_sanitized}|{status_i}"
         bucket = metrics_store["request_latency"].get(key)
         if not bucket:
             bucket = {"count": 0, "sum_ms": 0}
@@ -74,13 +96,17 @@ def inc_labeled(name: str, labels: Dict[str, str], by: int = 1) -> None:
 
 
 def render_prometheus_text() -> str:
-    lines = [
-        f"tradingbot_orders_total {metrics_store.get('orders_total', 0)}",
-        f"tradingbot_orders_failed_total {metrics_store.get('orders_failed_total', 0)}",
-        f"tradingbot_rate_limited_total {metrics_store.get('rate_limited_total', 0)}",
-        f"tradingbot_order_submit_ms_total {metrics_store.get('order_submit_ms', 0)}",
-        f"tradingbot_circuit_breaker_active {1 if metrics_store.get('circuit_breaker_active') else 0}",
-    ]
+    lines = []
+    orders_total = metrics_store.get("orders_total", 0)
+    lines.append(f"tradingbot_orders_total {orders_total}")
+    orders_failed = metrics_store.get("orders_failed_total", 0)
+    lines.append(f"tradingbot_orders_failed_total {orders_failed}")
+    rate_limited = metrics_store.get("rate_limited_total", 0)
+    lines.append(f"tradingbot_rate_limited_total {rate_limited}")
+    submit_ms = metrics_store.get("order_submit_ms", 0)
+    lines.append(f"tradingbot_order_submit_ms_total {submit_ms}")
+    cb_active = 1 if metrics_store.get("circuit_breaker_active") else 0
+    lines.append(f"tradingbot_circuit_breaker_active {cb_active}")
 
     # Lägg till latensmetrik per endpoint
     try:
@@ -88,19 +114,14 @@ def render_prometheus_text() -> str:
         for key, bucket in lat.items():
             try:
                 method, path, status = key.split("|", 2)
-                labels = _labels_to_str(
-                    {
-                        "path": path,
-                        "method": method,
-                        "status": str(status),
-                    }
-                )
-                lines.append(
-                    f"tradingbot_request_latency_ms_count{labels} {int(bucket.get('count', 0))}"
-                )
-                lines.append(
-                    f"tradingbot_request_latency_ms_sum{labels} {int(bucket.get('sum_ms', 0))}"
-                )
+                label_map = {"path": path, "method": method, "status": str(status)}
+                labels = _labels_to_str(label_map)
+                cnt = int(bucket.get("count", 0))
+                metric = "tradingbot_request_latency_ms_count"
+                lines.append(f"{metric}{labels} {cnt}")
+                sum_ms = int(bucket.get("sum_ms", 0))
+                metric = "tradingbot_request_latency_ms_sum"
+                lines.append(f"{metric}{labels} {sum_ms}")
             except Exception:
                 continue
     except Exception:
@@ -111,34 +132,113 @@ def render_prometheus_text() -> str:
         ctrs: Dict[str, Dict[str, int]] = metrics_store.get("counters", {})
         for metric_name, label_map in ctrs.items():
             for label_str, value in label_map.items():
-                lines.append(f"tradingbot_{metric_name}{label_str} {int(value)}")
+                val_int = int(value)
+                lines.append(f"tradingbot_{metric_name}{label_str} {val_int}")
     except Exception:
         pass
 
     # WS pool metrics
     try:
         pool = metrics_store.get("ws_pool", {}) or {}
-        lines.append(f"tradingbot_ws_pool_enabled {1 if pool.get('enabled') else 0}")
-        lines.append(
-            f"tradingbot_ws_pool_max_sockets {int(pool.get('max_sockets', 0))}"
-        )
-        lines.append(f"tradingbot_ws_pool_max_subs {int(pool.get('max_subs', 0))}")
+        enabled_flag = 1 if pool.get("enabled") else 0
+        lines.append(f"tradingbot_ws_pool_enabled {enabled_flag}")
+        max_sockets = int(pool.get("max_sockets", 0))
+        lines.append(f"tradingbot_ws_pool_max_sockets {max_sockets}")
+        max_subs_total = int(pool.get("max_subs", 0))
+        lines.append(f"tradingbot_ws_pool_max_subs {max_subs_total}")
         # per-socket
         socks = pool.get("sockets") or []
         for idx, s in enumerate(socks):
             labels = _labels_to_str({"index": str(idx)})
-            lines.append(
-                f"tradingbot_ws_pool_socket_subs{labels} {int(s.get('subs', 0))}"
-            )
-            lines.append(
-                f"tradingbot_ws_pool_socket_closed{labels} {1 if s.get('closed') else 0}"
-            )
+            subs_val = int(s.get("subs", 0))
+            lines.append(f"tradingbot_ws_pool_socket_subs{labels} {subs_val}")
+            closed_flag = 1 if s.get("closed") else 0
+            lines.append(f"tradingbot_ws_pool_socket_closed{labels} {closed_flag}")
             # varningsflagga: nära max_subs (>= 90%)
             max_subs = int(pool.get("max_subs", 0) or 0)
-            warn = (
-                1 if (max_subs and int(s.get("subs", 0)) >= int(0.9 * max_subs)) else 0
-            )
+            near = int(0.9 * max_subs) if max_subs else 0
+            subs_now = int(s.get("subs", 0))
+            warn = 1 if (max_subs and subs_now >= near) else 0
             lines.append(f"tradingbot_ws_pool_socket_near_capacity{labels} {warn}")
+    except Exception:
+        pass
+
+    # Probability validation snapshot
+    try:
+        pv_any = metrics_store.get("prob_validation", {}) or {}
+        pv: Dict[str, Any] = pv_any  # typing aid
+        brier = pv.get("brier")
+        logloss = pv.get("logloss")
+        if brier is not None:
+            try:
+                val = float(brier or 0.0)
+                lines.append(f"tradingbot_prob_brier {val}")
+            except Exception:
+                pass
+        if logloss is not None:
+            try:
+                val = float(logloss or 0.0)
+                lines.append(f"tradingbot_prob_logloss {val}")
+            except Exception:
+                pass
+        by_any = pv.get("by") or {}
+        by_map: Dict[str, Dict[str, Any]] = by_any
+        for key, vals in by_map.items():
+            try:
+                sym, tf = key.split("|", 1)
+            except Exception:
+                sym, tf = key, ""
+            labels = _labels_to_str({"symbol": sym, "tf": tf})
+            if isinstance(vals, dict):
+                if vals.get("brier") is not None:
+                    try:
+                        metric_name = "tradingbot_prob_brier_latest"
+                        metric_val = float(vals.get("brier") or 0.0)
+                        lines.append(f"{metric_name}{labels} {metric_val}")
+                    except Exception:
+                        pass
+                if vals.get("logloss") is not None:
+                    try:
+                        metric_name = "tradingbot_prob_logloss_latest"
+                        metric_val = float(vals.get("logloss") or 0.0)
+                        lines.append(f"{metric_name}{labels} {metric_val}")
+                    except Exception:
+                        pass
+        # Rolling window aggregates (exponera nuvarande medel per fönster)
+        try:
+            rolling_any = pv.get("rolling") or {}
+            rolling: Dict[str, Any] = rolling_any
+            for window_key, series in rolling.items():
+                try:
+                    if not isinstance(series, list) or not series:
+                        continue
+                    # Enkelt medel av senaste N (redan trimmas i scheduler)
+                    b_vals = [
+                        float(x.get("brier"))
+                        for x in series
+                        if x.get("brier") is not None
+                    ]
+                    l_vals = [
+                        float(x.get("logloss"))
+                        for x in series
+                        if x.get("logloss") is not None
+                    ]
+                    labels = _labels_to_str({"window": str(window_key)})
+                    if b_vals:
+                        lines.append(
+                            f"tradingbot_prob_brier_window{labels} {sum(b_vals) / max(1, len(b_vals))}"
+                        )
+                    if l_vals:
+                        lines.append(
+                            f"tradingbot_prob_logloss_window{labels} {sum(l_vals) / max(1, len(l_vals))}"
+                        )
+                    lines.append(
+                        f"tradingbot_prob_validate_samples_window{labels} {len(series)}"
+                    )
+                except Exception:
+                    continue
+        except Exception:
+            pass
     except Exception:
         pass
 

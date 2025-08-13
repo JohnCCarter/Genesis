@@ -126,8 +126,9 @@ class OrderValidator:
         ]
         # Bygg live-lista via SymbolService om möjligt
         try:
-            from services.symbols import SymbolService
             import asyncio as _asyncio
+
+            from services.symbols import SymbolService
 
             svc = SymbolService()
             # Kör refresh synkront i denna tråd (validation anropas sällan och tidig init är ok)

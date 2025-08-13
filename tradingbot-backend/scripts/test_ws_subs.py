@@ -1,5 +1,5 @@
 import asyncio
-from typing import List, Dict
+from typing import Dict, List
 
 from config.settings import Settings
 from services.bitfinex_websocket import bitfinex_ws

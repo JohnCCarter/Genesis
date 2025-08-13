@@ -171,24 +171,39 @@ def evaluate_strategy(data: Dict[str, List[float]]) -> Dict[str, Any]:
             signal = "WAIT"
             reason = f"Otydlig signal - RSI: {rsi:.2f}, EMA: {ema:.4f}, ATR: {atr:.4f}"
 
-        # Härleder enkla riktade signaler och använder viktad strategi
+        # Härleder enkla riktade signaler och använder antingen probabilistisk modell eller viktad heuristik
         try:
-            ema_sig = (
-                "buy"
-                if current_price > ema
-                else ("sell" if current_price < ema else "neutral")
-            )
-            rsi_sig = "buy" if rsi < 30 else ("sell" if rsi > 70 else "neutral")
-            # ATR beskriver volatilitet – markera som "high" eller "low" (riktningsneutral för viktningen)
-            # Enkel heuristik: hög volatilitet om ATR > 2% av priset
-            atr_vol = "high" if (atr / current_price) > 0.02 else "low"
-            weighted = evaluate_weighted_strategy(
-                {
-                    "ema": ema_sig,
-                    "rsi": rsi_sig,
-                    "atr": atr_vol,
+            # Features till probabilistisk modell (enkla, utökas senare)
+            try:
+                from config.settings import Settings as _S
+                from services.prob_model import prob_model
+
+                # Skala features: positivt när buy‑vänligt, negativt åt sell
+                f_ema = (
+                    1.0
+                    if current_price > ema
+                    else (-1.0 if current_price < ema else 0.0)
+                )
+                f_rsi = (
+                    30.0 - min(max(rsi, 0.0), 100.0)
+                ) / 30.0  # <30 → positiv, >70 → negativ (klipps av modellen)
+                probs = prob_model.predict_proba({"ema": f_ema, "rsi": f_rsi})
+                weighted = {
+                    "signal": max(probs, key=probs.get),
+                    "probabilities": {k: round(float(v), 6) for k, v in probs.items()},
                 }
-            )
+            except Exception:
+                # Heuristisk fallback om modell ej finns
+                ema_sig = (
+                    "buy"
+                    if current_price > ema
+                    else ("sell" if current_price < ema else "neutral")
+                )
+                rsi_sig = "buy" if rsi < 30 else ("sell" if rsi > 70 else "neutral")
+                atr_vol = "high" if (atr / current_price) > 0.02 else "low"
+                weighted = evaluate_weighted_strategy(
+                    {"ema": ema_sig, "rsi": rsi_sig, "atr": atr_vol}
+                )
         except Exception as e:
             logger.warning(f"Kunde inte beräkna viktad strategi: {e}")
             weighted = {

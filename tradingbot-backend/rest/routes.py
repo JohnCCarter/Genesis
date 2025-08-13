@@ -17,8 +17,8 @@ from config.settings import Settings
 from indicators.atr import calculate_atr
 from rest import auth as rest_auth
 from rest.active_orders import ActiveOrdersService
-from rest.margin import MarginService
 from rest.funding import FundingService
+from rest.margin import MarginService
 from rest.order_history import (
     LedgerEntry,
     OrderHistoryItem,
@@ -30,12 +30,14 @@ from rest.positions import Position, PositionsService
 from rest.wallet import WalletBalance, WalletService
 from services.backtest import BacktestService
 from services.bitfinex_data import BitfinexDataService
+from services.bitfinex_websocket import bitfinex_ws
 from services.bracket_manager import bracket_manager
 from services.metrics import inc as metrics_inc
 from services.metrics import inc_labeled, render_prometheus_text
 from services.notifications import notification_service
-from services.bitfinex_websocket import bitfinex_ws
 from services.performance import PerformanceService
+from services.prob_model import prob_model
+from services.prob_validation import validate_on_candles
 from services.risk_manager import RiskManager
 from services.runtime_mode import (
     get_core_mode,
@@ -138,6 +140,67 @@ class WSUnsubscribeRequest(BaseModel):
     timeframe: Optional[str] = None  # för candles, t.ex. 1m/5m
 
 
+class ProbPredictRequest(BaseModel):
+    symbol: str
+    timeframe: str = "1m"
+    horizon: int = 20  # antal candles (metadata)
+    tp: float = 0.002  # 0.2%
+    sl: float = 0.002  # 0.2%
+    fees: float = 0.0003  # 3 bps
+
+
+class ProbPreviewRequest(BaseModel):
+    symbol: str
+    timeframe: str = "1m"
+    risk_percent_cap: float | None = None  # override PROB_SIZE_MAX_RISK_PCT
+
+
+@router.post("/prob/preview")
+async def prob_preview(req: ProbPreviewRequest, _bypass_auth: bool = Depends(security)):
+    try:
+        # 1) inferens
+        from config.settings import Settings as _S
+
+        s = _S()
+        pred = await prob_predict(
+            ProbPredictRequest(symbol=req.symbol, timeframe=req.timeframe),
+            True,  # bypass auth re-check
+        )
+        # pred kan vara Response JSON; säkerställ dict
+        if hasattr(pred, "dict"):
+            pred = pred.dict()  # type: ignore[assignment]
+        if not isinstance(pred, dict):
+            return pred
+        decision = pred.get("decision")
+        if decision not in ("buy", "sell"):
+            return {"decision": decision, "reason": "abstain"}
+        # 2) positionsstorlek (återanvänd /risk/position-size i miniform)
+        cap = float(req.risk_percent_cap or s.PROB_SIZE_MAX_RISK_PCT)
+        side = str(decision)
+        # begär storlek med ATR‑baserade SL/TP
+        psz = await calculate_position_size(
+            PositionSizeRequest(symbol=req.symbol, risk_percent=cap, side=side),
+            True,
+        )
+        if not isinstance(psz, dict):
+            return {"decision": decision, "size": 0.0, "reason": "size_error"}
+        # svar
+        return {
+            "decision": decision,
+            "ev": pred.get("ev"),
+            "probabilities": pred.get("probabilities"),
+            "size": psz.get("size"),
+            "price": psz.get("price"),
+            "atr_sl": psz.get("atr_sl"),
+            "atr_tp": psz.get("atr_tp"),
+            "quote_alloc": psz.get("quote_alloc"),
+            "quote_currency": psz.get("quote_currency"),
+        }
+    except Exception as e:
+        logger.exception(f"prob/preview error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 class BracketOrderRequest(BaseModel):
     """Request för bracket-order (entry + valfri SL/TP)."""
 
@@ -151,6 +214,65 @@ class BracketOrderRequest(BaseModel):
     tif: Optional[str] = None  # e.g. GTC/IOC/FOK
     post_only: bool = False
     reduce_only: bool = False
+
+
+class ProbTradeRequest(BaseModel):
+    symbol: str
+    timeframe: str = "1m"
+    risk_percent_cap: float | None = None
+
+
+@router.post("/prob/trade")
+async def prob_trade(req: ProbTradeRequest, _bypass_auth: bool = Depends(security)):
+    try:
+        from config.settings import Settings as _S
+
+        s = _S()
+        if not bool(getattr(s, "PROB_AUTOTRADE_ENABLED", False)):
+            return {"ok": False, "error": "autotrade_disabled"}
+        pv = await prob_preview(
+            ProbPreviewRequest(
+                symbol=req.symbol,
+                timeframe=req.timeframe,
+                risk_percent_cap=req.risk_percent_cap,
+            ),
+            True,
+        )
+        if hasattr(pv, "dict"):
+            pv = pv.dict()  # type: ignore[assignment]
+        if not isinstance(pv, dict) or pv.get("decision") not in ("buy", "sell"):
+            return {"ok": False, "error": "abstain"}
+        # Guardrails: margin tradable > 0
+        try:
+            ms = MarginService()
+            msym = await ms.get_symbol_margin_status(req.symbol)
+            if not (msym and float(msym.get("tradable") or 0) > 0):
+                return {"ok": False, "error": "margin_unavailable"}
+        except Exception:
+            pass
+        side = "buy" if pv["decision"] == "buy" else "sell"
+        amount = str(pv.get("size") or 0)
+        if not amount or float(amount) <= 0:
+            return {"ok": False, "error": "size_zero"}
+        # Bracket: marknadsentry + ATR SL/TP
+        req_br = BracketOrderRequest(
+            symbol=req.symbol,
+            amount=amount,
+            side=side,
+            entry_type="EXCHANGE MARKET",
+            entry_price=None,
+            sl_price=(pv.get("atr_sl") if pv.get("atr_sl") else None),
+            tp_price=(pv.get("atr_tp") if pv.get("atr_tp") else None),
+            post_only=False,
+            reduce_only=False,
+        )
+        res = await place_bracket_order(req_br, True)
+        if hasattr(res, "dict"):
+            res = res.dict()  # type: ignore[assignment]
+        return {"ok": True, "result": res}
+    except Exception as e:
+        logger.exception(f"prob/trade error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # Order endpoints
@@ -1476,6 +1598,187 @@ async def ws_unsubscribe(req: WSUnsubscribeRequest, _: bool = Depends(require_au
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/prob/predict")
+async def prob_predict(req: ProbPredictRequest, _: bool = Depends(require_auth)):
+    try:
+        import time as _t
+
+        t0 = _t.time()
+        # Hämta senaste candles för features
+        data = BitfinexDataService()
+        closes_pack = await data.get_candles(
+            req.symbol, req.timeframe, limit=max(req.horizon, 50)
+        )
+        if not closes_pack:
+            return {
+                "source": "heuristic",
+                "probabilities": {"buy": 0.0, "sell": 0.0, "hold": 1.0},
+                "confidence": 0.0,
+                "ev": 0.0,
+                "features": {},
+            }
+        # Bitfinex candle: [MTS, OPEN, CLOSE, HIGH, LOW, VOLUME]
+        closes = [
+            row[2]
+            for row in closes_pack
+            if isinstance(row, (list, tuple)) and len(row) >= 3
+        ]
+        if len(closes) < 5:
+            return {
+                "source": "heuristic",
+                "probabilities": {"buy": 0.0, "sell": 0.0, "hold": 1.0},
+                "confidence": 0.0,
+                "ev": 0.0,
+                "features": {},
+            }
+        price = float(closes[-1])
+        # Enkla features (samma som i strategy)
+        # EMA proxy: använd enkel glidande medel (SMA) som approximation här
+        try:
+            ema = sum(closes[-10:]) / min(10, len(closes))
+        except Exception:
+            ema = price
+        f_ema = 1.0 if price > ema else (-1.0 if price < ema else 0.0)
+        # RSI proxy: normalisera senaste prisförändringen
+        try:
+            import math
+
+            delta = price - float(closes[-2])
+            rsi_norm = max(min(delta / (abs(float(closes[-2])) + 1e-9), 1.0), -1.0)
+        except Exception:
+            rsi_norm = 0.0
+        f_rsi = rsi_norm
+
+        probs = prob_model.predict_proba({"ema": f_ema, "rsi": f_rsi})
+        confidence = float(max(probs.values()))
+        # EV för buy/sell (procentenheter)
+        p_buy = float(probs.get("buy", 0.0))
+        p_sell = float(probs.get("sell", 0.0))
+        ev_buy = p_buy * req.tp - p_sell * req.sl - req.fees
+        ev_sell = p_sell * req.tp - p_buy * req.sl - req.fees
+        # Policybeslut
+        from config.settings import Settings as _S
+
+        s = _S()
+        ev_th = float(getattr(s, "PROB_MODEL_EV_THRESHOLD", 0.0) or 0.0)
+        conf_th = float(getattr(s, "PROB_MODEL_CONFIDENCE_MIN", 0.0) or 0.0)
+        side = "buy" if ev_buy >= ev_sell else "sell"
+        best_ev = ev_buy if side == "buy" else ev_sell
+        decision = side if (best_ev >= ev_th and confidence >= conf_th) else "abstain"
+        try:
+            # metrics
+            if decision == "abstain":
+                inc_labeled("prob_events", {"type": "abstain"})
+            else:
+                inc_labeled("prob_events", {"type": "trade", "side": side})
+            inc_labeled(
+                "prob_events",
+                {
+                    "type": "infer",
+                    "source": ("model" if prob_model.enabled else "heuristic"),
+                },
+            )
+        except Exception:
+            pass
+        t1 = _t.time()
+        source = "model" if prob_model.enabled else "heuristic"
+        return {
+            "source": source,
+            "probabilities": {k: round(float(v), 6) for k, v in probs.items()},
+            "confidence": round(confidence, 6),
+            "ev": round(best_ev, 6),
+            "ev_buy": round(ev_buy, 6),
+            "ev_sell": round(ev_sell, 6),
+            "decision": decision,
+            "thresholds": {"ev": ev_th, "confidence": conf_th},
+            "latency_ms": int((t1 - t0) * 1000),
+            "features": {"ema": f_ema, "rsi": f_rsi, "price": price, "ema_proxy": ema},
+            "params": req.dict(),
+        }
+    except Exception as e:
+        logger.exception(f"prob/predict error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/prob/status")
+async def prob_status(_: bool = Depends(require_auth)):
+    try:
+        from config.settings import Settings as _S
+
+        s = _S()
+        loaded = bool(prob_model.enabled and prob_model.model_meta)
+        return {
+            "enabled": bool(prob_model.enabled),
+            "loaded": loaded,
+            "file": getattr(s, "PROB_MODEL_FILE", None),
+            "schema": prob_model.model_meta.get("schema") if loaded else None,
+            "version": prob_model.model_meta.get("version") if loaded else None,
+            "thresholds": {
+                "ev": float(getattr(s, "PROB_MODEL_EV_THRESHOLD", 0.0) or 0.0),
+                "confidence": float(
+                    getattr(s, "PROB_MODEL_CONFIDENCE_MIN", 0.0) or 0.0
+                ),
+            },
+        }
+    except Exception as e:
+        logger.exception(f"prob/status error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class ProbValidateRequest(BaseModel):
+    symbol: str
+    timeframe: str = "1m"
+    horizon: int = 20
+    tp: float = 0.002
+    sl: float = 0.002
+    limit: int = 1000  # antal candles att hämta för validering
+    max_samples: int | None = 500  # senaste N samples att utvärdera
+
+
+@router.post("/prob/validate")
+async def prob_validate(req: ProbValidateRequest, _: bool = Depends(require_auth)):
+    try:
+        data = BitfinexDataService()
+        candles = await data.get_candles(req.symbol, req.timeframe, req.limit)
+        if not candles:
+            return {"samples": 0, "brier": None, "logloss": None, "by_label": {}}
+        result = validate_on_candles(
+            candles,
+            horizon=req.horizon,
+            tp=req.tp,
+            sl=req.sl,
+            max_samples=req.max_samples,
+        )
+        # uppdatera metrics enkelt
+        try:
+            if result.get("brier") is not None:
+                inc_labeled(
+                    "prob_metrics",
+                    {
+                        "type": "brier",
+                        "symbol": req.symbol,
+                        "tf": req.timeframe,
+                    },
+                    by=int(max(result.get("samples", 0), 1)),
+                )
+            if result.get("logloss") is not None:
+                inc_labeled(
+                    "prob_metrics",
+                    {
+                        "type": "logloss",
+                        "symbol": req.symbol,
+                        "tf": req.timeframe,
+                    },
+                    by=int(max(result.get("samples", 0), 1)),
+                )
+        except Exception:
+            pass
+        return result
+    except Exception as e:
+        logger.exception(f"prob/validate error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # Symbols endpoint
 @router.get("/market/symbols")
 async def market_symbols(
@@ -1508,7 +1811,7 @@ async def market_symbols(
 # Watchlist endpoint (liten vy) med ticker + volym + senaste strategi-signal
 @router.get("/market/watchlist")
 async def market_watchlist(
-    symbols: Optional[str] = None, _: bool = Depends(require_auth)
+    symbols: Optional[str] = None, prob: bool = False, _: bool = Depends(require_auth)
 ):
     try:
         svc = SymbolService()
@@ -1611,19 +1914,88 @@ async def market_watchlist(
 
                 parsed5["symbol"] = s
                 strat_5m = eval5(parsed5)
-            out.append(
-                {
-                    "symbol": s,
-                    "eff_symbol": eff,
-                    "listed": listed,
-                    "ws_live": ws_live,
-                    "margin_status": margin_status,
-                    "last": last,
-                    "volume": vol,
-                    "strategy": strat,
-                    "strategy_5m": strat_5m,
-                }
-            )
+            item = {
+                "symbol": s,
+                "eff_symbol": eff,
+                "listed": listed,
+                "ws_live": ws_live,
+                "margin_status": margin_status,
+                "last": last,
+                "volume": vol,
+                "strategy": strat,
+                "strategy_5m": strat_5m,
+            }
+            if prob:
+                try:
+                    from services.bitfinex_data import BitfinexDataService as _DS
+                    from services.prob_model import prob_model as _pm
+
+                    # använd snabbinferens med enkla features (via /prob/predict-logik), här direkt
+                    ds = _DS()
+                    candles = await ds.get_candles(s, "1m", 50)
+                    if candles:
+                        # Minimal proxy (samma som i /prob/predict)
+                        closes = [
+                            row[2]
+                            for row in candles
+                            if isinstance(row, (list, tuple)) and len(row) >= 3
+                        ]
+                        price = float(closes[-1]) if len(closes) >= 1 else None
+                        ema = (
+                            sum(closes[-10:]) / min(10, len(closes))
+                            if len(closes) >= 1
+                            else price
+                        )
+                        f_ema = (
+                            1.0
+                            if (price is not None and ema is not None and price > ema)
+                            else (
+                                -1.0
+                                if (
+                                    price is not None
+                                    and ema is not None
+                                    and price < ema
+                                )
+                                else 0.0
+                            )
+                        )
+                        try:
+                            delta = float(closes[-1]) - float(closes[-2])
+                            rsi_norm = max(
+                                min(delta / (abs(float(closes[-2])) + 1e-9), 1.0), -1.0
+                            )
+                        except Exception:
+                            rsi_norm = 0.0
+                        probs = _pm.predict_proba({"ema": f_ema, "rsi": rsi_norm})
+                        # EV-policy
+                        from config.settings import Settings as _S
+
+                        s2 = _S()
+                        ev_th = float(
+                            getattr(s2, "PROB_MODEL_EV_THRESHOLD", 0.0) or 0.0
+                        )
+                        conf_th = float(
+                            getattr(s2, "PROB_MODEL_CONFIDENCE_MIN", 0.0) or 0.0
+                        )
+                        p_buy = float(probs.get("buy", 0.0))
+                        p_sell = float(probs.get("sell", 0.0))
+                        ev_buy = p_buy * 0.002 - p_sell * 0.002 - 0.0003
+                        ev_sell = p_sell * 0.002 - p_buy * 0.002 - 0.0003
+                        side = "buy" if ev_buy >= ev_sell else "sell"
+                        best_ev = ev_buy if side == "buy" else ev_sell
+                        decision = (
+                            side
+                            if (best_ev >= ev_th and max(probs.values()) >= conf_th)
+                            else "abstain"
+                        )
+                        item["prob"] = {
+                            "probabilities": probs,
+                            "decision": decision,
+                            "ev": best_ev,
+                        }
+                except Exception:
+                    pass
+            out.append(item)
         return out
     except Exception:
         logger.exception("Fel vid watchlist")

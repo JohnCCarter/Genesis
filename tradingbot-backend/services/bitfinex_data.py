@@ -132,6 +132,7 @@ class BitfinexDataService:
         """
         try:
             import time as _t
+
             from services.symbols import SymbolService
 
             symbol = (symbol or "").strip()

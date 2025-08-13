@@ -254,6 +254,51 @@
         }
       }
 
+      async function predictProb() {
+        try {
+          const symbol = document.getElementById("symbol").value.trim();
+          const timeframe = document.getElementById("timeframe").value;
+          const res = await fetch("/api/v2/prob/predict", {
+            method: "POST",
+            headers: headersWithToken(),
+            body: JSON.stringify({ symbol, timeframe }),
+          });
+          const data = await res.json();
+          // KPIs
+          const decision = (data && data.decision) || "-";
+          const ev = data && typeof data.ev === "number" ? data.ev : null;
+          const conf =
+            data && typeof data.confidence === "number"
+              ? data.confidence
+              : null;
+          const src = (data && data.source) || "-";
+          const lat = data && data.latency_ms != null ? data.latency_ms : null;
+          const probs = (data && data.probabilities) || {};
+          const pb = typeof probs.buy === "number" ? probs.buy : null;
+          const ps = typeof probs.sell === "number" ? probs.sell : null;
+          const ph = typeof probs.hold === "number" ? probs.hold : null;
+
+          const setTxt = (id, val) => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.textContent = val == null ? "-" : String(val);
+          };
+          setTxt("kpi-prob-decision", decision);
+          setTxt("kpi-prob-ev", ev != null ? ev.toFixed(6) : "-");
+          setTxt("kpi-prob-conf", conf != null ? conf.toFixed(3) : "-");
+          setTxt("kpi-prob-buy", pb != null ? pb.toFixed(3) : "-");
+          setTxt("kpi-prob-sell", ps != null ? ps.toFixed(3) : "-");
+          setTxt("kpi-prob-hold", ph != null ? ph.toFixed(3) : "-");
+          setTxt("kpi-prob-src", src);
+          setTxt("kpi-prob-lat", lat != null ? `${lat} ms` : "-");
+
+          const out = document.getElementById("probOut");
+          if (out) out.textContent = JSON.stringify(data, null, 2);
+        } catch (e) {
+          // tyst
+        }
+      }
+
       function init() {
         // Bind events
         document
@@ -265,6 +310,7 @@
         const symEl = document.getElementById("symbol");
         symEl.addEventListener("change", () => {
           loadMarginStatus();
+          predictProb();
         });
         symEl.addEventListener("keydown", (e) => {
           if (e.key === "Enter") calc();
@@ -273,12 +319,15 @@
         if (priceInput) {
           priceInput.addEventListener("blur", sanitizePriceField);
         }
+        const tfEl = document.getElementById("timeframe");
+        if (tfEl) tfEl.addEventListener("change", predictProb);
         // Lazy load symbols (valfritt)
         loadSymbols();
         // Sätt initial visning
         syncRiskInputs("num");
         // Försök hämta margin-status initialt
         setTimeout(loadMarginStatus, 200);
+        setTimeout(predictProb, 250);
       }
 
       // Core mode UI borttagen
@@ -393,6 +442,45 @@
           <div class="value" id="kpi-m-bs">-</div>
         </div>
       </div>
+      <div class="grid-3" style="margin-top: 8px">
+        <div class="kpi">
+          <div class="label">Decision</div>
+          <div class="value" id="kpi-prob-decision">-</div>
+        </div>
+        <div class="kpi">
+          <div class="label">EV</div>
+          <div class="value" id="kpi-prob-ev">-</div>
+        </div>
+        <div class="kpi">
+          <div class="label">Confidence</div>
+          <div class="value" id="kpi-prob-conf">-</div>
+        </div>
+      </div>
+      <div class="grid-3" style="margin-top: 8px">
+        <div class="kpi">
+          <div class="label">p(buy)</div>
+          <div class="value" id="kpi-prob-buy">-</div>
+        </div>
+        <div class="kpi">
+          <div class="label">p(sell)</div>
+          <div class="value" id="kpi-prob-sell">-</div>
+        </div>
+        <div class="kpi">
+          <div class="label">p(hold)</div>
+          <div class="value" id="kpi-prob-hold">-</div>
+        </div>
+      </div>
+      <div class="grid-3" style="margin-top: 8px">
+        <div class="kpi">
+          <div class="label">Källa</div>
+          <div class="value" id="kpi-prob-src">-</div>
+        </div>
+        <div class="kpi">
+          <div class="label">Latens</div>
+          <div class="value" id="kpi-prob-lat">-</div>
+        </div>
+      </div>
+      <pre class="output" id="probOut">{}</pre>
       <div class="grid-3" style="margin-top: 8px">
         <div class="kpi">
           <div class="label">Quote total</div>

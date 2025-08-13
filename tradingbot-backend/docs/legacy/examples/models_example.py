@@ -11,19 +11,10 @@ import sys
 # Lägg till projektets rotmapp i Python-sökvägen
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from models.api_models import (
-    ApiResponse,
-    Candle,
-    OrderRequest,
-    OrderResponse,
-    OrderSide,
-    OrderType,
-    Position,
-    PositionStatus,
-    Ticker,
-    WalletBalance,
-    WalletType,
-)
+from models.api_models import (ApiResponse, Candle, OrderRequest,
+                               OrderResponse, OrderSide, OrderType, Position,
+                               PositionStatus, Ticker, WalletBalance,
+                               WalletType)
 from utils.logger import get_logger
 
 logger = get_logger(__name__)

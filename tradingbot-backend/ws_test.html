@@ -1980,7 +1980,7 @@
         .getElementById("watchlistBtn")
         .addEventListener("click", async () => {
           try {
-            const arr = await restFetch(`/api/v2/market/watchlist`);
+            const arr = await restFetch(`/api/v2/market/watchlist?prob=true`);
             logSection("Watchlist", { count: arr.length }, "success");
             const area = document.getElementById("watchlistArea");
             if (!area) return;
@@ -2016,6 +2016,17 @@
                     : "";
                 return `<div class="small">margin: ${src} tradable=${tr} ${bs}</div>`;
               })();
+              const probHtml = (function () {
+                const p = row.prob;
+                if (!p) return "";
+                const d = p.decision || "-";
+                const ev = typeof p.ev === "number" ? p.ev.toFixed(6) : "-";
+                const pr = p.probabilities || {};
+                const pb = pr.buy != null ? Number(pr.buy).toFixed(3) : "-";
+                const ps = pr.sell != null ? Number(pr.sell).toFixed(3) : "-";
+                const ph = pr.hold != null ? Number(pr.hold).toFixed(3) : "-";
+                return `<div class="small">prob: d=${d} ev=${ev} p(b/s/h)=${pb}/${ps}/${ph}</div>`;
+              })();
               card.innerHTML = `
                 <div style="display:flex;justify-content:space-between;align-items:center">
                   <div><strong>${row.symbol}</strong>
@@ -2025,6 +2036,7 @@
                     </div>
                     <div class="small">pris: ${row.last ?? "-"}</div>
                     ${marginHtml}
+                    ${probHtml}
                   </div>
                   <div>
                     <button data-s="${

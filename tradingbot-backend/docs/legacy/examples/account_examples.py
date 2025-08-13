@@ -12,12 +12,8 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from rest.margin import get_leverage, get_margin_info
-from rest.order_history import (
-    get_ledgers,
-    get_order_trades,
-    get_orders_history,
-    get_trades_history,
-)
+from rest.order_history import (get_ledgers, get_order_trades,
+                                get_orders_history, get_trades_history)
 from rest.positions import get_position_by_symbol, get_positions
 from rest.wallet import get_wallet_by_type_and_currency, get_wallets
 from utils.logger import get_logger

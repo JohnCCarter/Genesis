@@ -192,19 +192,23 @@ Tips
 
 ### Probability Model – regler och policy
 
-1) Fallback och robusthet
+1. Fallback och robusthet
+
 - Använd `PROB_MODEL_ENABLED`; om false eller laddning misslyckas → använd heuristik (nuvarande viktade strategi).
 - Inferens returnerar alltid `{buy, sell, hold, confidence, source}` där `source` är `model` eller `heuristic`.
 
-2) EV‑baserat beslut
+2. EV‑baserat beslut
+
 - Handla endast om `EV = p(win)*TP − p(loss)*SL − fees` ≥ `PROB_MODEL_EV_THRESHOLD` och `confidence ≥ PROB_MODEL_CONFIDENCE_MIN`.
 - Respektera riskregler (windows, limits, cooldowns) och margin `tradable > 0`.
 
-3) Kalibrering och drift
+3. Kalibrering och drift
+
 - Sannolikheter måste vara kalibrerade (isotonic/Platt). Mät Brier score/logloss över tid och rekalibrera periodiskt.
 - Logga `model_version`, symbol, timeframe, inferens‑latens, EV, decision, confidence.
 
-4) Implementationsriktlinjer
+4. Implementationsriktlinjer
+
 - Lägg model I/O i separat modul `services/prob_model.py` med ren API.
 - Tunga beroenden bakom feature‑flag; aktiveras inte som default.
 - Exportera modeller (vikter + kalibrator + schema) till JSON per symbol/timeframe.

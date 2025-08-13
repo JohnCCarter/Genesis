@@ -215,6 +215,24 @@ async def risk_panel_page() -> FileResponse:
     return FileResponse(path)
 
 
+@app.get("/prob-test")
+async def prob_test_page() -> FileResponse:
+    import os
+
+    base_dir = os.path.dirname(__file__)
+    path = os.path.join(base_dir, "prob_test.html")
+    return FileResponse(path)
+
+
+@app.get("/prob_test.html")
+async def prob_test_html_alias() -> FileResponse:
+    import os
+
+    base_dir = os.path.dirname(__file__)
+    path = os.path.join(base_dir, "prob_test.html")
+    return FileResponse(path)
+
+
 @app.get("/metrics")
 async def metrics(request: Request) -> Response:
     """Prometheus metrics (root) med valfritt skydd via miljövariabler.

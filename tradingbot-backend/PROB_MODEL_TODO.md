@@ -1,49 +1,69 @@
 # TODO – Sannolikhetsmodell för automatiserad handel
 
-## Mål och scope
+## Mål och scope — KLART
 
-- [ ] Definiera beslutshorisont (t.ex. 20–50 candles) och tidsskala (1m/5m/15m)
-- [ ] Definiera TP/SL‑trösklar och klasströsklar för buy/sell/hold
-- [ ] Undvik dataläckage (endast information känd vid beslutstid)
+- [x] Definierade env‑flaggor (PROB_MODEL_TIME_HORIZON, PROB_MODEL_EV_THRESHOLD, PROB_MODEL_CONFIDENCE_MIN)
+- [x] Fallback‑policy och beslutsprincip dokumenterad
 
-## Data och features
+## Data och features — KLART
 
-- [ ] Bygg feature‑extractor (per symbol/tf):
-  - [ ] Trend/momentum: EMA‑spread, EMA‑lutning, RSI, ROC
-  - [ ] Vol/regim: ATR/price, vol‑percentiler, regimflagga (low/high vol)
-  - [ ] Struktur: range‑kompression, breakout‑indikatorer (enkla)
-  - [ ] (Valfritt) Volym‑percentiler om tillgängligt
-- [ ] Labeler: generera buy/sell/hold baserat på framtida ROI vs TP/SL
-- [ ] Spara dataset (parquet/csv) med metadata (symbol, tf, tidsstämplar)
+- [x] Feature‑extractor (ema_diff, rsi_norm, atr_pct)
+- [x] Labeler: buy/sell/hold baserat på framtida ROI vs TP/SL
+- [x] Dataset‑bygge (in‑memory helpers)
 
-## Modellering och kalibrering
+## Modellering och kalibrering — KLART
 
-- [ ] Träna logistisk regression per symbol/timeframe (tolkningsbar baseline)
-- [ ] Kalibrera sannolikheter (isotonic eller Platt scaling)
-- [ ] Exportera modellvikter + kalibrator till JSON (per symbol/tf)
+- [x] Logistisk regression baseline (one‑vs‑rest buy/sell)
+- [x] Platt‑kalibrering på valideringssplit
+- [x] Export JSON (vikter + kalibrator + schema)
 
-## Inferens i backend
+## Inferens i backend — KLART
 
-- [ ] Lägg till predict_proba i `services/strategy.py` (ny modul/funktion)
-- [ ] Fallback: använd nuvarande viktade heuristik om modell saknas
-- [ ] Returnera `{buy, sell, hold, confidence}` och exponera i API
+- [x] `services/prob_model.py` + integration i `services/strategy.py`
+- [x] API: `/api/v2/prob/predict` (features, probs, EV, decision)
 
-## Beslutsregel (policy)
+## Beslutsregel (policy) — KLART
 
-- [ ] EV‑beslut: p(win)*TP − p(loss)*SL − fees/slippage > tröskel
-- [ ] Confidence‑krav: abstain om |p(buy) − p(sell)| < δ
-- [ ] Position‑size: Kelly‑inspirerad fraktion med hård cap (riskregler)
+- [x] EV‑beslut + confidence‑krav (env‑styrt)
 
-## Validering och drift
+## Position‑size & AutoTrade — PÅGÅR
 
-- [ ] Backtest: Brier score, LogLoss, EV/PnL per symbol/tf
-- [ ] Live‑övervakning: rullande Brier, kalibreringskurvor
-- [ ] Retraine/rekalibrera: veckovis/månadsvis; atomisk modell‑swap
+- [x] Env: `PROB_AUTOTRADE_ENABLED`, `PROB_SIZE_MAX_RISK_PCT`, `PROB_SIZE_KELLY_CAP`, `PROB_SIZE_CONF_WEIGHT`
+- [x] Endpoints: `POST /api/v2/prob/preview` (storlek/SL/TP), `POST /api/v2/prob/trade` (guardrails + bracket)
+- [ ] Kelly/conf‑vikt i storlek (använd `PROB_SIZE_*` + EV/konfidens)
+- [ ] UI: Risk‑panel – knappar för Preview/Trade med tydliga guardrails
+- [ ] Metrics/loggar: `prob_trade` events, latens och utfall per symbol/side
 
-## UI‑integrering
+## Validering och drift — KLART (grund)
 
-- [ ] Watchlist: visa sannolikheter och EV; badge för abstain/handel
-- [ ] Risk‑panelen: visa p‑fördelning och beslutsstatus (trade/no‑trade)
+- [x] `/api/v2/prob/status` (enabled/loaded/schema/version/thresholds)
+- [x] `/api/v2/prob/predict` returnerar latens och decision + EV
+- [x] `/api/v2/prob/validate` för Brier/LogLoss
+- [x] Schemalagd validering (Brier/LogLoss) i `SchedulerService`
+- [x] Schemalagd retraining + atomisk reload av modell
+- [x] Rullande Brier/LogLoss (tidsserie + retention) i metrics
+
+## UI‑integrering — KLART
+
+- [x] `prob_test.html` (inferens och visning av probs/EV/decision)
+- [x] Integrera i ordinarie vyer (risk‑panel)
+- [x] Watchlist: EV/prob/decision i API (`/market/watchlist?prob=true`) och visning i `ws_test.html`
+
+## Tester — ATT GÖRA
+
+- [ ] Enhetstest: `services/prob_features.py`
+  - [ ] `compute_features_from_candles` (min/max edge fall, kort historik)
+  - [ ] `label_sequence` (tp/sl, horizon‑trim)
+  - [ ] `build_dataset` (align features/labels)
+- [ ] Enhetstest: `services/prob_model.py`
+  - [ ] `predict_proba` med mockad `model_meta` (schema/kalibrering)
+  - [ ] Fallback när `enabled=false` eller modell saknas
+- [ ] API‑tester (monkeypatch candles)
+  - [ ] `POST /api/v2/prob/predict` (probs, EV, decision, latens)
+  - [ ] `POST /api/v2/prob/validate` (Brier/LogLoss returneras rimligt)
+- [ ] Scheduler
+  - [ ] Valideringskörning uppdaterar `metrics_store['prob_validation']`
+  - [ ] Rullande fönster fylls och trimmas enligt retention
 
 ## Guardrails och integrationer
 

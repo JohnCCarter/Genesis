@@ -33,7 +33,8 @@ class Settings(_BaseSettings):
     BITFINEX_API_SECRET: Optional[str] = None
     # REST (auth) bas-URL
     BITFINEX_API_URL: str = "https://api.bitfinex.com/v2"
-    # Valfri separat AUTH-bas-URL (om satt i .env har den företräde för auth-anrop)
+    # Valfri separat AUTH-bas-URL (om satt i .env har den företräde
+    # för auth-anrop)
     BITFINEX_AUTH_API_URL: Optional[str] = None
     # REST (public) bas-URL – använd api-pub för publika endpoints
     BITFINEX_PUBLIC_API_URL: str = "https://api-pub.bitfinex.com/v2"
@@ -118,7 +119,8 @@ class Settings(_BaseSettings):
 
     # WS ticker prioritet: anse WS-data färsk i X sekunder innan REST-fallback
     WS_TICKER_STALE_SECS: int = 10
-    # Vänta kort på första WS‑tick efter auto‑subscribe innan REST‑fallback (ms)
+    # Vänta kort på första WS‑tick efter auto‑subscribe innan
+    # REST‑fallback (ms)
     WS_TICKER_WARMUP_MS: int = 400
 
     # REST ticker cache TTL för att undvika överpollning
@@ -134,6 +136,39 @@ class Settings(_BaseSettings):
     METRICS_BASIC_AUTH_PASS: Optional[str] = None
     # Kommaseparerad lista över tillåtna IP:n (ex: "127.0.0.1,10.0.0.5")
     METRICS_IP_ALLOWLIST: Optional[str] = None
+
+    # Probability Model (feature flags)
+    PROB_MODEL_ENABLED: bool = False
+    PROB_MODEL_FILE: Optional[str] = None
+    PROB_MODEL_CONFIDENCE_MIN: float = 0.15
+    PROB_MODEL_EV_THRESHOLD: float = 0.0005
+    PROB_MODEL_TIME_HORIZON: int = 20
+
+    # Probability Validation (rolling drift/quality monitoring)
+    PROB_VALIDATE_ENABLED: bool = True
+    PROB_VALIDATE_INTERVAL_MINUTES: int = 60
+    PROB_VALIDATE_SYMBOLS: Optional[str] = None  # komma-separerad lista
+    PROB_VALIDATE_TIMEFRAME: str = "1m"
+    PROB_VALIDATE_LIMIT: int = 1200
+    PROB_VALIDATE_MAX_SAMPLES: int = 500
+    # Rolling validation windows and retention
+    PROB_VALIDATE_WINDOWS_MINUTES: Optional[str] = None  # ex: "60,360,1440"
+    PROB_VALIDATE_HISTORY_MAX_POINTS: int = 1000
+    PROB_VALIDATE_HISTORY_RETENTION_MINUTES: int = 2880
+
+    # Probability retraining
+    PROB_RETRAIN_ENABLED: bool = False
+    PROB_RETRAIN_INTERVAL_HOURS: int = 24
+    PROB_RETRAIN_SYMBOLS: Optional[str] = None
+    PROB_RETRAIN_TIMEFRAME: str = "1m"
+    PROB_RETRAIN_LIMIT: int = 5000
+    PROB_RETRAIN_OUTPUT_DIR: str = "config/models"
+
+    # Probability sizing & auto trading
+    PROB_AUTOTRADE_ENABLED: bool = False
+    PROB_SIZE_MAX_RISK_PCT: float = 1.0
+    PROB_SIZE_KELLY_CAP: float = 0.5
+    PROB_SIZE_CONF_WEIGHT: float = 0.5
 
     # Säkerställ absolut sökväg till .env oavsett var processen startas
     class Config:
