@@ -130,6 +130,63 @@ class BitfinexWebSocketService:
         except Exception:
             return symbol
 
+    async def _choose_available_pair(self, eff_symbol: str) -> str:
+        """Välj närmaste giltiga Bitfinex‑symbol baserat på /conf listan.
+
+        Om <ASSET>USD inte finns men <ASSET>UST finns (USDT), använd UST.
+        Cacha listan en stund för att undvika överpollning.
+        """
+        try:
+            s = (eff_symbol or "").strip()
+            if not s.startswith("t") or len(s) < 6:
+                return s
+            base = s[1:-3]
+            quote = s[-3:]
+            # Enkel cache i instansen
+            now_ts = None
+            try:
+                import time as _t
+
+                now_ts = _t.time()
+            except Exception:
+                pass
+            cache = getattr(self, "_pairs_cache", None)
+            cache_ttl = 3600.0
+            pairs: Optional[list] = None
+            if cache and isinstance(cache, dict):
+                ts = cache.get("ts", 0)
+                items = cache.get("pairs")
+                if items and now_ts and (now_ts - float(ts)) <= cache_ttl:
+                    pairs = items
+            if pairs is None:
+                try:
+                    # Lazy import för att undvika cirkulära imports
+                    from services.bitfinex_data import BitfinexDataService
+
+                    svc = BitfinexDataService()
+                    pairs = await svc.get_configs_symbols() or []
+                    self._pairs_cache = {"ts": now_ts or 0, "pairs": pairs}
+                except Exception:
+                    pairs = []
+            # Om vi inte har parlistan, returnera original
+            if not pairs:
+                return s
+            combo_usd = f"{base}USD"
+            combo_ust = f"{base}UST"
+            if combo_usd in pairs:
+                return f"t{combo_usd}"
+            if combo_ust in pairs and quote == "USD":
+                # Byt till UST om USD saknas
+                alt = f"t{combo_ust}"
+                try:
+                    logger.info("🔁 WS symbol fallback: %s → %s", s, alt)
+                except Exception:
+                    pass
+                return alt
+            return s
+        except Exception:
+            return eff_symbol
+
     async def send(self, payload: Any):
         """Skicka rått WS-meddelande. Accepterar dict (json.dumps) eller str."""
         try:
@@ -366,6 +423,8 @@ class BitfinexWebSocketService:
                 await self.connect()
             # Normalisera testsymboler till publikt giltiga symboler
             eff_symbol = self._normalize_public_symbol(symbol)
+            # Välj närmaste giltiga symbol (USD ↔ UST) baserat på configs
+            eff_symbol = await self._choose_available_pair(eff_symbol)
             # Dedupe: hoppa över om redan aktiv eller pending (per eff_symbol)
             key = f"ticker|{eff_symbol}"
             if eff_symbol in self.active_tickers or key in self.subscriptions:
@@ -406,6 +465,7 @@ class BitfinexWebSocketService:
                 await self.connect()
 
             eff_symbol = self._normalize_public_symbol(symbol)
+            eff_symbol = await self._choose_available_pair(eff_symbol)
             subscribe_msg = {
                 "event": "subscribe",
                 "channel": "trades",
@@ -440,7 +500,7 @@ class BitfinexWebSocketService:
             # Spara callback för strategiutvärdering
             self.strategy_callbacks[symbol] = callback
 
-            # Prenumerera på ticker
+            # Prenumerera på ticker (med normalisering/fallback inuti)
             await self.subscribe_ticker(symbol, self._handle_ticker_with_strategy)
 
             logger.info(f"🎯 Prenumererar på {symbol} med strategiutvärdering")
@@ -455,6 +515,7 @@ class BitfinexWebSocketService:
                 await self.connect()
 
             eff_symbol = self._normalize_public_symbol(symbol)
+            eff_symbol = await self._choose_available_pair(eff_symbol)
             ckey = f"trade:{timeframe}:{eff_symbol}"
             msg = {"event": "subscribe", "channel": "candles", "key": ckey}
             if not self.websocket:
@@ -482,6 +543,7 @@ class BitfinexWebSocketService:
                 await self.connect()
 
             eff_symbol = self._normalize_public_symbol(symbol)
+            eff_symbol = await self._choose_available_pair(eff_symbol)
             msg = {
                 "event": "subscribe",
                 "channel": "book",
