@@ -187,17 +187,51 @@ async def prob_preview(req: ProbPreviewRequest, _bypass_auth: bool = Depends(sec
         )
         if not isinstance(psz, dict):
             return {"decision": decision, "size": 0.0, "reason": "size_error"}
+
+        # Kelly + confidence‑viktning
+        base_size = float(psz.get("size") or 0.0)
+        try:
+            probs = pred.get("probabilities", {}) or {}
+            p_buy = float(probs.get("buy", 0.0))
+            p_sell = float(probs.get("sell", 0.0))
+            p_sel = p_buy if side == "buy" else p_sell
+            params = pred.get("params", {}) or {}
+            tp = float(params.get("tp", 0.002) or 0.002)
+            sl = float(params.get("sl", 0.002) or 0.002)
+            b = float(tp / sl) if sl else 1.0
+            kelly_raw = p_sel - (1.0 - p_sel) / (b if b > 0 else 1.0)
+            from config.settings import Settings as __S
+            __s = __S()
+            kelly_cap = float(getattr(__s, "PROB_SIZE_KELLY_CAP", 0.5) or 0.5)
+            kelly_used = max(0.0, min(kelly_raw, kelly_cap))
+            kelly_norm = (kelly_used / kelly_cap) if kelly_cap > 0 else 0.0
+            conf = float(pred.get("confidence", 0.0) or 0.0)
+            conf_w = float(getattr(__s, "PROB_SIZE_CONF_WEIGHT", 0.5) or 0.5)
+            conf_scaled = max(0.0, min(conf, 1.0))
+            size_weight = max(0.0, min(1.0, (1.0 - conf_w) * kelly_norm + conf_w * conf_scaled))
+            weighted_size = round(base_size * size_weight, 8)
+        except Exception:
+            kelly_raw = 0.0
+            kelly_used = 0.0
+            size_weight = 1.0
+            weighted_size = base_size
+
         # svar
         return {
             "decision": decision,
             "ev": pred.get("ev"),
             "probabilities": pred.get("probabilities"),
-            "size": psz.get("size"),
+            "size": weighted_size,
             "price": psz.get("price"),
             "atr_sl": psz.get("atr_sl"),
             "atr_tp": psz.get("atr_tp"),
             "quote_alloc": psz.get("quote_alloc"),
             "quote_currency": psz.get("quote_currency"),
+            "size_base": base_size,
+            "size_weight": size_weight,
+            "kelly_raw": round(kelly_raw, 6),
+            "kelly_used": round(kelly_used, 6),
+            "confidence": pred.get("confidence"),
         }
     except Exception as e:
         logger.exception(f"prob/preview error: {e}")

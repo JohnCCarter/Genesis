@@ -30,7 +30,7 @@
 
 - [x] Env: `PROB_AUTOTRADE_ENABLED`, `PROB_SIZE_MAX_RISK_PCT`, `PROB_SIZE_KELLY_CAP`, `PROB_SIZE_CONF_WEIGHT`
 - [x] Endpoints: `POST /api/v2/prob/preview` (storlek/SL/TP), `POST /api/v2/prob/trade` (guardrails + bracket)
-- [ ] Kelly/conf‑vikt i storlek (använd `PROB_SIZE_*` + EV/konfidens)
+- [x] Kelly/conf‑vikt i storlek (använd `PROB_SIZE_*` + EV/konfidens) – implementerad i `/prob/preview` (size_base, size_weight, kelly_* i svar)
 - [ ] UI: Risk‑panel – knappar för Preview/Trade med tydliga guardrails
 - [ ] Metrics/loggar: `prob_trade` events, latens och utfall per symbol/side
 
