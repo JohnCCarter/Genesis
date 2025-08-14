@@ -174,8 +174,8 @@ async def place_order(order: dict) -> dict:
             "🔍 DEBUG: API Secret is %s",
             "set" if settings.BITFINEX_API_SECRET else "not set",
         )
-        # Logga aldrig header-värden; endast nycklar
-        logger.debug("🔍 DEBUG: Header keys: %s", sorted(list(headers.keys())))
+        # Logga aldrig headers eller nycklar; endast antal
+        logger.debug("🔍 DEBUG: Headers present: %d", len(headers or {}))
         logger.debug("🔍 DEBUG: Payload: %s", bitfinex_order)
 
         # Under pytest: respektera monkeypatch om den satt

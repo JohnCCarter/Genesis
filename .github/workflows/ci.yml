@@ -48,6 +48,12 @@ jobs:
       - name: Format check (black)
         run: black --check .
 
+      - name: Security scan (bandit)
+        run: bandit -q -r . -x docs/legacy,tests
+
+      - name: Dependency audit (pip-audit)
+        run: pip-audit -r requirements.txt --progress-spinner=off || true
+
       - name: Run tests
         env:
           AUTH_REQUIRED: "False"
