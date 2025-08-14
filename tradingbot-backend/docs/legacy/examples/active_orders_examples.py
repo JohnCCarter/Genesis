@@ -10,11 +10,15 @@ import os
 import sys
 
 from models.api_models import OrderSide, OrderType
-from rest.active_orders import (cancel_orders_by_symbol, get_active_orders,
-                                get_active_orders_by_side,
-                                get_active_orders_by_symbol,
-                                get_active_orders_by_type, get_order_by_id,
-                                update_order)
+from rest.active_orders import (
+    cancel_orders_by_symbol,
+    get_active_orders,
+    get_active_orders_by_side,
+    get_active_orders_by_symbol,
+    get_active_orders_by_type,
+    get_order_by_id,
+    update_order,
+)
 from rest.auth import place_order
 from utils.logger import get_logger
 

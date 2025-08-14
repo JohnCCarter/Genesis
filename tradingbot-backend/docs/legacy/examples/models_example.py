@@ -8,10 +8,19 @@ för att hantera data i tradingboten.
 import os
 import sys
 
-from models.api_models import (ApiResponse, Candle, OrderRequest,
-                               OrderResponse, OrderSide, OrderType, Position,
-                               PositionStatus, Ticker, WalletBalance,
-                               WalletType)
+from models.api_models import (
+    ApiResponse,
+    Candle,
+    OrderRequest,
+    OrderResponse,
+    OrderSide,
+    OrderType,
+    Position,
+    PositionStatus,
+    Ticker,
+    WalletBalance,
+    WalletType,
+)
 from utils.logger import get_logger
 
 # Lägg till projektets rotmapp i Python-sökvägen
