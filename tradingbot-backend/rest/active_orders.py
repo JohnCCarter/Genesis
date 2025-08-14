@@ -9,6 +9,7 @@ import json
 from typing import Any, Dict, List, Optional
 
 import httpx
+
 from config.settings import Settings
 from models.api_models import OrderResponse, OrderSide, OrderType
 from rest.auth import build_auth_headers

@@ -39,7 +39,16 @@ line-ending = "lf"
 [tool.isort]
 profile = "black"
 line_length = 120
-src_paths = ["tradingbot-backend"]
+# Treat these as first-party to keep stable grouping
+known_first_party = [
+    "config",
+    "indicators",
+    "models",
+    "rest",
+    "services",
+    "utils",
+    "ws",
+]
 skip_glob = [
     "docs/legacy/**",
 ]

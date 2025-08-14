@@ -1,4 +1,5 @@
 import pytest
+
 from rest.routes import OrderRequest, place_order_endpoint
 from services.metrics import metrics_store
 

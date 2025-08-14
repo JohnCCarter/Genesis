@@ -8,8 +8,9 @@ Inkluderar funktioner för att hämta plånbokssaldon och hantera plånbokstrans
 from typing import List, Optional
 
 import httpx
-from config.settings import Settings
 from pydantic import BaseModel
+
+from config.settings import Settings
 from rest.auth import build_auth_headers
 from utils.logger import get_logger
 

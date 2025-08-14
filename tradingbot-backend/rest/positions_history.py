@@ -9,8 +9,9 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 import httpx
-from config.settings import Settings
 from pydantic import BaseModel
+
+from config.settings import Settings
 from rest.auth import build_auth_headers
 from utils.logger import get_logger
 

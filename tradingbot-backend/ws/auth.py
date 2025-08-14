@@ -12,6 +12,7 @@ from datetime import datetime
 from typing import Any, Dict
 
 import jwt
+
 from config.settings import Settings
 from utils.logger import get_logger
 

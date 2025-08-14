@@ -8,6 +8,7 @@ för REST och WebSocket-anrop.
 from typing import Any, Dict
 
 import httpx
+
 from rest.auth import build_auth_headers
 from utils.logger import get_logger
 from ws.auth import build_ws_auth_payload

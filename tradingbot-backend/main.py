@@ -10,10 +10,11 @@ from contextlib import asynccontextmanager
 from datetime import datetime
 
 import uvicorn
-from config.settings import Settings
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+
+from config.settings import Settings
 from rest.routes import router as rest_router
 from services.bitfinex_websocket import bitfinex_ws
 from services.metrics import observe_latency, render_prometheus_text

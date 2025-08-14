@@ -8,6 +8,7 @@ import asyncio
 from typing import Callable, Optional
 
 import socketio
+
 from config.settings import Settings
 from services.bracket_manager import bracket_manager
 from utils.logger import get_logger

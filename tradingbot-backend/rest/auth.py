@@ -12,8 +12,9 @@ import os
 from datetime import datetime
 from typing import Optional
 
-from config.settings import Settings
 from fastapi.security import HTTPBearer
+
+from config.settings import Settings
 from utils.logger import get_logger
 
 security = HTTPBearer()

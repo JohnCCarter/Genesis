@@ -11,6 +11,7 @@ import time
 from typing import Dict, List, Optional, Tuple
 
 import httpx
+
 from config.settings import Settings
 from services.bitfinex_websocket import bitfinex_ws
 from utils.candle_cache import candle_cache
