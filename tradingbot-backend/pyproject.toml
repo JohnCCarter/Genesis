@@ -1,5 +1,5 @@
 [tool.ruff]
-line-length = 120
+line-length = 88
 target-version = "py39"
 exclude = [
     ".git",
@@ -38,7 +38,7 @@ line-ending = "lf"
 
 [tool.isort]
 profile = "black"
-line_length = 120
+line_length = 88
 # Treat these as first-party to keep stable grouping
 known_first_party = [
     "config",
