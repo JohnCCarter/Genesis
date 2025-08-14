@@ -1,0 +1,9 @@
+[tool.isort]
+profile = "black"
+line_length = 120
+# Skip all legacy docs (examples, scraper, etc.) from isort checks in CI
+skip_glob = [
+    "tradingbot-backend/docs/legacy/**",
+]
+
+

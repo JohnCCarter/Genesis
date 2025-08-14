@@ -40,3 +40,6 @@ line-ending = "lf"
 profile = "black"
 line_length = 120
 src_paths = ["tradingbot-backend"]
+skip_glob = [
+    "docs/legacy/**",
+]
