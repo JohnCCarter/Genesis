@@ -71,7 +71,8 @@ class FundingService:
                 return resp.json()
         except Exception as e:
             logger.error("Transfer error: %s", e)
-            return {"error": str(e)}
+            # Läck inte intern feltext externt
+            return {"error": "transfer_failed"}
 
     async def movements(
         self,
@@ -116,4 +117,5 @@ class FundingService:
                 return data if isinstance(data, list) else (data or [])
         except Exception as e:
             logger.error("Movements error: %s", e)
-            return {"error": str(e)}
+            # Läck inte intern feltext externt
+            return {"error": "movements_failed"}

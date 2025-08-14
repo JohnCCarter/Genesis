@@ -728,7 +728,11 @@ async def funding_transfer(req: TransferRequest, _: bool = Depends(require_auth)
             req.from_wallet, req.to_wallet, req.currency, req.amount
         )
         if isinstance(res, dict) and res.get("error"):
-            raise HTTPException(status_code=502, detail=res.get("error"))
+            # mappa interna felkoder till generiska HTTP‑felmeddelanden
+            code = str(res.get("error"))
+            if code == "transfer_failed":
+                raise HTTPException(status_code=502, detail="transfer_failed")
+            raise HTTPException(status_code=502, detail="funding_error")
         return res
     except HTTPException:
         raise
@@ -749,7 +753,10 @@ async def funding_movements(
         svc = FundingService()
         res = await svc.movements(currency=currency, start=start, end=end, limit=limit)
         if isinstance(res, dict) and res.get("error"):
-            raise HTTPException(status_code=502, detail=res.get("error"))
+            code = str(res.get("error"))
+            if code == "movements_failed":
+                raise HTTPException(status_code=502, detail="movements_failed")
+            raise HTTPException(status_code=502, detail="funding_error")
         return res
     except HTTPException:
         raise
