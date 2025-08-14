@@ -609,7 +609,7 @@ class TradingIntegrationService:
         except Exception as e:
             logger.error(f"❌ Fel vid skapande av kontosammanfattning: {e}")
             return {
-                "error": f"Fel vid skapande av kontosammanfattning: {e}",
+                "error": "internal_error",
                 "timestamp": datetime.now().isoformat(),
             }
 
