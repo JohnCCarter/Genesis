@@ -7,8 +7,9 @@ Inkluderar automatisk återanslutning och tickdata-hantering.
 
 import asyncio
 import json
+from collections.abc import Callable
 from datetime import datetime
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from websockets.client import connect as ws_connect  # type: ignore[attr-defined]
 from websockets.exceptions import ConnectionClosed  # type: ignore[attr-defined]
@@ -27,8 +28,7 @@ class BitfinexWebSocketService:
         self.settings = Settings()
         # Standard: använd auth-URI (api) som bas. Publika subar kan specialhanteras vid behov.
         self.ws_url = (
-            getattr(self.settings, "BITFINEX_WS_AUTH_URI", None)
-            or self.settings.BITFINEX_WS_URI
+            getattr(self.settings, "BITFINEX_WS_AUTH_URI", None) or self.settings.BITFINEX_WS_URI
         )
         self.websocket = None
         self.is_connected = False
@@ -44,9 +44,7 @@ class BitfinexWebSocketService:
         self.latest_prices = {}  # Spara senaste priser
         self.price_history = {}  # Spara pris-historik för strategi
         self._last_tick_ts = {}  # symbol -> last tick timestamp
-        self.latest_ticker_frames = (
-            {}
-        )  # symbol -> senaste fulla ticker-dict (bid/ask/vol/high/low)
+        self.latest_ticker_frames = {}  # symbol -> senaste fulla ticker-dict (bid/ask/vol/high/low)
         # Throttle/log-state för strategiutvärdering per symbol
         self._last_eval_ts = {}  # symbol -> senast evaluerad (epoch sek)
         self._last_strategy_signal = {}  # symbol -> senaste signal
@@ -65,9 +63,9 @@ class BitfinexWebSocketService:
         self._requested_symbols = set()
         # WS Margin state
         self.margin_base = None  # type: ignore[assignment]
-        self.margin_sym: Dict[str, list] = {}
+        self.margin_sym: dict[str, list] = {}
         self._last_margin_ts = None  # type: ignore[assignment]
-        self._last_margin_sym_ts: Dict[str, float] = {}
+        self._last_margin_sym_ts: dict[str, float] = {}
         # Registrera default-handler för margin info updates (miu)
         self.private_event_callbacks["miu"] = self._handle_miu
         # Periodisk symbol-refresh (configs) loop-task
@@ -79,14 +77,10 @@ class BitfinexWebSocketService:
         self._pool_sub_counts: dict = {}  # ws -> antal subs
         self._pool_enabled: bool = bool(getattr(self.settings, "WS_USE_POOL", True))
         # Spårning av subkey -> ws/chanId för unsubscribe
-        self._sub_socket: Dict[str, Any] = {}
-        self._chanid_by_subkey: Dict[tuple, int] = {}
-        self._pool_max_sockets: int = int(
-            getattr(self.settings, "WS_PUBLIC_SOCKETS_MAX", 3)
-        )
-        self._pool_max_subs: int = int(
-            getattr(self.settings, "WS_MAX_SUBS_PER_SOCKET", 200)
-        )
+        self._sub_socket: dict[str, Any] = {}
+        self._chanid_by_subkey: dict[tuple, int] = {}
+        self._pool_max_sockets: int = int(getattr(self.settings, "WS_PUBLIC_SOCKETS_MAX", 3))
+        self._pool_max_subs: int = int(getattr(self.settings, "WS_MAX_SUBS_PER_SOCKET", 200))
 
     async def _get_public_socket(self):
         """
@@ -110,8 +104,7 @@ class BitfinexWebSocketService:
                     best_cnt = cnt
             # Skapa ny om ingen finns eller om alla passerat gräns och vi kan skala ut
             if best is None or (
-                best_cnt >= self._pool_max_subs
-                and len(self._pool_public) < self._pool_max_sockets
+                best_cnt >= self._pool_max_subs and len(self._pool_public) < self._pool_max_sockets
             ):
                 # öppna ny public‑socket
                 ws = await self._open_public_socket()
@@ -148,7 +141,7 @@ class BitfinexWebSocketService:
             logger.warning("Kunde inte öppna public socket: %s", e)
             return None
 
-    def get_pool_status(self) -> Dict[str, Any]:
+    def get_pool_status(self) -> dict[str, Any]:
         """Returnerar status för WS‑pool och huvudsocket."""
         try:
             sockets = []
@@ -305,10 +298,8 @@ class BitfinexWebSocketService:
                 mapped = fwd.get(base.upper())
                 if mapped and mapped.upper() != base.upper():
                     base = mapped
-                else:
-                    # Fallback för kända avvikelser om configs ej hjälper
-                    if base.upper() == "ALGO":
-                        base = "ALG"
+                elif base.upper() == "ALGO":
+                    base = "ALG"
             except Exception:
                 # Fallback för kända avvikelser
                 if base.upper() == "ALGO":
@@ -323,7 +314,7 @@ class BitfinexWebSocketService:
                 pass
             cache = getattr(self, "_pairs_cache", None)
             cache_ttl = 3600.0
-            pairs: Optional[list] = None
+            pairs: list | None = None
             if cache and isinstance(cache, dict):
                 ts = cache.get("ts", 0)
                 items = cache.get("pairs")
@@ -362,7 +353,7 @@ class BitfinexWebSocketService:
         except Exception:
             return eff_symbol
 
-    async def send(self, payload: Any):
+    async def send(self, payload: dict[str, Any] | str):
         """Skicka rått WS-meddelande. Accepterar dict (json.dumps) eller str."""
         try:
             if not self.websocket:
@@ -392,10 +383,7 @@ class BitfinexWebSocketService:
             try:
                 import os as _os
 
-                if (
-                    not _os.environ.get("PYTEST_CURRENT_TEST")
-                    and not self._symbol_refresh_task
-                ):
+                if not _os.environ.get("PYTEST_CURRENT_TEST") and not self._symbol_refresh_task:
                     self._symbol_refresh_task = self._asyncio.create_task(
                         self._symbol_refresh_loop()
                     )
@@ -419,9 +407,7 @@ class BitfinexWebSocketService:
             try:
                 await self._asyncio.wait_for(self._auth_event.wait(), timeout=10)
             except Exception:
-                logger.warning(
-                    "⚠️ Ingen auth-bekräftelse inom timeout. Fortsätter utan auth."
-                )
+                logger.warning("⚠️ Ingen auth-bekräftelse inom timeout. Fortsätter utan auth.")
         except Exception as e:
             logger.warning(f"⚠️ Kunde inte skicka WS auth: {e}")
 
@@ -441,10 +427,10 @@ class BitfinexWebSocketService:
     async def order_update(
         self,
         order_id: int,
-        price: Optional[float] = None,
-        amount: Optional[float] = None,
-        extra: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        price: float | None = None,
+        amount: float | None = None,
+        extra: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """Skicka WS order update (ou) för att uppdatera pris/mängd/flags.
 
         Args:
@@ -456,7 +442,7 @@ class BitfinexWebSocketService:
         Returns:
             Dict med status
         """
-        payload: Dict[str, Any] = {"id": int(order_id)}
+        payload: dict[str, Any] = {"id": int(order_id)}
         if price is not None:
             payload["price"] = str(price)
         if amount is not None:
@@ -469,9 +455,7 @@ class BitfinexWebSocketService:
         try:
             msg = [0, "ou", None, payload]
             await self.send(msg)
-            logger.info(
-                f"📝 WS ou skickad: id=%s price=%s amount=%s", order_id, price, amount
-            )
+            logger.info(f"📝 WS ou skickad: id=%s price=%s amount=%s", order_id, price, amount)
             return {"success": True, "sent": True}
         except Exception as e:
             logger.error(f"❌ WS ou fel: {e}")
@@ -479,15 +463,15 @@ class BitfinexWebSocketService:
 
     async def order_cancel_multi(
         self,
-        ids: Optional[List[int]] = None,
-        cids: Optional[List[int]] = None,
-        cid_date: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        ids: list[int] | None = None,
+        cids: list[int] | None = None,
+        cid_date: str | None = None,
+    ) -> dict[str, Any]:
         """Skicka WS oc_multi för att avbryta flera ordrar.
 
         Stödjer både id-lista och cid+cid_date-lista.
         """
-        items: List[Dict[str, Any]] = []
+        items: list[dict[str, Any]] = []
         if ids:
             for oid in ids:
                 try:
@@ -515,7 +499,7 @@ class BitfinexWebSocketService:
             logger.error(f"❌ WS oc_multi fel: {e}")
             return {"success": False, "error": str(e)}
 
-    async def order_ops(self, ops: List[Any]) -> Dict[str, Any]:
+    async def order_ops(self, ops: list[Any]) -> dict[str, Any]:
         """Skicka WS ops (batch av ['on'|'oc'|'ou', payload]).
 
         Args:
@@ -528,7 +512,7 @@ class BitfinexWebSocketService:
             return {"success": False, "error": "ws_not_authenticated"}
 
         # Normalisera och sanera payloads (amount/price -> str)
-        normalized: List[List[Any]] = []
+        normalized: list[list[Any]] = []
         allowed = {"on", "oc", "ou"}
         for item in ops:
             try:
@@ -640,9 +624,7 @@ class BitfinexWebSocketService:
                 await sym_svc.refresh()
                 eff_symbol = sym_svc.resolve(symbol)
                 if not sym_svc.listed(eff_symbol):
-                    logger.warning(
-                        "⛔ WS skip subscribe: pair_not_listed %s", eff_symbol
-                    )
+                    logger.warning("⛔ WS skip subscribe: pair_not_listed %s", eff_symbol)
                     return
             except Exception:
                 # Fallback till tidigare lokala normalisering + choose_available_pair
@@ -669,9 +651,7 @@ class BitfinexWebSocketService:
                 if cache and isinstance(cache, dict):
                     pairs = cache.get("pairs")
                 if isinstance(pairs, list) and pair not in pairs:
-                    logger.warning(
-                        "⛔ WS skip subscribe: pair_not_listed %s", eff_symbol
-                    )
+                    logger.warning("⛔ WS skip subscribe: pair_not_listed %s", eff_symbol)
                     return
             except Exception:
                 pass
@@ -691,9 +671,7 @@ class BitfinexWebSocketService:
             self.subscriptions[key] = subscribe_msg
             self.callbacks[key] = callback
             try:
-                self._pool_sub_counts[target_ws] = (
-                    int(self._pool_sub_counts.get(target_ws, 0)) + 1
-                )
+                self._pool_sub_counts[target_ws] = int(self._pool_sub_counts.get(target_ws, 0)) + 1
             except Exception:
                 pass
             # Markera var subben ligger (för unsubscribe)
@@ -720,9 +698,7 @@ class BitfinexWebSocketService:
             await ws.send(json.dumps(msg))
             # Lokalt cleanup
             try:
-                self._pool_sub_counts[ws] = max(
-                    0, int(self._pool_sub_counts.get(ws, 0)) - 1
-                )
+                self._pool_sub_counts[ws] = max(0, int(self._pool_sub_counts.get(ws, 0)) - 1)
             except Exception:
                 pass
             self._sub_socket.pop(sub_key, None)
@@ -754,9 +730,7 @@ class BitfinexWebSocketService:
                         if key not in self.subscriptions:
                             try:
                                 logger.info("🔄 WS resubscribe: %s (eff=%s)", raw, eff)
-                                await self.subscribe_ticker(
-                                    raw, self._handle_ticker_with_strategy
-                                )
+                                await self.subscribe_ticker(raw, self._handle_ticker_with_strategy)
                             except Exception:
                                 pass
                 except Exception as ie:
@@ -816,9 +790,7 @@ class BitfinexWebSocketService:
             self.subscriptions[key] = subscribe_msg
             self.callbacks[key] = callback
             try:
-                self._pool_sub_counts[target_ws] = (
-                    int(self._pool_sub_counts.get(target_ws, 0)) + 1
-                )
+                self._pool_sub_counts[target_ws] = int(self._pool_sub_counts.get(target_ws, 0)) + 1
                 self._sub_socket[key] = target_ws
             except Exception:
                 pass
@@ -882,9 +854,7 @@ class BitfinexWebSocketService:
                 if isinstance(pairs, list):
                     # candles använder key trade:tf:tPAIR → kontrollera par
                     if pair not in pairs:
-                        logger.warning(
-                            "⛔ WS skip candles: pair_not_listed %s", eff_symbol
-                        )
+                        logger.warning("⛔ WS skip candles: pair_not_listed %s", eff_symbol)
                         return
             except Exception:
                 pass
@@ -897,9 +867,7 @@ class BitfinexWebSocketService:
             self.subscriptions[sub_key] = msg
             self.callbacks[sub_key] = callback
             try:
-                self._pool_sub_counts[target_ws] = (
-                    int(self._pool_sub_counts.get(target_ws, 0)) + 1
-                )
+                self._pool_sub_counts[target_ws] = int(self._pool_sub_counts.get(target_ws, 0)) + 1
                 self._sub_socket[sub_key] = target_ws
             except Exception:
                 pass
@@ -913,7 +881,7 @@ class BitfinexWebSocketService:
         precision: str = "P0",
         freq: str = "F0",
         length: int = 25,
-        callback: Optional[Callable] = None,
+        callback: Callable | None = None,
     ):
         """Prenumerera på orderbok (WS public)."""
         try:
@@ -970,7 +938,7 @@ class BitfinexWebSocketService:
         except Exception as e:
             logger.error(f"❌ Orderbok-prenumeration misslyckades: {e}")
 
-    async def _handle_ticker_with_strategy(self, ticker_data: Dict):
+    async def _handle_ticker_with_strategy(self, ticker_data: dict):
         """
         Hanterar ticker-data och kör strategiutvärdering.
 
@@ -1059,6 +1027,7 @@ class BitfinexWebSocketService:
                 "closes": prices,
                 "highs": prices,  # Använd samma värden som approximation
                 "lows": prices,  # Använd samma värden som approximation
+                "symbol": symbol,
             }
 
             # Utvärdera strategi
@@ -1080,9 +1049,7 @@ class BitfinexWebSocketService:
             last_sig = self._last_strategy_signal.get(symbol)
             last_reason = self._last_strategy_reason.get(symbol)
             last_log = float(self._last_strategy_log_ts.get(symbol, 0))
-            changed = (
-                result.get("signal") != last_sig or result.get("reason") != last_reason
-            )
+            changed = result.get("signal") != last_sig or result.get("reason") != last_reason
 
             # Underlätta: spamma inte "Otillräcklig data" annat än var 60s om oförändrat
             reason = str(result.get("reason", ""))
@@ -1133,7 +1100,7 @@ class BitfinexWebSocketService:
         except Exception as e:
             logger.error(f"❌ WebSocket-lyssnare fel: {e}")
 
-    async def _handle_channel_message(self, data: List):
+    async def _handle_channel_message(self, data: list):
         """Hanterar kanal-meddelanden (publika och privata)."""
         try:
             channel_id = data[0]
@@ -1179,11 +1146,7 @@ class BitfinexWebSocketService:
                 chan = info.get("channel")
                 symbol = info.get("symbol") or "unknown"
                 # Normalisera ticker-frame till dict
-                if (
-                    chan == "ticker"
-                    and isinstance(message_data, list)
-                    and len(message_data) >= 7
-                ):
+                if chan == "ticker" and isinstance(message_data, list) and len(message_data) >= 7:
                     norm = {
                         "symbol": symbol,
                         "bid": message_data[0],
@@ -1225,23 +1188,21 @@ class BitfinexWebSocketService:
         except Exception as e:
             logger.error(f"❌ Fel vid hantering av kanal-meddelande: {e}")
 
-    def _get_symbol_from_channel_id(self, channel_id: int) -> str:
+    def _get_symbol_from_channel_id(self, channel_id: int) -> str:  # noqa: ARG002
         """Hämtar symbol från channel ID baserat på prenumerationer."""
         for symbol, sub_data in self.subscriptions.items():
             if "ticker" in str(sub_data):
                 return symbol
         return "unknown"
 
-    async def _handle_event_message(self, data: Dict):
+    async def _handle_event_message(self, data: dict):
         """Hanterar event-meddelanden (subscribe, auth, etc.)."""
         try:
             event = data.get("event")
 
             if event == "subscribed":
                 chan = data.get("channel")
-                chan_id = (
-                    data.get("chanId") or data.get("chanid") or data.get("chan_id")
-                )
+                chan_id = data.get("chanId") or data.get("chanid") or data.get("chan_id")
                 symbol = data.get("symbol")
                 key = data.get("key")
                 logger.info(
@@ -1267,9 +1228,7 @@ class BitfinexWebSocketService:
                         if ws is None:
                             # fallback till huvudsocket
                             ws = self.websocket
-                        self._chan_callbacks[(ws, int(chan_id))] = self.callbacks.get(
-                            cb_key
-                        )
+                        self._chan_callbacks[(ws, int(chan_id))] = self.callbacks.get(cb_key)
                         self._chan_info[(ws, int(chan_id))] = {
                             "channel": chan,
                             "symbol": symbol,

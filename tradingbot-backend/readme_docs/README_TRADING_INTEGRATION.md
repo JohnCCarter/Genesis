@@ -8,8 +8,9 @@ Detta dokument beskriver hur trading-integrationen fungerar i tradingboten. Trad
 2. [Huvudfunktioner](#huvudfunktioner)
 3. [Riskhantering](#riskhantering)
 4. [Automatiserad Trading](#automatiserad-trading)
-5. [API-referens](#api-referens)
-6. [Exempel](#exempel)
+5. [Probabilistisk Trading (PROB)](#probabilistisk-trading-prob)
+6. [API-referens](#api-referens)
+7. [Exempel](#exempel)
 
 ## Översikt
 
@@ -157,6 +158,38 @@ Vid automatiserad trading:
 3. Riskbedömning görs för varje signal
 4. Ordrar läggs automatiskt om signalen är giltig och riskbedömningen tillåter det
 5. Callback-funktionen anropas med resultatet
+
+## Probabilistisk Trading (PROB)
+
+PROB-lagret tillför sannolikhetsbedömning, EV-beräkning och runtime‑styrning.
+
+- Endpoints:
+
+  - `POST /api/v2/prob/predict`: probs, EV, decision, latency, features
+  - `POST /api/v2/prob/preview`: storlek/SL/TP (ATR‑baserad), kelly/conf‑vikt
+  - `POST /api/v2/prob/trade`: guardrails (risk/margin) + bracket‑order
+  - `POST /api/v2/prob/validate`: Brier/LogLoss på historiska candles
+  - `GET/POST /api/v2/prob/config`: runtime‑konfiguration (enable, thresholds, sizing)
+
+- Konfiguration (via .env eller `/prob/config`):
+
+  - `PROB_MODEL_ENABLED`, `PROB_MODEL_FILE`, `PROB_MODEL_EV_THRESHOLD`, `PROB_MODEL_CONFIDENCE_MIN`
+  - `PROB_AUTOTRADE_ENABLED`, `PROB_SIZE_MAX_RISK_PCT`, `PROB_SIZE_KELLY_CAP`, `PROB_SIZE_CONF_WEIGHT`
+  - `POSITION_SIZE_FALLBACK_QUOTE` (dev/demo utan wallets)
+
+- Metrics (`/api/v2/metrics`):
+
+  - `tradingbot_prob_ev_bucket{symbol,tf,bucket}`
+  - `tradingbot_prob_conf_bucket{symbol,tf,bucket}`
+  - `tradingbot_prob_brier*`, `tradingbot_prob_logloss*`
+  - `tradingbot_prob_trade_events{type,...}`
+  - `tradingbot_prob_trade_outcome{symbol,tf,side,result}`
+  - Extra kommentar: `# prob_trade_last_json { "tPAIR|tf": {ts,symbol,tf,side,result,size} }`
+
+- UI (`risk_panel.html`):
+  - Preview/Trade‑knappar, risk% cap
+  - Prob‑config (enable, file, thresholds, sizing) med live‑Spara
+  - Histogram för EV/Conf (hämtas från metrics) och senaste trade‑utfall per symbol/tf
 
 ### Callback-funktion
 

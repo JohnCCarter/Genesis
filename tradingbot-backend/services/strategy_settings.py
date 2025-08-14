@@ -29,11 +29,11 @@ class StrategySettings:
     rsi_period: int = 14
     atr_period: int = 14
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         return asdict(self)
 
     @staticmethod
-    def from_dict(data: Dict) -> StrategySettings:
+    def from_dict(data: dict) -> StrategySettings:
         return StrategySettings(
             ema_weight=float(data.get("ema_weight", 0.4)),
             rsi_weight=float(data.get("rsi_weight", 0.4)),
@@ -56,7 +56,7 @@ class StrategySettings:
 
 
 class StrategySettingsService:
-    def __init__(self, settings: Optional[Settings] = None):
+    def __init__(self, settings: Settings | None = None):
         self.settings = settings or Settings()
         # Bygg absolut sökväg till config-katalogen relativt projektroten
         base_dir = os.path.dirname(os.path.dirname(__file__))
@@ -65,7 +65,7 @@ class StrategySettingsService:
         self.file_path = os.path.join(cfg_dir, "strategy_settings.json")
         self.overrides_path = os.path.join(cfg_dir, "strategy_settings.overrides.json")
 
-    def _load_overrides(self) -> Dict[str, Dict[str, Any]]:
+    def _load_overrides(self) -> dict[str, dict[str, Any]]:
         try:
             with open(self.overrides_path, encoding="utf-8") as f:
                 data = json.load(f)
@@ -78,7 +78,7 @@ class StrategySettingsService:
             logger.warning(f"Kunde inte läsa overrides för strategiinställningar: {e}")
             return {}
 
-    def _save_overrides(self, overrides: Dict[str, Dict[str, Any]]) -> None:
+    def _save_overrides(self, overrides: dict[str, dict[str, Any]]) -> None:
         try:
             os.makedirs(os.path.dirname(self.overrides_path), exist_ok=True)
             with open(self.overrides_path, "w", encoding="utf-8") as f:
@@ -87,20 +87,15 @@ class StrategySettingsService:
             logger.error(f"Kunde inte spara overrides för strategiinställningar: {e}")
             raise
 
-    def get_settings(self, symbol: Optional[str] = None) -> StrategySettings:
+    def get_settings(self, symbol: str | None = None) -> StrategySettings:
         try:
             with open(self.file_path, encoding="utf-8") as f:
                 data = json.load(f)
                 base = StrategySettings.from_dict(data)
         except FileNotFoundError:
-            logger.info(
-                "Inga strategiinställningar hittades – använder default och skapar fil."
-            )
+            logger.info("Inga strategiinställningar hittades – använder default och skapar fil.")
             base = StrategySettings()
             self.save_settings(base)
-        except FileNotFoundError:
-            # Redundant branch retained for clarity
-            base = StrategySettings()
         except Exception as e:
             logger.warning(f"Kunde inte läsa strategiinställningar: {e}")
             base = StrategySettings()
@@ -121,7 +116,7 @@ class StrategySettingsService:
         return base.normalized()
 
     def save_settings(
-        self, settings_obj: StrategySettings, symbol: Optional[str] = None
+        self, settings_obj: StrategySettings, symbol: str | None = None
     ) -> StrategySettings:
         try:
             normalized = settings_obj.normalized()

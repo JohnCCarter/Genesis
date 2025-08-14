@@ -58,9 +58,7 @@ class BitfinexAccountScraper:
         self.cache_validity_days = cache_validity_days
         self.session = requests.Session()
         self.session.headers.update(
-            {
-                "User-Agent": "Mozilla/5.0 Genesis-Trading-Bot Account Documentation Helper"
-            }
+            {"User-Agent": "Mozilla/5.0 Genesis-Trading-Bot Account Documentation Helper"}
         )
 
         # Skapa cache-katalog om den inte finns
@@ -86,9 +84,7 @@ class BitfinexAccountScraper:
 
         # Kontrollera om cachen finns och är giltig
         if cache_file.exists():
-            file_age = datetime.now() - datetime.fromtimestamp(
-                cache_file.stat().st_mtime
-            )
+            file_age = datetime.now() - datetime.fromtimestamp(cache_file.stat().st_mtime)
             if file_age < timedelta(days=self.cache_validity_days):
                 try:
                     with open(cache_file, "r", encoding="utf-8") as f:
@@ -223,9 +219,7 @@ class BitfinexAccountScraper:
         }
 
         # Försök hitta beskrivning
-        description_section = soup.find(
-            string=re.compile("Get positions", re.IGNORECASE)
-        )
+        description_section = soup.find(string=re.compile("Get positions", re.IGNORECASE))
         if description_section and description_section.parent:
             result["description"] = description_section.get_text(strip=True)
 
@@ -290,9 +284,7 @@ class BitfinexAccountScraper:
         }
 
         # Försök hitta beskrivning
-        description_section = soup.find(
-            string=re.compile("Get account margin info", re.IGNORECASE)
-        )
+        description_section = soup.find(string=re.compile("Get account margin info", re.IGNORECASE))
         if description_section and description_section.parent:
             result["description"] = description_section.get_text(strip=True)
 

@@ -15,7 +15,7 @@ from typing import Deque, Dict
 class _RateLimiter:
     def __init__(self) -> None:
         self._lock = threading.Lock()
-        self._events_by_key: Dict[str, Deque[float]] = {}
+        self._events_by_key: dict[str, deque[float]] = {}
 
     def is_allowed(self, key: str, max_requests: int, window_seconds: int) -> bool:
         """Returnerar True om anropet tillåts för given nyckel inom fönstret."""

@@ -5,7 +5,7 @@ Backtest Service - enkel sandbox-backtest mot historiska candles via Bitfinex RE
 from __future__ import annotations
 
 import math
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta, timezone
 from typing import Any, Dict, List
 
 from services.bitfinex_data import BitfinexDataService
@@ -18,7 +18,7 @@ logger = get_logger(__name__)
 class BacktestService:
     async def run(
         self, symbol: str, timeframe: str, limit: int = 500, tz_offset_minutes: int = 0
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         data = BitfinexDataService()
         candles = await data.get_candles(symbol, timeframe, limit)
         if not candles:
@@ -26,20 +26,20 @@ class BacktestService:
         parsed = data.parse_candles_to_strategy_data(candles)
 
         # Rullande strategiutvärdering och pseudo-PnL (mycket förenklad)
-        closes: List[float] = parsed.get("closes", [])
-        highs: List[float] = parsed.get("highs", [])
-        lows: List[float] = parsed.get("lows", [])
+        closes: list[float] = parsed.get("closes", [])
+        highs: list[float] = parsed.get("highs", [])
+        lows: list[float] = parsed.get("lows", [])
         equity = 1000.0
         peak = equity
         max_dd = 0.0
         wins = 0
         losses = 0
         trades = 0
-        trade_returns: List[float] = []
-        equity_curve: List[dict] = []
-        heatmap_sum: Dict[str, Dict[str, float]] = {}
-        heatmap_cnt: Dict[str, Dict[str, int]] = {}
-        heatmap_wins: Dict[str, Dict[str, int]] = {}
+        trade_returns: list[float] = []
+        equity_curve: list[dict] = []
+        heatmap_sum: dict[str, dict[str, float]] = {}
+        heatmap_cnt: dict[str, dict[str, int]] = {}
+        heatmap_wins: dict[str, dict[str, int]] = {}
 
         pos = 0  # +1 long, -1 short, 0 flat
         entry_price = 0.0
@@ -57,9 +57,7 @@ class BacktestService:
             ts_ms = None
             try:
                 idx_in_candles = len(candles) - len(closes) + i
-                idx_in_candles = (
-                    idx_in_candles if 0 <= idx_in_candles < len(candles) else i
-                )
+                idx_in_candles = idx_in_candles if 0 <= idx_in_candles < len(candles) else i
                 ts_ms = int(candles[idx_in_candles][0])
             except Exception:
                 ts_ms = None
@@ -71,7 +69,7 @@ class BacktestService:
                     equity *= factor
                     trade_returns.append(factor - 1.0)
                     if ts_ms is not None:
-                        dt = datetime.fromtimestamp(ts_ms / 1000, tz=timezone.utc)
+                        dt = datetime.fromtimestamp(ts_ms / 1000, tz=UTC)
                         if tz_offset_minutes:
                             dt = dt + timedelta(minutes=tz_offset_minutes)
                         dow = str(dt.weekday())  # 0=Mon
@@ -79,9 +77,7 @@ class BacktestService:
                         heatmap_sum.setdefault(dow, {})
                         heatmap_cnt.setdefault(dow, {})
                         heatmap_wins.setdefault(dow, {})
-                        heatmap_sum[dow][hour] = heatmap_sum[dow].get(hour, 0.0) + (
-                            factor - 1.0
-                        )
+                        heatmap_sum[dow][hour] = heatmap_sum[dow].get(hour, 0.0) + (factor - 1.0)
                         heatmap_cnt[dow][hour] = heatmap_cnt[dow].get(hour, 0) + 1
                         if factor - 1.0 > 0:
                             heatmap_wins[dow][hour] = heatmap_wins[dow].get(hour, 0) + 1
@@ -101,7 +97,7 @@ class BacktestService:
                     equity *= factor
                     trade_returns.append(factor - 1.0)
                     if ts_ms is not None:
-                        dt = datetime.fromtimestamp(ts_ms / 1000, tz=timezone.utc)
+                        dt = datetime.fromtimestamp(ts_ms / 1000, tz=UTC)
                         if tz_offset_minutes:
                             dt = dt + timedelta(minutes=tz_offset_minutes)
                         dow = str(dt.weekday())
@@ -109,9 +105,7 @@ class BacktestService:
                         heatmap_sum.setdefault(dow, {})
                         heatmap_cnt.setdefault(dow, {})
                         heatmap_wins.setdefault(dow, {})
-                        heatmap_sum[dow][hour] = heatmap_sum[dow].get(hour, 0.0) + (
-                            factor - 1.0
-                        )
+                        heatmap_sum[dow][hour] = heatmap_sum[dow].get(hour, 0.0) + (factor - 1.0)
                         heatmap_cnt[dow][hour] = heatmap_cnt[dow].get(hour, 0) + 1
                         if factor - 1.0 > 0:
                             heatmap_wins[dow][hour] = heatmap_wins[dow].get(hour, 0) + 1
@@ -139,7 +133,7 @@ class BacktestService:
 
         # Distribution (bins)
         bins = [-0.1, -0.05, -0.02, -0.01, 0.0, 0.01, 0.02, 0.05, 0.1]
-        dist: Dict[str, int] = {str(b): 0 for b in bins}
+        dist: dict[str, int] = {str(b): 0 for b in bins}
         dist.update({"lt_min": 0, "gt_max": 0})
         for r in trade_returns:
             if r < bins[0]:
@@ -153,8 +147,8 @@ class BacktestService:
                         break
 
         # Heatmap averages (avg return) och winrate
-        heatmap_avg: Dict[str, Dict[str, float]] = {}
-        heatmap_wr: Dict[str, Dict[str, float]] = {}
+        heatmap_avg: dict[str, dict[str, float]] = {}
+        heatmap_wr: dict[str, dict[str, float]] = {}
         for d, hours in heatmap_sum.items():
             for h, s in hours.items():
                 c = max(heatmap_cnt.get(d, {}).get(h, 0), 1)

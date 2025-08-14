@@ -17,7 +17,7 @@ from utils.logger import get_logger
 logger = get_logger(__name__)
 
 
-def evaluate_weighted_strategy(data: Dict[str, str]) -> Dict[str, Any]:
+def evaluate_weighted_strategy(data: dict[str, str]) -> dict[str, Any]:
     """
     Beräknar en viktad signal baserat på förberäknade indikator-signaler.
 
@@ -40,7 +40,7 @@ def evaluate_weighted_strategy(data: Dict[str, str]) -> Dict[str, Any]:
             - probabilities: {"buy": float, "sell": float, "hold": float}
     """
 
-    def map_signal_to_score(label: Optional[str]) -> int:
+    def map_signal_to_score(label: str | None) -> int:
         if label is None:
             return 0
         normalized = str(label).strip().lower()
@@ -75,9 +75,7 @@ def evaluate_weighted_strategy(data: Dict[str, str]) -> Dict[str, Any]:
     atr_score = 0
 
     weighted_score = (
-        weights["ema"] * ema_score
-        + weights["rsi"] * rsi_score
-        + weights["atr"] * atr_score
+        weights["ema"] * ema_score + weights["rsi"] * rsi_score + weights["atr"] * atr_score
     )
 
     if weighted_score > 0:
@@ -109,7 +107,7 @@ def evaluate_weighted_strategy(data: Dict[str, str]) -> Dict[str, Any]:
     }
 
 
-def evaluate_strategy(data: Dict[str, List[float]]) -> Dict[str, Any]:
+def evaluate_strategy(data: dict[str, list[float]]) -> dict[str, Any]:
     """
     Kombinerar RSI, EMA och ATR för att returnera en sannolikhetssignal.
 
@@ -163,7 +161,9 @@ def evaluate_strategy(data: Dict[str, List[float]]) -> Dict[str, Any]:
             reason = f"RSI översåld ({rsi:.2f}) och pris över EMA ({current_price:.4f} > {ema:.4f})"
         elif rsi > 70 and current_price < ema:
             signal = "SELL"
-            reason = f"RSI överköpt ({rsi:.2f}) och pris under EMA ({current_price:.4f} < {ema:.4f})"
+            reason = (
+                f"RSI överköpt ({rsi:.2f}) och pris under EMA ({current_price:.4f} < {ema:.4f})"
+            )
         elif 40 < rsi < 60:
             signal = "HOLD"
             reason = f"RSI neutral ({rsi:.2f}) - vänta på tydligare signal"
@@ -179,11 +179,7 @@ def evaluate_strategy(data: Dict[str, List[float]]) -> Dict[str, Any]:
                 from services.prob_model import prob_model
 
                 # Skala features: positivt när buy‑vänligt, negativt åt sell
-                f_ema = (
-                    1.0
-                    if current_price > ema
-                    else (-1.0 if current_price < ema else 0.0)
-                )
+                f_ema = 1.0 if current_price > ema else (-1.0 if current_price < ema else 0.0)
                 f_rsi = (
                     30.0 - min(max(rsi, 0.0), 100.0)
                 ) / 30.0  # <30 → positiv, >70 → negativ (klipps av modellen)
@@ -195,9 +191,7 @@ def evaluate_strategy(data: Dict[str, List[float]]) -> Dict[str, Any]:
             except Exception:
                 # Heuristisk fallback om modell ej finns
                 ema_sig = (
-                    "buy"
-                    if current_price > ema
-                    else ("sell" if current_price < ema else "neutral")
+                    "buy" if current_price > ema else ("sell" if current_price < ema else "neutral")
                 )
                 rsi_sig = "buy" if rsi < 30 else ("sell" if rsi > 70 else "neutral")
                 atr_vol = "high" if (atr / current_price) > 0.02 else "low"

@@ -67,9 +67,7 @@ async def test_circuit_breaker_opens_and_notifies(tmp_path, monkeypatch):
 
     calls = []
 
-    async def fake_notify(
-        level: str, title: str, payload: Dict[str, Any] | None = None
-    ):
+    async def fake_notify(level: str, title: str, payload: Dict[str, Any] | None = None):
         calls.append({"level": level, "title": title, "payload": payload or {}})
 
     # Patcha notiser för att verifiera att create_task körs

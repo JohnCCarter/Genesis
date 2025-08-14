@@ -32,7 +32,7 @@ def _parse_time(hhmm: str) -> time:
 @dataclass
 class TradingRules:
     timezone: str
-    windows: Dict[str, List[Tuple[str, str]]]
+    windows: dict[str, list[tuple[str, str]]]
     max_trades_per_day: int
     trade_cooldown_seconds: int
     paused: bool
@@ -41,7 +41,7 @@ class TradingRules:
 
 
 class TradingWindowService:
-    def __init__(self, settings: Optional[Settings] = None):
+    def __init__(self, settings: Settings | None = None):
         self.settings = settings or Settings()
         self.rules = self._load_rules()
 
@@ -58,9 +58,7 @@ class TradingWindowService:
                     data.get("max_trades_per_day", self.settings.MAX_TRADES_PER_DAY)
                 ),
                 trade_cooldown_seconds=int(
-                    data.get(
-                        "trade_cooldown_seconds", self.settings.TRADE_COOLDOWN_SECONDS
-                    )
+                    data.get("trade_cooldown_seconds", self.settings.TRADE_COOLDOWN_SECONDS)
                 ),
                 paused=bool(data.get("paused", self.settings.TRADING_PAUSED)),
                 max_trades_per_symbol_per_day=int(
@@ -109,7 +107,7 @@ class TradingWindowService:
             pass
         return default_rules
 
-    def is_open(self, now: Optional[datetime] = None) -> bool:
+    def is_open(self, now: datetime | None = None) -> bool:
         if self.rules.paused:
             return False
 
@@ -129,7 +127,7 @@ class TradingWindowService:
                 return True
         return False
 
-    def next_open(self, now: Optional[datetime] = None) -> Optional[datetime]:
+    def next_open(self, now: datetime | None = None) -> datetime | None:
         tz = ZoneInfo(self.rules.timezone) if ZoneInfo else None
         now = now or datetime.now(tz) if tz else datetime.utcnow()
 
@@ -147,7 +145,7 @@ class TradingWindowService:
                     return candidate_dt
         return None
 
-    def get_limits(self) -> Dict[str, int]:
+    def get_limits(self) -> dict[str, int]:
         return {
             "max_trades_per_day": self.rules.max_trades_per_day,
             "trade_cooldown_seconds": self.rules.trade_cooldown_seconds,
@@ -163,12 +161,12 @@ class TradingWindowService:
     def save_rules(
         self,
         *,
-        timezone: Optional[str] = None,
-        windows: Optional[Dict[str, List[Tuple[str, str]]]] = None,
-        paused: Optional[bool] = None,
-        max_trades_per_symbol_per_day: Optional[int] = None,
-        max_trades_per_day: Optional[int] = None,
-        trade_cooldown_seconds: Optional[int] = None,
+        timezone: str | None = None,
+        windows: dict[str, list[tuple[str, str]]] | None = None,
+        paused: bool | None = None,
+        max_trades_per_symbol_per_day: int | None = None,
+        max_trades_per_day: int | None = None,
+        trade_cooldown_seconds: int | None = None,
     ) -> None:
         """Uppdaterar regler i minnet och persisterar till fil."""
         # Uppdatera in-memory
@@ -181,13 +179,8 @@ class TradingWindowService:
             self.rules.windows = windows
         if paused is not None:
             self.rules.paused = paused
-        if (
-            max_trades_per_symbol_per_day is not None
-            and max_trades_per_symbol_per_day >= 0
-        ):
-            self.rules.max_trades_per_symbol_per_day = int(
-                max_trades_per_symbol_per_day
-            )
+        if max_trades_per_symbol_per_day is not None and max_trades_per_symbol_per_day >= 0:
+            self.rules.max_trades_per_symbol_per_day = int(max_trades_per_symbol_per_day)
         if max_trades_per_day is not None and max_trades_per_day > 0:
             self.rules.max_trades_per_day = int(max_trades_per_day)
         if trade_cooldown_seconds is not None and trade_cooldown_seconds >= 0:
@@ -249,7 +242,7 @@ class TradingWindowService:
         except Exception:
             return False
 
-    def validate_windows(self, windows: Dict[str, List[Tuple[str, str]]]) -> None:
+    def validate_windows(self, windows: dict[str, list[tuple[str, str]]]) -> None:
         # Nycklar måste vara veckodagar
         for key in windows.keys():
             if key not in WEEKDAY_KEYS:
@@ -262,13 +255,8 @@ class TradingWindowService:
                 if not isinstance(pair, (list, tuple)) or len(pair) != 2:
                     raise ValueError(f"Fel format för intervall i {day}: {pair}")
                 start, end = pair[0], pair[1]
-                if not (
-                    self._is_valid_time_string(start)
-                    and self._is_valid_time_string(end)
-                ):
+                if not (self._is_valid_time_string(start) and self._is_valid_time_string(end)):
                     raise ValueError(f"Ogiltigt tidsformat i {day}: {start}-{end}")
                 t_start, t_end = _parse_time(start), _parse_time(end)
                 if not (t_start < t_end):
-                    raise ValueError(
-                        f"Start måste vara före slut i {day}: {start}-{end}"
-                    )
+                    raise ValueError(f"Start måste vara före slut i {day}: {start}-{end}")

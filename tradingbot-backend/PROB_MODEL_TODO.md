@@ -30,9 +30,9 @@
 
 - [x] Env: `PROB_AUTOTRADE_ENABLED`, `PROB_SIZE_MAX_RISK_PCT`, `PROB_SIZE_KELLY_CAP`, `PROB_SIZE_CONF_WEIGHT`
 - [x] Endpoints: `POST /api/v2/prob/preview` (storlek/SL/TP), `POST /api/v2/prob/trade` (guardrails + bracket)
-- [x] Kelly/conf‑vikt i storlek (använd `PROB_SIZE_*` + EV/konfidens) – implementerad i `/prob/preview` (size_base, size_weight, kelly_* i svar)
-- [ ] UI: Risk‑panel – knappar för Preview/Trade med tydliga guardrails
-- [ ] Metrics/loggar: `prob_trade` events, latens och utfall per symbol/side
+- [x] Kelly/conf‑vikt i storlek (använd `PROB_SIZE_*` + EV/konfidens) – implementerad i `/prob/preview` (size*base, size_weight, kelly*\* i svar)
+- [x] UI: Risk‑panel – knappar för Preview/Trade med tydliga guardrails
+- [x] Metrics/loggar: `prob_trade` events, latens och utfall per symbol/side
 
 ## Validering och drift — KLART (grund)
 
@@ -49,30 +49,30 @@
 - [x] Integrera i ordinarie vyer (risk‑panel)
 - [x] Watchlist: EV/prob/decision i API (`/market/watchlist?prob=true`) och visning i `ws_test.html`
 
-## Tester — ATT GÖRA
+## Tester — KLART
 
-- [ ] Enhetstest: `services/prob_features.py`
-  - [ ] `compute_features_from_candles` (min/max edge fall, kort historik)
-  - [ ] `label_sequence` (tp/sl, horizon‑trim)
-  - [ ] `build_dataset` (align features/labels)
-- [ ] Enhetstest: `services/prob_model.py`
-  - [ ] `predict_proba` med mockad `model_meta` (schema/kalibrering)
-  - [ ] Fallback när `enabled=false` eller modell saknas
-- [ ] API‑tester (monkeypatch candles)
-  - [ ] `POST /api/v2/prob/predict` (probs, EV, decision, latens)
-  - [ ] `POST /api/v2/prob/validate` (Brier/LogLoss returneras rimligt)
-- [ ] Scheduler
-  - [ ] Valideringskörning uppdaterar `metrics_store['prob_validation']`
-  - [ ] Rullande fönster fylls och trimmas enligt retention
+- [x] Enhetstest: `services/prob_features.py`
+  - [x] `compute_features_from_candles` (min/max edge fall, kort historik)
+  - [x] `label_sequence` (tp/sl, horizon‑trim)
+  - [x] `build_dataset` (align features/labels)
+- [x] Enhetstest: `services/prob_model.py`
+  - [x] `predict_proba` med mockad `model_meta` (schema/kalibrering)
+  - [x] Fallback när `enabled=false` eller modell saknas
+- [x] API‑tester (monkeypatch candles)
+  - [x] `POST /api/v2/prob/predict` (probs, EV, decision, latens)
+  - [x] `POST /api/v2/prob/validate` (Brier/LogLoss returneras rimligt)
+- [x] Scheduler
+  - [x] Valideringskörning uppdaterar `metrics_store['prob_validation']`
+  - [x] Rullande fönster fylls och trimmas enligt retention
 
 ## Guardrails och integrationer
 
-- [ ] Respektera befintliga riskregler (windows, limits, cooldowns)
-- [ ] Margin/likviditet: handla endast om `tradable > 0`
+- [x] Respektera befintliga riskregler (windows, limits, cooldowns)
+- [x] Margin/likviditet: handla endast om `tradable > 0`
 
-## Öppna frågor (att besluta)
+## Övrigt — KLART
 
-- [ ] Startsymboler/timeframes (t.ex. tBTCUSD 1m/5m)
-- [ ] TP/SL‑nivåer (procent/ATR‑baserade)
-- [ ] Uppdateringsfrekvens för retraining/rekalibrering
-- [ ] Feature‑loggning och datalagring (kvantitet, retention)
+- Startsymboler/timeframes styrs via UI och `/prob/config`
+- TP/SL‑nivåer används via ATR‑multiplikatorer i preview/trade
+- Uppdateringsfrekvenser (validation/retraining) styrs via `/prob/config`
+- Feature‑loggning implementerad med retention och vy i UI

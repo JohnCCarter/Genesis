@@ -23,7 +23,7 @@ class BitfinexClient:
         self.rest_url = "https://api-pub.bitfinex.com"
         self.ws_url = "wss://api-pub.bitfinex.com/ws/2"
 
-    async def get_active_orders(self) -> Dict[str, Any]:
+    async def get_active_orders(self) -> dict[str, Any]:
         """
         Hämtar aktiva ordrar med autentiserade headers.
 
@@ -34,9 +34,7 @@ class BitfinexClient:
         headers = build_auth_headers(endpoint)
 
         async with httpx.AsyncClient() as client:
-            response = await client.post(
-                f"{self.rest_url}/v2/{endpoint}", headers=headers
-            )
+            response = await client.post(f"{self.rest_url}/v2/{endpoint}", headers=headers)
             return response.json()
 
     def get_ws_auth_message(self) -> str:

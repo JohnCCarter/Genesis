@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="sv">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>WS Test</title>
+    <link rel="stylesheet" href="/ws-test/ws-test.css" />
+    <script src="/shared/tb-ui.js"></script>
+  </head>
+  <body>
+    <h2>WebSocket & REST Debug</h2>
+    <div class="row">
+      <div class="card">
+        <h3>WS</h3>
+        <div id="ws-status">-</div>
+        <button id="ws-connect">Connect</button>
+        <button id="ws-disconnect">Disconnect</button>
+        <div class="row">
+          <input id="sym" placeholder="tBTCUSD" />
+          <button id="sub">Subscribe ticker</button>
+          <button id="unsub">Unsubscribe</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3>REST</h3>
+        <div class="row">
+          <input id="rest-url" placeholder="/health" />
+          <button id="rest-call">Call</button>
+        </div>
+      </div>
+    </div>
+    <h3>Log</h3>
+    <pre id="log"></pre>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/ws-test/ws-test.js"></script>
+  </body>
+</html>

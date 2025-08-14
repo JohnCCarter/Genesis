@@ -24,11 +24,10 @@ class ActiveOrdersService:
     def __init__(self):
         self.settings = Settings()
         self.base_url = (
-            getattr(self.settings, "BITFINEX_AUTH_API_URL", None)
-            or self.settings.BITFINEX_API_URL
+            getattr(self.settings, "BITFINEX_AUTH_API_URL", None) or self.settings.BITFINEX_API_URL
         )
 
-    async def get_active_orders(self) -> List[OrderResponse]:
+    async def get_active_orders(self) -> list[OrderResponse]:
         """
         Hämtar alla aktiva ordrar från Bitfinex.
 
@@ -42,9 +41,7 @@ class ActiveOrdersService:
             headers = build_auth_headers(endpoint, payload_str=empty_json)
 
             async with httpx.AsyncClient() as client:
-                logger.info(
-                    f"🌐 REST API: Hämtar aktiva ordrar från {self.base_url}/{endpoint}"
-                )
+                logger.info(f"🌐 REST API: Hämtar aktiva ordrar från {self.base_url}/{endpoint}")
                 response = await client.post(
                     f"{self.base_url}/{endpoint}",
                     headers=headers,
@@ -55,16 +52,14 @@ class ActiveOrdersService:
                 orders_data = response.json()
                 logger.info(f"✅ REST API: Hämtade {len(orders_data)} aktiva ordrar")
 
-                orders = [
-                    OrderResponse.from_bitfinex_data(order) for order in orders_data
-                ]
+                orders = [OrderResponse.from_bitfinex_data(order) for order in orders_data]
                 return orders
 
         except Exception as e:
             logger.error(f"Fel vid hämtning av aktiva ordrar: {e}")
             raise
 
-    async def get_active_orders_by_symbol(self, symbol: str) -> List[OrderResponse]:
+    async def get_active_orders_by_symbol(self, symbol: str) -> list[OrderResponse]:
         """
         Hämtar aktiva ordrar för en specifik symbol.
 
@@ -77,9 +72,7 @@ class ActiveOrdersService:
         orders = await self.get_active_orders()
         return [order for order in orders if order.symbol.lower() == symbol.lower()]
 
-    async def get_active_orders_by_type(
-        self, order_type: OrderType
-    ) -> List[OrderResponse]:
+    async def get_active_orders_by_type(self, order_type: OrderType) -> list[OrderResponse]:
         """
         Hämtar aktiva ordrar av en specifik typ.
 
@@ -92,7 +85,7 @@ class ActiveOrdersService:
         orders = await self.get_active_orders()
         return [order for order in orders if order.type == order_type]
 
-    async def get_active_orders_by_side(self, side: OrderSide) -> List[OrderResponse]:
+    async def get_active_orders_by_side(self, side: OrderSide) -> list[OrderResponse]:
         """
         Hämtar aktiva ordrar för en specifik sida (köp/sälj).
 
@@ -109,7 +102,7 @@ class ActiveOrdersService:
         else:
             return [order for order in orders if order.amount < 0]
 
-    async def get_order_by_id(self, order_id: int) -> Optional[OrderResponse]:
+    async def get_order_by_id(self, order_id: int) -> OrderResponse | None:
         """
         Hämtar en specifik order baserat på ID.
 
@@ -127,9 +120,7 @@ class ActiveOrdersService:
 
         return None
 
-    async def get_order_by_client_id(
-        self, client_order_id: int
-    ) -> Optional[OrderResponse]:
+    async def get_order_by_client_id(self, client_order_id: int) -> OrderResponse | None:
         """
         Hämtar en specifik order baserat på klient-ID.
 
@@ -150,9 +141,9 @@ class ActiveOrdersService:
     async def update_order(
         self,
         order_id: int,
-        price: Optional[float] = None,
-        amount: Optional[float] = None,
-    ) -> Dict[str, Any]:
+        price: float | None = None,
+        amount: float | None = None,
+    ) -> dict[str, Any]:
         """
         Uppdaterar en aktiv order.
 
@@ -201,7 +192,7 @@ class ActiveOrdersService:
             logger.error(f"Fel vid uppdatering av order: {e}")
             raise
 
-    async def cancel_all_orders(self) -> Dict[str, Any]:
+    async def cancel_all_orders(self) -> dict[str, Any]:
         """
         Avbryter alla aktiva ordrar.
 
@@ -214,9 +205,7 @@ class ActiveOrdersService:
 
             async with httpx.AsyncClient() as client:
                 logger.info("🌐 REST API: Avbryter alla ordrar")
-                response = await client.post(
-                    f"{self.base_url}/{endpoint}", headers=headers
-                )
+                response = await client.post(f"{self.base_url}/{endpoint}", headers=headers)
                 try:
                     response.raise_for_status()
                     result = response.json()
@@ -236,21 +225,15 @@ class ActiveOrdersService:
 
             # Fallback: hämta alla ordrar och avbryt en och en
             orders = await self.get_active_orders()
-            results: List[Dict[str, Any]] = []
+            results: list[dict[str, Any]] = []
             async with httpx.AsyncClient() as client:
                 for order in orders:
                     try:
                         cancel_endpoint = "auth/w/order/cancel"
                         payload = {"id": order.id}
-                        body_json = json.dumps(
-                            payload, separators=(",", ":"), ensure_ascii=False
-                        )
-                        cancel_headers = build_auth_headers(
-                            cancel_endpoint, payload_str=body_json
-                        )
-                        logger.info(
-                            f"🌐 REST API: Fallback – avbryter order {order.id}"
-                        )
+                        body_json = json.dumps(payload, separators=(",", ":"), ensure_ascii=False)
+                        cancel_headers = build_auth_headers(cancel_endpoint, payload_str=body_json)
+                        logger.info(f"🌐 REST API: Fallback – avbryter order {order.id}")
                         resp = await client.post(
                             f"{self.base_url}/{cancel_endpoint}",
                             headers=cancel_headers,
@@ -260,9 +243,7 @@ class ActiveOrdersService:
                         results.append({"id": order.id, "success": True})
                     except Exception as ex:
                         logger.error(f"Fel vid avbrytning av order {order.id}: {ex}")
-                        results.append(
-                            {"id": order.id, "success": False, "error": str(ex)}
-                        )
+                        results.append({"id": order.id, "success": False, "error": str(ex)})
 
             num_success = len([r for r in results if r.get("success")])
             return {
@@ -275,7 +256,7 @@ class ActiveOrdersService:
             logger.error(f"Fel vid avbrytning av alla ordrar: {e}")
             raise
 
-    async def cancel_orders_by_symbol(self, symbol: str) -> Dict[str, Any]:
+    async def cancel_orders_by_symbol(self, symbol: str) -> dict[str, Any]:
         """
         Avbryter alla aktiva ordrar för en specifik symbol.
 
@@ -305,18 +286,14 @@ class ActiveOrdersService:
                     headers = build_auth_headers(endpoint, payload)
 
                     async with httpx.AsyncClient() as client:
-                        logger.info(
-                            f"🌐 REST API: Avbryter order {order.id} för {symbol}"
-                        )
+                        logger.info(f"🌐 REST API: Avbryter order {order.id} för {symbol}")
                         response = await client.post(
                             f"{self.base_url}/{endpoint}", headers=headers, json=payload
                         )
                         response.raise_for_status()
 
                         result = response.json()
-                        logger.info(
-                            f"✅ REST API: Order {order.id} avbruten framgångsrikt"
-                        )
+                        logger.info(f"✅ REST API: Order {order.id} avbruten framgångsrikt")
                         results.append({"id": order.id, "success": True})
 
                 except Exception as e:
@@ -339,39 +316,39 @@ active_orders_service = ActiveOrdersService()
 
 
 # Exportera funktioner för enkel användning
-async def get_active_orders() -> List[OrderResponse]:
+async def get_active_orders() -> list[OrderResponse]:
     return await active_orders_service.get_active_orders()
 
 
-async def get_active_orders_by_symbol(symbol: str) -> List[OrderResponse]:
+async def get_active_orders_by_symbol(symbol: str) -> list[OrderResponse]:
     return await active_orders_service.get_active_orders_by_symbol(symbol)
 
 
-async def get_active_orders_by_type(order_type: OrderType) -> List[OrderResponse]:
+async def get_active_orders_by_type(order_type: OrderType) -> list[OrderResponse]:
     return await active_orders_service.get_active_orders_by_type(order_type)
 
 
-async def get_active_orders_by_side(side: OrderSide) -> List[OrderResponse]:
+async def get_active_orders_by_side(side: OrderSide) -> list[OrderResponse]:
     return await active_orders_service.get_active_orders_by_side(side)
 
 
-async def get_order_by_id(order_id: int) -> Optional[OrderResponse]:
+async def get_order_by_id(order_id: int) -> OrderResponse | None:
     return await active_orders_service.get_order_by_id(order_id)
 
 
-async def get_order_by_client_id(client_order_id: int) -> Optional[OrderResponse]:
+async def get_order_by_client_id(client_order_id: int) -> OrderResponse | None:
     return await active_orders_service.get_order_by_client_id(client_order_id)
 
 
 async def update_order(
-    order_id: int, price: Optional[float] = None, amount: Optional[float] = None
-) -> Dict[str, Any]:
+    order_id: int, price: float | None = None, amount: float | None = None
+) -> dict[str, Any]:
     return await active_orders_service.update_order(order_id, price, amount)
 
 
-async def cancel_all_orders() -> Dict[str, Any]:
+async def cancel_all_orders() -> dict[str, Any]:
     return await active_orders_service.cancel_all_orders()
 
 
-async def cancel_orders_by_symbol(symbol: str) -> Dict[str, Any]:
+async def cancel_orders_by_symbol(symbol: str) -> dict[str, Any]:
     return await active_orders_service.cancel_orders_by_symbol(symbol)

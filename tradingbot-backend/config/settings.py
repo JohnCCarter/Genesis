@@ -24,25 +24,25 @@ class Settings(_BaseSettings):
     AUTH_REQUIRED: bool = True
 
     # CORS
-    ALLOWED_ORIGINS: List[str] = [
+    ALLOWED_ORIGINS: list[str] = [
         "http://localhost:3000",
         "http://localhost:8080",
     ]
 
     # Bitfinex REST API - för orderläggning och kontohantering
-    BITFINEX_API_KEY: Optional[str] = None
-    BITFINEX_API_SECRET: Optional[str] = None
+    BITFINEX_API_KEY: str | None = None
+    BITFINEX_API_SECRET: str | None = None
     # REST (auth) bas-URL
     BITFINEX_API_URL: str = "https://api.bitfinex.com/v2"
     # Valfri separat AUTH-bas-URL (om satt i .env har den företräde
     # för auth-anrop)
-    BITFINEX_AUTH_API_URL: Optional[str] = None
+    BITFINEX_AUTH_API_URL: str | None = None
     # REST (public) bas-URL – använd api-pub för publika endpoints
     BITFINEX_PUBLIC_API_URL: str = "https://api-pub.bitfinex.com/v2"
 
     # Bitfinex WebSocket API - separera public vs auth domäner
-    BITFINEX_WS_API_KEY: Optional[str] = None
-    BITFINEX_WS_API_SECRET: Optional[str] = None
+    BITFINEX_WS_API_KEY: str | None = None
+    BITFINEX_WS_API_SECRET: str | None = None
     # WS public endast: api-pub
     BITFINEX_WS_PUBLIC_URI: str = "wss://api-pub.bitfinex.com/ws/2"
     # WS auth endast: api
@@ -56,7 +56,7 @@ class Settings(_BaseSettings):
     WS_PUBLIC_SOCKETS_MAX: int = 3
 
     # Lista över symboler att auto‑subscriba vid startup (komma‑separerad)
-    WS_SUBSCRIBE_SYMBOLS: Optional[str] = None
+    WS_SUBSCRIBE_SYMBOLS: str | None = None
 
     # JWT Autentisering
     JWT_SECRET_KEY: str = "your_jwt_secret_key_here"
@@ -78,7 +78,7 @@ class Settings(_BaseSettings):
     # Risk- och handelsregler
     TIMEZONE: str = "UTC"
     TRADING_RULES_FILE: str = "config/trading_rules.json"
-    MAX_TRADES_PER_DAY: int = 10
+    MAX_TRADES_PER_DAY: int = 15
     # Per-symbol daglig gräns (0 = inaktiverad)
     MAX_TRADES_PER_SYMBOL_PER_DAY: int = 0
     TRADE_COOLDOWN_SECONDS: int = 60
@@ -97,16 +97,16 @@ class Settings(_BaseSettings):
     CB_NOTIFY: bool = True
 
     # Telegram notifieringar
-    TELEGRAM_BOT_TOKEN: Optional[str] = None
-    TELEGRAM_CHAT_ID: Optional[str] = None
+    TELEGRAM_BOT_TOKEN: str | None = None
+    TELEGRAM_CHAT_ID: str | None = None
 
     # SMTP (från din .env)
-    SMTP_PORT: Optional[str] = None
-    SMTP_USER: Optional[str] = None
-    SMTP_PASSWORD: Optional[str] = None
+    SMTP_PORT: str | None = None
+    SMTP_USER: str | None = None
+    SMTP_PASSWORD: str | None = None
 
     # Exchange ID
-    EXCHANGE_ID: Optional[str] = None
+    EXCHANGE_ID: str | None = None
 
     # Nätverksinställningar (timeouts/retries)
     DATA_HTTP_TIMEOUT: float = 10.0
@@ -132,15 +132,15 @@ class Settings(_BaseSettings):
     CANDLE_CACHE_MAX_ROWS_PER_PAIR: int = 10000
 
     # Metrics security
-    METRICS_ACCESS_TOKEN: Optional[str] = None
-    METRICS_BASIC_AUTH_USER: Optional[str] = None
-    METRICS_BASIC_AUTH_PASS: Optional[str] = None
+    METRICS_ACCESS_TOKEN: str | None = None
+    METRICS_BASIC_AUTH_USER: str | None = None
+    METRICS_BASIC_AUTH_PASS: str | None = None
     # Kommaseparerad lista över tillåtna IP:n (ex: "127.0.0.1,10.0.0.5")
-    METRICS_IP_ALLOWLIST: Optional[str] = None
+    METRICS_IP_ALLOWLIST: str | None = None
 
     # Probability Model (feature flags)
     PROB_MODEL_ENABLED: bool = False
-    PROB_MODEL_FILE: Optional[str] = None
+    PROB_MODEL_FILE: str | None = None
     PROB_MODEL_CONFIDENCE_MIN: float = 0.15
     PROB_MODEL_EV_THRESHOLD: float = 0.0005
     PROB_MODEL_TIME_HORIZON: int = 20
@@ -148,19 +148,19 @@ class Settings(_BaseSettings):
     # Probability Validation (rolling drift/quality monitoring)
     PROB_VALIDATE_ENABLED: bool = True
     PROB_VALIDATE_INTERVAL_MINUTES: int = 60
-    PROB_VALIDATE_SYMBOLS: Optional[str] = None  # komma-separerad lista
+    PROB_VALIDATE_SYMBOLS: str | None = None  # komma-separerad lista
     PROB_VALIDATE_TIMEFRAME: str = "1m"
     PROB_VALIDATE_LIMIT: int = 1200
     PROB_VALIDATE_MAX_SAMPLES: int = 500
     # Rolling validation windows and retention
-    PROB_VALIDATE_WINDOWS_MINUTES: Optional[str] = None  # ex: "60,360,1440"
+    PROB_VALIDATE_WINDOWS_MINUTES: str | None = None  # ex: "60,360,1440"
     PROB_VALIDATE_HISTORY_MAX_POINTS: int = 1000
     PROB_VALIDATE_HISTORY_RETENTION_MINUTES: int = 2880
 
     # Probability retraining
     PROB_RETRAIN_ENABLED: bool = False
     PROB_RETRAIN_INTERVAL_HOURS: int = 24
-    PROB_RETRAIN_SYMBOLS: Optional[str] = None
+    PROB_RETRAIN_SYMBOLS: str | None = None
     PROB_RETRAIN_TIMEFRAME: str = "1m"
     PROB_RETRAIN_LIMIT: int = 5000
     PROB_RETRAIN_OUTPUT_DIR: str = "config/models"
@@ -170,6 +170,18 @@ class Settings(_BaseSettings):
     PROB_SIZE_MAX_RISK_PCT: float = 1.0
     PROB_SIZE_KELLY_CAP: float = 0.5
     PROB_SIZE_CONF_WEIGHT: float = 0.5
+
+    # Position size fallback (för dev/demo när wallet-saldo saknas)
+    # Om > 0 och ingen quote-balans hittas, används detta som total_quote vid beräkning
+    POSITION_SIZE_FALLBACK_QUOTE: float = 0.0
+
+    # Probability feature logging (för insyn/debugg)
+    PROB_FEATURE_LOG_ENABLED: bool = False
+    PROB_FEATURE_LOG_MAX_POINTS: int = 500
+    PROB_FEATURE_LOG_INCLUDE_PRICE: bool = False
+
+    # Dry-run (simulera ordrar; lägg inte riktiga ordrar)
+    DRY_RUN_ENABLED: bool = False
 
     # Säkerställ absolut sökväg till .env oavsett var processen startas
     class Config:

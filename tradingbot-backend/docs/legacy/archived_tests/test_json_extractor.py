@@ -103,9 +103,7 @@ class TestJsonExtractor(unittest.TestCase):
         """
         results = self.extractor.extract_json_from_html(test_html)
         self.assertEqual(len(results), 3)
-        self.assertEqual(
-            [obj for obj in results], [{"first": 1}, {"second": 2}, {"third": 3}]
-        )
+        self.assertEqual([obj for obj in results], [{"first": 1}, {"second": 2}, {"third": 3}])
 
     def test_whitespace_handling(self):
         test_html = """

@@ -12,6 +12,7 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from scraper.bitfinex_auth_docs import BitfinexAuthScraper
+
 from utils.logger import get_logger
 
 logger = get_logger("auth_examples")
@@ -166,9 +167,7 @@ def display_ws_auth_info():
         and "python" in examples["websocket"]
         and "build_ws_auth_payload" in examples["websocket"]["python"]
     ):
-        print(
-            f"```python\n{examples['websocket']['python']['build_ws_auth_payload']}\n```"
-        )
+        print(f"```python\n{examples['websocket']['python']['build_ws_auth_payload']}\n```")
     else:
         print("  Inga kodexempel tillgängliga.")
 
@@ -189,23 +188,15 @@ def compare_auth_implementations():
 
     # Jämför REST implementationen
     print("🔄 REST Autentiseringsjämförelse:")
-    print(
-        f"  Rekommenderad nonce-generering: {recommendations['rest']['nonce_generation']}"
-    )
-    print(
-        f"  Rekommenderat message-format: {recommendations['rest']['message_format']}"
-    )
+    print(f"  Rekommenderad nonce-generering: {recommendations['rest']['nonce_generation']}")
+    print(f"  Rekommenderat message-format: {recommendations['rest']['message_format']}")
     print("  Nuvarande implementation:")
     print(f"```python\n{build_auth_headers.__doc__}\n```")
 
     # Jämför WebSocket implementationen
     print("\n🔄 WebSocket Autentiseringsjämförelse:")
-    print(
-        f"  Rekommenderad nonce-generering: {recommendations['websocket']['nonce_generation']}"
-    )
-    print(
-        f"  Rekommenderat message-format: {recommendations['websocket']['message_format']}"
-    )
+    print(f"  Rekommenderad nonce-generering: {recommendations['websocket']['nonce_generation']}")
+    print(f"  Rekommenderat message-format: {recommendations['websocket']['message_format']}")
     print("  Nuvarande implementation:")
     print(f"```python\n{build_ws_auth_payload.__doc__}\n```")
 
@@ -217,9 +208,7 @@ def compare_auth_implementations():
     if "mikrosekunder" in recommendations["rest"][
         "nonce_generation"
     ] and "timestamp() * 1_000_000" not in str(build_auth_headers):
-        rest_diffs.append(
-            "REST nonce bör genereras med mikrosekunder (timestamp * 1_000_000)"
-        )
+        rest_diffs.append("REST nonce bör genereras med mikrosekunder (timestamp * 1_000_000)")
 
     if not rest_diffs:
         print("  ✅ REST implementation följer rekommendationerna")
@@ -233,9 +222,7 @@ def compare_auth_implementations():
     if "millisekunder" in recommendations["websocket"][
         "nonce_generation"
     ] and "timestamp() * 1000" not in str(build_ws_auth_payload):
-        ws_diffs.append(
-            "WebSocket nonce bör genereras med millisekunder (timestamp * 1000)"
-        )
+        ws_diffs.append("WebSocket nonce bör genereras med millisekunder (timestamp * 1000)")
 
     if not ws_diffs:
         print("  ✅ WebSocket implementation följer rekommendationerna")

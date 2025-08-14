@@ -26,18 +26,18 @@ class SymbolService:
         self.file_path = os.path.join(
             base_dir, "docs", "legacy", "bitfinex_docs", "extracted", "symbols.json"
         )
-        self._legacy_cache: List[str] = []
+        self._legacy_cache: list[str] = []
         # Live config-cacher
-        self._pairs: List[str] = []  # ex. ["BTCUSD","ETHUSD", ...]
-        self._alias_fwd: Dict[str, str] = {}  # RAW -> API (ex. ALGO -> ALG)
-        self._alias_rev: Dict[str, str] = {}  # API -> RAW
+        self._pairs: list[str] = []  # ex. ["BTCUSD","ETHUSD", ...]
+        self._alias_fwd: dict[str, str] = {}  # RAW -> API (ex. ALGO -> ALG)
+        self._alias_rev: dict[str, str] = {}  # API -> RAW
         self._last_refresh_ts: float = 0.0
         self._ttl_seconds: float = 3600.0
 
-    def _load_legacy(self) -> List[str]:
+    def _load_legacy(self) -> list[str]:
         if self._legacy_cache:
             return self._legacy_cache
-        symbols: List[str] = []
+        symbols: list[str] = []
         try:
             with open(self.file_path, encoding="utf-8") as f:
                 data = json.load(f)
@@ -63,7 +63,7 @@ class SymbolService:
         self._legacy_cache = symbols
         return self._legacy_cache
 
-    def get_symbols(self, test_only: bool = False, fmt: str = "v2") -> List[str]:
+    def get_symbols(self, test_only: bool = False, fmt: str = "v2") -> list[str]:
         # Legacy-läsning (endast för dokumentationssyfte i UI)
         symbols = self._load_legacy()
         if test_only:
@@ -99,7 +99,7 @@ class SymbolService:
         except Exception as e:
             logger.warning("SymbolService refresh misslyckades: %s", e)
 
-    def _split_symbol(self, t_symbol: str) -> Tuple[str, str]:
+    def _split_symbol(self, t_symbol: str) -> tuple[str, str]:
         """Ta 'tBTCUSD' eller 'tTESTADA:TESTUSD' → (BASE, QUOTE) utan prefix."""
         s = t_symbol
         if s.startswith("t"):

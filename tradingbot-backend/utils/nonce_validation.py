@@ -17,7 +17,7 @@ from utils.nonce_manager import NONCE_FILE, get_nonce
 logger = get_logger(__name__)
 
 
-def get_last_nonces() -> Dict[str, int]:
+def get_last_nonces() -> dict[str, int]:
     """
     Hämtar senaste nonce-värden för alla API-nycklar.
 
@@ -35,7 +35,7 @@ def get_last_nonces() -> Dict[str, int]:
         return {}
 
 
-def test_nonce_generation(key_id: str, count: int = 10) -> List[Tuple[str, int]]:
+def test_nonce_generation(key_id: str, count: int = 10) -> list[tuple[str, int]]:
     """
     Testar nonce-generering för en API-nyckel.
 
@@ -60,9 +60,7 @@ def test_nonce_generation(key_id: str, count: int = 10) -> List[Tuple[str, int]]
     return results
 
 
-def validate_nonce_format(
-    nonce: str, api_type: str = "rest"
-) -> Tuple[bool, Optional[str]]:
+def validate_nonce_format(nonce: str, api_type: str = "rest") -> tuple[bool, str | None]:
     """
     Validerar formatet på ett nonce-värde.
 
@@ -136,12 +134,8 @@ def print_nonce_statistics(key_id: str, count: int = 5):
 
         print(f"  {i+1}. Nonce: {nonce}")
         print(f"     Differens: +{diff}")
-        print(
-            f"     Giltig för REST API: {'✅' if is_valid_rest else '❌'} {rest_error or ''}"
-        )
-        print(
-            f"     Giltig för WebSocket API: {'✅' if is_valid_ws else '❌'} {ws_error or ''}"
-        )
+        print(f"     Giltig för REST API: {'✅' if is_valid_rest else '❌'} {rest_error or ''}")
+        print(f"     Giltig för WebSocket API: {'✅' if is_valid_ws else '❌'} {ws_error or ''}")
 
     # Visa tid- och värdeinfo
     now = datetime.now()

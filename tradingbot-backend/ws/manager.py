@@ -35,9 +35,7 @@ async def socket_auth_middleware(environ, send):
     # Använd autentiseringsfunktionen
     if authenticate_socket_io(environ):
         # Kopiera user till socket.io_user för kompatibilitet
-        environ["socket.io_user"] = environ.get(
-            "user", {"sub": "unknown", "scope": "none"}
-        )
+        environ["socket.io_user"] = environ.get("user", {"sub": "unknown", "scope": "none"})
         return True
     else:
         logger.warning(
@@ -99,9 +97,7 @@ async def request_token(sid, data):
             await socket_app.emit("token_generated", token_response, room=sid)
             logger.info(f"✅ Token genererad för användare: {user_id}")
         else:
-            await socket_app.emit(
-                "token_error", {"error": "Kunde inte generera token"}, room=sid
-            )
+            await socket_app.emit("token_error", {"error": "Kunde inte generera token"}, room=sid)
             logger.error(f"❌ Fel vid generering av token för användare: {user_id}")
 
     except Exception as e:
@@ -116,9 +112,7 @@ async def refresh_token(sid, data):
         refresh_token = data.get("refresh_token")
 
         if not refresh_token:
-            await socket_app.emit(
-                "token_error", {"error": "Refresh token saknas"}, room=sid
-            )
+            await socket_app.emit("token_error", {"error": "Refresh token saknas"}, room=sid)
             logger.warning("❌ Refresh token saknas i begäran")
             return
 
@@ -127,13 +121,9 @@ async def refresh_token(sid, data):
 
         if token_response:
             await socket_app.emit("token_refreshed", token_response, room=sid)
-            logger.info(
-                f"✅ Token förnyad för användare: {token_response.get('user_id')}"
-            )
+            logger.info(f"✅ Token förnyad för användare: {token_response.get('user_id')}")
         else:
-            await socket_app.emit(
-                "token_error", {"error": "Kunde inte förnya token"}, room=sid
-            )
+            await socket_app.emit("token_error", {"error": "Kunde inte förnya token"}, room=sid)
             logger.warning("❌ Kunde inte förnya token")
 
     except Exception as e:

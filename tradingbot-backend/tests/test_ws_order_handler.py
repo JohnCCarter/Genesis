@@ -52,9 +52,7 @@ class TestWSOrderHandler(unittest.IsolatedAsyncioTestCase):
 
     async def test_authenticate(self):
         """Testa autentisering via WebSocket."""
-        with mock.patch(
-            "ws.order_handler.build_ws_auth_payload", return_value='{"event":"auth"}'
-        ):
+        with mock.patch("ws.order_handler.build_ws_auth_payload", return_value='{"event":"auth"}'):
             result = await self.handler.authenticate()
 
             # Kontrollera att autentiseringsmeddelandet skickades

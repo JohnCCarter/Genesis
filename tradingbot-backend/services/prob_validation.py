@@ -17,7 +17,7 @@ from services.prob_model import prob_model
 Label = str
 
 
-def _one_hot(label: Label) -> Tuple[float, float, float]:
+def _one_hot(label: Label) -> tuple[float, float, float]:
     if label == "buy":
         return 1.0, 0.0, 0.0
     if label == "sell":
@@ -25,9 +25,7 @@ def _one_hot(label: Label) -> Tuple[float, float, float]:
     return 0.0, 0.0, 1.0
 
 
-def _scores_for(
-    probs: Dict[str, float], label: Label, eps: float = 1e-12
-) -> Tuple[float, float]:
+def _scores_for(probs: dict[str, float], label: Label, eps: float = 1e-12) -> tuple[float, float]:
     """
     Return (brier, logloss) for a single sample.
     - Brier (multi-class): sum_k (p_k - y_k)^2
@@ -49,12 +47,12 @@ def _scores_for(
 
 
 def validate_on_candles(
-    candles: List[List[float]],
+    candles: list[list[float]],
     horizon: int,
     tp: float,
     sl: float,
     max_samples: int | None = None,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Build dataset from candles, run model inference per sample,
     compute metrics. Returns summary dict with overall Brier/LogLoss
@@ -78,7 +76,7 @@ def validate_on_candles(
     total_logloss = 0.0
     n = 0
 
-    by_label: Dict[str, Dict[str, Any]] = {
+    by_label: dict[str, dict[str, Any]] = {
         "buy": {"n": 0, "brier": 0.0, "logloss": 0.0, "avg_p_true": 0.0},
         "sell": {"n": 0, "brier": 0.0, "logloss": 0.0, "avg_p_true": 0.0},
         "hold": {"n": 0, "brier": 0.0, "logloss": 0.0, "avg_p_true": 0.0},
@@ -119,7 +117,7 @@ def validate_on_candles(
         }
 
     # finalize averages
-    summary_by_label: Dict[str, Dict[str, Any]] = {}
+    summary_by_label: dict[str, dict[str, Any]] = {}
     for k, v in by_label.items():
         if v["n"] > 0:
             summary_by_label[k] = {

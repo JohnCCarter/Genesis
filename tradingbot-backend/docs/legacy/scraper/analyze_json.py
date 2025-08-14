@@ -96,9 +96,7 @@ def format_metadata(metadata: List[Dict[str, Any]]) -> str:
             output.append("  - Nycklar:")
             for key in item["structure"]["keys"]:
                 output.append(f"    - {key}")
-            output.append(
-                f"  - Totalt antal nycklar: {item['structure']['total_keys']}"
-            )
+            output.append(f"  - Totalt antal nycklar: {item['structure']['total_keys']}")
 
         elif item["type"] == "list":
             output.append("- Struktur:")

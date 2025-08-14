@@ -14,7 +14,7 @@ from utils.logger import get_logger
 logger = get_logger(__name__)
 
 
-def calculate_rsi(prices: List[float], period: int = 14) -> Optional[float]:
+def calculate_rsi(prices: list[float], period: int = 14) -> float | None:
     """
     Beräknar Relative Strength Index (RSI).
 

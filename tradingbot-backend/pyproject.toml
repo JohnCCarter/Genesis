@@ -1,6 +1,6 @@
 [tool.ruff]
-line-length = 88
-target-version = "py39"
+line-length = 100
+target-version = "py311"
 exclude = [
     ".git",
     "__pycache__",
@@ -24,10 +24,29 @@ exclude = [
 ]
 
 [tool.ruff.lint]
-# Match Flake8 ignores (and logging f-string rule) to keep current baseline quiet
-# Removed W503 to support older Ruff versions that don't recognize this selector
-ignore = ["E203", "E402", "F401", "F541", "F841", "G004", "E501"]
-select = ["E", "F", "W", "B", "I"]
+# Match root config selection; Ruff hanterar isort
+ignore = [
+    "E203", "E402", "F401", "F541", "F841", "G004", "E501",
+    "PLR2004",          # magic numbers (tolereras här)
+    "PLR0911", "PLR0912", "PLR0915", "PLR0913", # komplexitet/argument (tills vidare)
+    "C901",              # för komplexa funktioner (tills vidare)
+    "ANN001", "ANN101", "ANN102", "ANN201", "ANN202", "ANN204",  # typning (tills vidare)
+    "N802", "N803", "N806", "N814",  # naming i legacy kod
+    "UP035", "UP038",  # typing.* modernisering – skjuts upp
+    "RUF001", "RUF002", "RUF003", # tvetydiga unicode/tecken i loggar/kommentarer
+    "RUF006",            # asyncio.create_task-resultat (tills vidare)
+    "RUF012", "RUF013",# ClassVar/Optional implicit
+    "PLW0603",           # global-uppdatering – accepterad i singleton
+]
+select = ["E", "F", "W", "B", "I", "UP", "C90", "ARG", "N", "ANN", "PL", "RUF"]
+
+[tool.ruff.lint.per-file-ignores]
+"**/routes/*.py" = ["B008", "E501", "B904", "N814"]
+"**/rest/*.py"   = ["B008", "E501", "B904", "N814", "PLR0911", "RUF013"]
+"**/services/**/*.py" = ["E501", "PLR0911", "PLR0912", "PLR0915", "C901", "N814", "RUF002", "RUF006", "ANN001"]
+"**/ws/**/*.py"  = ["B008", "E501", "N814", "RUF002", "ANN001"]
+"**/models/**/*.py" = ["N805", "ARG002", "ANN001"]
+"tradingbot-backend/main.py" = ["ARG001", "ANN001", "N814"]
 
 [tool.ruff.format]
 quote-style = "preserve"
@@ -36,9 +55,31 @@ skip-magic-trailing-comma = false
 line-ending = "lf"
 
 
+[tool.black]
+line-length = 120
+target-version = ["py39"]
+skip-string-normalization = true
+
+[tool.flake8]
+max-line-length = 120
+extend-ignore = ["E203", "W503", "E402", "E722"]
+exclude = [
+  ".git",
+  "__pycache__",
+  ".pytest_cache",
+  ".venv",
+  "venv",
+  "docs",
+  "docs/**",
+  "examples",
+  "examples/**",
+  "scraper",
+  "scraper/**",
+]
+
 [tool.isort]
 profile = "black"
-line_length = 88
+line_length = 120
 # Treat these as first-party to keep stable grouping
 known_first_party = [
     "config",

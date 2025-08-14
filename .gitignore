@@ -246,6 +246,9 @@ debug_settings.py
 *.backup
 *~
 
+# Frontend
+frontend/_backup/
+
 # OS generated files
 .DS_Store
 .DS_Store?

@@ -26,9 +26,9 @@ class Position(BaseModel):
     base_price: float
     funding: float = 0.0
     funding_type: int = 0  # 0 för daily, 1 för term
-    profit_loss: Optional[float] = None
-    profit_loss_percentage: Optional[float] = None
-    liquidation_price: Optional[float] = None
+    profit_loss: float | None = None
+    profit_loss_percentage: float | None = None
+    liquidation_price: float | None = None
 
     @property
     def is_long(self) -> bool:
@@ -41,7 +41,7 @@ class Position(BaseModel):
         return self.amount < 0
 
     @classmethod
-    def from_bitfinex_data(cls, data: List) -> "Position":
+    def from_bitfinex_data(cls, data: list) -> "Position":
         """Skapar en Position från Bitfinex API-data."""
         if len(data) < 6:
             raise ValueError(f"Ogiltig positionsdata: {data}")
@@ -65,11 +65,10 @@ class PositionsService:
     def __init__(self):
         self.settings = Settings()
         self.base_url = (
-            getattr(self.settings, "BITFINEX_AUTH_API_URL", None)
-            or self.settings.BITFINEX_API_URL
+            getattr(self.settings, "BITFINEX_AUTH_API_URL", None) or self.settings.BITFINEX_API_URL
         )
 
-    async def get_positions(self) -> List[Position]:
+    async def get_positions(self) -> list[Position]:
         """
         Hämtar alla aktiva positioner från Bitfinex.
 
@@ -81,13 +80,9 @@ class PositionsService:
             headers = build_auth_headers(endpoint)
 
             async with httpx.AsyncClient() as client:
-                logger.info(
-                    f"🌐 REST API: Hämtar positioner från {self.base_url}/{endpoint}"
-                )
+                logger.info(f"🌐 REST API: Hämtar positioner från {self.base_url}/{endpoint}")
                 try:
-                    response = await client.post(
-                        f"{self.base_url}/{endpoint}", headers=headers
-                    )
+                    response = await client.post(f"{self.base_url}/{endpoint}", headers=headers)
                     response.raise_for_status()
                     positions_data = response.json()
                 except httpx.HTTPStatusError as e:
@@ -100,16 +95,14 @@ class PositionsService:
                     raise
 
                 logger.info(f"✅ REST API: Hämtade {len(positions_data)} positioner")
-                positions = [
-                    Position.from_bitfinex_data(position) for position in positions_data
-                ]
+                positions = [Position.from_bitfinex_data(position) for position in positions_data]
                 return positions
 
         except Exception as e:
             logger.error(f"Fel vid hämtning av positioner: {e}")
             raise
 
-    async def get_position_by_symbol(self, symbol: str) -> Optional[Position]:
+    async def get_position_by_symbol(self, symbol: str) -> Position | None:
         """
         Hämtar en specifik position baserat på symbol.
 
@@ -127,7 +120,7 @@ class PositionsService:
 
         return None
 
-    async def get_long_positions(self) -> List[Position]:
+    async def get_long_positions(self) -> list[Position]:
         """
         Hämtar alla long-positioner.
 
@@ -137,7 +130,7 @@ class PositionsService:
         positions = await self.get_positions()
         return [position for position in positions if position.is_long]
 
-    async def get_short_positions(self) -> List[Position]:
+    async def get_short_positions(self) -> list[Position]:
         """
         Hämtar alla short-positioner.
 
@@ -147,7 +140,7 @@ class PositionsService:
         positions = await self.get_positions()
         return [position for position in positions if position.is_short]
 
-    async def close_position(self, symbol: str) -> Dict[str, Any]:
+    async def close_position(self, symbol: str) -> dict[str, Any]:
         """
         Stänger en margin-position genom att skicka en reduce-only market-order i motsatt riktning.
         """
@@ -155,9 +148,7 @@ class PositionsService:
             # Hämta aktuell position
             position = await self.get_position_by_symbol(symbol)
             if not position or not position.amount:
-                raise ValueError(
-                    f"Ingen aktiv position med amount hittad för symbol: {symbol}"
-                )
+                raise ValueError(f"Ingen aktiv position med amount hittad för symbol: {symbol}")
 
             # Bestäm motsatt amount
             amount = float(position.amount)
@@ -203,9 +194,9 @@ class PositionsService:
                         import asyncio
                         import random
 
-                        delay = min(
-                            backoff_max, backoff_base * (2**attempt)
-                        ) + random.uniform(0, 0.1)
+                        delay = min(backoff_max, backoff_base * (2**attempt)) + random.uniform(
+                            0, 0.1
+                        )
                         await asyncio.sleep(delay)
                         continue
                     else:
@@ -230,21 +221,21 @@ positions_service = PositionsService()
 
 
 # Exportera funktioner för enkel användning
-async def get_positions() -> List[Position]:
+async def get_positions() -> list[Position]:
     return await positions_service.get_positions()
 
 
-async def get_position_by_symbol(symbol: str) -> Optional[Position]:
+async def get_position_by_symbol(symbol: str) -> Position | None:
     return await positions_service.get_position_by_symbol(symbol)
 
 
-async def get_long_positions() -> List[Position]:
+async def get_long_positions() -> list[Position]:
     return await positions_service.get_long_positions()
 
 
-async def get_short_positions() -> List[Position]:
+async def get_short_positions() -> list[Position]:
     return await positions_service.get_short_positions()
 
 
-async def close_position(symbol: str) -> Dict[str, Any]:
+async def close_position(symbol: str) -> dict[str, Any]:
     return await positions_service.close_position(symbol)

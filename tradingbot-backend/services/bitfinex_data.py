@@ -21,16 +21,16 @@ logger = get_logger(__name__)
 
 
 # Global TTL-cache för ticker
-_TICKER_CACHE: Dict[str, Dict] = {}
+_TICKER_CACHE: dict[str, dict] = {}
 # In-flight lås per symbol för att samköra REST-förfrågningar
-_TICKER_LOCKS: Dict[str, asyncio.Lock] = {}
+_TICKER_LOCKS: dict[str, asyncio.Lock] = {}
 
 # Config caches (enkla TTL-cacher i process)
-_CONFIG_PAIRS_CACHE: Dict[str, object] = {}
-_CURRENCY_MAP_CACHE: Dict[str, object] = {}
+_CONFIG_PAIRS_CACHE: dict[str, object] = {}
+_CURRENCY_MAP_CACHE: dict[str, object] = {}
 
 # Not-listed throttling (skip REST för par som inte listas)
-_NOT_LISTED_SEEN: Dict[str, float] = {}
+_NOT_LISTED_SEEN: dict[str, float] = {}
 _NOT_LISTED_TTL_SECS: int = 600
 
 
@@ -47,7 +47,7 @@ class BitfinexDataService:
 
     async def get_candles(
         self, symbol: str = "tBTCUSD", timeframe: str = "1m", limit: int = 100
-    ) -> Optional[List[List]]:
+    ) -> list[list] | None:
         """
         Hämtar candlestick-data från Bitfinex.
 
@@ -60,8 +60,18 @@ class BitfinexDataService:
             Lista med candlestick-data eller None vid fel
         """
         try:
-            symbol = (symbol or "").strip()
-            # 1) Försök hämta från lokal cache
+            # Normalisera/resolve test‑symboler till giltig Bitfinex‑symbol (t.ex. tTESTADA:TESTUSD -> tADAUSD)
+            raw_symbol = (symbol or "").strip()
+            try:
+                from services.symbols import SymbolService
+
+                sym_svc = SymbolService()
+                await sym_svc.refresh()
+                symbol = sym_svc.resolve(raw_symbol)
+            except Exception:
+                symbol = raw_symbol
+
+            # 1) Försök hämta från lokal cache (på effektiva symbolen)
             cached = candle_cache.load(symbol, timeframe, limit)
             if cached:
                 logger.debug(
@@ -107,9 +117,9 @@ class BitfinexDataService:
                 except Exception as e:
                     last_exc = e
                     if attempt < retries:
-                        delay = min(
-                            backoff_max, backoff_base * (2**attempt)
-                        ) + random.uniform(0, 0.1)
+                        delay = min(backoff_max, backoff_base * (2**attempt)) + random.uniform(
+                            0, 0.1
+                        )
                         await asyncio.sleep(delay)
                         continue
                     break
@@ -120,7 +130,7 @@ class BitfinexDataService:
             logger.error("Fel vid hämtning av candles: %s", e)
             return None
 
-    async def get_ticker(self, symbol: str = "tBTCUSD") -> Optional[Dict]:
+    async def get_ticker(self, symbol: str = "tBTCUSD") -> dict | None:
         """
         Hämtar ticker-information för en symbol.
 
@@ -149,9 +159,7 @@ class BitfinexDataService:
                     _NOT_LISTED_SEEN[eff_symbol] = now_ts
                 return None
             # Enkel TTL‑cache för ticker (per eff_symbol)
-            _ttl = max(
-                int(getattr(self.settings, "TICKER_CACHE_TTL_SECS", 10) or 10), 1
-            )
+            _ttl = max(int(getattr(self.settings, "TICKER_CACHE_TTL_SECS", 10) or 10), 1)
             cache_key = f"ticker::{eff_symbol}"
             entry = _TICKER_CACHE.get(cache_key)
             now = time.time()
@@ -170,12 +178,8 @@ class BitfinexDataService:
 
             # 0) Om WS har färsk ticker för eff_symbol, använd den och hoppa REST
             try:
-                ws_stale_secs = int(
-                    getattr(self.settings, "WS_TICKER_STALE_SECS", 10) or 10
-                )
-                ws_warmup_ms = int(
-                    getattr(self.settings, "WS_TICKER_WARMUP_MS", 400) or 400
-                )
+                ws_stale_secs = int(getattr(self.settings, "WS_TICKER_STALE_SECS", 10) or 10)
+                ws_warmup_ms = int(getattr(self.settings, "WS_TICKER_WARMUP_MS", 400) or 400)
                 # använd last_tick_ts om tillgängligt
                 import time as _t
 
@@ -223,14 +227,10 @@ class BitfinexDataService:
                 # 0b) Auto-subscribe om inte färsk WS-data och vi inte redan sub:at
                 try:
                     sub_key = f"ticker|{eff_symbol}"
-                    already_subscribed = sub_key in getattr(
-                        bitfinex_ws, "subscriptions", {}
-                    )
+                    already_subscribed = sub_key in getattr(bitfinex_ws, "subscriptions", {})
                     if not already_subscribed:
                         # registrera strategi/ticker-callback om inte finns
-                        if eff_symbol not in getattr(
-                            bitfinex_ws, "strategy_callbacks", {}
-                        ):
+                        if eff_symbol not in getattr(bitfinex_ws, "strategy_callbacks", {}):
                             bitfinex_ws.strategy_callbacks[eff_symbol] = (
                                 bitfinex_ws._handle_ticker_with_strategy
                             )
@@ -243,9 +243,7 @@ class BitfinexDataService:
                             last_ts = None
                             last_price = None
                             for s in cand_syms:
-                                last_ts = getattr(bitfinex_ws, "_last_tick_ts", {}).get(
-                                    s
-                                )
+                                last_ts = getattr(bitfinex_ws, "_last_tick_ts", {}).get(s)
                                 if last_ts:
                                     last_price = bitfinex_ws.latest_prices.get(s)
                                     break
@@ -257,9 +255,7 @@ class BitfinexDataService:
                                 frame = None
                                 bid = ask = high = low = volume = None
                                 for s in cand_syms:
-                                    frame = getattr(
-                                        bitfinex_ws, "latest_ticker_frames", {}
-                                    ).get(s)
+                                    frame = getattr(bitfinex_ws, "latest_ticker_frames", {}).get(s)
                                     if frame:
                                         break
                                 if isinstance(frame, dict):
@@ -374,7 +370,7 @@ class BitfinexDataService:
             logger.error("Fel vid hämtning av ticker: %s", e)
             return None
 
-    async def get_tickers(self, symbols: List[str]) -> Optional[List[List]]:
+    async def get_tickers(self, symbols: list[str]) -> list[list] | None:
         """
         Hämta flera tickers i batch via REST public.
 
@@ -432,9 +428,7 @@ class BitfinexDataService:
                                         out["last_price"] is not None
                                         and sy not in bitfinex_ws.latest_prices
                                     ):
-                                        bitfinex_ws.latest_prices[sy] = out[
-                                            "last_price"
-                                        ]
+                                        bitfinex_ws.latest_prices[sy] = out["last_price"]
                                 except Exception:
                                     pass
                         except Exception:
@@ -443,9 +437,9 @@ class BitfinexDataService:
                 except Exception as e:
                     last_exc = e
                     if attempt < retries:
-                        delay = min(
-                            backoff_max, backoff_base * (2**attempt)
-                        ) + random.uniform(0, 0.1)
+                        delay = min(backoff_max, backoff_base * (2**attempt)) + random.uniform(
+                            0, 0.1
+                        )
                         await asyncio.sleep(delay)
                         continue
                     break
@@ -455,16 +449,14 @@ class BitfinexDataService:
             logger.error("Fel vid hämtning av tickers (batch): %s", e)
             return None
 
-    async def get_platform_status(self) -> Optional[List[int]]:
+    async def get_platform_status(self) -> list[int] | None:
         """
         Hämta Bitfinex plattformsstatus via REST public.
         Returns: [status] (1=up, 0=maintenance) eller None vid fel.
         """
         try:
             url = f"{self.base_url}/platform/status"
-            async with httpx.AsyncClient(
-                timeout=self.settings.DATA_HTTP_TIMEOUT
-            ) as client:
+            async with httpx.AsyncClient(timeout=self.settings.DATA_HTTP_TIMEOUT) as client:
                 resp = await client.get(url)
                 resp.raise_for_status()
                 return resp.json()
@@ -472,7 +464,7 @@ class BitfinexDataService:
             logger.warning(f"Fel vid hämtning av platform status: {e}")
             return None
 
-    async def get_configs_symbols(self) -> Optional[List[str]]:
+    async def get_configs_symbols(self) -> list[str] | None:
         """
         Hämta lista med giltiga tradingpar via REST public Configs.
         Slår ihop exchange + margin listor (multi-request) och returnerar som t.ex. ["BTCUSD","ETHUSD"].
@@ -491,13 +483,11 @@ class BitfinexDataService:
 
             # Multi-request för exchange + margin
             url = f"{self.base_url}/conf/pub:list:pair:exchange,pub:list:pair:margin"
-            async with httpx.AsyncClient(
-                timeout=self.settings.DATA_HTTP_TIMEOUT
-            ) as client:
+            async with httpx.AsyncClient(timeout=self.settings.DATA_HTTP_TIMEOUT) as client:
                 resp = await client.get(url)
                 resp.raise_for_status()
                 data = resp.json() or []
-                pairs: List[str] = []
+                pairs: list[str] = []
                 # data är en lista av listor; slå ihop
                 if isinstance(data, list):
                     for arr in data:
@@ -517,7 +507,7 @@ class BitfinexDataService:
             logger.warning("Fel vid hämtning av configs symbols: %s", e)
             return None
 
-    async def get_currency_symbol_map(self) -> Tuple[Dict[str, str], Dict[str, str]]:
+    async def get_currency_symbol_map(self) -> tuple[dict[str, str], dict[str, str]]:
         """Hämta currency symbol alias‑karta via Configs.
 
         Returnerar två mappar (fwd, rev):
@@ -537,14 +527,12 @@ class BitfinexDataService:
                     return fwd, rev  # type: ignore[return-value]
 
             url = f"{self.base_url}/conf/pub:map:currency:sym"
-            async with httpx.AsyncClient(
-                timeout=self.settings.DATA_HTTP_TIMEOUT
-            ) as client:
+            async with httpx.AsyncClient(timeout=self.settings.DATA_HTTP_TIMEOUT) as client:
                 resp = await client.get(url)
                 resp.raise_for_status()
                 data = resp.json() or []
-                fwd: Dict[str, str] = {}
-                rev: Dict[str, str] = {}
+                fwd: dict[str, str] = {}
+                rev: dict[str, str] = {}
                 # Förväntat format: [[ [RAW, API], [RAW, API], ... ]]
                 if isinstance(data, list) and data and isinstance(data[0], list):
                     for row in data[0]:
@@ -652,9 +640,7 @@ class BitfinexDataService:
             logger.warning("Backfill fel: %s", e)
             return 0
 
-    def parse_candles_to_strategy_data(
-        self, candles: List[List]
-    ) -> Dict[str, List[float]]:
+    def parse_candles_to_strategy_data(self, candles: list[list]) -> dict[str, list[float]]:
         """
         Konverterar candlestick-data till format för strategiutvärdering.
 

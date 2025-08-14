@@ -11,7 +11,8 @@ Nuvarande jobb:
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime, timedelta, timezone
+import re
+from datetime import UTC, datetime, timedelta, timezone
 from typing import List, Optional
 
 from config.settings import Settings
@@ -33,12 +34,12 @@ class SchedulerService:
     def __init__(self, *, snapshot_interval_seconds: int = 60 * 15) -> None:
         # Kör snapshot var 15:e minut (idempotent – uppdaterar dagens rad)
         self.snapshot_interval_seconds = max(60, int(snapshot_interval_seconds))
-        self._task: Optional[asyncio.Task] = None
+        self._task: asyncio.Task | None = None
         self._running: bool = False
-        self._last_snapshot_at: Optional[datetime] = None
-        self._last_retention_at: Optional[datetime] = None
-        self._last_prob_validate_at: Optional[datetime] = None
-        self._last_prob_retrain_at: Optional[datetime] = None
+        self._last_snapshot_at: datetime | None = None
+        self._last_retention_at: datetime | None = None
+        self._last_prob_validate_at: datetime | None = None
+        self._last_prob_retrain_at: datetime | None = None
 
     def start(self) -> None:
         """Starta bakgrundsloopen om den inte redan körs."""
@@ -64,10 +65,10 @@ class SchedulerService:
         """Huvudloop för periodiska jobb."""
         # Första körning direkt vid start för att få en initial snapshot
         await self._safe_run_equity_snapshot(reason="startup")
-        next_run_at = datetime.now(timezone.utc)
+        next_run_at = datetime.now(UTC)
         while self._running:
             try:
-                now = datetime.now(timezone.utc)
+                now = datetime.now(UTC)
                 if now >= next_run_at:
                     await self._safe_run_equity_snapshot(reason="interval")
                     next_run_at = now.replace(microsecond=0) + timedelta(
@@ -94,7 +95,7 @@ class SchedulerService:
 
             svc = PerformanceService()
             result = await svc.snapshot_equity()
-            self._last_snapshot_at = datetime.now(timezone.utc)
+            self._last_snapshot_at = datetime.now(UTC)
             logger.info(
                 "💾 Equity-snapshot uppdaterad",
             )
@@ -124,9 +125,7 @@ class SchedulerService:
         Kör endast om minst 6 timmar förflutit sedan senaste körning.
         """
         try:
-            if self._last_retention_at and (now - self._last_retention_at) < timedelta(
-                hours=6
-            ):
+            if self._last_retention_at and (now - self._last_retention_at) < timedelta(hours=6):
                 return
             s = Settings()
             days = int(getattr(s, "CANDLE_CACHE_RETENTION_DAYS", 0) or 0)
@@ -154,12 +153,10 @@ class SchedulerService:
             s = Settings()
             if not bool(getattr(s, "PROB_VALIDATE_ENABLED", True)):
                 return
-            interval_minutes = int(
-                getattr(s, "PROB_VALIDATE_INTERVAL_MINUTES", 60) or 60
-            )
-            if self._last_prob_validate_at and (
-                now - self._last_prob_validate_at
-            ) < timedelta(minutes=max(1, interval_minutes)):
+            interval_minutes = int(getattr(s, "PROB_VALIDATE_INTERVAL_MINUTES", 60) or 60)
+            if self._last_prob_validate_at and (now - self._last_prob_validate_at) < timedelta(
+                minutes=max(1, interval_minutes)
+            ):
                 return
             raw_syms = (getattr(s, "PROB_VALIDATE_SYMBOLS", None) or "").strip()
             if raw_syms:
@@ -175,8 +172,8 @@ class SchedulerService:
             max_samples = int(getattr(s, "PROB_VALIDATE_MAX_SAMPLES", 500) or 500)
 
             data = BitfinexDataService()
-            agg_brier_vals: List[float] = []
-            agg_logloss_vals: List[float] = []
+            agg_brier_vals: list[float] = []
+            agg_logloss_vals: list[float] = []
             for sym in symbols:
                 try:
                     candles = await data.get_candles(sym, tf, limit)
@@ -185,12 +182,8 @@ class SchedulerService:
                     res = validate_on_candles(
                         candles,
                         horizon=int(getattr(s, "PROB_MODEL_TIME_HORIZON", 20) or 20),
-                        tp=float(
-                            getattr(s, "PROB_MODEL_EV_THRESHOLD", 0.0005) or 0.0005
-                        ),
-                        sl=float(
-                            getattr(s, "PROB_MODEL_EV_THRESHOLD", 0.0005) or 0.0005
-                        ),
+                        tp=float(getattr(s, "PROB_MODEL_EV_THRESHOLD", 0.0005) or 0.0005),
+                        sl=float(getattr(s, "PROB_MODEL_EV_THRESHOLD", 0.0005) or 0.0005),
                         max_samples=max_samples,
                     )
                     key = f"{sym}|{tf}"
@@ -223,11 +216,7 @@ class SchedulerService:
                     from time import time as _now
 
                     now_ts = int(_now())
-                    windows = [
-                        int(x)
-                        for x in windows_raw.split(",")
-                        if str(x).strip().isdigit()
-                    ]
+                    windows = [int(x) for x in windows_raw.split(",") if str(x).strip().isdigit()]
                     pv = metrics_store.setdefault("prob_validation", {})
                     roll = pv.setdefault("rolling", {})
                     # Lägg till punkt för varje fönster
@@ -242,9 +231,7 @@ class SchedulerService:
                             }
                         )
                         # Retention grooming per fönster
-                        max_pts = int(
-                            getattr(s, "PROB_VALIDATE_HISTORY_MAX_POINTS", 1000) or 1000
-                        )
+                        max_pts = int(getattr(s, "PROB_VALIDATE_HISTORY_MAX_POINTS", 1000) or 1000)
                         if len(arr) > max_pts:
                             del arr[: len(arr) - max_pts]
             except Exception:
@@ -275,9 +262,9 @@ class SchedulerService:
             if not bool(getattr(s, "PROB_RETRAIN_ENABLED", False)):
                 return
             interval_hours = int(getattr(s, "PROB_RETRAIN_INTERVAL_HOURS", 24) or 24)
-            if self._last_prob_retrain_at and (
-                now - self._last_prob_retrain_at
-            ) < timedelta(hours=max(1, interval_hours)):
+            if self._last_prob_retrain_at and (now - self._last_prob_retrain_at) < timedelta(
+                hours=max(1, interval_hours)
+            ):
                 return
             raw_syms = (getattr(s, "PROB_RETRAIN_SYMBOLS", None) or "").strip()
             if raw_syms:
@@ -310,11 +297,13 @@ class SchedulerService:
                     sl = tp
                     # skriv fil: SYMBOL_TIMEFRAME.json
                     clean = eff[1:] if eff.startswith("t") else eff
+                    try:
+                        clean = re.sub(r"[^A-Za-z0-9_]", "_", clean)
+                    except Exception:
+                        pass
                     fname = f"{clean}_{tf}.json"
                     out_path = os.path.join(out_dir, fname)
-                    train_and_export(
-                        candles, horizon=horizon, tp=tp, sl=sl, out_path=out_path
-                    )
+                    train_and_export(candles, horizon=horizon, tp=tp, sl=sl, out_path=out_path)
                     metrics_store.setdefault("prob_retrain", {})["events"] = (
                         int(metrics_store.get("prob_retrain", {}).get("events", 0)) + 1
                     )

@@ -6,8 +6,9 @@ Inkluderar integration mellan marknadsdata, strategier, orderhantering och posit
 """
 
 import asyncio
+from collections.abc import Callable
 from datetime import datetime
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Dict, Optional
 
 from rest.auth import place_order
 from rest.margin import get_leverage, get_margin_info, get_margin_status
@@ -95,9 +96,7 @@ class TradingIntegrationService:
                 symbol = position.symbol
                 self.position_info[symbol] = position
 
-            logger.info(
-                f"✅ Positionsinformation uppdaterad: {len(positions)} positioner"
-            )
+            logger.info(f"✅ Positionsinformation uppdaterad: {len(positions)} positioner")
 
         except Exception as e:
             logger.error(f"❌ Fel vid uppdatering av positionsinformation: {e}")
@@ -149,7 +148,7 @@ class TradingIntegrationService:
         except Exception as e:
             logger.error(f"❌ Fel vid uppdatering av marknadsdata för {symbol}: {e}")
 
-    async def evaluate_trading_opportunity(self, symbol: str) -> Dict[str, Any]:
+    async def evaluate_trading_opportunity(self, symbol: str) -> dict[str, Any]:
         """
         Utvärderar en tradingmöjlighet för en symbol.
 
@@ -190,25 +189,19 @@ class TradingIntegrationService:
             risk_assessment = self._assess_risk(symbol, result)
             result.update(risk_assessment)
 
-            logger.info(
-                f"✅ Tradingmöjlighet utvärderad för {symbol}: {result['signal']}"
-            )
+            logger.info(f"✅ Tradingmöjlighet utvärderad för {symbol}: {result['signal']}")
 
             return result
 
         except Exception as e:
-            logger.error(
-                f"❌ Fel vid utvärdering av tradingmöjlighet för {symbol}: {e}"
-            )
+            logger.error(f"❌ Fel vid utvärdering av tradingmöjlighet för {symbol}: {e}")
             return {
                 "symbol": symbol,
                 "signal": "ERROR",
                 "reason": f"Fel vid utvärdering: {e}",
             }
 
-    def _assess_risk(
-        self, symbol: str, strategy_result: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def _assess_risk(self, symbol: str, strategy_result: dict[str, Any]) -> dict[str, Any]:
         """
         Utvärderar risk för en tradingmöjlighet.
 
@@ -231,9 +224,7 @@ class TradingIntegrationService:
             open_positions = len(self.position_info)
 
             # Kontrollera margin-status
-            margin_level = (
-                self.margin_info["status"]["margin_level"] if self.margin_info else 0
-            )
+            margin_level = self.margin_info["status"]["margin_level"] if self.margin_info else 0
             leverage = self.margin_info["leverage"] if self.margin_info else 1.0
 
             # Riskbedömning
@@ -250,9 +241,7 @@ class TradingIntegrationService:
                 if open_positions >= self.risk_limits["max_open_positions"]:
                     risk_assessment["can_trade"] = False
                     risk_assessment["risk_level"] = "HIGH"
-                    risk_assessment["reason"] = (
-                        f"För många öppna positioner ({open_positions})"
-                    )
+                    risk_assessment["reason"] = f"För många öppna positioner ({open_positions})"
 
                 # Kontrollera hävstång
                 elif leverage > self.risk_limits["max_leverage"]:
@@ -286,8 +275,8 @@ class TradingIntegrationService:
             }
 
     async def execute_trading_signal(
-        self, symbol: str, signal_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, symbol: str, signal_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Utför en tradingsignal för en symbol.
 
@@ -343,9 +332,7 @@ class TradingIntegrationService:
             # Skapa orderdata
             order_data = {
                 "symbol": symbol,
-                "amount": (
-                    str(position_size) if signal == "BUY" else str(-position_size)
-                ),
+                "amount": (str(position_size) if signal == "BUY" else str(-position_size)),
                 "price": str(current_price),
                 "type": "EXCHANGE LIMIT",
             }
@@ -357,9 +344,7 @@ class TradingIntegrationService:
             result = await place_order(order_data)
 
             if "error" in result:
-                logger.error(
-                    f"❌ Fel vid orderläggning för {symbol}: {result['error']}"
-                )
+                logger.error(f"❌ Fel vid orderläggning för {symbol}: {result['error']}")
                 try:
                     inc("orders_total")
                     inc("orders_failed_total")
@@ -396,9 +381,7 @@ class TradingIntegrationService:
                 "order": None,
             }
 
-    def _calculate_position_size(
-        self, symbol: str, signal_data: Dict[str, Any]
-    ) -> float:
+    def _calculate_position_size(self, symbol: str, signal_data: dict[str, Any]) -> float:
         """
         Beräknar lämplig positionsstorlek baserat på riskhantering.
 
@@ -411,9 +394,7 @@ class TradingIntegrationService:
         """
         try:
             # Hämta max positionsstorlek från riskhantering
-            max_size = signal_data.get(
-                "max_position_size", self.risk_limits["max_position_size"]
-            )
+            max_size = signal_data.get("max_position_size", self.risk_limits["max_position_size"])
 
             # Hämta tillgängligt saldo
             available_balance = 0
@@ -448,9 +429,7 @@ class TradingIntegrationService:
             logger.error(f"❌ Fel vid beräkning av positionsstorlek för {symbol}: {e}")
             return 0.001  # Minimal positionsstorlek som fallback
 
-    async def start_automated_trading(
-        self, symbol: str, callback: Optional[Callable] = None
-    ):
+    async def start_automated_trading(self, symbol: str, callback: Callable | None = None):
         """
         Startar automatiserad trading för en symbol.
 
@@ -468,9 +447,7 @@ class TradingIntegrationService:
                 self.signal_callbacks[symbol] = callback
 
             # Starta realtidsövervakning med vår egen callback
-            await realtime_strategy.start_monitoring(
-                symbol, self._handle_realtime_signal
-            )
+            await realtime_strategy.start_monitoring(symbol, self._handle_realtime_signal)
 
             self.active_symbols.add(symbol)
 
@@ -504,7 +481,7 @@ class TradingIntegrationService:
         except Exception as e:
             logger.error(f"❌ Fel vid stopp av automatiserad trading för {symbol}: {e}")
 
-    async def _handle_realtime_signal(self, result: Dict):
+    async def _handle_realtime_signal(self, result: dict):
         """
         Hanterar realtidssignaler från strategiutvärdering.
 
@@ -546,7 +523,7 @@ class TradingIntegrationService:
         except Exception as e:
             logger.error(f"❌ Fel vid hantering av realtidssignal: {e}")
 
-    async def get_account_summary(self) -> Dict[str, Any]:
+    async def get_account_summary(self) -> dict[str, Any]:
         """
         Skapar en sammanfattning av kontostatus.
 
@@ -585,14 +562,10 @@ class TradingIntegrationService:
                 ),
                 "leverage": self.margin_info["leverage"] if self.margin_info else 1.0,
                 "margin_level": (
-                    self.margin_info["status"]["margin_level"]
-                    if self.margin_info
-                    else 0
+                    self.margin_info["status"]["margin_level"] if self.margin_info else 0
                 ),
                 "margin_status": (
-                    self.margin_info["status"]["status"]
-                    if self.margin_info
-                    else "unknown"
+                    self.margin_info["status"]["status"] if self.margin_info else "unknown"
                 ),
                 "open_positions": len(self.position_info),
                 "total_position_value": total_position_value,
@@ -600,9 +573,7 @@ class TradingIntegrationService:
                 "timestamp": datetime.now().isoformat(),
             }
 
-            logger.info(
-                f"✅ Kontosammanfattning skapad: ${summary['total_balance_usd']:,.2f}"
-            )
+            logger.info(f"✅ Kontosammanfattning skapad: ${summary['total_balance_usd']:,.2f}")
 
             return summary
 

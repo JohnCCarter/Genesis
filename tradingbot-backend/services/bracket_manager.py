@@ -21,9 +21,9 @@ logger = get_logger(__name__)
 
 @dataclass
 class BracketGroup:
-    entry_id: Optional[int]
-    sl_id: Optional[int]
-    tp_id: Optional[int]
+    entry_id: int | None
+    sl_id: int | None
+    tp_id: int | None
     active: bool = True
     # Ackumulerad fylld mängd på entry (absolutvärde)
     entry_filled: float = 0.0
@@ -32,9 +32,9 @@ class BracketGroup:
 class BracketManager:
     def __init__(self) -> None:
         # Mappar: child_order_id -> (gid, role)
-        self.child_to_group: Dict[int, Tuple[str, str]] = {}
+        self.child_to_group: dict[int, tuple[str, str]] = {}
         # Mappar: gid -> BracketGroup
-        self.groups: Dict[str, BracketGroup] = {}
+        self.groups: dict[str, BracketGroup] = {}
         self.settings = Settings()
         self._state_path = self._abs_state_path()
         # Ladda tidigare state om det finns
@@ -46,19 +46,15 @@ class BracketManager:
     def register_group(
         self,
         gid: str,
-        entry_id: Optional[int],
-        sl_id: Optional[int],
-        tp_id: Optional[int],
+        entry_id: int | None,
+        sl_id: int | None,
+        tp_id: int | None,
     ) -> None:
-        self.groups[gid] = BracketGroup(
-            entry_id=entry_id, sl_id=sl_id, tp_id=tp_id, active=True
-        )
+        self.groups[gid] = BracketGroup(entry_id=entry_id, sl_id=sl_id, tp_id=tp_id, active=True)
         for role, oid in (("entry", entry_id), ("sl", sl_id), ("tp", tp_id)):
             if isinstance(oid, int):
                 self.child_to_group[oid] = (gid, role)
-        logger.info(
-            f"Registered bracket gid={gid} entry={entry_id} sl={sl_id} tp={tp_id}"
-        )
+        logger.info(f"Registered bracket gid={gid} entry={entry_id} sl={sl_id} tp={tp_id}")
         self._save_state_safe()
 
     async def _cancel_sibling(self, filled_child_id: int) -> None:
@@ -88,9 +84,7 @@ class BracketManager:
         try:
             # Vi lyssnar främst på te/tu (trade executed/update)
             if event_code in ("te", "tu"):
-                payload: Any = (
-                    msg[2] if isinstance(msg, list) and len(msg) > 2 else None
-                )
+                payload: Any = msg[2] if isinstance(msg, list) and len(msg) > 2 else None
                 if isinstance(payload, list) and len(payload) >= 6:
                     # Bitfinex format: [ID, PAIR, MTS, ORDER_ID, EXEC_AMOUNT, EXEC_PRICE, ...]
                     order_id = payload[3]
@@ -109,9 +103,7 @@ class BracketManager:
                                             max(0.0, (g.entry_filled or 0.0))
                                         ) + abs(exec_amount)
                                         # Justera skyddsordrar (SL/TP) till ny fylld mängd
-                                        await self._sync_protectives_to_entry_filled(
-                                            gid
-                                        )
+                                        await self._sync_protectives_to_entry_filled(gid)
                                         self._save_state_safe()
                                 except Exception:
                                     pass
@@ -292,8 +284,8 @@ def _coerce_int(v):
         return None
 
 
-def _serialize_groups(groups: Dict[str, BracketGroup]) -> Dict[str, dict]:
-    out: Dict[str, dict] = {}
+def _serialize_groups(groups: dict[str, BracketGroup]) -> dict[str, dict]:
+    out: dict[str, dict] = {}
     for gid, g in groups.items():
         out[gid] = {
             "entry_id": _coerce_int(g.entry_id),
@@ -304,8 +296,8 @@ def _serialize_groups(groups: Dict[str, BracketGroup]) -> Dict[str, dict]:
     return out
 
 
-def _deserialize_groups(raw: Dict[str, dict]) -> Dict[str, BracketGroup]:
-    out: Dict[str, BracketGroup] = {}
+def _deserialize_groups(raw: dict[str, dict]) -> dict[str, BracketGroup]:
+    out: dict[str, BracketGroup] = {}
     for gid, v in raw.items():
         out[gid] = BracketGroup(
             entry_id=_coerce_int(v.get("entry_id")),
@@ -316,8 +308,8 @@ def _deserialize_groups(raw: Dict[str, dict]) -> Dict[str, BracketGroup]:
     return out
 
 
-def _child_index(groups: Dict[str, BracketGroup]) -> Dict[int, Tuple[str, str]]:
-    idx: Dict[int, Tuple[str, str]] = {}
+def _child_index(groups: dict[str, BracketGroup]) -> dict[int, tuple[str, str]]:
+    idx: dict[int, tuple[str, str]] = {}
     for gid, g in groups.items():
         if isinstance(g.sl_id, int):
             idx[g.sl_id] = (gid, "sl")
@@ -327,14 +319,10 @@ def _child_index(groups: Dict[str, BracketGroup]) -> Dict[int, Tuple[str, str]]:
 
 
 def _is_valid_state(data: dict) -> bool:
-    return (
-        isinstance(data, dict)
-        and "groups" in data
-        and isinstance(data.get("groups"), dict)
-    )
+    return isinstance(data, dict) and "groups" in data and isinstance(data.get("groups"), dict)
 
 
-def _safe_read_json(path: str) -> Optional[dict]:
+def _safe_read_json(path: str) -> dict | None:
     try:
         with open(path, encoding="utf-8") as f:
             return json.load(f)

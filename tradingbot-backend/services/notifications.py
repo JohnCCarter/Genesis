@@ -15,7 +15,7 @@ logger = get_logger(__name__)
 
 
 class NotificationService:
-    def __init__(self, settings: Optional[Settings] = None) -> None:
+    def __init__(self, settings: Settings | None = None) -> None:
         self.settings = settings or Settings()
         self._bot_token = self.settings.TELEGRAM_BOT_TOKEN
         self._chat_id = self.settings.TELEGRAM_CHAT_ID
@@ -35,9 +35,7 @@ class NotificationService:
             logger.warning(f"Telegram-notis misslyckades: {e}")
             return False
 
-    async def notify(
-        self, level: str, title: str, payload: Optional[Dict[str, Any]] = None
-    ) -> None:
+    async def notify(self, level: str, title: str, payload: dict[str, Any] | None = None) -> None:
         # Socket.IO broadcast
         try:
             from ws.manager import socket_app

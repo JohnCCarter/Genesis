@@ -68,9 +68,7 @@ async def get_active_orders_by_symbol_example():
             print(f"\n=== Aktiva Ordrar för {symbol} ===")
             if orders:
                 for order in orders:
-                    print(
-                        f"{order.id}: {order.amount} @ {order.price} ({order.status})"
-                    )
+                    print(f"{order.id}: {order.amount} @ {order.price} ({order.status})")
             else:
                 print(f"Inga aktiva ordrar för {symbol}")
         except Exception as e:
@@ -170,11 +168,7 @@ async def place_and_update_order_example():
             order_id = None
             if isinstance(result, dict) and "id" in result:
                 order_id = result["id"]
-            elif (
-                isinstance(result, list)
-                and len(result) > 0
-                and isinstance(result[0], int)
-            ):
+            elif isinstance(result, list) and len(result) > 0 and isinstance(result[0], int):
                 order_id = result[0]
 
             if not order_id:

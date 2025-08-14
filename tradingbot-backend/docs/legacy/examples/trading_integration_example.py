@@ -86,14 +86,10 @@ async def evaluate_trading_opportunity_example():
 
         # Om vi kan handla, fråga användaren om vi ska utföra signalen
         if result.get("can_trade", False) and result["signal"] in ["BUY", "SELL"]:
-            response = input(
-                f"\nVill du utföra {result['signal']} för {symbol}? (y/n): "
-            )
+            response = input(f"\nVill du utföra {result['signal']} för {symbol}? (y/n): ")
 
             if response.lower() == "y":
-                trade_result = await trading_integration.execute_trading_signal(
-                    symbol, result
-                )
+                trade_result = await trading_integration.execute_trading_signal(symbol, result)
 
                 print("\n=== Trading Resultat ===")
                 if trade_result["success"]:

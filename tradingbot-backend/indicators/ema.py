@@ -14,7 +14,7 @@ from utils.logger import get_logger
 logger = get_logger(__name__)
 
 
-def calculate_ema(prices: List[float], period: int = 14) -> Optional[float]:
+def calculate_ema(prices: list[float], period: int = 14) -> float | None:
     """
     Beräknar Exponential Moving Average (EMA).
 
@@ -26,9 +26,7 @@ def calculate_ema(prices: List[float], period: int = 14) -> Optional[float]:
         float: EMA-värde eller None om otillräcklig data
     """
     if len(prices) < period:
-        logger.warning(
-            f"Otillräcklig data för EMA-beräkning. Kräver {period}, fick {len(prices)}"
-        )
+        logger.warning(f"Otillräcklig data för EMA-beräkning. Kräver {period}, fick {len(prices)}")
         return None
 
     series = pd.Series(prices)

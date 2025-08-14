@@ -20,7 +20,7 @@ class OrderTemplatesService:
         os.makedirs(cfg_dir, exist_ok=True)
         self.file_path = os.path.join(cfg_dir, "order_templates.json")
 
-    def _load(self) -> Dict[str, Any]:
+    def _load(self) -> dict[str, Any]:
         try:
             if os.path.exists(self.file_path):
                 with open(self.file_path, encoding="utf-8") as f:
@@ -35,12 +35,12 @@ class OrderTemplatesService:
             logger.warning(f"Kunde inte läsa templates: {e}")
         return {"templates": []}
 
-    def _save(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def _save(self, data: dict[str, Any]) -> dict[str, Any]:
         with open(self.file_path, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
         return data
 
-    def list_templates(self) -> List[Dict[str, Any]]:
+    def list_templates(self) -> list[dict[str, Any]]:
         data = self._load()
         try:
             items = data.get("templates", []) if isinstance(data, dict) else []
@@ -48,7 +48,7 @@ class OrderTemplatesService:
         except Exception:
             return []
 
-    def save_template(self, template: Dict[str, Any]) -> Dict[str, Any]:
+    def save_template(self, template: dict[str, Any]) -> dict[str, Any]:
         data = self._load()
         items = data.get("templates", [])
         # ersätt om name finns
@@ -58,7 +58,7 @@ class OrderTemplatesService:
         data["templates"] = items
         return self._save(data)
 
-    def get_template(self, name: str) -> Dict[str, Any] | None:
+    def get_template(self, name: str) -> dict[str, Any] | None:
         """Hämta en mall per namn (case-insensitive, trimmat)."""
         try:
             name_norm = str(name or "").strip().lower()
@@ -78,9 +78,7 @@ class OrderTemplatesService:
             data = self._load()
             items = data.get("templates", [])
             name_norm = str(name or "").strip().lower()
-            kept = [
-                t for t in items if str(t.get("name", "")).strip().lower() != name_norm
-            ]
+            kept = [t for t in items if str(t.get("name", "")).strip().lower() != name_norm]
             if len(kept) != len(items):
                 data["templates"] = kept
                 self._save(data)

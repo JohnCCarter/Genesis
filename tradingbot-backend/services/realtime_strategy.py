@@ -5,7 +5,8 @@ Denna modul hanterar realtids strategiutvärdering baserat på live tick-data.
 Inkluderar automatisk signalgenerering och WebSocket-integration.
 """
 
-from typing import Callable, Dict, List, Optional
+from collections.abc import Callable
+from typing import Dict, List, Optional
 
 from services.bitfinex_websocket import bitfinex_ws
 from utils.logger import get_logger
@@ -22,7 +23,7 @@ class RealtimeStrategyService:
         self.signal_callbacks = {}
         self.is_running = False
 
-    async def start_monitoring(self, symbol: str, callback: Optional[Callable] = None):
+    async def start_monitoring(self, symbol: str, callback: Callable | None = None):
         """
         Startar övervakning av en symbol med realtids strategiutvärdering.
 
@@ -74,7 +75,7 @@ class RealtimeStrategyService:
         except Exception as e:
             logger.error(f"❌ Fel vid stopp av övervakning för {symbol}: {e}")
 
-    async def _handle_strategy_result(self, result: Dict):
+    async def _handle_strategy_result(self, result: dict):
         """
         Hanterar strategi-resultat från WebSocket.
 
@@ -90,9 +91,7 @@ class RealtimeStrategyService:
             self.strategy_results[symbol] = result
 
             # Logga signal
-            logger.info(
-                f"🎯 {symbol}: {signal} @ ${price:,.2f} - {result.get('reason', '')}"
-            )
+            logger.info(f"🎯 {symbol}: {signal} @ ${price:,.2f} - {result.get('reason', '')}")
 
             # Anropa callback om den finns
             if symbol in self.signal_callbacks:
@@ -104,7 +103,7 @@ class RealtimeStrategyService:
         except Exception as e:
             logger.error(f"❌ Fel vid hantering av strategi-resultat: {e}")
 
-    async def _broadcast_signal(self, result: Dict):
+    async def _broadcast_signal(self, result: dict):
         """
         Skickar signal via WebSocket till anslutna klienter.
 
@@ -120,7 +119,7 @@ class RealtimeStrategyService:
         except Exception as e:
             logger.error(f"❌ Fel vid broadcast av signal: {e}")
 
-    def get_latest_signal(self, symbol: str) -> Optional[Dict]:
+    def get_latest_signal(self, symbol: str) -> dict | None:
         """
         Hämtar senaste signal för en symbol.
 
@@ -132,7 +131,7 @@ class RealtimeStrategyService:
         """
         return self.strategy_results.get(symbol)
 
-    def get_all_signals(self) -> Dict[str, Dict]:
+    def get_all_signals(self) -> dict[str, dict]:
         """
         Hämtar alla aktiva signaler.
 
@@ -141,7 +140,7 @@ class RealtimeStrategyService:
         """
         return self.strategy_results.copy()
 
-    def get_active_symbols(self) -> List[str]:
+    def get_active_symbols(self) -> list[str]:
         """
         Hämtar lista över aktiva symboler.
 

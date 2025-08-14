@@ -40,6 +40,7 @@ Single-user roadmap (Måste → Nice-to-have → Backlog). Fokus: stabil drift, 
 
   - [x] Endpoints: `/api/v2/ws/order/update`, `/api/v2/ws/orders/cancel-multi`, `/api/v2/ws/orders/ops`
   - [x] UI‑knappar i `ws_test.html` för ou/oc‑multi/ops
+  - [x] REST↔WS‑fallback i `/order` (submit) och `/order/update` (update)
 
 - [x] Symbolhantering och validering (WS‑först, REST fallback)
   - [x] Central `SymbolService` med live `/conf` parlistor och alias
@@ -63,6 +64,7 @@ Single-user roadmap (Måste → Nice-to-have → Backlog). Fokus: stabil drift, 
   - [x] Cache‑admin endpoints (stats/clear)
   - [x] Bracket‑state reset endpoint
   - [x] Nätverksresiliens: retry/backoff + timeouts
+  - [x] Bracket‑healing: vid misslyckad REST‑submit för SL/TP försök WS `on`; registrera grupp ändå och låt privata callbacks slutföra länkning
 
 ## Backlog
 
@@ -90,6 +92,14 @@ Single-user roadmap (Måste → Nice-to-have → Backlog). Fokus: stabil drift, 
 - [ ] ChanId per socket – ytterligare härdning och tests (coverage)
 - [x] Unsubscribe via UI på watchlist (Stop‑knappen kopplad till unsubscribe)
 - [x] Pool metrics (Prometheus) och varningar när socket närmar sig max subs
+- [ ] Live‑säkerhet (UI/REST)
+  - [ ] Kill‑switch i UI (kopplad till `/api/v2/risk/pause`/`resume`)
+  - [ ] Circuit breaker: reset/status i UI (kopplad till `/api/v2/risk/circuit/*`)
+  - [ ] Per‑symbol limits/cooldowns runtime (UI + endpoints)
+- [ ] Snabbstart‑profil (dev)
+  - [ ] Disable `PROB_VALIDATE_ENABLED`/`PROB_RETRAIN_ENABLED` via config vid dev
+  - [ ] Begränsa WS till env `WS_SUBSCRIBE_SYMBOLS` (t.ex. en symbol) som default i dev
+  - [ ] Start utan reload i dev‑script (`scripts/start.ps1 -NoReload`)
 
 ## Klart i UI
 

@@ -15,15 +15,38 @@
 [CmdletBinding()]
 param(
     [switch]$NoReload,
-    [bool]$AuthRequired = $true,
+    [bool]$AuthRequired = $false,
     [string]$HostName = "127.0.0.1",
     [int]$Port = 8000
 )
 
 $ErrorActionPreference = 'Stop'
 
+# Läs .env och exponera GITHUB_TOKEN (för MCP) om satt
+function Load-DotEnv($path) {
+    if (Test-Path $path) {
+        Get-Content $path | ForEach-Object {
+            if ($_ -match '^[#;]') { return }
+            if ($_ -match '^(?<k>[A-Za-z_][A-Za-z0-9_]*)=(?<v>.*)$') {
+                $k = $Matches['k']
+                $v = $Matches['v']
+                if (($v.StartsWith('"') -and $v.EndsWith('"')) -or ($v.StartsWith("'") -and $v.EndsWith("'"))) {
+                    $v = $v.Substring(1, $v.Length - 2)
+                }
+                Set-Item -Path Env:$k -Value $v | Out-Null
+            }
+        }
+    }
+}
+
 # Repo-rot och app-katalog
 $repoRoot = Split-Path -Parent $PSScriptRoot
+$rootEnv = Join-Path $repoRoot '.env'
+$appEnv = Join-Path $repoRoot 'tradingbot-backend' | Join-Path -ChildPath '.env'
+Load-DotEnv $rootEnv
+Load-DotEnv $appEnv
+if (-not $env:GITHUB_TOKEN -and $env:GITHUB_PAT) { $env:GITHUB_TOKEN = $env:GITHUB_PAT }
+try { if ($env:GITHUB_TOKEN) { setx GITHUB_TOKEN "$($env:GITHUB_TOKEN)" | Out-Null } } catch {}
 $appDir = Join-Path $repoRoot 'tradingbot-backend'
 
 if (-not (Test-Path $appDir)) {

@@ -16,11 +16,11 @@ from indicators.rsi import calculate_rsi
 
 
 def _split_candles(
-    candles: List[List[float]],
-) -> Tuple[List[float], List[float], List[float]]:
-    closes: List[float] = []
-    highs: List[float] = []
-    lows: List[float] = []
+    candles: list[list[float]],
+) -> tuple[list[float], list[float], list[float]]:
+    closes: list[float] = []
+    highs: list[float] = []
+    lows: list[float] = []
     for row in candles:
         if not isinstance(row, (list, tuple)) or len(row) < 5:
             continue
@@ -30,14 +30,21 @@ def _split_candles(
     return closes, highs, lows
 
 
-def compute_features_from_candles(candles: List[List[float]]) -> Dict[str, float]:
+def compute_features_from_candles(candles: list[list[float]]) -> dict[str, float]:
     """
     Compute features for the last candle in the sequence.
     Returns a dict like {"ema_diff": x, "rsi_norm": y, "atr_pct": z}
     """
     closes, highs, lows = _split_candles(candles)
     if len(closes) < 5:
-        return {"ema_diff": 0.0, "rsi_norm": 0.0, "atr_pct": 0.0}
+        # Returnera defensiva nollor men inkludera price för konsistent schema
+        price_fallback = float(closes[-1]) if closes else 0.0
+        return {
+            "ema_diff": 0.0,
+            "rsi_norm": 0.0,
+            "atr_pct": 0.0,
+            "price": price_fallback,
+        }
     price = float(closes[-1])
     # EMA / RSI use simple defaults; production uses per-symbol settings
     ema = calculate_ema(closes, period=min(10, len(closes))) or price
@@ -56,9 +63,7 @@ def compute_features_from_candles(candles: List[List[float]]) -> Dict[str, float
     }
 
 
-def label_sequence(
-    candles: List[List[float]], horizon: int, tp: float, sl: float
-) -> List[str]:
+def label_sequence(candles: list[list[float]], horizon: int, tp: float, sl: float) -> list[str]:
     """
     Label each index i with buy/sell/hold based on future returns within horizon.
     - buy if max_future_return >= tp
@@ -68,7 +73,7 @@ def label_sequence(
     """
     closes, _highs, _lows = _split_candles(candles)
     n = len(closes)
-    labels: List[str] = []
+    labels: list[str] = []
     if n <= horizon:
         return labels
     for i in range(0, n - horizon):
@@ -88,8 +93,8 @@ def label_sequence(
 
 
 def build_dataset(
-    candles: List[List[float]], horizon: int, tp: float, sl: float
-) -> List[Dict[str, Any]]:
+    candles: list[list[float]], horizon: int, tp: float, sl: float
+) -> list[dict[str, Any]]:
     """
     Build a small dataset of features + label aligned by dropping last horizon samples.
     Returns list of dicts: {ema_diff, rsi_norm, atr_pct, price, label}
@@ -98,7 +103,7 @@ def build_dataset(
     if not labels:
         return []
     # Align features: compute per index using the same index into candles
-    samples: List[Dict[str, Any]] = []
+    samples: list[dict[str, Any]] = []
     for i in range(0, len(labels)):
         feats = compute_features_from_candles(candles[: i + 1])
         row = {**feats, "label": labels[i]}

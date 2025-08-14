@@ -24,10 +24,10 @@ class WalletBalance(BaseModel):
     currency: str
     balance: float
     unsettled_interest: float = 0.0
-    available_balance: Optional[float] = None
+    available_balance: float | None = None
 
     @classmethod
-    def from_bitfinex_data(cls, data: List) -> "WalletBalance":
+    def from_bitfinex_data(cls, data: list) -> "WalletBalance":
         """Skapar en WalletBalance från Bitfinex API-data."""
         if len(data) < 4:
             raise ValueError(f"Ogiltig plånboksdata: {data}")
@@ -47,11 +47,10 @@ class WalletService:
     def __init__(self):
         self.settings = Settings()
         self.base_url = (
-            getattr(self.settings, "BITFINEX_AUTH_API_URL", None)
-            or self.settings.BITFINEX_API_URL
+            getattr(self.settings, "BITFINEX_AUTH_API_URL", None) or self.settings.BITFINEX_API_URL
         )
 
-    async def get_wallets(self) -> List[WalletBalance]:
+    async def get_wallets(self) -> list[WalletBalance]:
         """
         Hämtar alla plånböcker från Bitfinex.
 
@@ -63,20 +62,14 @@ class WalletService:
             headers = build_auth_headers(endpoint)
 
             async with httpx.AsyncClient() as client:
-                logger.info(
-                    f"🌐 REST API: Hämtar plånböcker från {self.base_url}/{endpoint}"
-                )
-                response = await client.post(
-                    f"{self.base_url}/{endpoint}", headers=headers
-                )
+                logger.info(f"🌐 REST API: Hämtar plånböcker från {self.base_url}/{endpoint}")
+                response = await client.post(f"{self.base_url}/{endpoint}", headers=headers)
                 response.raise_for_status()
 
                 wallets_data = response.json()
                 logger.info(f"✅ REST API: Hämtade {len(wallets_data)} plånböcker")
 
-                wallets = [
-                    WalletBalance.from_bitfinex_data(wallet) for wallet in wallets_data
-                ]
+                wallets = [WalletBalance.from_bitfinex_data(wallet) for wallet in wallets_data]
                 return wallets
 
         except Exception as e:
@@ -85,7 +78,7 @@ class WalletService:
 
     async def get_wallet_by_type_and_currency(
         self, wallet_type: str, currency: str
-    ) -> Optional[WalletBalance]:
+    ) -> WalletBalance | None:
         """
         Hämtar en specifik plånbok baserat på typ och valuta.
 
@@ -107,7 +100,7 @@ class WalletService:
 
         return None
 
-    async def get_exchange_wallets(self) -> List[WalletBalance]:
+    async def get_exchange_wallets(self) -> list[WalletBalance]:
         """
         Hämtar alla exchange-plånböcker.
 
@@ -115,11 +108,9 @@ class WalletService:
             Lista med WalletBalance-objekt för exchange-plånböcker
         """
         wallets = await self.get_wallets()
-        return [
-            wallet for wallet in wallets if wallet.wallet_type.lower() == "exchange"
-        ]
+        return [wallet for wallet in wallets if wallet.wallet_type.lower() == "exchange"]
 
-    async def get_margin_wallets(self) -> List[WalletBalance]:
+    async def get_margin_wallets(self) -> list[WalletBalance]:
         """
         Hämtar alla margin-plånböcker.
 
@@ -129,7 +120,7 @@ class WalletService:
         wallets = await self.get_wallets()
         return [wallet for wallet in wallets if wallet.wallet_type.lower() == "margin"]
 
-    async def get_funding_wallets(self) -> List[WalletBalance]:
+    async def get_funding_wallets(self) -> list[WalletBalance]:
         """
         Hämtar alla funding-plånböcker.
 
@@ -160,25 +151,23 @@ wallet_service = WalletService()
 
 
 # Exportera funktioner för enkel användning
-async def get_wallets() -> List[WalletBalance]:
+async def get_wallets() -> list[WalletBalance]:
     return await wallet_service.get_wallets()
 
 
-async def get_wallet_by_type_and_currency(
-    wallet_type: str, currency: str
-) -> Optional[WalletBalance]:
+async def get_wallet_by_type_and_currency(wallet_type: str, currency: str) -> WalletBalance | None:
     return await wallet_service.get_wallet_by_type_and_currency(wallet_type, currency)
 
 
-async def get_exchange_wallets() -> List[WalletBalance]:
+async def get_exchange_wallets() -> list[WalletBalance]:
     return await wallet_service.get_exchange_wallets()
 
 
-async def get_margin_wallets() -> List[WalletBalance]:
+async def get_margin_wallets() -> list[WalletBalance]:
     return await wallet_service.get_margin_wallets()
 
 
-async def get_funding_wallets() -> List[WalletBalance]:
+async def get_funding_wallets() -> list[WalletBalance]:
     return await wallet_service.get_funding_wallets()
 
 

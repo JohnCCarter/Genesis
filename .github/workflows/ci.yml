@@ -39,11 +39,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Import sort check (isort)
-        run: isort . --profile black --check-only
-
-      - name: Lint (flake8)
-        run: flake8 . --max-line-length=120 --extend-ignore=E203,W503,E501,E402,F401,F541,F841
+      - name: Lint (ruff)
+        run: |
+          ruff --version
+          ruff check .
 
       - name: Format check (black)
         run: black --check .

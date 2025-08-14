@@ -25,11 +25,11 @@ class MarginInfo(BaseModel):
     unrealized_swap: float
     net_value: float
     required_margin: float
-    leverage: Optional[float] = None
-    margin_limits: List[Dict[str, Any]] = []
+    leverage: float | None = None
+    margin_limits: list[dict[str, Any]] = []
 
     @classmethod
-    def from_bitfinex_data(cls, data: List) -> "MarginInfo":
+    def from_bitfinex_data(cls, data: list) -> "MarginInfo":
         """Skapar ett MarginInfo-objekt från Bitfinex API-data."""
         if len(data) < 5:
             raise ValueError(f"Ogiltig margin-data: {data}")
@@ -46,9 +46,7 @@ class MarginInfo(BaseModel):
             net_value=float(data[3]),
             required_margin=float(data[4]),
             leverage=leverage,
-            margin_limits=(
-                data[5] if len(data) > 5 and isinstance(data[5], list) else []
-            ),
+            margin_limits=(data[5] if len(data) > 5 and isinstance(data[5], list) else []),
         )
 
 
@@ -61,7 +59,7 @@ class MarginLimitInfo(BaseModel):
     margin_requirements: float
 
     @classmethod
-    def from_bitfinex_data(cls, data: Dict[str, Any]) -> "MarginLimitInfo":
+    def from_bitfinex_data(cls, data: dict[str, Any]) -> "MarginLimitInfo":
         """Skapar ett MarginLimitInfo-objekt från Bitfinex API-data."""
         return cls(
             on_pair=data.get("on_pair", ""),
@@ -77,11 +75,10 @@ class MarginService:
     def __init__(self):
         self.settings = Settings()
         self.base_url = (
-            getattr(self.settings, "BITFINEX_AUTH_API_URL", None)
-            or self.settings.BITFINEX_API_URL
+            getattr(self.settings, "BITFINEX_AUTH_API_URL", None) or self.settings.BITFINEX_API_URL
         )
 
-    def _convert_v1_to_v2_format(self, v1_data: Dict[str, Any]) -> List[Any]:
+    def _convert_v1_to_v2_format(self, v1_data: dict[str, Any]) -> list[Any]:
         """
         Konverterar margin info från v1 API format till v2 API format.
 
@@ -111,9 +108,7 @@ class MarginService:
             ]
 
             # Lägg till margin_limits om det finns
-            if "margin_limits" in v1_data and isinstance(
-                v1_data["margin_limits"], list
-            ):
+            if "margin_limits" in v1_data and isinstance(v1_data["margin_limits"], list):
                 v2_format.append(v1_data["margin_limits"])
 
             return v2_format
@@ -148,18 +143,12 @@ class MarginService:
                     response.raise_for_status()
                     # v2 base svar: [ 'base', [USER_PL, USER_SWAPS, MARGIN_BALANCE, MARGIN_NET, MARGIN_MIN] ]
                     raw = response.json()
-                    if (
-                        isinstance(raw, list)
-                        and len(raw) >= 2
-                        and isinstance(raw[1], list)
-                    ):
+                    if isinstance(raw, list) and len(raw) >= 2 and isinstance(raw[1], list):
                         data = raw[1]
                     else:
                         data = [0, 0, 0, 0, 0]
                     margin_data = [data[2], data[0], data[1], data[3], data[4]]
-                    logger.info(
-                        "✅ REST API: Hämtade margin-information (base) från v2 API"
-                    )
+                    logger.info("✅ REST API: Hämtade margin-information (base) från v2 API")
                 except httpx.HTTPStatusError as e:
                     # Om v2 API misslyckas, försök med v1 API endpoint
                     if e.response.status_code in (404, 400, 500):
@@ -177,9 +166,7 @@ class MarginService:
                             v1_response.raise_for_status()
                             v1_data = v1_response.json()
                             margin_data = self._convert_v1_to_v2_format(v1_data)
-                            logger.info(
-                                "✅ REST API: Hämtade margin-information från v1 API"
-                            )
+                            logger.info("✅ REST API: Hämtade margin-information från v1 API")
                         except Exception as e1:
                             logger.error(f"❌ v1 margin API misslyckades: {e1}")
                             # Fallback – returnera neutral struktur så flödet inte kraschar
@@ -197,7 +184,7 @@ class MarginService:
             # Fallback – returnera tom/neutral margin-info istället för att höja
             return MarginInfo.from_bitfinex_data([0, 0, 0, 0, 0])
 
-    async def get_margin_limits(self) -> List[MarginLimitInfo]:
+    async def get_margin_limits(self) -> list[MarginLimitInfo]:
         """
         Hämtar margin-begränsningar för alla handelssymboler.
 
@@ -218,7 +205,7 @@ class MarginService:
             logger.error(f"Fel vid hämtning av margin-begränsningar: {e}")
             raise
 
-    async def get_margin_limit_by_pair(self, pair: str) -> Optional[MarginLimitInfo]:
+    async def get_margin_limit_by_pair(self, pair: str) -> MarginLimitInfo | None:
         """
         Hämtar margin-begränsningar för ett specifikt handelssymbol.
 
@@ -265,9 +252,7 @@ class MarginService:
                     and isinstance(raw[2], list)
                 ):
                     arr = raw[2]
-                    tradable = (
-                        float(arr[0]) if len(arr) > 0 and arr[0] is not None else 0.0
-                    )
+                    tradable = float(arr[0]) if len(arr) > 0 and arr[0] is not None else 0.0
                     # initial_margin/margin_requirements okända här; sätt 0 som placeholder
                     return MarginLimitInfo(
                         on_pair=eff,
@@ -298,7 +283,7 @@ class MarginService:
 
         return 1.0  # Standardvärde om vi inte kan beräkna
 
-    async def get_margin_status(self) -> Dict[str, Any]:
+    async def get_margin_status(self) -> dict[str, Any]:
         """
         Hämtar en sammanfattning av margin-status.
 
@@ -326,13 +311,11 @@ class MarginService:
             "margin_level": margin_level,
             "leverage": await self.get_leverage(),
             "status": (
-                "healthy"
-                if margin_level >= 2.0
-                else "warning" if margin_level >= 1.5 else "danger"
+                "healthy" if margin_level >= 2.0 else "warning" if margin_level >= 1.5 else "danger"
             ),
         }
 
-    async def get_symbol_margin_status(self, symbol: str) -> Dict[str, Any]:
+    async def get_symbol_margin_status(self, symbol: str) -> dict[str, Any]:
         """
         Per‑symbol marginstatus. WS (miu:sym) i första hand, REST margin_limits som fallback.
         Returnerar nycklar: { source, tradable, buy, sell } (buy/sell endast om WS finns).
@@ -356,15 +339,9 @@ class MarginService:
                 arr = (bitfinex_ws.margin_sym or {}).get(eff)
                 if isinstance(arr, list) and arr:
                     # Försök tolka fält: [tradable, gross, buy, sell, ...]
-                    tradable = (
-                        float(arr[0]) if len(arr) >= 1 and arr[0] is not None else None
-                    )
-                    buy = (
-                        float(arr[2]) if len(arr) >= 3 and arr[2] is not None else None
-                    )
-                    sell = (
-                        float(arr[3]) if len(arr) >= 4 and arr[3] is not None else None
-                    )
+                    tradable = float(arr[0]) if len(arr) >= 1 and arr[0] is not None else None
+                    buy = float(arr[2]) if len(arr) >= 3 and arr[2] is not None else None
+                    sell = float(arr[3]) if len(arr) >= 4 and arr[3] is not None else None
                     return {
                         "symbol": eff,
                         "source": "ws",
@@ -411,11 +388,11 @@ async def get_margin_info() -> MarginInfo:
     return await margin_service.get_margin_info()
 
 
-async def get_margin_limits() -> List[MarginLimitInfo]:
+async def get_margin_limits() -> list[MarginLimitInfo]:
     return await margin_service.get_margin_limits()
 
 
-async def get_margin_limit_by_pair(pair: str) -> Optional[MarginLimitInfo]:
+async def get_margin_limit_by_pair(pair: str) -> MarginLimitInfo | None:
     return await margin_service.get_margin_limit_by_pair(pair)
 
 
@@ -423,5 +400,5 @@ async def get_leverage() -> float:
     return await margin_service.get_leverage()
 
 
-async def get_margin_status() -> Dict[str, Any]:
+async def get_margin_status() -> dict[str, Any]:
     return await margin_service.get_margin_status()

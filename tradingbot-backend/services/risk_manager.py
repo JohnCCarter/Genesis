@@ -18,11 +18,11 @@ logger = get_logger(__name__)
 
 
 _CB_ERROR_EVENTS = deque()
-_CB_OPENED_AT: Optional[datetime] = None
+_CB_OPENED_AT: datetime | None = None
 
 
 class RiskManager:
-    def __init__(self, settings: Optional[Settings] = None):
+    def __init__(self, settings: Settings | None = None):
         self.settings = settings or Settings()
         self.trading_window = TradingWindowService(self.settings)
         self.trade_counter = TradeCounterService(self.settings)
@@ -30,9 +30,7 @@ class RiskManager:
         self._error_events = _CB_ERROR_EVENTS
         self._circuit_opened_at_ref = lambda: _CB_OPENED_AT
 
-    def pre_trade_checks(
-        self, *, symbol: Optional[str] = None
-    ) -> Tuple[bool, Optional[str]]:
+    def pre_trade_checks(self, *, symbol: str | None = None) -> tuple[bool, str | None]:
         if self.trading_window.is_paused():
             return False, "trading_paused"
         if not self.trading_window.is_open():
@@ -45,9 +43,7 @@ class RiskManager:
             limit_from_settings = int(
                 getattr(self.settings, "MAX_TRADES_PER_SYMBOL_PER_DAY", 0) or 0
             )
-            active_limit = (
-                limit_from_rules if limit_from_rules >= 0 else limit_from_settings
-            )
+            active_limit = limit_from_rules if limit_from_rules >= 0 else limit_from_settings
             if symbol and active_limit > 0:
                 per_symbol = self.trade_counter.stats().get("per_symbol", {})
                 if per_symbol.get(symbol.upper(), 0) >= active_limit:
@@ -64,7 +60,7 @@ class RiskManager:
             return False, "trade_blocked"
         return True, None
 
-    def record_trade(self, *, symbol: Optional[str] = None) -> None:
+    def record_trade(self, *, symbol: str | None = None) -> None:
         if symbol:
             try:
                 self.trade_counter.record_trade_for_symbol(symbol)
@@ -89,7 +85,7 @@ class RiskManager:
         while self._error_events and (now - self._error_events[0]) > window:
             self._error_events.popleft()
 
-    def _should_open_circuit(self, now: datetime) -> bool:
+    def _should_open_circuit(self, now: datetime) -> bool:  # noqa: ARG002
         return (
             self.settings.CB_ENABLED
             and len(self._error_events) >= self.settings.CB_MAX_ERRORS_PER_WINDOW
@@ -117,9 +113,7 @@ class RiskManager:
                             "warning",
                             "Circuit breaker aktiverad",
                             {
-                                "since": (
-                                    _CB_OPENED_AT.isoformat() if _CB_OPENED_AT else None
-                                ),
+                                "since": (_CB_OPENED_AT.isoformat() if _CB_OPENED_AT else None),
                                 "errors_in_window": len(self._error_events),
                                 "window_seconds": self.settings.CB_ERROR_WINDOW_SECONDS,
                             },
@@ -130,7 +124,7 @@ class RiskManager:
         except Exception as e:
             logger.error(f"Kunde inte aktivera circuit breaker: {e}")
 
-    def status(self) -> Dict[str, Any]:
+    def status(self) -> dict[str, Any]:
         now = datetime.utcnow()
         self._prune_errors(now)
         opened_at = _CB_OPENED_AT.isoformat() if _CB_OPENED_AT else None
@@ -157,7 +151,7 @@ class RiskManager:
     # --- Circuit Breaker controls ---
     def circuit_reset(
         self, *, resume: bool = True, clear_errors: bool = True, notify: bool = True
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Återställ circuit breaker: rensa fel och återuppta handel om så önskas."""
         try:
             if clear_errors:
@@ -197,11 +191,11 @@ class RiskManager:
     def update_circuit_config(
         self,
         *,
-        enabled: Optional[bool] = None,
-        window_seconds: Optional[int] = None,
-        max_errors_per_window: Optional[int] = None,
-        notify: Optional[bool] = None,
-    ) -> Dict[str, Any]:
+        enabled: bool | None = None,
+        window_seconds: int | None = None,
+        max_errors_per_window: int | None = None,
+        notify: bool | None = None,
+    ) -> dict[str, Any]:
         """Uppdatera runtime-konfiguration för circuit breaker (påverkar nya instanser via os.environ)."""
         import os
 

@@ -23,8 +23,7 @@ class FundingService:
     def __init__(self) -> None:
         self.settings = Settings()
         self.base_url = (
-            getattr(self.settings, "BITFINEX_AUTH_API_URL", None)
-            or self.settings.BITFINEX_API_URL
+            getattr(self.settings, "BITFINEX_AUTH_API_URL", None) or self.settings.BITFINEX_API_URL
         )
 
     async def transfer(
@@ -33,7 +32,7 @@ class FundingService:
         to_wallet: str,
         currency: str,
         amount: str | float,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Flytta medel mellan wallets. Ex: exchange -> margin.
 
@@ -54,9 +53,7 @@ class FundingService:
         headers = build_auth_headers(endpoint, payload_str=body_json)
         url = f"{self.base_url}/{endpoint}"
         try:
-            async with httpx.AsyncClient(
-                timeout=self.settings.ORDER_HTTP_TIMEOUT
-            ) as client:
+            async with httpx.AsyncClient(timeout=self.settings.ORDER_HTTP_TIMEOUT) as client:
                 logger.info(
                     "🌐 REST API: Transfer %s → %s %s %s",
                     from_wallet,
@@ -64,9 +61,7 @@ class FundingService:
                     amount,
                     currency,
                 )
-                resp = await client.post(
-                    url, content=body_json.encode("utf-8"), headers=headers
-                )
+                resp = await client.post(url, content=body_json.encode("utf-8"), headers=headers)
                 resp.raise_for_status()
                 return resp.json()
         except Exception as e:
@@ -76,11 +71,11 @@ class FundingService:
 
     async def movements(
         self,
-        currency: Optional[str] = None,
-        start: Optional[int] = None,
-        end: Optional[int] = None,
-        limit: Optional[int] = None,
-    ) -> List[Any] | Dict[str, Any]:
+        currency: str | None = None,
+        start: int | None = None,
+        end: int | None = None,
+        limit: int | None = None,
+    ) -> list[Any] | dict[str, Any]:
         """
         Hämtar movements (insättningar/uttag/överföringar).
 
@@ -91,7 +86,7 @@ class FundingService:
             limit: antal rader (valfritt)
         """
         endpoint = "auth/r/movements"
-        payload: Dict[str, Any] = {}
+        payload: dict[str, Any] = {}
         if currency:
             payload["currency"] = str(currency).upper()
         if start is not None:
@@ -105,13 +100,9 @@ class FundingService:
         headers = build_auth_headers(endpoint, payload_str=body_json)
         url = f"{self.base_url}/{endpoint}"
         try:
-            async with httpx.AsyncClient(
-                timeout=self.settings.ORDER_HTTP_TIMEOUT
-            ) as client:
+            async with httpx.AsyncClient(timeout=self.settings.ORDER_HTTP_TIMEOUT) as client:
                 logger.info("🌐 REST API: Movements fetch (%s)", currency or "all")
-                resp = await client.post(
-                    url, content=body_json.encode("utf-8"), headers=headers
-                )
+                resp = await client.post(url, content=body_json.encode("utf-8"), headers=headers)
                 resp.raise_for_status()
                 data = resp.json()
                 return data if isinstance(data, list) else (data or [])

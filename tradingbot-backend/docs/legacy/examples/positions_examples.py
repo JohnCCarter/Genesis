@@ -53,9 +53,7 @@ async def get_positions_example():
             # Hämta en specifik position
             btc_position = await get_position_by_symbol("tBTCUSD")
             if btc_position:
-                print(
-                    f"\nBTC Position: {btc_position.amount} @ {btc_position.base_price}"
-                )
+                print(f"\nBTC Position: {btc_position.amount} @ {btc_position.base_price}")
             else:
                 print("\nIngen BTC position hittad")
 

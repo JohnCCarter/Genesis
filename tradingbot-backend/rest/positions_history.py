@@ -21,18 +21,18 @@ logger = get_logger(__name__)
 class PositionHistory(BaseModel):
     """Modell för en historisk position."""
 
-    id: Optional[int] = None
+    id: int | None = None
     symbol: str
     status: str  # "ACTIVE", "CLOSED"
     amount: float
     base_price: float
     funding: float = 0.0
     funding_type: int = 0  # 0 för daily, 1 för term
-    profit_loss: Optional[float] = None
-    profit_loss_percentage: Optional[float] = None
-    liquidation_price: Optional[float] = None
-    created_at: Optional[datetime] = None
-    closed_at: Optional[datetime] = None
+    profit_loss: float | None = None
+    profit_loss_percentage: float | None = None
+    liquidation_price: float | None = None
+    created_at: datetime | None = None
+    closed_at: datetime | None = None
 
     @property
     def is_long(self) -> bool:
@@ -45,7 +45,7 @@ class PositionHistory(BaseModel):
         return self.amount < 0
 
     @classmethod
-    def from_bitfinex_data(cls, data: List) -> "PositionHistory":
+    def from_bitfinex_data(cls, data: list) -> "PositionHistory":
         """Skapar en PositionHistory från Bitfinex API-data."""
         if len(data) < 6:
             raise ValueError(f"Ogiltig positionsdata: {data}")
@@ -83,13 +83,12 @@ class PositionsHistoryService:
     def __init__(self):
         self.settings = Settings()
         self.base_url = (
-            getattr(self.settings, "BITFINEX_AUTH_API_URL", None)
-            or self.settings.BITFINEX_API_URL
+            getattr(self.settings, "BITFINEX_AUTH_API_URL", None) or self.settings.BITFINEX_API_URL
         )
 
     async def get_positions_history(
-        self, start: Optional[int] = None, end: Optional[int] = None, limit: int = 50
-    ) -> List[PositionHistory]:
+        self, start: int | None = None, end: int | None = None, limit: int = 50
+    ) -> list[PositionHistory]:
         """
         Hämtar positionshistorik från Bitfinex.
 
@@ -125,13 +124,10 @@ class PositionsHistoryService:
                 response.raise_for_status()
 
                 positions_data = response.json()
-                logger.info(
-                    f"✅ REST API: Hämtade {len(positions_data)} historiska positioner"
-                )
+                logger.info(f"✅ REST API: Hämtade {len(positions_data)} historiska positioner")
 
                 positions = [
-                    PositionHistory.from_bitfinex_data(position)
-                    for position in positions_data
+                    PositionHistory.from_bitfinex_data(position) for position in positions_data
                 ]
                 return positions
 
@@ -139,7 +135,7 @@ class PositionsHistoryService:
             logger.error(f"Fel vid hämtning av positionshistorik: {e}")
             raise
 
-    async def get_positions_snapshot(self) -> List[PositionHistory]:
+    async def get_positions_snapshot(self) -> list[PositionHistory]:
         """
         Hämtar en ögonblicksbild av positioner från Bitfinex.
 
@@ -154,9 +150,7 @@ class PositionsHistoryService:
                 logger.info(
                     f"🌐 REST API: Hämtar positionsögonblicksbild från {self.base_url}/{endpoint}"
                 )
-                response = await client.post(
-                    f"{self.base_url}/{endpoint}", headers=headers
-                )
+                response = await client.post(f"{self.base_url}/{endpoint}", headers=headers)
                 response.raise_for_status()
 
                 positions_data = response.json()
@@ -165,8 +159,7 @@ class PositionsHistoryService:
                 )
 
                 positions = [
-                    PositionHistory.from_bitfinex_data(position)
-                    for position in positions_data
+                    PositionHistory.from_bitfinex_data(position) for position in positions_data
                 ]
                 return positions
 
@@ -177,10 +170,10 @@ class PositionsHistoryService:
     async def get_positions_audit(
         self,
         symbol: str,
-        start: Optional[int] = None,
-        end: Optional[int] = None,
+        start: int | None = None,
+        end: int | None = None,
         limit: int = 50,
-    ) -> List[PositionHistory]:
+    ) -> list[PositionHistory]:
         """
         Hämtar positionsrevision från Bitfinex.
 
@@ -217,13 +210,10 @@ class PositionsHistoryService:
                 response.raise_for_status()
 
                 positions_data = response.json()
-                logger.info(
-                    f"✅ REST API: Hämtade {len(positions_data)} positionsrevisioner"
-                )
+                logger.info(f"✅ REST API: Hämtade {len(positions_data)} positionsrevisioner")
 
                 positions = [
-                    PositionHistory.from_bitfinex_data(position)
-                    for position in positions_data
+                    PositionHistory.from_bitfinex_data(position) for position in positions_data
                 ]
                 return positions
 
@@ -231,7 +221,7 @@ class PositionsHistoryService:
             logger.error(f"Fel vid hämtning av positionsrevision: {e}")
             raise
 
-    async def claim_position(self, position_id: str) -> Dict[str, Any]:
+    async def claim_position(self, position_id: str) -> dict[str, Any]:
         """
         Gör anspråk på en position.
 
@@ -254,9 +244,7 @@ class PositionsHistoryService:
                 response.raise_for_status()
 
                 result = response.json()
-                logger.info(
-                    f"✅ REST API: Anspråk på position {position_id} framgångsrikt"
-                )
+                logger.info(f"✅ REST API: Anspråk på position {position_id} framgångsrikt")
 
                 return result
 
@@ -264,9 +252,7 @@ class PositionsHistoryService:
             logger.error(f"Fel vid anspråk på position: {e}")
             raise
 
-    async def update_position_funding_type(
-        self, symbol: str, funding_type: int
-    ) -> Dict[str, Any]:
+    async def update_position_funding_type(self, symbol: str, funding_type: int) -> dict[str, Any]:
         """
         Uppdaterar finansieringstypen för en position.
 
@@ -309,30 +295,24 @@ positions_history_service = PositionsHistoryService()
 
 # Exportera funktioner för enkel användning
 async def get_positions_history(
-    start: Optional[int] = None, end: Optional[int] = None, limit: int = 50
-) -> List[PositionHistory]:
+    start: int | None = None, end: int | None = None, limit: int = 50
+) -> list[PositionHistory]:
     return await positions_history_service.get_positions_history(start, end, limit)
 
 
-async def get_positions_snapshot() -> List[PositionHistory]:
+async def get_positions_snapshot() -> list[PositionHistory]:
     return await positions_history_service.get_positions_snapshot()
 
 
 async def get_positions_audit(
-    symbol: str, start: Optional[int] = None, end: Optional[int] = None, limit: int = 50
-) -> List[PositionHistory]:
-    return await positions_history_service.get_positions_audit(
-        symbol, start, end, limit
-    )
+    symbol: str, start: int | None = None, end: int | None = None, limit: int = 50
+) -> list[PositionHistory]:
+    return await positions_history_service.get_positions_audit(symbol, start, end, limit)
 
 
-async def claim_position(position_id: str) -> Dict[str, Any]:
+async def claim_position(position_id: str) -> dict[str, Any]:
     return await positions_history_service.claim_position(position_id)
 
 
-async def update_position_funding_type(
-    symbol: str, funding_type: int
-) -> Dict[str, Any]:
-    return await positions_history_service.update_position_funding_type(
-        symbol, funding_type
-    )
+async def update_position_funding_type(symbol: str, funding_type: int) -> dict[str, Any]:
+    return await positions_history_service.update_position_funding_type(symbol, funding_type)

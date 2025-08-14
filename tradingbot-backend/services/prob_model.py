@@ -13,10 +13,10 @@ from config.settings import Settings
 
 
 class ProbabilityModel:
-    def __init__(self, settings: Optional[Settings] = None) -> None:
+    def __init__(self, settings: Settings | None = None) -> None:
         self.settings = settings or Settings()
         self.enabled = bool(self.settings.PROB_MODEL_ENABLED)
-        self.model_meta: Dict[str, Any] = {}
+        self.model_meta: dict[str, Any] = {}
 
         self._loaded = False
         if self.enabled:
@@ -27,7 +27,7 @@ class ProbabilityModel:
             path = self.settings.PROB_MODEL_FILE
             if not path:
                 return False
-            with open(path, "r", encoding="utf-8") as f:
+            with open(path, encoding="utf-8") as f:
                 self.model_meta = json.load(f)
             return True
         except Exception:
@@ -42,7 +42,7 @@ class ProbabilityModel:
         except Exception:
             return False
 
-    def predict_proba(self, features: Dict[str, float]) -> Dict[str, float]:
+    def predict_proba(self, features: dict[str, float]) -> dict[str, float]:
         """
         Returnerar sannolikheter {buy, sell, hold}.
         Fallback: enkel heuristik om modellen inte är laddad/aktiverad.

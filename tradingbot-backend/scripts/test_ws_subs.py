@@ -5,22 +5,21 @@ from config.settings import Settings
 from services.bitfinex_websocket import bitfinex_ws
 
 
-async def run_test() -> Dict[str, Dict[str, str]]:
-
+async def run_test() -> dict[str, dict[str, str]]:
     settings = Settings()
     raw = (settings.WS_SUBSCRIBE_SYMBOLS or "").strip()
     if not raw:
         print("WS_SUBSCRIBE_SYMBOLS is empty")
         return {}
 
-    symbols: List[str] = [s.strip() for s in raw.split(",") if s.strip()]
+    symbols: list[str] = [s.strip() for s in raw.split(",") if s.strip()]
 
     # Connect (public subs works on same socket; auth is optional)
     ok = await bitfinex_ws.connect()
     print("connect:", bool(ok))
 
     # Build mapping original -> effective symbol used
-    mapping: Dict[str, str] = {}
+    mapping: dict[str, str] = {}
     for sym in symbols:
         eff = bitfinex_ws._normalize_public_symbol(sym)  # type: ignore[attr-defined]
         eff = await bitfinex_ws._choose_available_pair(eff)  # type: ignore[attr-defined]
@@ -34,7 +33,7 @@ async def run_test() -> Dict[str, Dict[str, str]]:
     await asyncio.sleep(2.0)
 
     # Collect status
-    report: Dict[str, Dict[str, str]] = {}
+    report: dict[str, dict[str, str]] = {}
     for sym in symbols:
         eff = mapping.get(sym, sym)
         active = "yes" if eff in bitfinex_ws.active_tickers else "no"

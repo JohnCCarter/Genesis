@@ -153,9 +153,7 @@ def validate_token(token: str) -> Dict[str, Any]:
             logger.warning(f"Token har löpt ut för användare {payload.get('sub')}")
             return None
 
-        logger.info(
-            f"{token_type.capitalize()}-token validerad för användare {payload.get('sub')}"
-        )
+        logger.info(f"{token_type.capitalize()}-token validerad för användare {payload.get('sub')}")
         return payload
 
     except jwt.ExpiredSignatureError:
@@ -243,9 +241,7 @@ def authenticate_socket_io(environ) -> bool:
     """
     try:
         # Detaljerad loggning för debugging
-        logger.info(
-            f"Socket.IO anslutningsförsök från {environ.get('REMOTE_ADDR', 'okänd')}"
-        )
+        logger.info(f"Socket.IO anslutningsförsök från {environ.get('REMOTE_ADDR', 'okänd')}")
         logger.info(f"HTTP_USER_AGENT: {environ.get('HTTP_USER_AGENT', 'okänd')}")
 
         # Hämta Authorization-header
@@ -265,9 +261,7 @@ def authenticate_socket_io(environ) -> bool:
                 )
                 auth_header = f"Bearer {token_param}"
             else:
-                logger.warning(
-                    "❌ Ingen Authorization-header eller token-parameter hittades"
-                )
+                logger.warning("❌ Ingen Authorization-header eller token-parameter hittades")
                 return False
 
         # Extrahera token från Authorization-header (format: "Bearer TOKEN")

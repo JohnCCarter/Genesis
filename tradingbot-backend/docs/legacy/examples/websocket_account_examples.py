@@ -65,9 +65,7 @@ async def wallet_updates_example():
         def on_wallet_update(wallets):
             print(f"📢 Plånboksuppdatering mottagen: {len(wallets)} plånböcker")
             for wallet in wallets:
-                print(
-                    f"  {wallet['wallet_type']} {wallet['currency']}: {wallet['balance']}"
-                )
+                print(f"  {wallet['wallet_type']} {wallet['currency']}: {wallet['balance']}")
 
         wallet_handler.register_wallet_callback(on_wallet_update)
 
@@ -87,9 +85,7 @@ async def wallet_updates_example():
                 wallets = await wallet_handler.get_wallets()
                 print(f"\n📊 Nuvarande plånböcker ({len(wallets)}):")
                 for wallet in wallets:
-                    print(
-                        f"  {wallet['wallet_type']} {wallet['currency']}: {wallet['balance']}"
-                    )
+                    print(f"  {wallet['wallet_type']} {wallet['currency']}: {wallet['balance']}")
 
                 # Vänta på uppdateringar i 30 sekunder
                 print("\n⏳ Väntar på plånboksuppdateringar i 30 sekunder...")

@@ -5,13 +5,11 @@ from contextlib import closing
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 
-_DB_DEFAULT = os.path.join(
-    os.path.dirname(os.path.dirname(__file__)), "config", "candles.sqlite3"
-)
+_DB_DEFAULT = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config", "candles.sqlite3")
 
 
 class CandleCache:
-    def __init__(self, db_path: Optional[str] = None) -> None:
+    def __init__(self, db_path: str | None = None) -> None:
         self.db_path = db_path or _DB_DEFAULT
         os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
         self._init_db()
@@ -34,11 +32,12 @@ class CandleCache:
                 """
             )
             conn.execute(
-                "CREATE INDEX IF NOT EXISTS ix_candles_symbol_tf_mts ON candles(symbol, timeframe, mts)"
+                "CREATE INDEX IF NOT EXISTS ix_candles_symbol_tf_mts "
+                "ON candles(symbol, timeframe, mts)"
             )
             conn.commit()
 
-    def store(self, symbol: str, timeframe: str, candles: Iterable[List]) -> int:
+    def store(self, symbol: str, timeframe: str, candles: Iterable[list]) -> int:
         """Spara candles i cache. Returnerar antal upserts."""
         count = 0
         with closing(sqlite3.connect(self.db_path)) as conn:
@@ -73,8 +72,11 @@ class CandleCache:
             conn.commit()
         return count
 
-    def load(self, symbol: str, timeframe: str, limit: int = 100) -> List[List]:
-        """Läs senaste N candles från cache, returnerar Bitfinex-format ordnat nyast->äldst som i API."""
+    def load(self, symbol: str, timeframe: str, limit: int = 100) -> list[list]:
+        """
+        Läs senaste N candles från cache.
+        Returnerar Bitfinex-format, nyast -> äldst, som i API.
+        """
         with closing(sqlite3.connect(self.db_path)) as conn:
             rows = conn.execute(
                 """
@@ -88,7 +90,17 @@ class CandleCache:
             ).fetchall()
         return [[r[0], r[1], r[2], r[3], r[4], r[5]] for r in rows]
 
-    def stats(self, limit_symbols: int = 20) -> Dict:
+    def get_last(self, symbol: str, timeframe: str) -> list | None:
+        """
+        Returnera senaste candle i Bitfinex-format.
+        Format: [MTS, OPEN, CLOSE, HIGH, LOW, VOLUME].
+        """
+        rows = self.load(symbol, timeframe, limit=1)
+        if rows:
+            return rows[0]
+        return None
+
+    def stats(self, limit_symbols: int = 20) -> dict:
         """Returnera enkel statistik över cacheinnehållet."""
         with closing(sqlite3.connect(self.db_path)) as conn:
             total_rows = conn.execute("SELECT COUNT(*) FROM candles").fetchone()[0]
@@ -103,7 +115,12 @@ class CandleCache:
                 (int(limit_symbols),),
             ).fetchall()
         items = [
-            {"symbol": r[0], "timeframe": r[1], "rows": int(r[2])} for r in rows_by_pair
+            {
+                "symbol": r[0],
+                "timeframe": r[1],
+                "rows": int(r[2]),
+            }
+            for r in rows_by_pair
         ]
         return {"total_rows": int(total_rows), "top": items}
 
@@ -113,7 +130,7 @@ class CandleCache:
             conn.commit()
             return cur.rowcount if cur.rowcount is not None else 0
 
-    def clear(self, symbol: str, timeframe: Optional[str] = None) -> int:
+    def clear(self, symbol: str, timeframe: str | None = None) -> int:
         with closing(sqlite3.connect(self.db_path)) as conn:
             if timeframe:
                 cur = conn.execute(
@@ -134,9 +151,7 @@ class CandleCache:
         with closing(sqlite3.connect(self.db_path)) as conn:
             # 1) Rensa äldre än max_days
             if max_days and max_days > 0:
-                cutoff = int(
-                    (datetime.utcnow() - timedelta(days=max_days)).timestamp() * 1000
-                )
+                cutoff = int((datetime.utcnow() - timedelta(days=max_days)).timestamp() * 1000)
                 cur = conn.execute(
                     "DELETE FROM candles WHERE mts < ?",
                     (cutoff,),

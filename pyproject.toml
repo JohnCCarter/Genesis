@@ -1,9 +1,58 @@
-[tool.isort]
-profile = "black"
-line_length = 88
-# Skip all legacy docs (examples, scraper, etc.) from isort checks in CI
-skip_glob = [
-    "tradingbot-backend/docs/legacy/**",
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+skip-string-normalization = true
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = [
+  "E", "F", "W",   # pycodestyle/pyflakes
+  "I",               # isort (importordning)
+  "UP",              # pyupgrade
+  "B",               # flake8-bugbear
+  "C90",             # mccabe (komplexitet)
+  "ARG",             # oanvända argument
+  "N",               # pep8-naming
+  "ANN",             # annotations
+  "PL",              # pylint subset
+  "RUF",             # ruff-specifika
+]
+ignore = [
+  "ANN101", "ANN102", "ANN401",    # typning self/cls/Any
+  "D",                                 # docstring-regler av
+  "PLR2004", "PLR0911", "PLR0912", "PLR0915", "PLR0913",  # magic/komplexitet
+  "C901",                              # för komplexa funktioner
+  "N803", "N806", "N814",          # naming (capwords, alias imports)
+  "RUF001", "RUF002", "RUF003", "RUF006",  # unicode docstrings/asyncio task mm
 ]
 
+[tool.ruff.lint.per-file-ignores]
+"**/routes/*.py" = ["B008", "E501"]
+"**/rest/*.py"   = ["B008", "E501", "N814", "PLR0911"]
+"**/services/**/*.py" = ["E501", "ANN", "PLR0911", "PLR0912", "PLR0915", "C901", "N814", "RUF002", "RUF006"]
+"**/ws/**/*.py"  = ["B008", "E501", "N814", "RUF002"]
+"**/models/**/*.py" = ["N805", "ARG002", "ANN001"]
+"tradingbot-backend/main.py" = ["ARG001", "ANN001", "N814"]
 
+[tool.ruff.lint.isort]
+known-first-party = ["services","rest","utils","config","indicators","ws"]
+combine-as-imports = true
+force-sort-within-sections = true
+
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true
+warn_unused_ignores = true
+no_implicit_optional = true
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+pretty = true
+show_error_codes = true
+
+[tool.isort]
+# Inte använd i pre-commit (Ruff hanterar isort), kvar för ev. lokal CLI
+profile = "black"
+line_length = 100

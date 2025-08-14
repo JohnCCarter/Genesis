@@ -1,0 +1,8 @@
+body{font-family:system-ui,sans-serif;margin:24px;color:#1b1f23}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.card{border:1px solid #e1e4e8;border-radius:8px;padding:12px}
+input{padding:8px}
+button{padding:8px 12px;border:0;border-radius:6px;background:#57606a;color:#fff;cursor:pointer}
+button:hover{background:#444c56}
+pre#log{background:#f6f8fa;border-radius:6px;padding:12px;min-height:240px}
+

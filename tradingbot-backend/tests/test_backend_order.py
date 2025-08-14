@@ -129,9 +129,7 @@ def test_backend_market_order():
     print(f"🔍 Side: {order_data['side']}")
 
     try:
-        response = requests.post(
-            f"{BACKEND_URL}/order", json=order_data, headers=headers
-        )
+        response = requests.post(f"{BACKEND_URL}/order", json=order_data, headers=headers)
 
         print(f"🔍 Status: {response.status_code}")
         print(f"🔍 Svar: {response.text}")
@@ -168,9 +166,7 @@ def test_backend_market_order():
                 if "error" in error_json:
                     print(f"Felmeddelande: {error_json['error']}")
                     if "apikey: invalid" in str(error_json):
-                        print(
-                            "\n⚠️ API-NYCKEL PROBLEM: Bitfinex accepterar inte API-nyckeln"
-                        )
+                        print("\n⚠️ API-NYCKEL PROBLEM: Bitfinex accepterar inte API-nyckeln")
                         print(
                             "Kontrollera att rätt nyckel används och att den har rätt behörigheter"
                         )
@@ -217,9 +213,7 @@ def test_backend_limit_order():
         print(f"🔍 Side: {order_data['side']}")
 
     try:
-        response = requests.post(
-            f"{BACKEND_URL}/order", json=order_data, headers=headers
-        )
+        response = requests.post(f"{BACKEND_URL}/order", json=order_data, headers=headers)
 
         print(f"🔍 Status: {response.status_code}")
         print(f"🔍 Svar: {response.text}")
@@ -256,9 +250,7 @@ def test_backend_limit_order():
                 if "error" in error_json:
                     print(f"Felmeddelande: {error_json['error']}")
                     if "apikey: invalid" in str(error_json):
-                        print(
-                            "\n⚠️ API-NYCKEL PROBLEM: Bitfinex accepterar inte API-nyckeln"
-                        )
+                        print("\n⚠️ API-NYCKEL PROBLEM: Bitfinex accepterar inte API-nyckeln")
                         print(
                             "Kontrollera att rätt nyckel används och att den har rätt behörigheter"
                         )

@@ -42,8 +42,12 @@ from services.risk_manager import RiskManager
 from services.runtime_mode import (
     get_core_mode,
     get_prev_rate_limit,
+    get_validation_on_start,
+    get_ws_strategy_enabled,
     set_core_mode,
     set_prev_rate_limit,
+    set_validation_on_start,
+    set_ws_strategy_enabled,
 )
 from services.strategy import evaluate_weighted_strategy
 from services.strategy_settings import StrategySettings, StrategySettingsService
@@ -90,11 +94,12 @@ class OrderRequest(BaseModel):
 
     symbol: str
     amount: str
-    price: Optional[str] = None  # Optional för MARKET orders
+    price: str | None = None  # Optional för MARKET orders
     type: str = "EXCHANGE LIMIT"  # EXCHANGE LIMIT, EXCHANGE MARKET, etc.
-    side: Optional[str] = None  # Optional för att matcha test_order_operations.py
+    side: str | None = None  # Optional för att matcha test_order_operations.py
     post_only: bool = False
     reduce_only: bool = False
+    client_id: str | None = None  # idempotens
 
 
 class CancelOrderRequest(BaseModel):
@@ -107,40 +112,46 @@ class UpdateOrderRequest(BaseModel):
     """Request model för orderuppdatering."""
 
     order_id: int
-    price: Optional[float] = None
-    amount: Optional[float] = None
+    price: float | None = None
+    amount: float | None = None
 
 
 class OrderResponse(BaseModel):
     """Generiskt svar för orderoperationer (wrapper)."""
 
     success: bool
-    error: Optional[str] = None
-    data: Optional[Any] = None
+    error: str | None = None
+    data: Any | None = None
 
 
 # --- WS order requestmodeller ---
 class WSOrderUpdateRequest(BaseModel):
     order_id: int
-    price: Optional[float] = None
-    amount: Optional[float] = None
-    extra: Optional[Dict[str, Any]] = None
+    price: float | None = None
+    amount: float | None = None
+    extra: dict[str, Any] | None = None
 
 
 class WSCancelMultiRequest(BaseModel):
-    ids: Optional[List[int]] = None
-    cids: Optional[List[int]] = None
-    cid_date: Optional[str] = None  # YYYY-MM-DD
+    ids: list[int] | None = None
+    cids: list[int] | None = None
+    cid_date: str | None = None  # YYYY-MM-DD
 
 
 class WSOrderOpsRequest(BaseModel):
-    ops: List[Any]
+    ops: list[Any]
 
 
 class WSUnsubscribeRequest(BaseModel):
     channel: str  # ticker|trades|candles
     symbol: str  # tPAIR
-    timeframe: Optional[str] = None  # för candles, t.ex. 1m/5m
+    timeframe: str | None = None  # för candles, t.ex. 1m/5m
+
+
+class WSSubscribeRequest(BaseModel):
+    channel: str  # ticker|trades|candles
+    symbol: str  # tPAIR
+    timeframe: str | None = None  # för candles, t.ex. 1m/5m
 
 
 class ProbPredictRequest(BaseModel):
@@ -162,9 +173,7 @@ class ProbPreviewRequest(BaseModel):
 async def prob_preview(req: ProbPreviewRequest, _bypass_auth: bool = Depends(security)):
     try:
         # 1) inferens
-        from config.settings import Settings as _S
-
-        s = _S()
+        s = Settings()
         pred = await prob_predict(
             ProbPredictRequest(symbol=req.symbol, timeframe=req.timeframe),
             True,  # bypass auth re-check
@@ -200,13 +209,11 @@ async def prob_preview(req: ProbPreviewRequest, _bypass_auth: bool = Depends(sec
             sl = float(params.get("sl", 0.002) or 0.002)
             b = float(tp / sl) if sl else 1.0
             kelly_raw = p_sel - (1.0 - p_sel) / (b if b > 0 else 1.0)
-            from config.settings import Settings as __S
-            __s = __S()
-            kelly_cap = float(getattr(__s, "PROB_SIZE_KELLY_CAP", 0.5) or 0.5)
+            kelly_cap = float(getattr(s, "PROB_SIZE_KELLY_CAP", 0.5) or 0.5)
             kelly_used = max(0.0, min(kelly_raw, kelly_cap))
             kelly_norm = (kelly_used / kelly_cap) if kelly_cap > 0 else 0.0
             conf = float(pred.get("confidence", 0.0) or 0.0)
-            conf_w = float(getattr(__s, "PROB_SIZE_CONF_WEIGHT", 0.5) or 0.5)
+            conf_w = float(getattr(s, "PROB_SIZE_CONF_WEIGHT", 0.5) or 0.5)
             conf_scaled = max(0.0, min(conf, 1.0))
             size_weight = max(0.0, min(1.0, (1.0 - conf_w) * kelly_norm + conf_w * conf_scaled))
             weighted_size = round(base_size * size_weight, 8)
@@ -235,7 +242,7 @@ async def prob_preview(req: ProbPreviewRequest, _bypass_auth: bool = Depends(sec
         }
     except Exception as e:
         logger.exception(f"prob/preview error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 class BracketOrderRequest(BaseModel):
@@ -245,12 +252,13 @@ class BracketOrderRequest(BaseModel):
     amount: str
     side: str  # buy/sell
     entry_type: str = "EXCHANGE MARKET"  # eller EXCHANGE LIMIT (kräver entry_price)
-    entry_price: Optional[str] = None
-    sl_price: Optional[str] = None
-    tp_price: Optional[str] = None
-    tif: Optional[str] = None  # e.g. GTC/IOC/FOK
+    entry_price: str | None = None
+    sl_price: str | None = None
+    tp_price: str | None = None
+    tif: str | None = None  # e.g. GTC/IOC/FOK
     post_only: bool = False
     reduce_only: bool = False
+    client_id: str | None = None  # idempotens
 
 
 class ProbTradeRequest(BaseModel):
@@ -262,11 +270,68 @@ class ProbTradeRequest(BaseModel):
 @router.post("/prob/trade")
 async def prob_trade(req: ProbTradeRequest, _bypass_auth: bool = Depends(security)):
     try:
-        from config.settings import Settings as _S
-
-        s = _S()
+        s = Settings()
         if not bool(getattr(s, "PROB_AUTOTRADE_ENABLED", False)):
+            try:
+                from time import time as _now
+
+                from services.metrics import metrics_store as _ms
+
+                key = f"{req.symbol}|{req.timeframe}"
+                last = _ms.setdefault("prob_trade_last", {})
+                last[key] = {
+                    "ts": int(_now()),
+                    "symbol": req.symbol,
+                    "tf": req.timeframe,
+                    "side": None,
+                    "result": "autotrade_disabled",
+                    "size": 0.0,
+                }
+            except Exception:
+                pass
             return {"ok": False, "error": "autotrade_disabled"}
+        # Tidig guardrail: respektera riskregler innan vi gör preview
+        try:
+            risk = RiskManager()
+            ok, reason = risk.pre_trade_checks(symbol=req.symbol)
+            if not ok:
+                try:
+                    from services.metrics import inc_labeled as _inc_labeled
+
+                    _inc_labeled(
+                        "prob_trade_events",
+                        {
+                            "type": "risk_blocked",
+                            "symbol": req.symbol,
+                            "reason": str(reason),
+                        },
+                    )
+                    try:
+                        from time import time as _now
+
+                        from services.metrics import metrics_store as _ms
+
+                        key = f"{req.symbol}|{req.timeframe}"
+                        last = _ms.setdefault("prob_trade_last", {})
+                        last[key] = {
+                            "ts": int(_now()),
+                            "symbol": req.symbol,
+                            "tf": req.timeframe,
+                            "side": None,
+                            "result": f"risk_blocked:{reason}",
+                            "size": 0.0,
+                        }
+                    except Exception:
+                        pass
+                except Exception:
+                    pass
+                return {"ok": False, "error": f"risk_blocked:{reason}"}
+        except Exception:
+            pass
+        # Mät latens för orderläggningen
+        import time as _t
+
+        _t0 = _t.time()
         pv = await prob_preview(
             ProbPreviewRequest(
                 symbol=req.symbol,
@@ -290,6 +355,23 @@ async def prob_trade(req: ProbTradeRequest, _bypass_auth: bool = Depends(securit
         side = "buy" if pv["decision"] == "buy" else "sell"
         amount = str(pv.get("size") or 0)
         if not amount or float(amount) <= 0:
+            try:
+                from time import time as _now
+
+                from services.metrics import metrics_store as _ms
+
+                key = f"{req.symbol}|{req.timeframe}"
+                last = _ms.setdefault("prob_trade_last", {})
+                last[key] = {
+                    "ts": int(_now()),
+                    "symbol": req.symbol,
+                    "tf": req.timeframe,
+                    "side": side,
+                    "result": "size_zero",
+                    "size": 0.0,
+                }
+            except Exception:
+                pass
             return {"ok": False, "error": "size_zero"}
         # Bracket: marknadsentry + ATR SL/TP
         req_br = BracketOrderRequest(
@@ -304,12 +386,85 @@ async def prob_trade(req: ProbTradeRequest, _bypass_auth: bool = Depends(securit
             reduce_only=False,
         )
         res = await place_bracket_order(req_br, True)
-        if hasattr(res, "dict"):
-            res = res.dict()  # type: ignore[assignment]
-        return {"ok": True, "result": res}
+        # Normalisera svar för metrics/utfall
+        try:
+            from typing import Any
+            from typing import Dict as _Dict
+
+            res_dict: dict[str, Any]
+            if isinstance(res, dict):
+                res_dict = res  # type: ignore[assignment]
+            elif hasattr(res, "dict"):
+                res_dict = res.dict()  # type: ignore[assignment]
+            else:
+                res_dict = {"success": False}
+        except Exception:
+            res_dict = {"success": False}
+        # metrics/loggar
+        try:
+            from services.metrics import inc_labeled as _inc_labeled
+
+            _inc_labeled(
+                "prob_trade_events",
+                {"type": "submit", "symbol": req.symbol, "side": side},
+            )
+            _inc_labeled(
+                "prob_trade_events",
+                {"type": "placed", "symbol": req.symbol, "side": side},
+            )
+            _inc_labeled(
+                "prob_trade_sizes",
+                {"symbol": req.symbol, "side": side},
+                by=max(int(float(amount) * 1e6), 1),  # pseudo-size for counting
+            )
+            # Latens för prob/trade (ms) per symbol/side/timeframe
+            _t1 = _t.time()
+            _inc_labeled(
+                "prob_trade_latency_ms",
+                {"symbol": req.symbol, "side": side, "tf": req.timeframe},
+                by=max(int((_t1 - _t0) * 1000), 0),
+            )
+            # Utfall: success/error per symbol/side/timeframe
+            outcome = "success" if bool(res_dict.get("success", False)) else "error"
+            _inc_labeled(
+                "prob_trade_outcome",
+                {
+                    "symbol": req.symbol,
+                    "side": side,
+                    "tf": req.timeframe,
+                    "result": outcome,
+                },
+                by=1,
+            )
+            # Senaste utfall (för UI)
+            try:
+                from time import time as _now
+
+                from services.metrics import metrics_store as _ms
+
+                key = f"{req.symbol}|{req.timeframe}"
+                last = _ms.setdefault("prob_trade_last", {})
+                amt = 0.0
+                try:
+                    amt = float(amount)
+                except Exception:
+                    amt = 0.0
+                last[key] = {
+                    "ts": int(_now()),
+                    "symbol": req.symbol,
+                    "tf": req.timeframe,
+                    "side": side,
+                    "result": outcome,
+                    "size": amt,
+                }
+            except Exception:
+                pass
+        except Exception:
+            pass
+        return {"ok": True, "result": res_dict}
     except Exception as e:
         logger.exception(f"prob/trade error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # Order endpoints
@@ -325,8 +480,8 @@ def require_auth(credentials: HTTPAuthorizationCredentials | None = Depends(secu
     try:
         jwt.decode(credentials.credentials, JWT_SECRET, algorithms=["HS256"])
         return True
-    except Exception:
-        raise HTTPException(status_code=401, detail="Ogiltig token")
+    except Exception as e:
+        raise HTTPException(status_code=401, detail="Ogiltig token") from e
 
 
 @router.post("/order", response_model=OrderResponse)
@@ -364,6 +519,19 @@ async def place_order_endpoint(order: OrderRequest, _: bool = Depends(require_au
         except Exception:
             pass
 
+        # Dry-run: simulera svar utan att lägga order
+        try:
+            if getattr(settings, "DRY_RUN_ENABLED", False):
+                return OrderResponse(
+                    success=True,
+                    data={
+                        "dry_run": True,
+                        "order": order.dict(),
+                    },
+                )
+        except Exception:
+            pass
+
         # Validera order innan den skickas
         is_valid, err = order_validator.validate_order(order.dict())
         if not is_valid:
@@ -381,6 +549,26 @@ async def place_order_endpoint(order: OrderRequest, _: bool = Depends(require_au
         else:
             risk = RiskManager()
 
+        # Idempotens: kortlivad request‑cache per client_id
+        try:
+            from services.metrics import metrics_store as _ms
+
+            cache = _ms.setdefault("request_id_cache", {})
+            cid = (order.client_id or "").strip() if hasattr(order, "client_id") else ""
+            if cid:
+                hit = cache.get(cid)
+                if (
+                    isinstance(hit, dict)
+                    and hit.get("ts")
+                    and (int(__import__("time").time()) - int(hit["ts"])) < 60
+                ):
+                    return OrderResponse(
+                        success=True,
+                        data={"idempotent": True, **(hit.get("resp") or {})},
+                    )
+        except Exception:
+            pass
+
         # Skicka ordern till Bitfinex
         payload = order.dict()
         # Mappa symbol – hoppa över mapping och listed‑check för TEST‑par (paper trading)
@@ -393,9 +581,7 @@ async def place_order_endpoint(order: OrderRequest, _: bool = Depends(require_au
                 await _svc.refresh()
                 eff = _svc.resolve(sym_in)
                 if not _svc.listed(eff):
-                    return OrderResponse(
-                        success=False, error="validation_error:pair_not_listed"
-                    )
+                    return OrderResponse(success=False, error="validation_error:pair_not_listed")
                 payload["symbol"] = eff
         except Exception:
             pass
@@ -405,7 +591,47 @@ async def place_order_endpoint(order: OrderRequest, _: bool = Depends(require_au
         result = await rest_auth.place_order(payload)
 
         if "error" in result:
-            logger.error(f"Fel vid orderläggning: {result['error']}")
+            logger.error(f"Fel vid orderläggning (REST): {result['error']}")
+            # WS fallback (on)
+            ws_fallback_ok = False
+            try:
+                from services.bitfinex_websocket import bitfinex_ws as _ws
+
+                on_payload = {
+                    "type": str(payload.get("type")),
+                    "symbol": str(payload.get("symbol")),
+                    "amount": str(payload.get("amount")),
+                }
+                if payload.get("price") is not None:
+                    on_payload["price"] = str(payload.get("price"))
+                cid_val = (order.client_id or "").strip() if hasattr(order, "client_id") else ""
+                if cid_val:
+                    try:
+                        on_payload["cid"] = int(cid_val)
+                    except Exception:
+                        pass
+                ws_res = await _ws.order_ops([["on", on_payload]])
+                ws_fallback_ok = bool(ws_res.get("success"))
+                if ws_fallback_ok:
+                    await notification_service.notify(
+                        "info", "Order lagd via WS fallback", {"payload": on_payload}
+                    )
+                    metrics_inc("orders_total")
+                    try:
+                        inc_labeled(
+                            "orders_total_labeled",
+                            {
+                                "symbol": order.symbol,
+                                "type": (order.type or "").replace(" ", "_"),
+                                "status": "ok_ws",
+                            },
+                        )
+                    except Exception:
+                        pass
+                    return OrderResponse(success=True, data={"ws_fallback": True, **ws_res})
+            except Exception as _wse:
+                logger.warning(f"WS fallback misslyckades: {_wse}")
+            # WS misslyckades → rapportera REST-felet
             await notification_service.notify(
                 "error",
                 "Order misslyckades",
@@ -414,7 +640,6 @@ async def place_order_endpoint(order: OrderRequest, _: bool = Depends(require_au
             metrics_inc("orders_total")
             metrics_inc("orders_failed_total")
             try:
-                # Registrera fel i circuit breaker
                 RiskManager().record_error()
             except Exception:
                 pass
@@ -516,25 +741,47 @@ async def update_order_endpoint(
     Uppdaterar en order via Bitfinex API.
     """
     try:
-        logger.info(
-            f"Mottog uppdateringsförfrågan för order: {update_request.order_id}"
-        )
+        logger.info(f"Mottog uppdateringsförfrågan för order: {update_request.order_id}")
 
         # Skapa en instans av ActiveOrdersService
         active_orders_service = ActiveOrdersService()
 
         # Uppdatera ordern
-        result = await active_orders_service.update_order(
-            update_request.order_id, update_request.price, update_request.amount
-        )
+        try:
+            result = await active_orders_service.update_order(
+                update_request.order_id, update_request.price, update_request.amount
+            )
+            logger.info(f"Order framgångsrikt uppdaterad: {result}")
+            _emit_notification(
+                "info",
+                "Order uppdaterad",
+                {"request": update_request.dict(), "response": result},
+            )
+            return OrderResponse(success=True, data=result)
+        except Exception as rest_err:
+            logger.warning(f"REST update misslyckades, försöker WS fallback: {rest_err}")
+            try:
+                from services.bitfinex_websocket import bitfinex_ws as _ws
 
-        logger.info(f"Order framgångsrikt uppdaterad: {result}")
-        _emit_notification(
-            "info",
-            "Order uppdaterad",
-            {"request": update_request.dict(), "response": result},
-        )
-        return OrderResponse(success=True, data=result)
+                ws_res = await _ws.order_update(
+                    order_id=update_request.order_id,
+                    price=update_request.price,
+                    amount=update_request.amount,
+                    extra=None,
+                )
+                if bool(ws_res.get("success")):
+                    _emit_notification(
+                        "info",
+                        "Order uppdaterad via WS",
+                        {"request": update_request.dict(), "response": ws_res},
+                    )
+                    return OrderResponse(success=True, data={"ws_fallback": True, **ws_res})
+                return OrderResponse(
+                    success=False, error=str(ws_res.get("error") or "ws_update_failed")
+                )
+            except Exception as _wse:
+                logger.exception(f"WS fallback update fel: {_wse}")
+                return OrderResponse(success=False, error=str(_wse))
 
     except Exception as e:
         logger.exception(f"Oväntat fel vid uppdatering av order: {e}")
@@ -543,9 +790,7 @@ async def update_order_endpoint(
 
 # --- WS order endpoints ---
 @router.post("/ws/order/update", response_model=OrderResponse)
-async def ws_order_update(
-    payload: WSOrderUpdateRequest, _: bool = Depends(require_auth)
-):
+async def ws_order_update(payload: WSOrderUpdateRequest, _: bool = Depends(require_auth)):
     try:
         from services.bitfinex_websocket import bitfinex_ws
 
@@ -564,9 +809,7 @@ async def ws_order_update(
 
 
 @router.post("/ws/orders/cancel-multi", response_model=OrderResponse)
-async def ws_order_cancel_multi(
-    payload: WSCancelMultiRequest, _: bool = Depends(require_auth)
-):
+async def ws_order_cancel_multi(payload: WSCancelMultiRequest, _: bool = Depends(require_auth)):
     try:
         from services.bitfinex_websocket import bitfinex_ws
 
@@ -607,9 +850,7 @@ async def cancel_all_orders_endpoint(_: bool = Depends(require_auth)):
             max_requests = int(getattr(settings, "ORDER_RATE_LIMIT_MAX", 0) or 0)
             window_seconds = int(getattr(settings, "ORDER_RATE_LIMIT_WINDOW", 0) or 0)
             if max_requests > 0 and window_seconds > 0:
-                if not _rl.is_allowed(
-                    "cancel_all_orders", max_requests, window_seconds
-                ):
+                if not _rl.is_allowed("cancel_all_orders", max_requests, window_seconds):
                     try:
                         from services.metrics import inc as _inc
 
@@ -636,9 +877,7 @@ async def cancel_all_orders_endpoint(_: bool = Depends(require_auth)):
 
 
 @router.post("/orders/cancel/symbol/{symbol}", response_model=OrderResponse)
-async def cancel_orders_by_symbol_endpoint(
-    symbol: str, _: bool = Depends(require_auth)
-):
+async def cancel_orders_by_symbol_endpoint(symbol: str, _: bool = Depends(require_auth)):
     """
     Avbryter alla aktiva ordrar för en specifik symbol.
     """
@@ -662,7 +901,7 @@ async def cancel_orders_by_symbol_endpoint(
         return OrderResponse(success=False, error=str(e))
 
 
-@router.get("/orders", response_model=List[OrderResponse])
+@router.get("/orders", response_model=list[OrderResponse])
 async def get_active_orders_endpoint(_: bool = Depends(require_auth)):
     """
     Hämtar alla aktiva ordrar.
@@ -679,10 +918,10 @@ async def get_active_orders_endpoint(_: bool = Depends(require_auth)):
 
     except Exception as e:
         logger.exception(f"Fel vid hämtning av aktiva ordrar: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@router.get("/orders/symbol/{symbol}", response_model=List[OrderResponse])
+@router.get("/orders/symbol/{symbol}", response_model=list[OrderResponse])
 async def get_orders_by_symbol_endpoint(symbol: str, _: bool = Depends(require_auth)):
     """
     Hämtar aktiva ordrar för en specifik symbol.
@@ -699,7 +938,7 @@ async def get_orders_by_symbol_endpoint(symbol: str, _: bool = Depends(require_a
 
     except Exception as e:
         logger.exception(f"Fel vid hämtning av aktiva ordrar för {symbol}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/order/{order_id}", response_model=OrderResponse)
@@ -715,9 +954,7 @@ async def get_order_by_id_endpoint(order_id: int, _: bool = Depends(require_auth
         order = await active_orders_service.get_order_by_id(order_id)
 
         if not order:
-            raise HTTPException(
-                status_code=404, detail=f"Order med ID {order_id} hittades inte"
-            )
+            raise HTTPException(status_code=404, detail=f"Order med ID {order_id} hittades inte")
 
         return OrderResponse(success=True, data=order)
 
@@ -725,13 +962,13 @@ async def get_order_by_id_endpoint(order_id: int, _: bool = Depends(require_auth
         raise
     except Exception as e:
         logger.exception(f"Fel vid hämtning av order {order_id}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # Wallet endpoints
 
 
-@router.get("/wallets", response_model=List[WalletBalance])
+@router.get("/wallets", response_model=list[WalletBalance])
 async def get_wallets_endpoint(_: bool = Depends(require_auth)):
     """
     Hämtar alla plånböcker från Bitfinex API.
@@ -743,7 +980,7 @@ async def get_wallets_endpoint(_: bool = Depends(require_auth)):
 
     except Exception as e:
         logger.exception(f"Fel vid hämtning av plånböcker: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # Funding/Transfer endpoints
@@ -758,9 +995,7 @@ class TransferRequest(BaseModel):
 async def funding_transfer(req: TransferRequest, _: bool = Depends(require_auth)):
     try:
         svc = FundingService()
-        res = await svc.transfer(
-            req.from_wallet, req.to_wallet, req.currency, req.amount
-        )
+        res = await svc.transfer(req.from_wallet, req.to_wallet, req.currency, req.amount)
         if isinstance(res, dict) and res.get("error"):
             # mappa interna felkoder till generiska HTTP‑felmeddelanden
             code = str(res.get("error"))
@@ -772,15 +1007,15 @@ async def funding_transfer(req: TransferRequest, _: bool = Depends(require_auth)
         raise
     except Exception as e:
         logger.exception(f"Fel vid transfer: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/funding/movements")
 async def funding_movements(
-    currency: Optional[str] = None,
-    start: Optional[int] = None,
-    end: Optional[int] = None,
-    limit: Optional[int] = None,
+    currency: str | None = None,
+    start: int | None = None,
+    end: int | None = None,
+    limit: int | None = None,
     _: bool = Depends(require_auth),
 ):
     try:
@@ -796,12 +1031,12 @@ async def funding_movements(
         raise
     except Exception as e:
         logger.exception(f"Fel vid movements: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/wallets/balance")
 async def get_wallets_balance_endpoint(
-    currency: Optional[str] = None, _: bool = Depends(require_auth)
+    currency: str | None = None, _: bool = Depends(require_auth)
 ):
     """Aggregat saldo per valuta med brytning per wallet-typ.
 
@@ -812,27 +1047,21 @@ async def get_wallets_balance_endpoint(
         wallet_service = WalletService()
         wallets = await wallet_service.get_wallets()
 
-        def _upper(s: Optional[str]) -> str:
+        def _upper(s: str | None) -> str:
             return s.upper() if isinstance(s, str) else ""
 
-        balances: Dict[str, Dict[str, Any]] = {}
+        balances: dict[str, dict[str, Any]] = {}
         for w in wallets:
             cur = _upper(w.currency)
-            entry = balances.setdefault(
-                cur, {"total": 0.0, "available_total": 0.0, "by_type": {}}
-            )
+            entry = balances.setdefault(cur, {"total": 0.0, "available_total": 0.0, "by_type": {}})
             entry["total"] += float(w.balance)
             entry["available_total"] += float(w.available_balance or 0.0)
             by_type = entry["by_type"]
-            by_type[w.wallet_type] = float(by_type.get(w.wallet_type, 0.0)) + float(
-                w.balance
-            )
+            by_type[w.wallet_type] = float(by_type.get(w.wallet_type, 0.0)) + float(w.balance)
 
         if currency:
             cur = currency.upper()
-            data = balances.get(
-                cur, {"total": 0.0, "available_total": 0.0, "by_type": {}}
-            )
+            data = balances.get(cur, {"total": 0.0, "available_total": 0.0, "by_type": {}})
             # inkludera råa wallets för valutan
             data["wallets"] = [w.dict() for w in wallets if _upper(w.currency) == cur]
             data["currency"] = cur
@@ -845,10 +1074,10 @@ async def get_wallets_balance_endpoint(
             return out
     except Exception as e:
         logger.exception(f"Fel vid wallets/balance: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@router.get("/wallets/exchange", response_model=List[WalletBalance])
+@router.get("/wallets/exchange", response_model=list[WalletBalance])
 async def get_exchange_wallets_endpoint(_: bool = Depends(require_auth)):
     """
     Hämtar alla exchange-plånböcker från Bitfinex API.
@@ -860,10 +1089,10 @@ async def get_exchange_wallets_endpoint(_: bool = Depends(require_auth)):
 
     except Exception as e:
         logger.exception(f"Fel vid hämtning av exchange-plånböcker: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@router.get("/wallets/margin", response_model=List[WalletBalance])
+@router.get("/wallets/margin", response_model=list[WalletBalance])
 async def get_margin_wallets_endpoint(_: bool = Depends(require_auth)):
     """
     Hämtar alla margin-plånböcker från Bitfinex API.
@@ -875,10 +1104,10 @@ async def get_margin_wallets_endpoint(_: bool = Depends(require_auth)):
 
     except Exception as e:
         logger.exception(f"Fel vid hämtning av margin-plånböcker: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@router.get("/wallets/funding", response_model=List[WalletBalance])
+@router.get("/wallets/funding", response_model=list[WalletBalance])
 async def get_funding_wallets_endpoint(_: bool = Depends(require_auth)):
     """
     Hämtar alla funding-plånböcker från Bitfinex API.
@@ -890,13 +1119,13 @@ async def get_funding_wallets_endpoint(_: bool = Depends(require_auth)):
 
     except Exception as e:
         logger.exception(f"Fel vid hämtning av funding-plånböcker: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # Position endpoints
 
 
-@router.get("/positions", response_model=List[Position])
+@router.get("/positions", response_model=list[Position])
 async def get_positions_endpoint(_: bool = Depends(require_auth)):
     """
     Hämtar alla aktiva positioner från Bitfinex API.
@@ -908,10 +1137,10 @@ async def get_positions_endpoint(_: bool = Depends(require_auth)):
 
     except Exception as e:
         logger.exception(f"Fel vid hämtning av positioner: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@router.get("/positions/long", response_model=List[Position])
+@router.get("/positions/long", response_model=list[Position])
 async def get_long_positions_endpoint(_: bool = Depends(require_auth)):
     """
     Hämtar alla long-positioner från Bitfinex API.
@@ -923,10 +1152,10 @@ async def get_long_positions_endpoint(_: bool = Depends(require_auth)):
 
     except Exception as e:
         logger.exception(f"Fel vid hämtning av long-positioner: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@router.get("/positions/short", response_model=List[Position])
+@router.get("/positions/short", response_model=list[Position])
 async def get_short_positions_endpoint(_: bool = Depends(require_auth)):
     """
     Hämtar alla short-positioner från Bitfinex API.
@@ -938,10 +1167,10 @@ async def get_short_positions_endpoint(_: bool = Depends(require_auth)):
 
     except Exception as e:
         logger.exception(f"Fel vid hämtning av short-positioner: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@router.post("/positions/close/{symbol}", response_model=Dict[str, Any])
+@router.post("/positions/close/{symbol}", response_model=dict[str, Any])
 async def close_position_endpoint(symbol: str, _: bool = Depends(require_auth)):
     """
     Stänger en position för en specifik symbol.
@@ -953,13 +1182,13 @@ async def close_position_endpoint(symbol: str, _: bool = Depends(require_auth)):
 
     except Exception as e:
         logger.exception(f"Fel vid stängning av position: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # Margin endpoints
 
 
-@router.get("/margin", response_model=Dict[str, Any])
+@router.get("/margin", response_model=dict[str, Any])
 async def get_margin_info_endpoint(_: bool = Depends(require_auth)):
     """
     Hämtar margin-information från Bitfinex API.
@@ -971,10 +1200,10 @@ async def get_margin_info_endpoint(_: bool = Depends(require_auth)):
 
     except Exception as e:
         logger.exception(f"Fel vid hämtning av margin-information: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@router.get("/margin/status", response_model=Dict[str, Any])
+@router.get("/margin/status", response_model=dict[str, Any])
 async def get_margin_status_endpoint(_: bool = Depends(require_auth)):
     """
     Hämtar en sammanfattning av margin-status.
@@ -986,7 +1215,7 @@ async def get_margin_status_endpoint(_: bool = Depends(require_auth)):
 
     except Exception as e:
         logger.exception(f"Fel vid hämtning av margin-status: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/margin/status/{symbol}")
@@ -1016,10 +1245,10 @@ async def get_margin_status_symbol(symbol: str, _: bool = Depends(require_auth))
         return base
     except Exception as e:
         logger.exception(f"Fel vid hämtning av margin-status (symbol): {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@router.get("/margin/leverage", response_model=Dict[str, float])
+@router.get("/margin/leverage", response_model=dict[str, float])
 async def get_leverage_endpoint(_: bool = Depends(require_auth)):
     """
     Hämtar nuvarande hävstång (leverage).
@@ -1031,17 +1260,17 @@ async def get_leverage_endpoint(_: bool = Depends(require_auth)):
 
     except Exception as e:
         logger.exception(f"Fel vid hämtning av hävstång: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # Order History endpoints
 
 
-@router.get("/orders/history", response_model=List[OrderHistoryItem])
+@router.get("/orders/history", response_model=list[OrderHistoryItem])
 async def get_orders_history_endpoint(
     limit: int = 25,
-    start_time: Optional[int] = None,
-    end_time: Optional[int] = None,
+    start_time: int | None = None,
+    end_time: int | None = None,
     _: bool = Depends(require_auth),
 ):
     """
@@ -1049,17 +1278,15 @@ async def get_orders_history_endpoint(
     """
     try:
         order_history_service = OrderHistoryService()
-        orders = await order_history_service.get_orders_history(
-            limit, start_time, end_time
-        )
+        orders = await order_history_service.get_orders_history(limit, start_time, end_time)
         return orders
 
     except Exception as e:
         logger.exception(f"Fel vid hämtning av orderhistorik: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@router.get("/order/{order_id}/trades", response_model=List[TradeItem])
+@router.get("/order/{order_id}/trades", response_model=list[TradeItem])
 async def get_order_trades_endpoint(order_id: int, _: bool = Depends(require_auth)):
     """
     Hämtar alla trades för en specifik order.
@@ -1071,12 +1298,12 @@ async def get_order_trades_endpoint(order_id: int, _: bool = Depends(require_aut
 
     except Exception as e:
         logger.exception(f"Fel vid hämtning av trades för order {order_id}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@router.get("/trades/history", response_model=List[TradeItem])
+@router.get("/trades/history", response_model=list[TradeItem])
 async def get_trades_history_endpoint(
-    symbol: Optional[str] = None, limit: int = 25, _: bool = Depends(require_auth)
+    symbol: str | None = None, limit: int = 25, _: bool = Depends(require_auth)
 ):
     """
     Hämtar handelshistorik från Bitfinex API.
@@ -1088,12 +1315,12 @@ async def get_trades_history_endpoint(
 
     except Exception as e:
         logger.exception(f"Fel vid hämtning av handelshistorik: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@router.get("/ledgers", response_model=List[LedgerEntry])
+@router.get("/ledgers", response_model=list[LedgerEntry])
 async def get_ledgers_endpoint(
-    currency: Optional[str] = None, limit: int = 25, _: bool = Depends(require_auth)
+    currency: str | None = None, limit: int = 25, _: bool = Depends(require_auth)
 ):
     """
     Hämtar ledger-poster från Bitfinex API.
@@ -1105,7 +1332,7 @@ async def get_ledgers_endpoint(
 
     except Exception as e:
         logger.exception(f"Fel vid hämtning av ledger: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 class TokenRequest(BaseModel):
@@ -1120,8 +1347,8 @@ class TokenResponse(BaseModel):
     """Response model för token generering."""
 
     success: bool
-    token: Optional[str] = None
-    error: Optional[str] = None
+    token: str | None = None
+    error: str | None = None
 
 
 @router.post("/auth/ws-token", response_model=TokenResponse)
@@ -1152,14 +1379,15 @@ class WeightedStrategyRequest(BaseModel):
 
     ema: str
     rsi: str
-    atr: Optional[str] = None
+    atr: str | None = None
+    symbol: str | None = None
 
 
 class WeightedStrategyResponse(BaseModel):
     """Svar för viktad strategiutvärdering."""
 
     signal: str
-    probabilities: Dict[str, float]
+    probabilities: dict[str, float]
 
 
 @router.post("/strategy/evaluate-weighted", response_model=WeightedStrategyResponse)
@@ -1171,33 +1399,32 @@ async def evaluate_weighted_strategy_endpoint(
     simplifierade signaler från EMA, RSI och ATR.
     """
     try:
-        result = evaluate_weighted_strategy(
-            {
-                "ema": request.ema,
-                "rsi": request.rsi,
-                "atr": request.atr,
-            }
-        )
+        payload: dict[str, str | None] = {
+            "ema": request.ema,
+            "rsi": request.rsi,
+            "atr": request.atr,
+        }
+        if request.symbol:
+            payload["symbol"] = request.symbol
+        result = evaluate_weighted_strategy(payload)  # type: ignore[arg-type]
         return result
     except Exception as e:
         logger.exception(f"Fel vid viktad strategiutvärdering: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # Strategy settings endpoints
 class StrategySettingsPayload(BaseModel):
-    ema_weight: Optional[float] = None
-    rsi_weight: Optional[float] = None
-    atr_weight: Optional[float] = None
-    ema_period: Optional[int] = None
-    rsi_period: Optional[int] = None
-    atr_period: Optional[int] = None
+    ema_weight: float | None = None
+    rsi_weight: float | None = None
+    atr_weight: float | None = None
+    ema_period: int | None = None
+    rsi_period: int | None = None
+    atr_period: int | None = None
 
 
 @router.get("/strategy/settings")
-async def get_strategy_settings(
-    symbol: Optional[str] = None, _: bool = Depends(require_auth)
-):
+async def get_strategy_settings(symbol: str | None = None, _: bool = Depends(require_auth)):
     try:
         svc = StrategySettingsService()
         return svc.get_settings(symbol=symbol).to_dict()
@@ -1209,7 +1436,7 @@ async def get_strategy_settings(
 @router.post("/strategy/settings")
 async def update_strategy_settings(
     payload: StrategySettingsPayload,
-    symbol: Optional[str] = None,
+    symbol: str | None = None,
     _: bool = Depends(require_auth),
 ):
     try:
@@ -1217,34 +1444,22 @@ async def update_strategy_settings(
         current = svc.get_settings(symbol=symbol)
         updated = StrategySettings(
             ema_weight=(
-                payload.ema_weight
-                if payload.ema_weight is not None
-                else current.ema_weight
+                payload.ema_weight if payload.ema_weight is not None else current.ema_weight
             ),
             rsi_weight=(
-                payload.rsi_weight
-                if payload.rsi_weight is not None
-                else current.rsi_weight
+                payload.rsi_weight if payload.rsi_weight is not None else current.rsi_weight
             ),
             atr_weight=(
-                payload.atr_weight
-                if payload.atr_weight is not None
-                else current.atr_weight
+                payload.atr_weight if payload.atr_weight is not None else current.atr_weight
             ),
             ema_period=(
-                payload.ema_period
-                if payload.ema_period is not None
-                else current.ema_period
+                payload.ema_period if payload.ema_period is not None else current.ema_period
             ),
             rsi_period=(
-                payload.rsi_period
-                if payload.rsi_period is not None
-                else current.rsi_period
+                payload.rsi_period if payload.rsi_period is not None else current.rsi_period
             ),
             atr_period=(
-                payload.atr_period
-                if payload.atr_period is not None
-                else current.atr_period
+                payload.atr_period if payload.atr_period is not None else current.atr_period
             ),
         )
         saved = svc.save_settings(updated, symbol=symbol)
@@ -1279,7 +1494,7 @@ async def update_strategy_settings(
 class PositionSizeRequest(BaseModel):
     symbol: str
     risk_percent: float = 1.0  # procent av total USD balans
-    price: Optional[float] = None  # om ej satt, försök hämta ticker
+    price: float | None = None  # om ej satt, försök hämta ticker
     side: str = "buy"  # buy eller sell för SL/TP-beräkning
     timeframe: str = "1m"
     atr_multiplier_sl: float = 1.5
@@ -1287,9 +1502,7 @@ class PositionSizeRequest(BaseModel):
 
 
 @router.post("/risk/position-size")
-async def calculate_position_size(
-    req: PositionSizeRequest, _: bool = Depends(require_auth)
-):
+async def calculate_position_size(req: PositionSizeRequest, _: bool = Depends(require_auth)):
     try:
         # Hämta total balans i quote-valutan (auto-detektera från symbol)
         wallet_service = WalletService()
@@ -1301,9 +1514,17 @@ async def calculate_position_size(
             # Fallback: anta 3 sista tecken som quote (t.ex. BTCUSD -> USD)
             quote_currency = symbol_clean[-3:] if len(symbol_clean) >= 3 else "USD"
         quote_upper = quote_currency.upper()
-        total_quote = sum(
-            w.balance for w in wallets if w.currency.upper() == quote_upper
-        )
+        total_quote = sum(w.balance for w in wallets if w.currency.upper() == quote_upper)
+        if total_quote <= 0:
+            try:
+                from config.settings import Settings as __S
+
+                __s = __S()
+                fallback = float(getattr(__s, "POSITION_SIZE_FALLBACK_QUOTE", 0.0) or 0.0)
+                if fallback > 0:
+                    total_quote = fallback
+            except Exception:
+                pass
         if total_quote <= 0 and quote_upper != "USD":
             # Fallback till USD om ingen balans i quote hittas
             total_quote = sum(w.balance for w in wallets if w.currency.upper() == "USD")
@@ -1388,6 +1609,19 @@ async def calculate_position_size(
                     except Exception:
                         price = 0
             if not price or price <= 0:
+                # Dev/demo fallback: försök läsa senaste cache-pris
+                try:
+                    from utils.candle_cache import candle_cache as _cc
+
+                    rows = _cc.load(req.symbol, req.timeframe, limit=1)
+                    if isinstance(rows, list) and len(rows) >= 1:
+                        last = rows[0]
+                        if isinstance(last, list) and len(last) >= 3:
+                            price = float(last[2])
+                            price_source = price_source or "cache"
+                except Exception:
+                    pass
+            if not price or price <= 0:
                 return {"size": 0.0, "reason": "no_price"}
         if price <= 0:
             return {"size": 0.0, "reason": "invalid_price"}
@@ -1404,7 +1638,7 @@ async def calculate_position_size(
             candles = await data.get_candles(
                 req.symbol,
                 req.timeframe,
-                limit=req.atr_period if hasattr(req, "atr_period") else 100,
+                limit=100,
             )
             if candles:
                 parsed = data.parse_candles_to_strategy_data(candles)
@@ -1559,12 +1793,13 @@ async def market_candles(
         candles = await data.get_candles(symbol, timeframe, limit)
         if candles is None:
             raise HTTPException(status_code=502, detail="Kunde inte hämta candles")
-        parsed = data.parse_candles_to_strategy_data(candles)
+        parsed_any = data.parse_candles_to_strategy_data(candles)
         from services.strategy import evaluate_strategy
 
         # bädda in symbol i parsed för vikt-override
-        parsed["symbol"] = symbol
-        strategy = evaluate_strategy(parsed)
+        parsed_map: dict[str, Any] = dict(parsed_any) if isinstance(parsed_any, dict) else {}
+        parsed_map["symbol"] = symbol
+        strategy = evaluate_strategy(parsed_map)  # type: ignore[arg-type]
         return {
             "candles_count": len(candles),
             "strategy": strategy,
@@ -1581,9 +1816,7 @@ async def market_candles(
 async def market_resync(symbol: str, _: bool = Depends(require_auth)):
     try:
         # WS re-subscribe (idempotent skydd finns i subscribe)
-        await bitfinex_ws.subscribe_ticker(
-            symbol, bitfinex_ws._handle_ticker_with_strategy
-        )
+        await bitfinex_ws.subscribe_ticker(symbol, bitfinex_ws._handle_ticker_with_strategy)
         # Trigger omedelbar REST snapshot (värms upp cache)
         data = BitfinexDataService()
         _ = await data.get_ticker(symbol)
@@ -1599,11 +1832,12 @@ async def health(_: bool = Depends(require_auth)):
     try:
         from services.bitfinex_websocket import bitfinex_ws
 
+        pool = bitfinex_ws.get_pool_status()
         return {
             "rest": True,
             "ws_connected": bool(bitfinex_ws.is_connected),
             "ws_authenticated": bool(bitfinex_ws.is_authenticated),
-            "ws_pool": bitfinex_ws.get_pool_status(),
+            "ws_pool": pool if isinstance(pool, dict) else {},
         }
     except Exception as e:
         logger.exception(f"Health error: {e}")
@@ -1618,6 +1852,35 @@ async def ws_pool_status(_: bool = Depends(require_auth)):
         return bitfinex_ws.get_pool_status()
     except Exception as e:
         logger.exception(f"WS pool status error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/ws/subscribe")
+async def ws_subscribe(req: WSSubscribeRequest, _: bool = Depends(require_auth)):
+    try:
+        chan = (req.channel or "").lower()
+        sym = req.symbol
+        from services.bitfinex_websocket import bitfinex_ws
+
+        if chan == "ticker":
+            await bitfinex_ws.subscribe_ticker(sym, bitfinex_ws._handle_ticker_with_strategy)
+            sub_key = f"ticker|{sym}"
+        elif chan == "trades":
+            await bitfinex_ws.subscribe_trades(
+                sym, bitfinex_ws._handle_ticker_with_strategy
+            )  # återanvänd callback
+            sub_key = f"trades|{sym}"
+        elif chan == "candles":
+            tf = req.timeframe or "1m"
+            await bitfinex_ws.subscribe_candles(sym, tf, bitfinex_ws._handle_ticker_with_strategy)
+            sub_key = f"candles|trade:{tf}:{sym}"
+        else:
+            raise HTTPException(status_code=400, detail="invalid_channel")
+        return {"success": True, "sub_key": sub_key}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"WS subscribe error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -1655,9 +1918,7 @@ async def prob_predict(req: ProbPredictRequest, _: bool = Depends(require_auth))
         t0 = _t.time()
         # Hämta senaste candles för features
         data = BitfinexDataService()
-        closes_pack = await data.get_candles(
-            req.symbol, req.timeframe, limit=max(req.horizon, 50)
-        )
+        closes_pack = await data.get_candles(req.symbol, req.timeframe, limit=max(req.horizon, 50))
         if not closes_pack:
             return {
                 "source": "heuristic",
@@ -1667,11 +1928,7 @@ async def prob_predict(req: ProbPredictRequest, _: bool = Depends(require_auth))
                 "features": {},
             }
         # Bitfinex candle: [MTS, OPEN, CLOSE, HIGH, LOW, VOLUME]
-        closes = [
-            row[2]
-            for row in closes_pack
-            if isinstance(row, (list, tuple)) and len(row) >= 3
-        ]
+        closes = [row[2] for row in closes_pack if isinstance(row, (list, tuple)) and len(row) >= 3]
         if len(closes) < 5:
             return {
                 "source": "heuristic",
@@ -1690,8 +1947,6 @@ async def prob_predict(req: ProbPredictRequest, _: bool = Depends(require_auth))
         f_ema = 1.0 if price > ema else (-1.0 if price < ema else 0.0)
         # RSI proxy: normalisera senaste prisförändringen
         try:
-            import math
-
             delta = price - float(closes[-2])
             rsi_norm = max(min(delta / (abs(float(closes[-2])) + 1e-9), 1.0), -1.0)
         except Exception:
@@ -1717,21 +1972,67 @@ async def prob_predict(req: ProbPredictRequest, _: bool = Depends(require_auth))
         try:
             # metrics
             if decision == "abstain":
-                inc_labeled("prob_events", {"type": "abstain"})
+                inc_labeled(
+                    "prob_events",
+                    {"type": "abstain", "symbol": req.symbol, "tf": req.timeframe},
+                )
             else:
-                inc_labeled("prob_events", {"type": "trade", "side": side})
+                inc_labeled(
+                    "prob_events",
+                    {
+                        "type": "trade",
+                        "side": side,
+                        "symbol": req.symbol,
+                        "tf": req.timeframe,
+                    },
+                )
             inc_labeled(
                 "prob_events",
                 {
                     "type": "infer",
                     "source": ("model" if prob_model.enabled else "heuristic"),
+                    "symbol": req.symbol,
+                    "tf": req.timeframe,
                 },
+            )
+            # latens (sum + count)
+            inc_labeled(
+                "prob_infer_latency_ms_sum",
+                {"symbol": req.symbol, "tf": req.timeframe},
+                by=int(max(((_t.time()) - t0) * 1000, 0)),
+            )
+            inc_labeled(
+                "prob_infer_latency_ms_count",
+                {"symbol": req.symbol, "tf": req.timeframe},
+                by=1,
+            )
+
+            # EV och confidence bucketisering för enkel histogram-analys
+            def _bucket(val: float, edges: list[float]) -> str:
+                for _i, th in enumerate(edges):
+                    if val < th:
+                        return f"<{th}"
+                return f">={edges[-1]}"
+
+            ev_edges = [-0.002, -0.001, 0.0, 0.0005, 0.001, 0.002]
+            conf_edges = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+            ev_bucket = _bucket(best_ev, ev_edges)
+            conf_bucket = _bucket(confidence, conf_edges)
+            inc_labeled(
+                "prob_ev_bucket",
+                {"bucket": ev_bucket, "symbol": req.symbol, "tf": req.timeframe},
+                by=1,
+            )
+            inc_labeled(
+                "prob_conf_bucket",
+                {"bucket": conf_bucket, "symbol": req.symbol, "tf": req.timeframe},
+                by=1,
             )
         except Exception:
             pass
         t1 = _t.time()
         source = "model" if prob_model.enabled else "heuristic"
-        return {
+        out = {
             "source": source,
             "probabilities": {k: round(float(v), 6) for k, v in probs.items()},
             "confidence": round(confidence, 6),
@@ -1744,9 +2045,37 @@ async def prob_predict(req: ProbPredictRequest, _: bool = Depends(require_auth))
             "features": {"ema": f_ema, "rsi": f_rsi, "price": price, "ema_proxy": ema},
             "params": req.dict(),
         }
+        # Feature/decision‑loggning (ringbuffer)
+        try:
+            from config.settings import Settings as _S2
+            from services.metrics import metrics_store as _ms
+
+            s2 = _S2()
+            if bool(getattr(s2, "PROB_FEATURE_LOG_ENABLED", False)):
+                max_pts = int(getattr(s2, "PROB_FEATURE_LOG_MAX_POINTS", 500) or 500)
+                include_price = bool(getattr(s2, "PROB_FEATURE_LOG_INCLUDE_PRICE", False))
+                key = f"{req.symbol}|{req.timeframe}"
+                buf = _ms.setdefault("prob_feature_log", {}).setdefault(key, [])
+                item = {
+                    "ts": int(_t.time()),
+                    "source": source,
+                    "probs": out["probabilities"],
+                    "decision": decision,
+                    "ev": out["ev"],
+                    "conf": out["confidence"],
+                }
+                if include_price:
+                    item["price"] = price
+                item["f"] = {"ema": f_ema, "rsi": f_rsi}
+                buf.append(item)
+                if len(buf) > max_pts:
+                    del buf[: len(buf) - max_pts]
+        except Exception:
+            pass
+        return out
     except Exception as e:
         logger.exception(f"prob/predict error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/prob/status")
@@ -1764,14 +2093,12 @@ async def prob_status(_: bool = Depends(require_auth)):
             "version": prob_model.model_meta.get("version") if loaded else None,
             "thresholds": {
                 "ev": float(getattr(s, "PROB_MODEL_EV_THRESHOLD", 0.0) or 0.0),
-                "confidence": float(
-                    getattr(s, "PROB_MODEL_CONFIDENCE_MIN", 0.0) or 0.0
-                ),
+                "confidence": float(getattr(s, "PROB_MODEL_CONFIDENCE_MIN", 0.0) or 0.0),
             },
         }
     except Exception as e:
         logger.exception(f"prob/status error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 class ProbValidateRequest(BaseModel):
@@ -1825,7 +2152,311 @@ async def prob_validate(req: ProbValidateRequest, _: bool = Depends(require_auth
         return result
     except Exception as e:
         logger.exception(f"prob/validate error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+class ProbValidateRunRequest(BaseModel):
+    symbols: list[str] | None = None  # t.ex. ["tBTCUSD", "tETHUSD"]
+    timeframe: str = "1m"
+    limit: int = 1000
+    max_samples: int | None = 500
+
+
+@router.post("/prob/validate/run")
+async def prob_validate_run(req: ProbValidateRunRequest, _: bool = Depends(require_auth)):
+    """Kör validering direkt (utan att invänta schemaläggare) och uppdatera metrics."""
+    try:
+        data = BitfinexDataService()
+        s = Settings()
+        symbols: list[str]
+        if req.symbols and len(req.symbols) > 0:
+            symbols = req.symbols
+        else:
+            raw = (getattr(s, "PROB_VALIDATE_SYMBOLS", None) or "").strip()
+            if raw:
+                symbols = [x.strip() for x in raw.split(",") if x.strip()]
+            else:
+                env_syms = (getattr(s, "WS_SUBSCRIBE_SYMBOLS", None) or "").strip()
+                symbols = [x.strip() for x in env_syms.split(",") if x.strip()] or [
+                    f"t{getattr(s, 'DEFAULT_TRADING_PAIR', 'BTCUSD')}"
+                ]
+        tf = req.timeframe or str(getattr(s, "PROB_VALIDATE_TIMEFRAME", "1m") or "1m")
+        limit = int(req.limit or getattr(s, "PROB_VALIDATE_LIMIT", 1200) or 1200)
+        max_samples = int(req.max_samples or getattr(s, "PROB_VALIDATE_MAX_SAMPLES", 500) or 500)
+
+        out: dict[str, Any] = {}
+        agg_brier: list[float] = []
+        agg_logloss: list[float] = []
+        for sym in symbols:
+            candles = await data.get_candles(sym, tf, limit)
+            if not candles:
+                out[sym] = {"samples": 0, "brier": None, "logloss": None}
+                continue
+            res = validate_on_candles(
+                candles,
+                horizon=int(getattr(s, "PROB_MODEL_TIME_HORIZON", 20) or 20),
+                tp=float(getattr(s, "PROB_MODEL_EV_THRESHOLD", 0.0005) or 0.0005),
+                sl=float(getattr(s, "PROB_MODEL_EV_THRESHOLD", 0.0005) or 0.0005),
+                max_samples=max_samples,
+            )
+            out[sym] = res
+            try:
+                from services.metrics import metrics_store
+
+                key = f"{sym}|{tf}"
+                pv = metrics_store.setdefault("prob_validation", {})
+                by = pv.setdefault("by", {})
+                by[key] = {
+                    "brier": res.get("brier"),
+                    "logloss": res.get("logloss"),
+                    "ts": int(__import__("time").time()),
+                }
+                if res.get("brier") is not None:
+                    agg_brier.append(float(res["brier"]))
+                if res.get("logloss") is not None:
+                    agg_logloss.append(float(res["logloss"]))
+            except Exception:
+                pass
+        try:
+            from services.metrics import metrics_store
+
+            if agg_brier:
+                metrics_store.setdefault("prob_validation", {})["brier"] = sum(agg_brier) / max(
+                    1, len(agg_brier)
+                )
+            if agg_logloss:
+                metrics_store.setdefault("prob_validation", {})["logloss"] = sum(agg_logloss) / max(
+                    1, len(agg_logloss)
+                )
+        except Exception:
+            pass
+        return {"timeframe": tf, "results": out}
+    except Exception as e:
+        logger.exception(f"prob/validate/run error: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+class ProbRetrainRunRequest(BaseModel):
+    symbols: list[str] | None = None
+    timeframe: str = "1m"
+    limit: int = 5000
+    output_dir: str | None = None
+
+
+@router.post("/prob/retrain/run")
+async def prob_retrain_run(req: ProbRetrainRunRequest, _: bool = Depends(require_auth)):
+    """Kör retraining direkt och försök reloada modellen om PROB_MODEL_FILE matchar ny fil."""
+    try:
+        import os as _os
+
+        from services.prob_train import train_and_export
+        from services.symbols import SymbolService
+
+        s = Settings()
+        data = BitfinexDataService()
+        sym_svc = SymbolService()
+        await sym_svc.refresh()
+
+        if req.symbols and len(req.symbols) > 0:
+            symbols = req.symbols
+        else:
+            raw = (getattr(s, "PROB_RETRAIN_SYMBOLS", None) or "").strip()
+            if raw:
+                symbols = [x.strip() for x in raw.split(",") if x.strip()]
+            else:
+                env_syms = (getattr(s, "WS_SUBSCRIBE_SYMBOLS", None) or "").strip()
+                symbols = [x.strip() for x in env_syms.split(",") if x.strip()] or [
+                    f"t{getattr(s, 'DEFAULT_TRADING_PAIR', 'BTCUSD')}"
+                ]
+        tf = req.timeframe or str(getattr(s, "PROB_RETRAIN_TIMEFRAME", "1m") or "1m")
+        limit = int(req.limit or getattr(s, "PROB_RETRAIN_LIMIT", 5000) or 5000)
+        out_dir = req.output_dir or str(getattr(s, "PROB_RETRAIN_OUTPUT_DIR", "config/models"))
+        _os.makedirs(out_dir, exist_ok=True)
+
+        written: list[str] = []
+        for sym in symbols:
+            eff = sym_svc.resolve(sym)
+            candles = await data.get_candles(sym, tf, limit)
+            if not candles:
+                continue
+            horizon = int(getattr(s, "PROB_MODEL_TIME_HORIZON", 20) or 20)
+            tp = float(getattr(s, "PROB_MODEL_EV_THRESHOLD", 0.0005) or 0.0005)
+            sl = tp
+            clean = eff[1:] if eff.startswith("t") else eff
+            try:
+                import re as _re
+
+                clean = _re.sub(r"[^A-Za-z0-9_]", "_", clean)
+            except Exception:
+                pass
+            fname = f"{clean}_{tf}.json"
+            out_path = _os.path.join(out_dir, fname)
+            train_and_export(candles, horizon=horizon, tp=tp, sl=sl, out_path=out_path)
+            written.append(out_path)
+
+        # reload om matchar aktuell fil
+        try:
+            if written and getattr(prob_model.settings, "PROB_MODEL_FILE", None):
+                cur = str(prob_model.settings.PROB_MODEL_FILE)
+                if _os.path.abspath(cur) in [_os.path.abspath(w) for w in written]:
+                    prob_model.reload()
+        except Exception:
+            pass
+        return {"written": written, "reloaded": bool(prob_model.model_meta)}
+    except Exception as e:
+        logger.exception(f"prob/retrain/run error: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+# Prob konfig - hämta/uppdatera utan omstart
+class ProbConfigUpdateRequest(BaseModel):
+    model_enabled: bool | None = None
+    model_file: str | None = None
+    ev_threshold: float | None = None
+    confidence_min: float | None = None
+    autotrade_enabled: bool | None = None
+    size_max_risk_pct: float | None = None
+    size_kelly_cap: float | None = None
+    size_conf_weight: float | None = None
+    position_size_fallback_quote: float | None = None
+    # Validation controls
+    validate_enabled: bool | None = None
+    validate_symbols: str | None = None
+    validate_timeframe: str | None = None
+    validate_limit: int | None = None
+    # Retraining controls
+    retrain_enabled: bool | None = None
+    retrain_interval_hours: int | None = None
+    retrain_symbols: str | None = None
+    retrain_timeframe: str | None = None
+    retrain_limit: int | None = None
+
+
+class ProbFeatureLogQuery(BaseModel):
+    symbol: str | None = None
+    timeframe: str | None = None
+    limit: int = 100
+
+
+@router.get("/prob/config")
+async def prob_get_config(_: bool = Depends(require_auth)):
+    try:
+        s = Settings()
+        return {
+            "model_enabled": bool(getattr(s, "PROB_MODEL_ENABLED", False)),
+            "model_file": getattr(s, "PROB_MODEL_FILE", None),
+            "ev_threshold": float(getattr(s, "PROB_MODEL_EV_THRESHOLD", 0.0) or 0.0),
+            "confidence_min": float(getattr(s, "PROB_MODEL_CONFIDENCE_MIN", 0.0) or 0.0),
+            "autotrade_enabled": bool(getattr(s, "PROB_AUTOTRADE_ENABLED", False)),
+            "size_max_risk_pct": float(getattr(s, "PROB_SIZE_MAX_RISK_PCT", 0.0) or 0.0),
+            "size_kelly_cap": float(getattr(s, "PROB_SIZE_KELLY_CAP", 0.0) or 0.0),
+            "size_conf_weight": float(getattr(s, "PROB_SIZE_CONF_WEIGHT", 0.0) or 0.0),
+            "position_size_fallback_quote": float(
+                getattr(s, "POSITION_SIZE_FALLBACK_QUOTE", 0.0) or 0.0
+            ),
+            # Validation
+            "validate_enabled": bool(getattr(s, "PROB_VALIDATE_ENABLED", True)),
+            "validate_symbols": getattr(s, "PROB_VALIDATE_SYMBOLS", None),
+            "validate_timeframe": str(getattr(s, "PROB_VALIDATE_TIMEFRAME", "1m") or "1m"),
+            "validate_limit": int(getattr(s, "PROB_VALIDATE_LIMIT", 1200) or 1200),
+            # Retraining
+            "retrain_enabled": bool(getattr(s, "PROB_RETRAIN_ENABLED", False)),
+            "retrain_interval_hours": int(getattr(s, "PROB_RETRAIN_INTERVAL_HOURS", 24) or 24),
+            "retrain_symbols": getattr(s, "PROB_RETRAIN_SYMBOLS", None),
+            "retrain_timeframe": str(getattr(s, "PROB_RETRAIN_TIMEFRAME", "1m") or "1m"),
+            "retrain_limit": int(getattr(s, "PROB_RETRAIN_LIMIT", 5000) or 5000),
+            "loaded": bool(prob_model.enabled and prob_model.model_meta),
+        }
+    except Exception as e:
+        logger.exception(f"prob/config get error: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.post("/prob/config")
+async def prob_update_config(req: ProbConfigUpdateRequest, _: bool = Depends(require_auth)):
+    try:
+        import os as _os
+
+        # Skriv env och uppdatera runtime där det är relevant
+        if req.model_enabled is not None:
+            _os.environ["PROB_MODEL_ENABLED"] = "True" if req.model_enabled else "False"
+            prob_model.enabled = bool(req.model_enabled)
+        if req.model_file:
+            _os.environ["PROB_MODEL_FILE"] = str(req.model_file)
+            try:
+                prob_model.reload()
+            except Exception:
+                pass
+        if req.ev_threshold is not None:
+            _os.environ["PROB_MODEL_EV_THRESHOLD"] = str(float(req.ev_threshold))
+        if req.confidence_min is not None:
+            _os.environ["PROB_MODEL_CONFIDENCE_MIN"] = str(float(req.confidence_min))
+        if req.autotrade_enabled is not None:
+            _os.environ["PROB_AUTOTRADE_ENABLED"] = "True" if req.autotrade_enabled else "False"
+        if req.size_max_risk_pct is not None:
+            _os.environ["PROB_SIZE_MAX_RISK_PCT"] = str(float(req.size_max_risk_pct))
+        if req.size_kelly_cap is not None:
+            _os.environ["PROB_SIZE_KELLY_CAP"] = str(float(req.size_kelly_cap))
+        if req.size_conf_weight is not None:
+            _os.environ["PROB_SIZE_CONF_WEIGHT"] = str(float(req.size_conf_weight))
+        if req.position_size_fallback_quote is not None:
+            _os.environ["POSITION_SIZE_FALLBACK_QUOTE"] = str(
+                float(req.position_size_fallback_quote)
+            )
+        # Validation controls
+        if req.validate_enabled is not None:
+            _os.environ["PROB_VALIDATE_ENABLED"] = "True" if req.validate_enabled else "False"
+        if req.validate_symbols is not None:
+            _os.environ["PROB_VALIDATE_SYMBOLS"] = str(req.validate_symbols)
+        if req.validate_timeframe is not None:
+            _os.environ["PROB_VALIDATE_TIMEFRAME"] = str(req.validate_timeframe)
+        if req.validate_limit is not None:
+            _os.environ["PROB_VALIDATE_LIMIT"] = str(int(req.validate_limit))
+        # Retraining controls
+        if req.retrain_enabled is not None:
+            _os.environ["PROB_RETRAIN_ENABLED"] = "True" if req.retrain_enabled else "False"
+        if req.retrain_interval_hours is not None:
+            _os.environ["PROB_RETRAIN_INTERVAL_HOURS"] = str(int(req.retrain_interval_hours))
+        if req.retrain_symbols is not None:
+            _os.environ["PROB_RETRAIN_SYMBOLS"] = str(req.retrain_symbols)
+        if req.retrain_timeframe is not None:
+            _os.environ["PROB_RETRAIN_TIMEFRAME"] = str(req.retrain_timeframe)
+        if req.retrain_limit is not None:
+            _os.environ["PROB_RETRAIN_LIMIT"] = str(int(req.retrain_limit))
+
+        # metrics: registrera uppdatering
+        try:
+            inc_labeled("prob_events", {"type": "config_update"})
+        except Exception:
+            pass
+
+        return await prob_get_config(True)  # återanvänd GET
+    except Exception as e:
+        logger.exception(f"prob/config update error: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.post("/prob/featlog")
+async def prob_feature_log(q: ProbFeatureLogQuery, _: bool = Depends(require_auth)):
+    try:
+        from services.metrics import metrics_store as _ms
+
+        logs = _ms.get("prob_feature_log", {}) or {}
+        if q.symbol and q.timeframe:
+            key = f"{q.symbol}|{q.timeframe}"
+            arr = list(logs.get(key, []))[-int(max(q.limit, 1)) :]
+            return {key: arr}
+        # annars returnera allt (sista 'limit' per nyckel)
+        out: dict[str, list[dict]] = {}
+        for k, v in logs.items():
+            try:
+                out[k] = list(v)[-int(max(q.limit, 1)) :]
+            except Exception:
+                out[k] = []
+        return out
+    except Exception as e:
+        logger.exception(f"prob/featlog error: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # Symbols endpoint
@@ -1854,13 +2485,13 @@ async def market_symbols(
         return filtered
     except Exception as e:
         logger.exception(f"Fel vid symbols: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # Watchlist endpoint (liten vy) med ticker + volym + senaste strategi-signal
 @router.get("/market/watchlist")
 async def market_watchlist(
-    symbols: Optional[str] = None, prob: bool = False, _: bool = Depends(require_auth)
+    symbols: str | None = None, prob: bool = False, _: bool = Depends(require_auth)
 ):
     try:
         svc = SymbolService()
@@ -1952,17 +2583,23 @@ async def market_watchlist(
             strat = None
             strat_5m = None
             if candles:
-                parsed = data.parse_candles_to_strategy_data(candles)
+                parsed_any = data.parse_candles_to_strategy_data(candles)
                 from services.strategy import evaluate_strategy
 
-                parsed["symbol"] = s
-                strat = evaluate_strategy(parsed)
+                parsed_map: dict[str, Any] = (
+                    dict(parsed_any) if isinstance(parsed_any, dict) else {}
+                )
+                parsed_map["symbol"] = s
+                strat = evaluate_strategy(parsed_map)  # type: ignore[arg-type]
             if candles_5m:
-                parsed5 = data.parse_candles_to_strategy_data(candles_5m)
+                parsed_any5 = data.parse_candles_to_strategy_data(candles_5m)
                 from services.strategy import evaluate_strategy as eval5
 
-                parsed5["symbol"] = s
-                strat_5m = eval5(parsed5)
+                parsed_map5: dict[str, Any] = (
+                    dict(parsed_any5) if isinstance(parsed_any5, dict) else {}
+                )
+                parsed_map5["symbol"] = s
+                strat_5m = eval5(parsed_map5)  # type: ignore[arg-type]
             item = {
                 "symbol": s,
                 "eff_symbol": eff,
@@ -1991,27 +2628,22 @@ async def market_watchlist(
                         ]
                         price = float(closes[-1]) if len(closes) >= 1 else None
                         ema = (
-                            sum(closes[-10:]) / min(10, len(closes))
-                            if len(closes) >= 1
-                            else price
+                            sum(closes[-10:]) / min(10, len(closes)) if len(closes) >= 1 else price
                         )
                         f_ema = (
                             1.0
                             if (price is not None and ema is not None and price > ema)
                             else (
                                 -1.0
-                                if (
-                                    price is not None
-                                    and ema is not None
-                                    and price < ema
-                                )
+                                if (price is not None and ema is not None and price < ema)
                                 else 0.0
                             )
                         )
                         try:
                             delta = float(closes[-1]) - float(closes[-2])
                             rsi_norm = max(
-                                min(delta / (abs(float(closes[-2])) + 1e-9), 1.0), -1.0
+                                min(delta / (abs(float(closes[-2])) + 1e-9), 1.0),
+                                -1.0,
                             )
                         except Exception:
                             rsi_norm = 0.0
@@ -2020,12 +2652,8 @@ async def market_watchlist(
                         from config.settings import Settings as _S
 
                         s2 = _S()
-                        ev_th = float(
-                            getattr(s2, "PROB_MODEL_EV_THRESHOLD", 0.0) or 0.0
-                        )
-                        conf_th = float(
-                            getattr(s2, "PROB_MODEL_CONFIDENCE_MIN", 0.0) or 0.0
-                        )
+                        ev_th = float(getattr(s2, "PROB_MODEL_EV_THRESHOLD", 0.0) or 0.0)
+                        conf_th = float(getattr(s2, "PROB_MODEL_CONFIDENCE_MIN", 0.0) or 0.0)
                         p_buy = float(probs.get("buy", 0.0))
                         p_sell = float(probs.get("sell", 0.0))
                         ev_buy = p_buy * 0.002 - p_sell * 0.002 - 0.0003
@@ -2046,9 +2674,9 @@ async def market_watchlist(
                     pass
             out.append(item)
         return out
-    except Exception:
+    except Exception as e:
         logger.exception("Fel vid watchlist")
-        raise HTTPException(status_code=500, detail="internal_error")
+        raise HTTPException(status_code=500, detail="internal_error") from e
 
 
 # Backtest endpoint
@@ -2066,9 +2694,9 @@ async def strategy_backtest(payload: BacktestRequest, _: bool = Depends(require_
         tz_off = payload.tz_offset_minutes or 0
         result = await svc.run(payload.symbol, payload.timeframe, payload.limit, tz_off)
         return result
-    except Exception:
+    except Exception as e:
         logger.exception("Backtest fel")
-        raise HTTPException(status_code=500, detail="internal_error")
+        raise HTTPException(status_code=500, detail="internal_error") from e
 
 
 # --- Auto trading controls ---
@@ -2084,7 +2712,7 @@ async def auto_start(req: AutoStartRequest, _: bool = Depends(require_auth)):
         return {"ok": True, "symbol": req.symbol}
     except Exception as e:
         logger.exception(f"Fel vid auto/start: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/auto/stop")
@@ -2095,7 +2723,7 @@ async def auto_stop(req: AutoStartRequest, _: bool = Depends(require_auth)):
         return {"ok": True, "symbol": req.symbol}
     except Exception as e:
         logger.exception(f"Fel vid auto/stop: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/auto/status")
@@ -2108,12 +2736,12 @@ async def auto_status(_: bool = Depends(require_auth)):
         }
     except Exception as e:
         logger.exception(f"Fel vid auto/status: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # Batch/Stop-all endpoints
 class AutoBatchRequest(BaseModel):
-    symbols: List[str]
+    symbols: list[str]
 
 
 @router.post("/auto/stop-all")
@@ -2124,13 +2752,13 @@ async def auto_stop_all(_: bool = Depends(require_auth)):
         return {"ok": True}
     except Exception as e:
         logger.exception(f"Fel vid auto/stop-all: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/auto/start-batch")
 async def auto_start_batch(req: AutoBatchRequest, _: bool = Depends(require_auth)):
     try:
-        started: List[str] = []
+        started: list[str] = []
         for sym in req.symbols:
             s = sym.strip()
             if not s:
@@ -2141,20 +2769,16 @@ async def auto_start_batch(req: AutoBatchRequest, _: bool = Depends(require_auth
             except Exception as ie:
                 logger.warning(f"Kunde inte starta {s}: {ie}")
         if started:
-            _emit_notification(
-                "info", "Auto trading startad (batch)", {"symbols": started}
-            )
+            _emit_notification("info", "Auto trading startad (batch)", {"symbols": started})
         return {"ok": True, "started": started}
     except Exception as e:
         logger.exception(f"Fel vid auto/start-batch: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # Bracket order endpoint
 @router.post("/order/bracket", response_model=OrderResponse)
-async def place_bracket_order(
-    req: BracketOrderRequest, _: bool = Depends(require_auth)
-):
+async def place_bracket_order(req: BracketOrderRequest, _: bool = Depends(require_auth)):
     try:
         logger.info(f"Mottog bracket-order: {req.dict()}")
         # Rate-limit skydd
@@ -2178,17 +2802,14 @@ async def place_bracket_order(
             return OrderResponse(success=False, error=f"risk_blocked:{reason}")
 
         # Hjälpare: extrahera order-id från Bitfinex svar (kan vara list-format)
-        def _extract_order_id(res: Any) -> int | None:
+        def _extract_order_id(res: dict | list | None) -> int | None:
             try:
                 if isinstance(res, dict):
-                    return res.get("order_id") or res.get("id")
+                    val = res.get("order_id") or res.get("id")
+                    return int(val) if val is not None else None
                 if isinstance(res, list) and len(res) >= 5:
                     orders = res[4]
-                    if (
-                        isinstance(orders, list)
-                        and len(orders) > 0
-                        and isinstance(orders[0], list)
-                    ):
+                    if isinstance(orders, list) and len(orders) > 0 and isinstance(orders[0], list):
                         return int(orders[0][0])
             except Exception:
                 return None
@@ -2202,17 +2823,26 @@ async def place_bracket_order(
             "side": req.side,
         }
         if req.entry_type and "LIMIT" in req.entry_type.upper():
-            entry_payload["price"] = req.entry_price
+            if req.entry_price is not None:
+                entry_payload["price"] = req.entry_price
         # Flaggor
         if "post_only" in req.__fields_set__:
-            entry_payload["post_only"] = req.post_only
+            entry_payload["post_only"] = bool(req.post_only)
         # Validera payload
         is_valid, err = order_validator.validate_order(entry_payload)
         if not is_valid:
             return OrderResponse(success=False, error=f"validation_error:{err}")
         entry_res = await rest_auth.place_order(entry_payload)
         if "error" in entry_res:
-            return OrderResponse(success=False, error=entry_res.get("error"))
+            # Försök WS fallback 'on'
+            try:
+                from services.bitfinex_websocket import bitfinex_ws as _ws
+
+                ws_res = await _ws.order_ops([["on", entry_payload]])
+                if not bool(ws_res.get("success")):
+                    return OrderResponse(success=False, error=entry_res.get("error"))
+            except Exception:
+                return OrderResponse(success=False, error=entry_res.get("error"))
         entry_id = _extract_order_id(entry_res)
         if not entry_id:
             return OrderResponse(success=False, error="entry_id_missing")
@@ -2223,9 +2853,7 @@ async def place_bracket_order(
         if req.sl_price:
             sl_payload = {
                 "symbol": req.symbol,
-                "amount": (
-                    req.amount if req.side.lower() == "sell" else f"-{req.amount}"
-                ),
+                "amount": (req.amount if req.side.lower() == "sell" else f"-{req.amount}"),
                 "type": "EXCHANGE STOP",
                 "price": req.sl_price,
                 "side": "sell" if req.side.lower() == "buy" else "buy",
@@ -2234,15 +2862,22 @@ async def place_bracket_order(
             if not is_valid:
                 return OrderResponse(success=False, error=f"validation_error:{err}")
             sl_res = await rest_auth.place_order(sl_payload)
-            if "error" not in sl_res:
+            if "error" in sl_res:
+                try:
+                    from services.bitfinex_websocket import bitfinex_ws as _ws
+
+                    ws_res = await _ws.order_ops([["on", sl_payload]])
+                    if bool(ws_res.get("success")):
+                        sl_id = None  # WS-id fås via privata callbacks, leave None
+                except Exception:
+                    pass
+            else:
                 sl_id = _extract_order_id(sl_res)
         # TP
         if req.tp_price:
             tp_payload = {
                 "symbol": req.symbol,
-                "amount": (
-                    req.amount if req.side.lower() == "sell" else f"-{req.amount}"
-                ),
+                "amount": (req.amount if req.side.lower() == "sell" else f"-{req.amount}"),
                 "type": "EXCHANGE LIMIT",
                 "price": req.tp_price,
                 "side": "sell" if req.side.lower() == "buy" else "buy",
@@ -2251,7 +2886,16 @@ async def place_bracket_order(
             if not is_valid:
                 return OrderResponse(success=False, error=f"validation_error:{err}")
             tp_res = await rest_auth.place_order(tp_payload)
-            if "error" not in tp_res:
+            if "error" in tp_res:
+                try:
+                    from services.bitfinex_websocket import bitfinex_ws as _ws
+
+                    ws_res = await _ws.order_ops([["on", tp_payload]])
+                    if bool(ws_res.get("success")):
+                        tp_id = None
+                except Exception:
+                    pass
+            else:
                 tp_id = _extract_order_id(tp_res)
 
         gid = f"br_{entry_id}"
@@ -2266,9 +2910,22 @@ async def place_bracket_order(
                 "symbol": req.symbol,
             },
         )
-        return OrderResponse(
+        resp_obj = OrderResponse(
             success=True, data={"entry_id": entry_id, "sl_id": sl_id, "tp_id": tp_id}
         )
+        # Spara idempotensrespons om client_id angiven
+        try:
+            if hasattr(req, "client_id") and getattr(req, "client_id", None):
+                from services.metrics import metrics_store as _ms
+
+                cache = _ms.setdefault("request_id_cache", {})
+                cache[str(req.client_id)] = {
+                    "ts": int(__import__("time").time()),
+                    "resp": resp_obj.dict(),
+                }
+        except Exception:
+            pass
+        return resp_obj
     except Exception as e:
         logger.exception(f"Fel vid bracket-order: {e}")
         return OrderResponse(success=False, error=str(e))
@@ -2288,7 +2945,7 @@ async def get_trading_windows(_: bool = Depends(require_auth)):
         }
     except Exception as e:
         logger.exception(f"Fel vid hämtning av trading windows: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/risk/pause")
@@ -2300,7 +2957,7 @@ async def pause_trading(_: bool = Depends(require_auth)):
         return {"success": True, "paused": True}
     except Exception as e:
         logger.exception(f"Fel vid paus: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/risk/resume")
@@ -2312,7 +2969,7 @@ async def resume_trading(_: bool = Depends(require_auth)):
         return {"success": True, "paused": False}
     except Exception as e:
         logger.exception(f"Fel vid resume: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # Performance breakdown per symbol
@@ -2328,7 +2985,7 @@ async def get_account_performance_detail(_: bool = Depends(require_auth)):
         positions = await pos_svc.get_positions()
 
         # Hjälp: parse symbol till (base, quote)
-        def parse_bq(sym: str) -> Dict[str, str]:
+        def parse_bq(sym: str) -> dict[str, str]:
             s = sym[1:] if sym.startswith("t") else sym
             if ":" in s:
                 base, quote = s.split(":", 1)
@@ -2337,9 +2994,9 @@ async def get_account_performance_detail(_: bool = Depends(require_auth)):
             return {"base": base.upper(), "quote": quote.upper()}
 
         # PnL per symbol + positionsinfo med current price
-        pnl_by_symbol: Dict[str, float] = {}
-        positions_info: List[Dict[str, Any]] = []
-        prices_cache: Dict[str, float] = {}
+        pnl_by_symbol: dict[str, float] = {}
+        positions_info: list[dict[str, Any]] = []
+        prices_cache: dict[str, float] = {}
 
         for p in positions:
             # Hämta current price (cache per symbol)
@@ -2368,9 +3025,9 @@ async def get_account_performance_detail(_: bool = Depends(require_auth)):
             )
 
         # Per-symbol wallets (summa av base- och quote-valutor över alla wallet-typer)
-        wallets_by_symbol: Dict[str, Dict[str, Any]] = {}
+        wallets_by_symbol: dict[str, dict[str, Any]] = {}
         # För snabb uppslagning: summera per currency
-        totals_by_currency: Dict[str, Dict[str, float]] = {}
+        totals_by_currency: dict[str, dict[str, float]] = {}
         for w in wallets:
             cur = w.currency.upper()
             e = totals_by_currency.setdefault(
@@ -2415,7 +3072,7 @@ async def get_account_performance_detail(_: bool = Depends(require_auth)):
         }
     except Exception as e:
         logger.exception(f"Fel vid performance/detail: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # Risk endpoints
@@ -2430,9 +3087,7 @@ async def get_risk_status(_: bool = Depends(require_auth)):
 
 
 @router.post("/risk/max-trades")
-async def update_max_trades(
-    req: UpdateMaxTradesRequest, _: bool = Depends(require_auth)
-):
+async def update_max_trades(req: UpdateMaxTradesRequest, _: bool = Depends(require_auth)):
     # Uppdatera i runtime settings (enkel variant). Permanent lagring kräver filskrivning.
     try:
         s = Settings()
@@ -2445,7 +3100,7 @@ async def update_max_trades(
         return {"success": True, "status": rm.status()}
     except Exception as e:
         logger.exception(f"Fel vid uppdatering av max trades: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 class UpdateMaxTradesSymbolRequest(BaseModel):
@@ -2464,7 +3119,7 @@ async def update_max_trades_symbol(
         return {"success": True, "status": rm.status()}
     except Exception as e:
         logger.exception(f"Fel vid uppdatering av max trades per symbol: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/risk/trade-counter")
@@ -2474,15 +3129,15 @@ async def get_trade_counter(_: bool = Depends(require_auth)):
         return rm.trade_counter.stats()
     except Exception as e:
         logger.exception(f"Fel vid hämtning av trade counter: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # --- Circuit Breaker endpoints ---
 class CircuitConfigRequest(BaseModel):
-    enabled: Optional[bool] = None
-    window_seconds: Optional[int] = None
-    max_errors_per_window: Optional[int] = None
-    notify: Optional[bool] = None
+    enabled: bool | None = None
+    window_seconds: int | None = None
+    max_errors_per_window: int | None = None
+    notify: bool | None = None
 
 
 @router.get("/risk/circuit")
@@ -2492,7 +3147,7 @@ async def circuit_status(_: bool = Depends(require_auth)):
         return rm.status().get("circuit", {})
     except Exception as e:
         logger.exception(f"Fel vid circuit status: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/risk/circuit/reset")
@@ -2504,7 +3159,7 @@ async def circuit_reset(
         return rm.circuit_reset(resume=resume, clear_errors=clear_errors)
     except Exception as e:
         logger.exception(f"Fel vid circuit reset: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/risk/circuit/config")
@@ -2519,7 +3174,7 @@ async def circuit_config(req: CircuitConfigRequest, _: bool = Depends(require_au
         )
     except Exception as e:
         logger.exception(f"Fel vid circuit config: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # Bracket state admin
@@ -2539,7 +3194,7 @@ async def bracket_reset(req: BracketResetRequest, _: bool = Depends(require_auth
         return {"success": True, "cleared": cleared}
     except Exception as e:
         logger.exception(f"Fel vid bracket reset: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # Metrics endpoint (Prometheus text format)
@@ -2549,7 +3204,6 @@ async def metrics(_: bool = Depends(require_auth)):
         # Valfri token‑kontroll om satt i settings
         token_required = getattr(settings, "METRICS_ACCESS_TOKEN", None)
         if token_required:
-
             # Hämta bearer token från Authorization
             # Om du vill kan du byta till queryparam ?token=
             def _get_auth_header() -> str:
@@ -2580,16 +3234,27 @@ async def metrics(_: bool = Depends(require_auth)):
         except Exception:
             pass
         text = render_prometheus_text()
+        # Bifoga senaste prob_trade_outcome som JSON‑kommentar för enkel UI‑parsning
+        try:
+            from services.metrics import metrics_store as _ms
+
+            last = _ms.get("prob_trade_last") or {}
+            if last:
+                import json as _json
+
+                text += "# prob_trade_last_json " + _json.dumps(last) + "\n"
+        except Exception:
+            pass
         return Response(content=text, media_type="text/plain; version=0.0.4")
     except Exception as e:
         logger.exception(f"Fel vid metrics: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # Candle cache admin
 class CacheClearRequest(BaseModel):
-    symbol: Optional[str] = None
-    timeframe: Optional[str] = None
+    symbol: str | None = None
+    timeframe: str | None = None
 
 
 class BackfillRequest(BaseModel):
@@ -2605,7 +3270,7 @@ async def cache_candles_stats(_: bool = Depends(require_auth)):
         return candle_cache.stats()
     except Exception as e:
         logger.exception(f"Fel vid cache stats: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/cache/candles/clear")
@@ -2632,7 +3297,7 @@ async def cache_candles_clear(req: CacheClearRequest, _: bool = Depends(require_
         return {"success": True, "deleted": n}
     except Exception as e:
         logger.exception(f"Fel vid cache clear: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/cache/candles/backfill")
@@ -2650,7 +3315,7 @@ async def cache_candles_backfill(req: BackfillRequest, _: bool = Depends(require
         return {"success": True, "inserted": inserted}
     except Exception as e:
         logger.exception(f"Fel vid cache backfill: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # Equity endpoints
@@ -2662,7 +3327,7 @@ async def get_equity(_: bool = Depends(require_auth)):
         return equity
     except Exception as e:
         logger.exception(f"Fel vid equity: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/account/equity/snapshot")
@@ -2673,34 +3338,34 @@ async def equity_snapshot(_: bool = Depends(require_auth)):
         return snap
     except Exception as e:
         logger.exception(f"Fel vid equity snapshot: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/account/equity/history")
-async def equity_history(limit: Optional[int] = None, _: bool = Depends(require_auth)):
+async def equity_history(limit: int | None = None, _: bool = Depends(require_auth)):
     try:
         perf = PerformanceService()
         hist = perf.get_equity_history(limit=limit)
         return {"equity": hist}
     except Exception as e:
         logger.exception(f"Fel vid equity history: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # Order Templates endpoints
 class SaveTemplateRequest(BaseModel):
     name: str
-    symbol: Optional[str] = None
-    side: Optional[str] = None
-    type: Optional[str] = None
-    amount: Optional[str] = None
-    price: Optional[str] = None
-    sl_price: Optional[str] = None
-    tp_price: Optional[str] = None
+    symbol: str | None = None
+    side: str | None = None
+    type: str | None = None
+    amount: str | None = None
+    price: str | None = None
+    sl_price: str | None = None
+    tp_price: str | None = None
 
 
 class TemplatesPayload(BaseModel):
-    templates: List[Dict[str, Any]]
+    templates: list[dict[str, Any]]
 
 
 # --- Runtime mode (Core Mode) ---
@@ -2716,9 +3381,7 @@ async def get_core_mode_status(_: bool = Depends(require_auth)):
 
 
 @router.post("/mode/core")
-async def set_core_mode_status(
-    payload: CoreModeRequest, _: bool = Depends(require_auth)
-):
+async def set_core_mode_status(payload: CoreModeRequest, _: bool = Depends(require_auth)):
     try:
         # Spara nuvarande rate-limit för återställning
         try:
@@ -2745,9 +3408,7 @@ async def set_core_mode_status(
             prev = get_prev_rate_limit()
             if prev:
                 try:
-                    settings.ORDER_RATE_LIMIT_MAX, settings.ORDER_RATE_LIMIT_WINDOW = (
-                        prev
-                    )
+                    settings.ORDER_RATE_LIMIT_MAX, settings.ORDER_RATE_LIMIT_WINDOW = prev
                 except Exception:
                     pass
 
@@ -2760,7 +3421,38 @@ async def set_core_mode_status(
         return {"core_mode": bool(payload.enabled)}
     except Exception as e:
         logger.exception(f"Fel vid core-mode toggle: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+# --- Runtime toggles: WS strategy & Validation warmup ---
+@router.get("/mode/ws-strategy")
+async def get_ws_strategy(_: bool = Depends(require_auth)):
+    return {"ws_strategy_enabled": bool(get_ws_strategy_enabled())}
+
+
+@router.post("/mode/ws-strategy")
+async def set_ws_strategy(payload: CoreModeRequest, _: bool = Depends(require_auth)):
+    try:
+        set_ws_strategy_enabled(bool(payload.enabled))
+        return {"ok": True, "ws_strategy_enabled": bool(get_ws_strategy_enabled())}
+    except Exception as e:
+        logger.exception(f"Fel vid set ws-strategy: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.get("/mode/validation-warmup")
+async def get_validation_warmup(_: bool = Depends(require_auth)):
+    return {"validation_on_start": bool(get_validation_on_start())}
+
+
+@router.post("/mode/validation-warmup")
+async def set_validation_warmup(payload: CoreModeRequest, _: bool = Depends(require_auth)):
+    try:
+        set_validation_on_start(bool(payload.enabled))
+        return {"ok": True, "validation_on_start": bool(get_validation_on_start())}
+    except Exception as e:
+        logger.exception(f"Fel vid set validation-warmup: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # OBS: GET /order/templates togs bort för att undvika kollision med /order/{order_id} (int)
@@ -2776,26 +3468,24 @@ async def get_template(name: str, _: bool = Depends(require_auth)):
         return tpl
     except HTTPException:
         raise
-    except Exception:
+    except Exception as e:
         logger.exception("Fel vid get_template")
-        raise HTTPException(status_code=500, detail="internal_error")
+        raise HTTPException(status_code=500, detail="internal_error") from e
 
 
 @router.post("/order/templates")
 async def save_template(payload: SaveTemplateRequest, _: bool = Depends(require_auth)):
     try:
         svc = OrderTemplatesService()
-        result = svc.save_template(
-            {k: v for k, v in payload.dict().items() if v is not None}
-        )
+        result = svc.save_template({k: v for k, v in payload.dict().items() if v is not None})
         return result
     except Exception as e:
         logger.exception(f"Fel vid save_template: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # Alias endpoints för att undvika kollision med /order/{order_id}
-@router.get("/orders/templates", response_model=List[Dict[str, Any]])
+@router.get("/orders/templates", response_model=list[dict[str, Any]])
 async def list_templates_alias(_: bool = Depends(require_auth)):
     try:
         svc = OrderTemplatesService()
@@ -2821,17 +3511,17 @@ async def import_templates(payload: TemplatesPayload, _: bool = Depends(require_
         return {"imported": count}
     except Exception as e:
         logger.exception(f"Fel vid import_templates: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@router.get("/orders/templates/export", response_model=List[Dict[str, Any]])
+@router.get("/orders/templates/export", response_model=list[dict[str, Any]])
 async def export_templates(_: bool = Depends(require_auth)):
     try:
         svc = OrderTemplatesService()
         return svc.list_templates()
     except Exception as e:
         logger.exception(f"Fel vid export_templates: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.delete("/order/templates/{name}")
@@ -2844,39 +3534,33 @@ async def delete_template(name: str, _: bool = Depends(require_auth)):
         return {"deleted": True, "name": name}
     except HTTPException:
         raise
-    except Exception:
+    except Exception as e:
         logger.exception("Fel vid delete_template")
-        raise HTTPException(status_code=500, detail="internal_error")
+        raise HTTPException(status_code=500, detail="internal_error") from e
 
 
 @router.post("/orders/templates")
-async def save_template_alias(
-    payload: SaveTemplateRequest, _: bool = Depends(require_auth)
-):
+async def save_template_alias(payload: SaveTemplateRequest, _: bool = Depends(require_auth)):
     try:
         svc = OrderTemplatesService()
-        result = svc.save_template(
-            {k: v for k, v in payload.dict().items() if v is not None}
-        )
+        result = svc.save_template({k: v for k, v in payload.dict().items() if v is not None})
         return result
     except Exception as e:
         logger.exception(f"Fel vid save_template (alias): {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 class UpdateWindowsRequest(BaseModel):
-    timezone: Optional[str] = None
-    windows: Optional[Dict[str, List[List[str]]]] = None
-    paused: Optional[bool] = None
-    max_trades_per_symbol_per_day: Optional[int] = None
-    max_trades_per_day: Optional[int] = None
-    trade_cooldown_seconds: Optional[int] = None
+    timezone: str | None = None
+    windows: dict[str, list[list[str]]] | None = None
+    paused: bool | None = None
+    max_trades_per_symbol_per_day: int | None = None
+    max_trades_per_day: int | None = None
+    trade_cooldown_seconds: int | None = None
 
 
 @router.post("/risk/windows")
-async def update_trading_windows(
-    req: UpdateWindowsRequest, _: bool = Depends(require_auth)
-):
+async def update_trading_windows(req: UpdateWindowsRequest, _: bool = Depends(require_auth)):
     try:
         s = Settings()
         tw = TradingWindowService(s)
@@ -2896,4 +3580,4 @@ async def update_trading_windows(
         return {"success": True, "status": rm.status()}
     except Exception as e:
         logger.exception(f"Fel vid uppdatering av trading windows: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e

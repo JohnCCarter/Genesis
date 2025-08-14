@@ -26,17 +26,17 @@ logger = get_logger(__name__)
 class TradeCounterState:
     day: date
     count: int = 0
-    last_trade_ts: Optional[datetime] = None
+    last_trade_ts: datetime | None = None
 
 
 class TradeCounterService:
-    def __init__(self, settings: Optional[Settings] = None):
+    def __init__(self, settings: Settings | None = None):
         self.settings = settings or Settings()
         has_zoneinfo = ZoneInfo is not None
         self.tz = ZoneInfo(self.settings.TIMEZONE) if has_zoneinfo else None
         self.state = TradeCounterState(day=self._today())
         # Per-symbol räknare (persistens)
-        self.symbol_counts: Dict[str, int] = {}
+        self.symbol_counts: dict[str, int] = {}
         # Läser dynamiska gränser (max trades/dag, cooldown) via TradingWindow
         self.trading_window = TradingWindowService(self.settings)
         self._load_state()
@@ -111,14 +111,13 @@ class TradeCounterService:
             day_str = data.get("day")
             if day_str:
                 try:
-                    y, m, d = [int(x) for x in day_str.split("-")]
+                    y, m, d = (int(x) for x in day_str.split("-"))
                     self.state.day = date(y, m, d)
                 except Exception:
                     self.state.day = self._today()
             self.state.count = int(data.get("count", 0))
             self.symbol_counts = {
-                str(k).upper(): int(v)
-                for k, v in (data.get("per_symbol", {}) or {}).items()
+                str(k).upper(): int(v) for k, v in (data.get("per_symbol", {}) or {}).items()
             }
         except Exception:
             # korrupt fil – börja om

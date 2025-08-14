@@ -77,9 +77,7 @@ class BitfinexAuthScraper:
 
         # Kontrollera om cachen finns och är giltig
         if cache_file.exists():
-            file_age = datetime.now() - datetime.fromtimestamp(
-                cache_file.stat().st_mtime
-            )
+            file_age = datetime.now() - datetime.fromtimestamp(cache_file.stat().st_mtime)
             if file_age < timedelta(days=self.cache_validity_days):
                 try:
                     with open(cache_file, "r", encoding="utf-8") as f:
@@ -177,14 +175,10 @@ class BitfinexAuthScraper:
                     elif "language-python" in parent_classes:
                         lang = "python"
 
-                result["examples"].append(
-                    {"language": lang, "code": block.get_text(strip=True)}
-                )
+                result["examples"].append({"language": lang, "code": block.get_text(strip=True)})
 
         # Extrahera autentiseringsprocessen
-        auth_process = soup.find(
-            string=re.compile("authentication procedure", re.IGNORECASE)
-        )
+        auth_process = soup.find(string=re.compile("authentication procedure", re.IGNORECASE))
         if auth_process and auth_process.parent:
             process_list = auth_process.parent.find_next("ul")
             if process_list:
@@ -270,9 +264,7 @@ class BitfinexAuthScraper:
                     endpoint_name = item.get_text(strip=True)
                     endpoint_url = link.get("href") if link else None
 
-                    section["endpoints"].append(
-                        {"name": endpoint_name, "url": endpoint_url}
-                    )
+                    section["endpoints"].append({"name": endpoint_name, "url": endpoint_url})
 
             if section["endpoints"]:
                 endpoint_sections.append(section)
@@ -375,10 +367,7 @@ class BitfinexAuthScraper:
             event_headers = soup.find_all(
                 ["h3"],
                 string=lambda text: text
-                and any(
-                    keyword in text.lower()
-                    for keyword in ["list of account", "list of ws"]
-                ),
+                and any(keyword in text.lower() for keyword in ["list of account", "list of ws"]),
             )
 
         for header in event_headers:
@@ -521,25 +510,17 @@ class BitfinexAuthScraper:
             for param in self.ws_auth_info.get("auth_parameters", []):
                 field = param.get("field")
                 if field == "authNonce":
-                    recommendations["websocket"]["payload_format"][
-                        "nonce"
-                    ] = "authNonce"
+                    recommendations["websocket"]["payload_format"]["nonce"] = "authNonce"
                 elif field == "authPayload":
-                    recommendations["websocket"]["payload_format"][
-                        "payload"
-                    ] = "authPayload"
+                    recommendations["websocket"]["payload_format"]["payload"] = "authPayload"
                 elif field == "authSig":
-                    recommendations["websocket"]["payload_format"][
-                        "signature"
-                    ] = "authSig"
+                    recommendations["websocket"]["payload_format"]["signature"] = "authSig"
                 elif field == "apiKey":
                     recommendations["websocket"]["payload_format"]["api_key"] = "apiKey"
 
             nonce_info = self.ws_auth_info.get("nonce_info", {})
             if nonce_info.get("description"):
-                recommendations["websocket"]["nonce_info"] = nonce_info.get(
-                    "description"
-                )
+                recommendations["websocket"]["nonce_info"] = nonce_info.get("description")
 
         return recommendations
 

@@ -8,9 +8,7 @@ from typing import Any, Dict, List, Optional
 from bs4 import BeautifulSoup
 
 # Konfigurera loggning
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
@@ -65,9 +63,7 @@ class DocApiExtractor:
             # Kontrollera om det är ett kodexempel
             if any(word in code_text.lower() for word in ["curl", "http", "request"]):
                 # Extrahera endpoint från kodexempel
-                endpoint = self._extract_endpoint_from_code(
-                    code_text, title, description
-                )
+                endpoint = self._extract_endpoint_from_code(code_text, title, description)
                 if endpoint:
                     api_info.append(endpoint)
 
@@ -80,9 +76,7 @@ class DocApiExtractor:
                 # Kontrollera om stycket innehåller API-information
                 if any(word in text.lower() for word in ["api", "endpoint", "method"]):
                     # Extrahera endpoint från text
-                    endpoint = self._extract_endpoint_from_text(
-                        text, title, description
-                    )
+                    endpoint = self._extract_endpoint_from_text(text, title, description)
                     if endpoint:
                         api_info.append(endpoint)
 
@@ -265,9 +259,7 @@ class DocApiExtractor:
 
         try:
             # Hitta JSON-svar
-            json_matches = re.finditer(
-                r"(?:Response:|Returns:|\{)[^}]*\}", code, re.DOTALL
-            )
+            json_matches = re.finditer(r"(?:Response:|Returns:|\{)[^}]*\}", code, re.DOTALL)
             for match in json_matches:
                 try:
                     json_str = match.group(0)
@@ -316,9 +308,7 @@ class DocApiExtractor:
         """Extraherar svarsexempel från kodexempel"""
         try:
             # Hitta JSON-svar efter //
-            example_match = re.search(
-                r"//\s*(?:Response:|Returns:)?\s*(\{[^}]+\})", code
-            )
+            example_match = re.search(r"//\s*(?:Response:|Returns:)?\s*(\{[^}]+\})", code)
             if example_match:
                 try:
                     return json.loads(example_match.group(1))
@@ -329,9 +319,7 @@ class DocApiExtractor:
             logger.error(f"Fel vid extrahering av svarsexempel: {str(e)}")
             return None
 
-    def categorize_endpoint(
-        self, endpoint: Dict[str, Any], source: str
-    ) -> tuple[str, str]:
+    def categorize_endpoint(self, endpoint: Dict[str, Any], source: str) -> tuple[str, str]:
         """
         Kategoriserar en endpoint
 
@@ -481,9 +469,7 @@ class DocApiExtractor:
             # Bearbeta varje endpoint
             for endpoint in endpoints:
                 # Kategorisera endpoint
-                category, subcategory = self.categorize_endpoint(
-                    endpoint, file_path.stem
-                )
+                category, subcategory = self.categorize_endpoint(endpoint, file_path.stem)
 
                 # Spara endpoint
                 self.save_endpoint(endpoint, category, subcategory, file_path.stem)

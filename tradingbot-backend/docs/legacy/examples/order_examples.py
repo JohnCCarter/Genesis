@@ -129,18 +129,14 @@ async def example_rest_backend_order():
     print("🚀 Skickar order via backend REST API...")
     try:
         async with httpx.AsyncClient() as client:
-            response = await client.post(
-                "http://localhost:8000/api/v2/order", json=order_data
-            )
+            response = await client.post("http://localhost:8000/api/v2/order", json=order_data)
 
             # Visa resultatet
             print(f"📡 Status: {response.status_code}")
             result = response.json()
 
             if result.get("success"):
-                print(
-                    f"✅ Order framgångsrikt lagd: {json.dumps(result.get('data'), indent=2)}"
-                )
+                print(f"✅ Order framgångsrikt lagd: {json.dumps(result.get('data'), indent=2)}")
             else:
                 print(f"❌ Order misslyckades: {result.get('error')}")
 

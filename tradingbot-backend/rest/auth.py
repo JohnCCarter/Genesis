@@ -36,7 +36,7 @@ def build_auth_headers(
     endpoint: str,
     payload: dict = None,
     v1: bool = False,
-    payload_str: Optional[str] = None,
+    payload_str: str | None = None,
 ) -> dict:
     """
     Bygger autentiseringsheaders för Bitfinex REST API (v1 eller v2).
@@ -66,7 +66,7 @@ def build_auth_headers(
         # Deterministisk serialisering
         payload_str = json.dumps(payload, separators=(",", ":"), ensure_ascii=False)
 
-    message = f"/api/{api_version}/{endpoint}{str(nonce)}"
+    message = f"/api/{api_version}/{endpoint}{nonce!s}"
     if payload_str is not None:
         message += payload_str
 
@@ -87,9 +87,9 @@ def redact_headers(headers: dict) -> dict:
     Return a copy of headers with sensitive fields redacted.
     """
     redacted = headers.copy()
-    if "bfx-apikey" in redacted and redacted["bfx-apikey"]:
+    if redacted.get("bfx-apikey"):
         redacted["bfx-apikey"] = "[REDACTED]"
-    if "bfx-signature" in redacted and redacted["bfx-signature"]:
+    if redacted.get("bfx-signature"):
         redacted["bfx-signature"] = "[REDACTED]"
     return redacted
 
@@ -113,10 +113,7 @@ async def place_order(order: dict) -> dict:
             return {"error": error_msg}
 
         endpoint = "auth/w/order/submit"
-        base_url = (
-            getattr(settings, "BITFINEX_AUTH_API_URL", None)
-            or settings.BITFINEX_API_URL
-        )
+        base_url = getattr(settings, "BITFINEX_AUTH_API_URL", None) or settings.BITFINEX_API_URL
         url = f"{base_url}/{endpoint}"
 
         # Konvertera till Bitfinex format (REST v2 använder tecken på amount som riktning)
@@ -161,15 +158,11 @@ async def place_order(order: dict) -> dict:
         # Skapa headers och skicka riktig API-anrop
         # Förbered JSON-body deterministiskt och signera på exakt samma sträng
         # Bitfinex kräver att symbol är giltig tPAIR (utan TEST) och att amount har rätt tecken
-        body_json = json.dumps(
-            bitfinex_order, separators=(",", ":"), ensure_ascii=False
-        )
+        body_json = json.dumps(bitfinex_order, separators=(",", ":"), ensure_ascii=False)
         headers = build_auth_headers(endpoint, payload_str=body_json)
 
         # Logga alla detaljer för debugging (maskerat)
-        logger.debug(
-            "🔍 DEBUG: API Key is %s", "set" if settings.BITFINEX_API_KEY else "not set"
-        )
+        logger.debug("🔍 DEBUG: API Key is %s", "set" if settings.BITFINEX_API_KEY else "not set")
         logger.debug(
             "🔍 DEBUG: API Secret is %s",
             "set" if settings.BITFINEX_API_SECRET else "not set",
@@ -226,9 +219,9 @@ async def place_order(order: dict) -> dict:
                 except Exception as e:
                     last_exc = e
                     if attempt < retries:
-                        delay = min(
-                            backoff_max, backoff_base * (2**attempt)
-                        ) + random.uniform(0, 0.1)
+                        delay = min(backoff_max, backoff_base * (2**attempt)) + random.uniform(
+                            0, 0.1
+                        )
                         await asyncio.sleep(delay)
                         continue
                     else:
@@ -245,9 +238,7 @@ async def place_order(order: dict) -> dict:
                 # Felhuvuden/texter kan vara verbosa; logga på debug
                 logger.debug("Response Headers: %s", response.headers)
                 logger.debug("Response Text: %s", response.text)
-                return {
-                    "error": f"Bitfinex API Error: {response.status_code} - {response.text}"
-                }
+                return {"error": f"Bitfinex API Error: {response.status_code} - {response.text}"}
 
             response.raise_for_status()
 
@@ -290,10 +281,7 @@ async def cancel_order(order_id: int) -> dict:
             return {"error": error_msg}
 
         endpoint = "auth/w/order/cancel"
-        base_url = (
-            getattr(settings, "BITFINEX_AUTH_API_URL", None)
-            or settings.BITFINEX_API_URL
-        )
+        base_url = getattr(settings, "BITFINEX_AUTH_API_URL", None) or settings.BITFINEX_API_URL
         url = f"{base_url}/{endpoint}"
 
         # Konvertera till Bitfinex format
@@ -303,9 +291,7 @@ async def cancel_order(order_id: int) -> dict:
         logger.info(f"📋 Cancel data: {bitfinex_cancel}")
 
         # Skapa headers och skicka riktig API-anrop
-        body_json = json.dumps(
-            bitfinex_cancel, separators=(",", ":"), ensure_ascii=False
-        )
+        body_json = json.dumps(bitfinex_cancel, separators=(",", ":"), ensure_ascii=False)
         headers = build_auth_headers(endpoint, payload_str=body_json)
 
         import asyncio
@@ -334,9 +320,7 @@ async def cancel_order(order_id: int) -> dict:
             except Exception as e:
                 last_exc = e
                 if attempt < retries:
-                    delay = min(
-                        backoff_max, backoff_base * (2**attempt)
-                    ) + random.uniform(0, 0.1)
+                    delay = min(backoff_max, backoff_base * (2**attempt)) + random.uniform(0, 0.1)
                     await asyncio.sleep(delay)
                     continue
                 else:
@@ -348,9 +332,7 @@ async def cancel_order(order_id: int) -> dict:
             if response.status_code == 500:
                 logger.error(f"Bitfinex API Error: {response.status_code}")
                 logger.error(f"Response Text: {response.text}")
-                return {
-                    "error": f"Bitfinex API Error: {response.status_code} - {response.text}"
-                }
+                return {"error": f"Bitfinex API Error: {response.status_code} - {response.text}"}
 
             response.raise_for_status()
 

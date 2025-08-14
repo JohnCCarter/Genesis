@@ -54,9 +54,7 @@ class OrderValidator:
             logger.info(f"Laddade {len(self.paper_symbols)} paper trading symboler")
 
         except Exception as e:
-            logger.warning(
-                f"OrderValidator: kunde inte ladda scraper-data, fallback används: {e}"
-            )
+            logger.warning(f"OrderValidator: kunde inte ladda scraper-data, fallback används: {e}")
             self._setup_fallback_data()
 
     def _setup_fallback_data(self) -> None:
@@ -146,7 +144,7 @@ class OrderValidator:
         self.paper_symbols = [s for s in self.symbols if s.get("is_paper", False)]
         self.paper_symbol_names = [s["symbol"] for s in self.paper_symbols]
 
-    def validate_order(self, order: Dict[str, Any]) -> Tuple[bool, Optional[str]]:
+    def validate_order(self, order: dict[str, Any]) -> tuple[bool, str | None]:
         """
         Validerar en order mot Bitfinex API-krav.
 
@@ -222,7 +220,7 @@ class OrderValidator:
 
         return True, None
 
-    def suggest_paper_trading_symbol(self, symbol: str) -> Optional[str]:
+    def suggest_paper_trading_symbol(self, symbol: str) -> str | None:
         """
         Föreslår en motsvarande paper trading symbol.
 
@@ -255,10 +253,7 @@ class OrderValidator:
         if base_currency and quote_currency:
             # Sök efter matchande paper trading symbol
             for paper_symbol in self.paper_symbol_names:
-                if (
-                    "TEST" + base_currency in paper_symbol
-                    or base_currency in paper_symbol
-                ):
+                if "TEST" + base_currency in paper_symbol or base_currency in paper_symbol:
                     return paper_symbol
 
             # Fallback till standard test symbol
@@ -266,7 +261,7 @@ class OrderValidator:
 
         return None
 
-    def format_order_for_bitfinex(self, order: Dict[str, Any]) -> Dict[str, Any]:
+    def format_order_for_bitfinex(self, order: dict[str, Any]) -> dict[str, Any]:
         """
         Formaterar en order för Bitfinex API.
 
@@ -299,9 +294,7 @@ class OrderValidator:
                 formatted_order["side"] = "buy"  # Fallback
 
         # Konvertera amount till string om det är ett nummer
-        if "amount" in formatted_order and not isinstance(
-            formatted_order["amount"], str
-        ):
+        if "amount" in formatted_order and not isinstance(formatted_order["amount"], str):
             formatted_order["amount"] = str(formatted_order["amount"])
 
         # Konvertera price till string om det är ett nummer och inte None

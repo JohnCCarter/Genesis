@@ -6,6 +6,7 @@ Socket.IO. Hanterar startup, shutdown och routing till olika moduler.
 """
 
 import importlib
+import os
 from contextlib import asynccontextmanager
 from datetime import datetime
 
@@ -13,6 +14,7 @@ import uvicorn
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from config.settings import Settings
 from rest.routes import router as rest_router
@@ -28,7 +30,7 @@ logger = get_logger(__name__)
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI):  # noqa: ARG001
     """Hanterar startup och shutdown för applikationen."""
     # Startup
     logger.info("🚀 TradingBot Backend startar...")
@@ -42,57 +44,7 @@ async def lifespan(app: FastAPI):
             await bitfinex_ws.ensure_authenticated()
         except Exception as e:
             logger.warning(f"⚠️ WS‑auth misslyckades: {e}")
-        # Auto‑subscribe tickers från settings (om angivna)
-        try:
-            sub_raw = (Settings().WS_SUBSCRIBE_SYMBOLS or "").strip()
-            if sub_raw:
-                symbols = [s.strip() for s in sub_raw.split(",") if s.strip()]
-                # Filtrera bort icke-listade innan prenumeration
-                try:
-                    from services.symbols import SymbolService
-
-                    svc = SymbolService()
-                    await svc.refresh()
-                    symbols = [s for s in symbols if svc.listed(svc.resolve(s))]
-                except Exception:
-                    pass
-                for sym in symbols:
-                    # registrera callback för strategi/ticker om inte finns
-                    if sym not in getattr(bitfinex_ws, "strategy_callbacks", {}):
-                        bitfinex_ws.strategy_callbacks[sym] = (
-                            bitfinex_ws._handle_ticker_with_strategy
-                        )
-                    await bitfinex_ws.subscribe_ticker(
-                        sym, bitfinex_ws._handle_ticker_with_strategy
-                    )
-                # Audit-logg: WS live/REST only
-                try:
-                    from services.bitfinex_data import BitfinexDataService
-
-                    data = BitfinexDataService()
-                    for s in symbols:
-                        eff = s
-                        try:
-                            eff = svc.resolve(s)  # type: ignore[name-defined]
-                        except Exception:
-                            pass
-                        live = eff in getattr(bitfinex_ws, "active_tickers", set())
-                        logger.info(
-                            "🔍 Startup audit: %s → %s via %s",
-                            s,
-                            eff,
-                            "WS" if live else "REST only",
-                        )
-                        if not live:
-                            # värm upp REST‑cache tyst
-                            try:
-                                _ = await data.get_ticker(s)
-                            except Exception:
-                                pass
-                except Exception:
-                    pass
-        except Exception as e:
-            logger.warning(f"⚠️ Misslyckades auto‑subscribe WS tickers: {e}")
+        # Auto‑subscribe tickers från settings (om angivna) – flyttas bakom runtime‑toggle
     except Exception as e:
         logger.warning(f"⚠️ WebSocket-anslutning misslyckades: {e}")
 
@@ -197,21 +149,27 @@ async def server_time():
 
 
 # Alternativ test-sida för Socket.IO (undviker 307->/ws/ som kan ge 404)
-@app.get("/ws-test")
-async def ws_test_page() -> FileResponse:
-    import os
+# Statisk montering för nya UI-sidor
+# Montera statiska sidor från ../frontend
+_BASE_DIR = os.path.dirname(__file__)
+_FRONTEND_DIR = os.path.abspath(os.path.join(_BASE_DIR, "..", "frontend"))
+_WS_TEST_DIR = os.path.join(_FRONTEND_DIR, "ws-test")
+_RISK_PANEL_DIR = os.path.join(_FRONTEND_DIR, "risk-panel")
+app.mount("/ws-test", StaticFiles(directory=_WS_TEST_DIR, html=True), name="ws-test")
+app.mount("/risk-panel", StaticFiles(directory=_RISK_PANEL_DIR, html=True), name="risk-panel")
 
+
+@app.get("/risk-panel-legacy")
+async def risk_panel_legacy() -> FileResponse:
     base_dir = os.path.dirname(__file__)
-    path = os.path.join(base_dir, "ws_test.html")
+    path = os.path.join(base_dir, "risk_panel.html")
     return FileResponse(path)
 
 
-@app.get("/risk-panel")
-async def risk_panel_page() -> FileResponse:
-    import os
-
+@app.get("/ws-test-legacy")
+async def ws_test_legacy() -> FileResponse:
     base_dir = os.path.dirname(__file__)
-    path = os.path.join(base_dir, "risk_panel.html")
+    path = os.path.join(base_dir, "ws_test.html")
     return FileResponse(path)
 
 
@@ -258,9 +216,7 @@ async def metrics(request: Request) -> Response:
     basic_pass = _os.getenv("METRICS_BASIC_AUTH_PASS")
     access_token = _os.getenv("METRICS_ACCESS_TOKEN")
 
-    restrictions_configured = bool(
-        ip_allowlist_raw or (basic_user and basic_pass) or access_token
-    )
+    restrictions_configured = bool(ip_allowlist_raw or (basic_user and basic_pass) or access_token)
 
     if restrictions_configured:
         client_ip = None
@@ -273,9 +229,7 @@ async def metrics(request: Request) -> Response:
 
         # 1) IP allowlist
         if ip_allowlist_raw and client_ip:
-            allowed_ips = {
-                ip.strip() for ip in ip_allowlist_raw.split(",") if ip.strip()
-            }
+            allowed_ips = {ip.strip() for ip in ip_allowlist_raw.split(",") if ip.strip()}
             if client_ip in allowed_ips:
                 allowed = True
 
@@ -314,9 +268,9 @@ async def metrics(request: Request) -> Response:
                 try:
                     decoded = base64.b64decode(b64).decode("utf-8")
                     username, password = decoded.split(":", 1)
-                    if hmac.compare_digest(
-                        username, str(basic_user)
-                    ) and hmac.compare_digest(password, str(basic_pass)):
+                    if hmac.compare_digest(username, str(basic_user)) and hmac.compare_digest(
+                        password, str(basic_pass)
+                    ):
                         allowed = True
                 except Exception:
                     pass

@@ -89,10 +89,10 @@ class WalletBalance(BaseModel):
     currency: str
     balance: float
     unsettled_interest: float = 0.0
-    available_balance: Optional[float] = None
+    available_balance: float | None = None
 
     @classmethod
-    def from_bitfinex_data(cls, data: List) -> "WalletBalance":
+    def from_bitfinex_data(cls, data: list) -> "WalletBalance":
         """Skapar en WalletBalance från Bitfinex API-data."""
         if len(data) < 4:
             raise ValueError(f"Ogiltig plånboksdata: {data}")
@@ -110,9 +110,9 @@ class WalletSummary(BaseModel):
     """Sammanfattning av plånböcker."""
 
     total_balance_usd: float
-    exchange_wallets: List[WalletBalance]
-    margin_wallets: List[WalletBalance]
-    funding_wallets: List[WalletBalance]
+    exchange_wallets: list[WalletBalance]
+    margin_wallets: list[WalletBalance]
+    funding_wallets: list[WalletBalance]
 
 
 # Margin-modeller
@@ -125,7 +125,7 @@ class MarginLimitInfo(BaseModel):
     margin_requirements: float
 
     @classmethod
-    def from_bitfinex_data(cls, data: Dict[str, Any]) -> "MarginLimitInfo":
+    def from_bitfinex_data(cls, data: dict[str, Any]) -> "MarginLimitInfo":
         """Skapar ett MarginLimitInfo-objekt från Bitfinex API-data."""
         return cls(
             on_pair=data.get("on_pair", ""),
@@ -143,11 +143,11 @@ class MarginInfo(BaseModel):
     unrealized_swap: float
     net_value: float
     required_margin: float
-    leverage: Optional[float] = None
-    margin_limits: List[Dict[str, Any]] = []
+    leverage: float | None = None
+    margin_limits: list[dict[str, Any]] = []
 
     @classmethod
-    def from_bitfinex_data(cls, data: List) -> "MarginInfo":
+    def from_bitfinex_data(cls, data: list) -> "MarginInfo":
         """Skapar ett MarginInfo-objekt från Bitfinex API-data."""
         if len(data) < 5:
             raise ValueError(f"Ogiltig margin-data: {data}")
@@ -164,9 +164,7 @@ class MarginInfo(BaseModel):
             net_value=float(data[3]),
             required_margin=float(data[4]),
             leverage=leverage,
-            margin_limits=(
-                data[5] if len(data) > 5 and isinstance(data[5], list) else []
-            ),
+            margin_limits=(data[5] if len(data) > 5 and isinstance(data[5], list) else []),
         )
 
 
@@ -193,9 +191,9 @@ class Position(BaseModel):
     base_price: float
     funding: float = 0.0
     funding_type: int = Field(0, description="0 för daily, 1 för term")
-    profit_loss: Optional[float] = None
-    profit_loss_percentage: Optional[float] = None
-    liquidation_price: Optional[float] = None
+    profit_loss: float | None = None
+    profit_loss_percentage: float | None = None
+    liquidation_price: float | None = None
 
     @property
     def is_long(self) -> bool:
@@ -208,7 +206,7 @@ class Position(BaseModel):
         return self.amount < 0
 
     @classmethod
-    def from_bitfinex_data(cls, data: List) -> "Position":
+    def from_bitfinex_data(cls, data: list) -> "Position":
         """Skapar en Position från Bitfinex API-data."""
         if len(data) < 6:
             raise ValueError(f"Ogiltig positionsdata: {data}")
@@ -229,18 +227,18 @@ class Position(BaseModel):
 class PositionHistory(BaseModel):
     """Modell för en historisk position."""
 
-    id: Optional[int] = None
+    id: int | None = None
     symbol: str
     status: PositionStatus
     amount: float
     base_price: float
     funding: float = 0.0
     funding_type: int = Field(0, description="0 för daily, 1 för term")
-    profit_loss: Optional[float] = None
-    profit_loss_percentage: Optional[float] = None
-    liquidation_price: Optional[float] = None
-    created_at: Optional[datetime] = None
-    closed_at: Optional[datetime] = None
+    profit_loss: float | None = None
+    profit_loss_percentage: float | None = None
+    liquidation_price: float | None = None
+    created_at: datetime | None = None
+    closed_at: datetime | None = None
 
     @property
     def is_long(self) -> bool:
@@ -253,7 +251,7 @@ class PositionHistory(BaseModel):
         return self.amount < 0
 
     @classmethod
-    def from_bitfinex_data(cls, data: List) -> "PositionHistory":
+    def from_bitfinex_data(cls, data: list) -> "PositionHistory":
         """Skapar en PositionHistory från Bitfinex API-data."""
         if len(data) < 6:
             raise ValueError(f"Ogiltig positionsdata: {data}")
@@ -290,7 +288,7 @@ class ClosePositionResponse(BaseModel):
 
     success: bool
     message: str
-    data: Optional[Dict[str, Any]] = None
+    data: dict[str, Any] | None = None
 
 
 # Order-modeller
@@ -299,16 +297,16 @@ class OrderRequest(BaseModel):
 
     symbol: str
     amount: float
-    price: Optional[float] = None
+    price: float | None = None
     side: OrderSide
     type: OrderType = OrderType.LIMIT
-    client_order_id: Optional[int] = None
-    flags: Optional[int] = None
-    price_trailing: Optional[float] = None
-    price_aux_limit: Optional[float] = None
-    price_oco_stop: Optional[float] = None
-    tif: Optional[datetime] = None
-    leverage: Optional[int] = None
+    client_order_id: int | None = None
+    flags: int | None = None
+    price_trailing: float | None = None
+    price_aux_limit: float | None = None
+    price_oco_stop: float | None = None
+    tif: datetime | None = None
+    leverage: int | None = None
 
     @validator("amount")
     def validate_amount(cls, v, values):
@@ -324,21 +322,21 @@ class OrderResponse(BaseModel):
     """Svar från API:et vid orderläggning."""
 
     id: int
-    client_order_id: Optional[int] = None
+    client_order_id: int | None = None
     symbol: str
     amount: float
     original_amount: float
     type: str
     status: str
     price: float
-    average_price: Optional[float] = None
+    average_price: float | None = None
     created_at: datetime
     updated_at: datetime
     is_live: bool
     is_cancelled: bool
 
     @classmethod
-    def from_bitfinex_data(cls, data: List) -> "OrderResponse":
+    def from_bitfinex_data(cls, data: list) -> "OrderResponse":
         """Skapar en OrderResponse från Bitfinex API-data."""
         if len(data) < 12:
             raise ValueError(f"Ogiltig orderdata: {data}")
@@ -364,7 +362,7 @@ class OrderHistoryItem(BaseModel):
     """Modell för ett objekt i orderhistoriken."""
 
     id: int
-    client_order_id: Optional[int] = None
+    client_order_id: int | None = None
     symbol: str
     created_at: datetime
     updated_at: datetime
@@ -372,11 +370,11 @@ class OrderHistoryItem(BaseModel):
     original_amount: float
     order_type: str
     price: float
-    average_price: Optional[float] = None
+    average_price: float | None = None
     status: str
 
     @classmethod
-    def from_bitfinex_data(cls, data: List) -> "OrderHistoryItem":
+    def from_bitfinex_data(cls, data: list) -> "OrderHistoryItem":
         """Skapar en OrderHistoryItem från Bitfinex API-data."""
         if len(data) < 18:
             raise ValueError(f"Ogiltig orderhistorikdata: {data}")
@@ -404,12 +402,12 @@ class TradeItem(BaseModel):
     order_id: int
     executed_amount: float
     executed_price: float
-    fee: Optional[float] = None
-    fee_currency: Optional[str] = None
+    fee: float | None = None
+    fee_currency: str | None = None
     created_at: datetime
 
     @classmethod
-    def from_bitfinex_data(cls, data: List) -> "TradeItem":
+    def from_bitfinex_data(cls, data: list) -> "TradeItem":
         """Skapar en TradeItem från Bitfinex API-data."""
         if len(data) < 11:
             raise ValueError(f"Ogiltig handelsdata: {data}")
@@ -435,10 +433,10 @@ class LedgerEntry(BaseModel):
     balance: float
     description: str
     created_at: datetime
-    wallet_type: Optional[str] = None
+    wallet_type: str | None = None
 
     @classmethod
-    def from_bitfinex_data(cls, data: List) -> "LedgerEntry":
+    def from_bitfinex_data(cls, data: list) -> "LedgerEntry":
         """Skapar en LedgerEntry från Bitfinex API-data."""
         if len(data) < 6:
             raise ValueError(f"Ogiltig huvudboksdata: {data}")
@@ -481,7 +479,7 @@ class Ticker(BaseModel):
     low: float
 
     @classmethod
-    def from_bitfinex_data(cls, symbol: str, data: List) -> "Ticker":
+    def from_bitfinex_data(cls, symbol: str, data: list) -> "Ticker":
         """Skapar en Ticker från Bitfinex API-data."""
         if len(data) < 10:
             raise ValueError(f"Ogiltig ticker-data: {data}")
@@ -512,7 +510,7 @@ class Candle(BaseModel):
     volume: float
 
     @classmethod
-    def from_bitfinex_data(cls, data: List) -> "Candle":
+    def from_bitfinex_data(cls, data: list) -> "Candle":
         """Skapar en Candle från Bitfinex API-data."""
         if len(data) < 6:
             raise ValueError(f"Ogiltig ljusstake-data: {data}")
@@ -545,7 +543,7 @@ class OrderBookEntry(BaseModel):
         return self.amount < 0
 
     @classmethod
-    def from_bitfinex_data(cls, data: List) -> "OrderBookEntry":
+    def from_bitfinex_data(cls, data: list) -> "OrderBookEntry":
         """Skapar en OrderBookEntry från Bitfinex API-data."""
         if len(data) < 3:
             raise ValueError(f"Ogiltig orderbok-data: {data}")
@@ -557,11 +555,11 @@ class OrderBook(BaseModel):
     """Modell för en orderbok."""
 
     symbol: str
-    bids: List[OrderBookEntry]
-    asks: List[OrderBookEntry]
+    bids: list[OrderBookEntry]
+    asks: list[OrderBookEntry]
 
     @classmethod
-    def from_bitfinex_data(cls, symbol: str, data: List[List]) -> "OrderBook":
+    def from_bitfinex_data(cls, symbol: str, data: list[list]) -> "OrderBook":
         """Skapar en OrderBook från Bitfinex API-data."""
         entries = [OrderBookEntry.from_bitfinex_data(entry) for entry in data]
         bids = [entry for entry in entries if entry.is_bid]
@@ -601,9 +599,7 @@ class WebSocketSubscriptionRequest(BaseModel):
     channel: str
     symbol: str
 
-    model_config = {
-        "json_schema_extra": {"example": {"channel": "ticker", "symbol": "tBTCUSD"}}
-    }
+    model_config = {"json_schema_extra": {"example": {"channel": "ticker", "symbol": "tBTCUSD"}}}
 
 
 # API-svar-modeller
@@ -612,7 +608,7 @@ class ApiResponse(BaseModel):
 
     success: bool
     message: str
-    data: Optional[Any] = None
+    data: Any | None = None
 
 
 class PaginatedResponse(BaseModel):
@@ -620,7 +616,7 @@ class PaginatedResponse(BaseModel):
 
     success: bool
     message: str
-    data: List[Any]
+    data: list[Any]
     page: int
     page_size: int
     total: int

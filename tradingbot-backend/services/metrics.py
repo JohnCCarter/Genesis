@@ -10,7 +10,7 @@ from __future__ import annotations
 from typing import Any, Dict
 
 # Global but in-memory store (process-lokalt). Enkel och snabb.
-metrics_store: Dict[str, Any] = {
+metrics_store: dict[str, Any] = {
     "orders_total": 0,
     "orders_failed_total": 0,
     "rate_limited_total": 0,
@@ -53,7 +53,7 @@ def inc(metric_name: str, by: int = 1) -> None:
         pass
 
 
-def _labels_to_str(labels: Dict[str, str]) -> str:
+def _labels_to_str(labels: dict[str, str]) -> str:
     # Enkel label-escaping för Prometheus-formatteringen
     def esc(value: str) -> str:
         v = str(value).replace("\\", "\\\\")
@@ -85,7 +85,7 @@ def observe_latency(path: str, method: str, status_code: int, duration_ms: int) 
         pass
 
 
-def inc_labeled(name: str, labels: Dict[str, str], by: int = 1) -> None:
+def inc_labeled(name: str, labels: dict[str, str], by: int = 1) -> None:
     """Öka en etiketterad counter med 1 (eller 'by')."""
     try:
         bucket = metrics_store["counters"].setdefault(name, {})
@@ -110,7 +110,7 @@ def render_prometheus_text() -> str:
 
     # Lägg till latensmetrik per endpoint
     try:
-        lat: Dict[str, Dict[str, int]] = metrics_store.get("request_latency", {})
+        lat: dict[str, dict[str, int]] = metrics_store.get("request_latency", {})
         for key, bucket in lat.items():
             try:
                 method, path, status = key.split("|", 2)
@@ -129,7 +129,7 @@ def render_prometheus_text() -> str:
 
     # Labeled counters
     try:
-        ctrs: Dict[str, Dict[str, int]] = metrics_store.get("counters", {})
+        ctrs: dict[str, dict[str, int]] = metrics_store.get("counters", {})
         for metric_name, label_map in ctrs.items():
             for label_str, value in label_map.items():
                 val_int = int(value)
@@ -166,7 +166,7 @@ def render_prometheus_text() -> str:
     # Probability validation snapshot
     try:
         pv_any = metrics_store.get("prob_validation", {}) or {}
-        pv: Dict[str, Any] = pv_any  # typing aid
+        pv: dict[str, Any] = pv_any  # typing aid
         brier = pv.get("brier")
         logloss = pv.get("logloss")
         if brier is not None:
@@ -182,7 +182,7 @@ def render_prometheus_text() -> str:
             except Exception:
                 pass
         by_any = pv.get("by") or {}
-        by_map: Dict[str, Dict[str, Any]] = by_any
+        by_map: dict[str, dict[str, Any]] = by_any
         for key, vals in by_map.items():
             try:
                 sym, tf = key.split("|", 1)
@@ -207,21 +207,15 @@ def render_prometheus_text() -> str:
         # Rolling window aggregates (exponera nuvarande medel per fönster)
         try:
             rolling_any = pv.get("rolling") or {}
-            rolling: Dict[str, Any] = rolling_any
+            rolling: dict[str, Any] = rolling_any
             for window_key, series in rolling.items():
                 try:
                     if not isinstance(series, list) or not series:
                         continue
                     # Enkelt medel av senaste N (redan trimmas i scheduler)
-                    b_vals = [
-                        float(x.get("brier"))
-                        for x in series
-                        if x.get("brier") is not None
-                    ]
+                    b_vals = [float(x.get("brier")) for x in series if x.get("brier") is not None]
                     l_vals = [
-                        float(x.get("logloss"))
-                        for x in series
-                        if x.get("logloss") is not None
+                        float(x.get("logloss")) for x in series if x.get("logloss") is not None
                     ]
                     labels = _labels_to_str({"window": str(window_key)})
                     if b_vals:
@@ -232,9 +226,7 @@ def render_prometheus_text() -> str:
                         lines.append(
                             f"tradingbot_prob_logloss_window{labels} {sum(l_vals) / max(1, len(l_vals))}"
                         )
-                    lines.append(
-                        f"tradingbot_prob_validate_samples_window{labels} {len(series)}"
-                    )
+                    lines.append(f"tradingbot_prob_validate_samples_window{labels} {len(series)}")
                 except Exception:
                     continue
         except Exception:

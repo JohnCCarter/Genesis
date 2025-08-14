@@ -5,9 +5,7 @@ from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional
 
 # Konfigurera loggning
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
@@ -23,9 +21,7 @@ class BitfinexDocsParser:
         self.docs_dir = self.cache_dir / "docs"
         self.docs_dir.mkdir(parents=True, exist_ok=True)
 
-    def read_file_chunks(
-        self, file_path: Path, chunk_size: int = 8192
-    ) -> Iterator[str]:
+    def read_file_chunks(self, file_path: Path, chunk_size: int = 8192) -> Iterator[str]:
         """
         Läser en fil i chunks
 
@@ -135,9 +131,7 @@ class BitfinexDocsParser:
         # Extrahera information
         api_info = {
             "method": json_obj.get("method", ""),
-            "path": json_obj.get(
-                "path", json_obj.get("endpoint", json_obj.get("url", ""))
-            ),
+            "path": json_obj.get("path", json_obj.get("endpoint", json_obj.get("url", ""))),
             "description": json_obj.get("description", json_obj.get("doc", "")),
             "parameters": [],
             "response": {},
@@ -145,18 +139,14 @@ class BitfinexDocsParser:
         }
 
         # Hantera parametrar
-        params = json_obj.get(
-            "parameters", json_obj.get("params", json_obj.get("args", []))
-        )
+        params = json_obj.get("parameters", json_obj.get("params", json_obj.get("args", [])))
         if isinstance(params, dict):
             params = [{"name": k, **v} for k, v in params.items()]
         elif isinstance(params, list):
             api_info["parameters"] = params
 
         # Hantera svar
-        response = json_obj.get(
-            "response", json_obj.get("returns", json_obj.get("result", {}))
-        )
+        response = json_obj.get("response", json_obj.get("returns", json_obj.get("result", {})))
         if isinstance(response, dict):
             api_info["response"] = response
 
