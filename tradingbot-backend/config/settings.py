@@ -16,7 +16,8 @@ class Settings(_BaseSettings):
 
     # Applikationskonfiguration
     CORE_MODE: bool = False  # Enkel drift: endast kärnfunktioner aktiva
-    HOST: str = "0.0.0.0"
+    # Bindningsadress: defaulta till loopback i dev, 0.0.0.0 i container/CI via env
+    HOST: str = _os.environ.get("HOST", "127.0.0.1")
     PORT: int = 8000
     DEBUG: bool = True
     # Kräv JWT för REST/WS. Sätt False i dev för att tillfälligt stänga av

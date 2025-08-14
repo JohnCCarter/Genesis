@@ -377,10 +377,13 @@ else:
     logger.info("CORE_MODE: Socket.IO UI avstängd")
 
 if __name__ == "__main__":
+    from config.settings import Settings as _S
+
+    _s = _S()
     uvicorn.run(
         "main:app",
-        host="0.0.0.0",
-        port=8000,
+        host=_s.HOST,
+        port=_s.PORT,
         reload=True,
         log_level="info",
     )
