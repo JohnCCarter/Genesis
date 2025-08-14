@@ -167,15 +167,15 @@ async def place_order(order: dict) -> dict:
         headers = build_auth_headers(endpoint, payload_str=body_json)
 
         # Logga alla detaljer för debugging (maskerat)
-        logger.info(
-            "🔍 DEBUG: API Key is %s", "set" if settings.BITFINEX_API_KEY else "not set"
-        )
-        logger.info(
-            "🔍 DEBUG: API Secret is %s",
-            "set" if settings.BITFINEX_API_SECRET else "not set",
-        )
-        # Sänk till debug-nivå för att undvika onödigt verbos i prod
-        logger.debug("🔍 DEBUG: Headers: %s", redact_headers(headers))
+    logger.debug(
+        "🔍 DEBUG: API Key is %s", "set" if settings.BITFINEX_API_KEY else "not set"
+    )
+    logger.debug(
+        "🔍 DEBUG: API Secret is %s",
+        "set" if settings.BITFINEX_API_SECRET else "not set",
+    )
+        # Logga aldrig header-värden; endast nycklar
+        logger.debug("🔍 DEBUG: Header keys: %s", sorted(list(headers.keys())))
         logger.debug("🔍 DEBUG: Payload: %s", bitfinex_order)
 
         # Under pytest: respektera monkeypatch om den satt
