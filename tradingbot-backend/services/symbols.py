@@ -120,6 +120,9 @@ class SymbolService:
             base, quote = self._split_symbol(t_symbol)
             base = self._apply_alias(base)
             pair = f"{base}{quote}"
+            # Offline/CI-fallback: om vi saknar live-parlista, tillåt alla
+            if not self._pairs:
+                return True
             return pair in self._pairs
         except Exception:
             return False
