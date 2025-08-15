@@ -1,5 +1,7 @@
 import argparse
 import os
+import json
+import tempfile
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -24,7 +26,30 @@ def parse_args() -> argparse.Namespace:
         help="Completion window, e.g. 24h",
     )
     parser.add_argument("--desc", default="", help="Optional description/metadata for this batch")
+    parser.add_argument(
+        "--override-model",
+        default=os.getenv("OPENAI_BATCH_MODEL"),
+        help="If set, overrides body.model for each JSONL line before upload",
+    )
     return parser.parse_args()
+
+
+def _rewrite_jsonl_with_model(source: Path, model: str) -> Path:
+    """Create a temp JSONL with body.model overridden on each line."""
+    tmp = Path(tempfile.mkstemp(suffix=".jsonl")[1])
+    with source.open("r", encoding="utf-8") as fin, tmp.open("w", encoding="utf-8") as fout:
+        for line in fin:
+            if not line.strip():
+                continue
+            obj = json.loads(line)
+            body = obj.get("body")
+            if isinstance(body, dict):
+                body["model"] = model
+            else:
+                # Fallback if someone put model at root (non-standard)
+                obj["model"] = model
+            fout.write(json.dumps(obj, ensure_ascii=False) + "\n")
+    return tmp
 
 
 def main() -> None:
@@ -40,10 +65,16 @@ def main() -> None:
     if not input_path.exists():
         raise SystemExit(f"Input file not found: {input_path}")
 
+    upload_path = input_path
+    temp_created = False
+    if args.override_model:
+        upload_path = _rewrite_jsonl_with_model(input_path, args.override_model)
+        temp_created = True
+
     client = OpenAI()
 
     # 1) Upload the JSONL as a file with purpose=batch
-    with input_path.open("rb") as f:
+    with upload_path.open("rb") as f:
         uploaded = client.files.create(file=f, purpose="batch")
 
     # 2) Create the batch
@@ -64,6 +95,14 @@ def main() -> None:
             "window": args.window,
         }
     )
+
+    if temp_created:
+        try:
+            upload_path.unlink(missing_ok=True)  # type: ignore[call-arg]
+        except TypeError:
+            # Python <3.8 compatibility
+            if upload_path.exists():
+                upload_path.unlink()
 
 
 if __name__ == "__main__":
