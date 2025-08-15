@@ -71,9 +71,7 @@ class SchedulerService:
                 now = datetime.now(UTC)
                 if now >= next_run_at:
                     await self._safe_run_equity_snapshot(reason="interval")
-                    next_run_at = now.replace(microsecond=0) + timedelta(
-                        seconds=self.snapshot_interval_seconds
-                    )
+                    next_run_at = now.replace(microsecond=0) + timedelta(seconds=self.snapshot_interval_seconds)
                 # Kör cache-retention högst en gång per 6 timmar
                 await self._maybe_enforce_cache_retention(now)
                 # Kör probabilistisk validering enligt intervall
@@ -87,6 +85,19 @@ class SchedulerService:
             except Exception as e:
                 logger.error("%s", f"Scheduler-loop fel: {e}")
                 await asyncio.sleep(5)
+
+    async def run_prob_validation_once(self) -> None:
+        """Kör probabilistisk validering en gång direkt (ignorerar intervall‑spärr).
+
+        Används vid uppstart som "warm-up" när runtime‑flaggan är påslagen.
+        """
+        try:
+            # Säkerställ att nästa körning inte blockeras av intervallet
+            self._last_prob_validate_at = None
+            now = datetime.now(UTC)
+            await self._maybe_run_prob_validation(now)
+        except Exception as e:
+            logger.debug("%s", f"Warm-up prob validation fel: {e}")
 
     async def _safe_run_equity_snapshot(self, *, reason: str) -> None:
         """Kör equity-snapshot säkert och logga eventuella fel."""
@@ -202,13 +213,13 @@ class SchedulerService:
                     logger.debug(f"prob validation misslyckades för {sym}: {ie}")
             # aggregat (medel över symboler)
             if agg_brier_vals:
-                metrics_store.setdefault("prob_validation", {})["brier"] = sum(
-                    agg_brier_vals
-                ) / max(1, len(agg_brier_vals))
+                metrics_store.setdefault("prob_validation", {})["brier"] = sum(agg_brier_vals) / max(
+                    1, len(agg_brier_vals)
+                )
             if agg_logloss_vals:
-                metrics_store.setdefault("prob_validation", {})["logloss"] = sum(
-                    agg_logloss_vals
-                ) / max(1, len(agg_logloss_vals))
+                metrics_store.setdefault("prob_validation", {})["logloss"] = sum(agg_logloss_vals) / max(
+                    1, len(agg_logloss_vals)
+                )
             # rolling windows
             try:
                 windows_raw = getattr(s, "PROB_VALIDATE_WINDOWS_MINUTES", None) or ""
@@ -312,9 +323,7 @@ class SchedulerService:
             # försök reload om PROB_MODEL_FILE pekar på en fil vi just skrev
             try:
                 if prob_model.reload():
-                    metrics_store.setdefault("prob_retrain", {})["last_success"] = int(
-                        now.timestamp()
-                    )
+                    metrics_store.setdefault("prob_retrain", {})["last_success"] = int(now.timestamp())
             except Exception:
                 pass
             self._last_prob_retrain_at = now

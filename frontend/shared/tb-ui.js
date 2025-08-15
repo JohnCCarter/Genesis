@@ -47,6 +47,19 @@
       clearTimeout(to);
     }
   };
+  // Enkel helper som skriver fel i ett <pre> om något går snett
+  TB.fetchJsonSafeToPre = async function (url, options, timeoutMs, preEl) {
+    try {
+      const data = await TB.fetchJsonWithTimeout(url, options, timeoutMs);
+      if (preEl)
+        preEl.textContent =
+          typeof data === "string" ? data : JSON.stringify(data, null, 2);
+      return data;
+    } catch (e) {
+      if (preEl) preEl.textContent = String(e);
+      throw e;
+    }
+  };
   TB.resolvePublicSymbol = function (symbol) {
     try {
       const s = (symbol || "").trim();
@@ -70,6 +83,20 @@
     if (!isFinite(num)) return "";
     const str = num.toFixed(decimals || 8);
     return str.replace(/\.?0+$/, "");
+  };
+  // Liten state‑persist i localStorage
+  TB.persistSetJSON = function (key, value) {
+    try {
+      localStorage.setItem(String(key), JSON.stringify(value));
+    } catch {}
+  };
+  TB.persistGetJSON = function (key, fallback) {
+    try {
+      const v = localStorage.getItem(String(key));
+      return v ? JSON.parse(v) : fallback;
+    } catch {
+      return fallback;
+    }
   };
   window.TB = TB;
 })();

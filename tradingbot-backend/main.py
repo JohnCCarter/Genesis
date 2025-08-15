@@ -22,6 +22,7 @@ from services.bitfinex_websocket import bitfinex_ws
 from services.metrics import observe_latency, render_prometheus_text
 from utils.logger import get_logger
 from ws.manager import socket_app
+from services.runtime_mode import get_validation_on_start
 
 # Kommenterar ut för att undvika cirkulära imports
 # from tests.test_backend_order import test_backend_limit_order
@@ -54,6 +55,15 @@ async def lifespan(app: FastAPI):  # noqa: ARG001
             from services.scheduler import scheduler
 
             scheduler.start()
+            # Valfri warm-up av probabilistisk validering vid start baserat på runtime-flagga
+            try:
+                if bool(get_validation_on_start()):
+                    import asyncio as _asyncio
+
+                    _asyncio.create_task(scheduler.run_prob_validation_once())
+                    logger.info("🟡 Validation warm-up schemalagd vid startup")
+            except Exception as _e:
+                logger.debug("%s", f"Warm-up init fel: {_e}")
         else:
             logger.info("CORE_MODE aktivt: hoppar över scheduler")
     except Exception as e:

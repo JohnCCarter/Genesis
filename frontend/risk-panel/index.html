@@ -9,6 +9,27 @@
   </head>
   <body>
     <h2>Risk-baserat orderpanel</h2>
+    <div class="card">
+      <div class="row">
+        <div>
+          <div class="inline">
+            <span class="label">WS:</span>
+            <span id="ws-connected" class="badge warn">-</span>
+            <span id="ws-auth" class="badge warn">-</span>
+          </div>
+        </div>
+        <div class="inline" style="justify-content: end; gap: 12px">
+          <label class="inline"
+            ><input type="checkbox" id="toggle-ws-strategy" /> WS
+            Strategy</label
+          >
+          <label class="inline"
+            ><input type="checkbox" id="toggle-validation-warmup" /> Validation
+            warm‑up</label
+          >
+        </div>
+      </div>
+    </div>
     <div id="app"></div>
     <script src="/risk-panel/risk-panel.js"></script>
   </body>
