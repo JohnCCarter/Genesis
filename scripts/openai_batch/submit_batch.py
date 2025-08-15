@@ -2,6 +2,7 @@ import argparse
 import os
 import json
 import tempfile
+import time
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -52,6 +53,30 @@ def _rewrite_jsonl_with_model(source: Path, model: str) -> Path:
     return tmp
 
 
+def _safe_unlink(path: Path) -> None:
+    try:
+        path.unlink(missing_ok=True)  # type: ignore[call-arg]
+        return
+    except PermissionError:
+        time.sleep(0.5)
+        try:
+            path.unlink(missing_ok=True)  # type: ignore[call-arg]
+        except PermissionError:
+            return
+    except TypeError:
+        # Python <3.8 compatibility
+        if path.exists():
+            try:
+                path.unlink()
+                return
+            except PermissionError:
+                time.sleep(0.5)
+                try:
+                    path.unlink()
+                except PermissionError:
+                    return
+
+
 def main() -> None:
     # Load .env if present
     load_dotenv()
@@ -100,12 +125,7 @@ def main() -> None:
     )
 
     if temp_created:
-        try:
-            upload_path.unlink(missing_ok=True)  # type: ignore[call-arg]
-        except TypeError:
-            # Python <3.8 compatibility
-            if upload_path.exists():
-                upload_path.unlink()
+        _safe_unlink(upload_path)
 
 
 if __name__ == "__main__":
