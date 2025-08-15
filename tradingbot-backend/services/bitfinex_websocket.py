@@ -27,9 +27,7 @@ class BitfinexWebSocketService:
     def __init__(self):
         self.settings = Settings()
         # Standard: använd auth-URI (api) som bas. Publika subar kan specialhanteras vid behov.
-        self.ws_url = (
-            getattr(self.settings, "BITFINEX_WS_AUTH_URI", None) or self.settings.BITFINEX_WS_URI
-        )
+        self.ws_url = getattr(self.settings, "BITFINEX_WS_AUTH_URI", None) or self.settings.BITFINEX_WS_URI
         self.websocket = None
         self.is_connected = False
         self.is_authenticated = False
@@ -103,9 +101,7 @@ class BitfinexWebSocketService:
                     best = ws
                     best_cnt = cnt
             # Skapa ny om ingen finns eller om alla passerat gräns och vi kan skala ut
-            if best is None or (
-                best_cnt >= self._pool_max_subs and len(self._pool_public) < self._pool_max_sockets
-            ):
+            if best is None or (best_cnt >= self._pool_max_subs and len(self._pool_public) < self._pool_max_sockets):
                 # öppna ny public‑socket
                 ws = await self._open_public_socket()
                 if ws:
@@ -129,10 +125,7 @@ class BitfinexWebSocketService:
 
     async def _open_public_socket(self):
         try:
-            uri = (
-                getattr(self.settings, "BITFINEX_WS_PUBLIC_URI", None)
-                or self.settings.BITFINEX_WS_URI
-            )
+            uri = getattr(self.settings, "BITFINEX_WS_PUBLIC_URI", None) or self.settings.BITFINEX_WS_URI
             ws = await ws_connect(uri)
             asyncio.create_task(self._listen_loop(ws))
             logger.info("🧩 Öppnade ny public WS socket")
@@ -157,8 +150,10 @@ class BitfinexWebSocketService:
                 except Exception:
                     sockets.append({"index": idx, "subs": 0, "closed": True})
             totals = {"ticker": 0, "trades": 0, "candles": 0, "book": 0}
+            subs_list: list[str] = []
             try:
                 for key in list(self.subscriptions.keys()):
+                    subs_list.append(str(key))
                     if key.startswith("ticker|"):
                         totals["ticker"] += 1
                     elif key.startswith("trades|"):
@@ -175,6 +170,7 @@ class BitfinexWebSocketService:
                 "pool_max_subs": int(self._pool_max_subs),
                 "pool_sockets": sockets,
                 "totals": totals,
+                "subscriptions": subs_list,
                 "main": {
                     "connected": bool(self.is_connected),
                     "authenticated": bool(self.is_authenticated),
@@ -384,9 +380,7 @@ class BitfinexWebSocketService:
                 import os as _os
 
                 if not _os.environ.get("PYTEST_CURRENT_TEST") and not self._symbol_refresh_task:
-                    self._symbol_refresh_task = self._asyncio.create_task(
-                        self._symbol_refresh_loop()
-                    )
+                    self._symbol_refresh_task = self._asyncio.create_task(self._symbol_refresh_loop())
             except Exception:
                 pass
             return True
@@ -1058,9 +1052,7 @@ class BitfinexWebSocketService:
                 min_interval = 60.0
 
             if changed or (now_s - last_log) >= min_interval:
-                logger.info(
-                    f"🎯 Strategiutvärdering för {symbol}: {result['signal']} - {result['reason']}"
-                )
+                logger.info(f"🎯 Strategiutvärdering för {symbol}: {result['signal']} - {result['reason']}")
                 self._last_strategy_signal[symbol] = result.get("signal")
                 self._last_strategy_reason[symbol] = result.get("reason")
                 self._last_strategy_log_ts[symbol] = now_s
@@ -1131,17 +1123,13 @@ class BitfinexWebSocketService:
             current_ws = getattr(self, "_current_incoming_ws", None)
             if current_ws is None:
                 current_ws = self.websocket
-            cb = self._chan_callbacks.get(
-                (current_ws, int(channel_id))
-            ) or self.channel_callbacks.get(int(channel_id))
+            cb = self._chan_callbacks.get((current_ws, int(channel_id))) or self.channel_callbacks.get(int(channel_id))
             if cb:
                 # Ignorera heartbeat
                 if message_data == "hb":
                     return
                 info = (
-                    self._chan_info.get((current_ws, int(channel_id)))
-                    or self.channel_info.get(int(channel_id))
-                    or {}
+                    self._chan_info.get((current_ws, int(channel_id))) or self.channel_info.get(int(channel_id)) or {}
                 )
                 chan = info.get("channel")
                 symbol = info.get("symbol") or "unknown"
@@ -1205,9 +1193,7 @@ class BitfinexWebSocketService:
                 chan_id = data.get("chanId") or data.get("chanid") or data.get("chan_id")
                 symbol = data.get("symbol")
                 key = data.get("key")
-                logger.info(
-                    f"✅ Prenumeration bekräftad: channel={chan} symbol={symbol or key} chanId={chan_id}"
-                )
+                logger.info(f"✅ Prenumeration bekräftad: channel={chan} symbol={symbol or key} chanId={chan_id}")
                 cb_key = None
                 if chan == "ticker" and symbol:
                     cb_key = f"ticker|{symbol}"
@@ -1318,12 +1304,7 @@ class BitfinexWebSocketService:
             except Exception:
                 pass
             arr = (self.margin_sym or {}).get(eff)
-            need = not (
-                isinstance(arr, list)
-                and len(arr) >= 4
-                and arr[2] is not None
-                and arr[3] is not None
-            )
+            need = not (isinstance(arr, list) and len(arr) >= 4 and arr[2] is not None and arr[3] is not None)
             if not need:
                 return {"requested": False, "reason": "fields_present"}
             if not await self.ensure_authenticated():

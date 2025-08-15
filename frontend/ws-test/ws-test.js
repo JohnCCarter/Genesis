@@ -10,6 +10,20 @@
   function setStatus(s) {
     statusEl.textContent = s;
   }
+  const subsEl = document.getElementById("subs");
+  async function refreshSubs() {
+    try {
+      const j = await TB.fetchJsonWithTimeout(
+        "/api/v2/ws/pool/status",
+        { headers: TB.headersWithToken() },
+        6000
+      );
+      const arr = (j && j.subscriptions) || [];
+      subsEl.textContent = arr.join("\n");
+    } catch (e) {
+      subsEl.textContent = String(e);
+    }
+  }
   document.getElementById("ws-connect").onclick = () => {
     if (socket) {
       log("Already connected");
@@ -41,27 +55,53 @@
       : { "Content-Type": "application/json" };
   }
 
-  document.getElementById("sub").onclick = () => {
+  document.getElementById("sub").onclick = async () => {
     const sym = document.getElementById("sym").value.trim() || "tBTCUSD";
-    fetch("/api/v2/ws/subscribe", {
-      method: "POST",
-      headers: authHeaders(),
-      body: JSON.stringify({ channel: "ticker", symbol: sym }),
-    })
-      .then((r) => r.json())
-      .then((j) => log("SUB " + JSON.stringify(j)))
-      .catch((e) => log("ERR " + e));
+    const chan = document.getElementById("chan").value || "ticker";
+    const tf = document.getElementById("tf").value.trim();
+    const body =
+      tf && chan === "candles"
+        ? { channel: chan, symbol: sym, timeframe: tf }
+        : { channel: chan, symbol: sym };
+    try {
+      const j = await TB.fetchJsonWithTimeout(
+        "/api/v2/ws/subscribe",
+        {
+          method: "POST",
+          headers: authHeaders(),
+          body: JSON.stringify(body),
+        },
+        6000
+      );
+      log("SUB " + JSON.stringify(j));
+      refreshSubs();
+    } catch (e) {
+      log("ERR " + e);
+    }
   };
-  document.getElementById("unsub").onclick = () => {
+  document.getElementById("unsub").onclick = async () => {
     const sym = document.getElementById("sym").value.trim() || "tBTCUSD";
-    fetch("/api/v2/ws/unsubscribe", {
-      method: "POST",
-      headers: authHeaders(),
-      body: JSON.stringify({ channel: "ticker", symbol: sym }),
-    })
-      .then((r) => r.json())
-      .then((j) => log("UNSUB " + JSON.stringify(j)))
-      .catch((e) => log("ERR " + e));
+    const chan = document.getElementById("chan").value || "ticker";
+    const tf = document.getElementById("tf").value.trim();
+    const body =
+      tf && chan === "candles"
+        ? { channel: chan, symbol: sym, timeframe: tf }
+        : { channel: chan, symbol: sym };
+    try {
+      const j = await TB.fetchJsonWithTimeout(
+        "/api/v2/ws/unsubscribe",
+        {
+          method: "POST",
+          headers: authHeaders(),
+          body: JSON.stringify(body),
+        },
+        6000
+      );
+      log("UNSUB " + JSON.stringify(j));
+      refreshSubs();
+    } catch (e) {
+      log("ERR " + e);
+    }
   };
   document.getElementById("rest-call").onclick = () => {
     const url = (document.getElementById("rest-url").value || "/health").trim();
@@ -70,4 +110,5 @@
       .then((t) => log("REST " + url + "\n" + t))
       .catch((e) => log("ERR " + e));
   };
+  setInterval(refreshSubs, 5000);
 })();

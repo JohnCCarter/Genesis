@@ -16,9 +16,21 @@
         <button id="ws-connect">Connect</button>
         <button id="ws-disconnect">Disconnect</button>
         <div class="row">
+          <select id="chan">
+            <option value="ticker">ticker</option>
+            <option value="trades">trades</option>
+            <option value="candles">candles</option>
+          </select>
+          <input id="tf" placeholder="1m (candles)" />
+        </div>
+        <div class="row">
           <input id="sym" placeholder="tBTCUSD" />
-          <button id="sub">Subscribe ticker</button>
+          <button id="sub">Subscribe</button>
           <button id="unsub">Unsubscribe</button>
+        </div>
+        <div>
+          <h4>Active Subs</h4>
+          <pre id="subs"></pre>
         </div>
       </div>
       <div class="card">

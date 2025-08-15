@@ -8,14 +8,18 @@
     if (!el) return;
     el.classList.remove("ok", "warn", "err");
     el.classList.add(ok ? "ok" : "warn");
-    el.textContent = ok ? (labelIfOk || "OK") : (labelIfNot || "-");
+    el.textContent = ok ? labelIfOk || "OK" : labelIfNot || "-";
   }
 
   async function refreshWsStatus() {
     try {
-      const data = await TB.fetchJsonWithTimeout("/api/v2/ws/pool/status", {
-        headers: TB.headersWithToken(),
-      }, 6000);
+      const data = await TB.fetchJsonWithTimeout(
+        "/api/v2/ws/pool/status",
+        {
+          headers: TB.headersWithToken(),
+        },
+        6000
+      );
       const main = (data && data.main) || {};
       setBadge(wsConnEl, !!main.connected, "Connected", "Disc");
       setBadge(wsAuthEl, !!main.authenticated, "Auth", "NoAuth");
@@ -27,11 +31,19 @@
 
   async function loadToggles() {
     try {
-      const ws = await TB.fetchJsonWithTimeout("/api/v2/mode/ws-strategy", { headers: TB.headersWithToken() }, 6000);
+      const ws = await TB.fetchJsonWithTimeout(
+        "/api/v2/mode/ws-strategy",
+        { headers: TB.headersWithToken() },
+        6000
+      );
       if (toggleWs) toggleWs.checked = !!(ws && ws.enabled);
     } catch {}
     try {
-      const v = await TB.fetchJsonWithTimeout("/api/v2/mode/validation-warmup", { headers: TB.headersWithToken() }, 6000);
+      const v = await TB.fetchJsonWithTimeout(
+        "/api/v2/mode/validation-warmup",
+        { headers: TB.headersWithToken() },
+        6000
+      );
       if (toggleVal) toggleVal.checked = !!(v && v.validation_on_start);
     } catch {}
   }
@@ -40,11 +52,15 @@
     if (toggleWs) {
       toggleWs.onchange = async () => {
         try {
-          await TB.fetchJsonWithTimeout("/api/v2/mode/ws-strategy", {
-            method: "POST",
-            headers: TB.headersWithToken(),
-            body: JSON.stringify({ enabled: !!toggleWs.checked }),
-          }, 6000);
+          await TB.fetchJsonWithTimeout(
+            "/api/v2/mode/ws-strategy",
+            {
+              method: "POST",
+              headers: TB.headersWithToken(),
+              body: JSON.stringify({ enabled: !!toggleWs.checked }),
+            },
+            6000
+          );
           TB.toast("WS strategy: " + (toggleWs.checked ? "On" : "Off"));
         } catch (e) {
           TB.toast("Fel: " + e);
@@ -55,11 +71,15 @@
     if (toggleVal) {
       toggleVal.onchange = async () => {
         try {
-          await TB.fetchJsonWithTimeout("/api/v2/mode/validation-warmup", {
-            method: "POST",
-            headers: TB.headersWithToken(),
-            body: JSON.stringify({ enabled: !!toggleVal.checked }),
-          }, 6000);
+          await TB.fetchJsonWithTimeout(
+            "/api/v2/mode/validation-warmup",
+            {
+              method: "POST",
+              headers: TB.headersWithToken(),
+              body: JSON.stringify({ enabled: !!toggleVal.checked }),
+            },
+            6000
+          );
           TB.toast("Validation warm-up: " + (toggleVal.checked ? "On" : "Off"));
         } catch (e) {
           TB.toast("Fel: " + e);
