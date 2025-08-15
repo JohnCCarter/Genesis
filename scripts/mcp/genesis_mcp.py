@@ -1,5 +1,5 @@
 import os
-from typing import Any, Dict, Optional
+from typing import Any
 
 import httpx
 from mcp.server.fastmcp import FastMCP
@@ -9,8 +9,8 @@ USER_ID = os.getenv("GENESIS_USER_ID", "frontend_user")
 SCOPE = os.getenv("GENESIS_SCOPE", "read")
 
 
-def _headers(token: Optional[str]) -> Dict[str, str]:
-    headers: Dict[str, str] = {"Content-Type": "application/json"}
+def _headers(token: str | None) -> dict[str, str]:
+    headers: dict[str, str] = {"Content-Type": "application/json"}
     if token:
         headers["Authorization"] = f"Bearer {token}"
     return headers
@@ -30,14 +30,14 @@ app = FastMCP("genesis-mcp")
 
 
 @app.tool()
-async def get_token() -> Dict[str, Any]:
+async def get_token() -> dict[str, Any]:
     return {"token": await _get_token()}
 
 
 @app.tool()
 async def ws_status(
-    token: Optional[str] = None,
-) -> Dict[str, Any]:
+    token: str | None = None,
+) -> dict[str, Any]:
     async with httpx.AsyncClient(timeout=8.0) as client:
         response = await client.get(
             f"{BASE_URL}/api/v2/ws/pool/status",
@@ -50,8 +50,8 @@ async def ws_status(
 @app.tool()
 async def toggle_ws_strategy(
     enabled: bool,
-    token: Optional[str] = None,
-) -> Dict[str, Any]:
+    token: str | None = None,
+) -> dict[str, Any]:
     async with httpx.AsyncClient(timeout=8.0) as client:
         response = await client.post(
             f"{BASE_URL}/api/v2/mode/ws-strategy",
@@ -65,8 +65,8 @@ async def toggle_ws_strategy(
 @app.tool()
 async def toggle_validation_warmup(
     enabled: bool,
-    token: Optional[str] = None,
-) -> Dict[str, Any]:
+    token: str | None = None,
+) -> dict[str, Any]:
     async with httpx.AsyncClient(timeout=8.0) as client:
         response = await client.post(
             f"{BASE_URL}/api/v2/mode/validation-warmup",
@@ -80,8 +80,8 @@ async def toggle_validation_warmup(
 @app.tool()
 async def toggle_ws_connect_on_start(
     enabled: bool,
-    token: Optional[str] = None,
-) -> Dict[str, Any]:
+    token: str | None = None,
+) -> dict[str, Any]:
     async with httpx.AsyncClient(timeout=8.0) as client:
         response = await client.post(
             f"{BASE_URL}/api/v2/mode/ws-connect-on-start",
@@ -95,8 +95,8 @@ async def toggle_ws_connect_on_start(
 @app.tool()
 async def market_ticker(
     symbol: str = "tBTCUSD",
-    token: Optional[str] = None,
-) -> Dict[str, Any]:
+    token: str | None = None,
+) -> dict[str, Any]:
     async with httpx.AsyncClient(timeout=8.0) as client:
         response = await client.get(
             f"{BASE_URL}/api/v2/market/ticker/{symbol}",
@@ -108,13 +108,13 @@ async def market_ticker(
 
 @app.tool()
 async def run_validation(
-    symbols: Optional[str] = None,
-    timeframe: Optional[str] = None,
-    limit: Optional[int] = None,
-    max_samples: Optional[int] = None,
-    token: Optional[str] = None,
-) -> Dict[str, Any]:
-    payload: Dict[str, Any] = {
+    symbols: str | None = None,
+    timeframe: str | None = None,
+    limit: int | None = None,
+    max_samples: int | None = None,
+    token: str | None = None,
+) -> dict[str, Any]:
+    payload: dict[str, Any] = {
         "symbols": symbols,
         "timeframe": timeframe,
         "limit": limit,
@@ -135,10 +135,10 @@ async def place_order(
     symbol: str,
     amount: float,
     order_type: str = "EXCHANGE MARKET",
-    price: Optional[float] = None,
-    token: Optional[str] = None,
-) -> Dict[str, Any]:
-    payload: Dict[str, Any] = {
+    price: float | None = None,
+    token: str | None = None,
+) -> dict[str, Any]:
+    payload: dict[str, Any] = {
         "symbol": symbol,
         "amount": amount,
         "type": order_type,
