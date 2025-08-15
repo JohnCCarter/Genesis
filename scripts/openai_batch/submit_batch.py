@@ -87,13 +87,16 @@ def main() -> None:
     )
 
     print(
-        {
-            "batch_id": batch.id,
-            "status": batch.status,
-            "input_file_id": uploaded.id,
-            "endpoint": args.endpoint,
-            "window": args.window,
-        }
+        json.dumps(
+            {
+                "batch_id": batch.id,
+                "status": batch.status,
+                "input_file_id": uploaded.id,
+                "endpoint": args.endpoint,
+                "window": args.window,
+            },
+            ensure_ascii=False,
+        )
     )
 
     if temp_created:

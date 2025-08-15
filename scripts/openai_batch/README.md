@@ -37,9 +37,10 @@ OPENAI_BATCH_COMPLETION_WINDOW=24h
 
 ```powershell
 $env:OPENAI_API_KEY = "sk-..."
-$env:OPENAI_BATCH_INPUT_FILE = "batch_examples.jsonl"
+$env:OPENAI_BATCH_INPUT_FILE = "batch_examples_responses.jsonl"
 $env:OPENAI_BATCH_ENDPOINT = "/v1/chat/completions"
 $env:OPENAI_BATCH_COMPLETION_WINDOW = "24h"
+$env:OPENAI_BATCH_MODEL = "gpt-5"
 # valfritt
 # $env:OPENAI_BATCH_MODEL = "gpt-4o-mini"
 ```
