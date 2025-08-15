@@ -15,7 +15,8 @@ from config.settings import Settings
 # Process-local core mode flag (default from Settings at startup)
 _CORE_MODE: bool = bool(Settings().CORE_MODE)
 _WS_STRATEGY_ENABLED: bool = True
-_VALIDATION_ON_START: bool = True
+_VALIDATION_ON_START: bool = False
+_WS_CONNECT_ON_START: bool = False
 
 # Previous values to restore when leaving core mode
 _PREV_RATE_LIMIT: tuple[int, int] | None = None  # (max, window)
@@ -55,3 +56,12 @@ def set_prev_rate_limit(max_requests: int, window_seconds: int) -> None:
 
 def get_prev_rate_limit() -> tuple[int, int] | None:
     return _PREV_RATE_LIMIT
+
+
+def get_ws_connect_on_start() -> bool:
+    return bool(_WS_CONNECT_ON_START)
+
+
+def set_ws_connect_on_start(value: bool) -> None:
+    global _WS_CONNECT_ON_START
+    _WS_CONNECT_ON_START = bool(value)

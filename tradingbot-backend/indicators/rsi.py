@@ -26,8 +26,11 @@ def calculate_rsi(prices: list[float], period: int = 14) -> float | None:
         float: RSI-värde eller None om otillräcklig data
     """
     if len(prices) < period + 1:
-        logger.warning(
-            f"Otillräcklig data för RSI-beräkning. Kräver {period + 1}, fick {len(prices)}"
+        # Tysta varning till debug för att undvika loggspam vid uppstart/warm-up
+        logger.debug(
+            "Otillräcklig data för RSI-beräkning. Kräver %s, fick %s",
+            period + 1,
+            len(prices),
         )
         return None
 

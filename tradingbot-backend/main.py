@@ -20,9 +20,9 @@ from config.settings import Settings
 from rest.routes import router as rest_router
 from services.bitfinex_websocket import bitfinex_ws
 from services.metrics import observe_latency, render_prometheus_text
+from services.runtime_mode import get_validation_on_start, get_ws_connect_on_start
 from utils.logger import get_logger
 from ws.manager import socket_app
-from services.runtime_mode import get_validation_on_start
 
 # Kommenterar ut för att undvika cirkulära imports
 # from tests.test_backend_order import test_backend_limit_order
@@ -36,16 +36,25 @@ async def lifespan(app: FastAPI):  # noqa: ARG001
     # Startup
     logger.info("🚀 TradingBot Backend startar...")
 
-    # Starta Bitfinex WebSocket-anslutning (behålls även i CORE_MODE)
+    # Starta Bitfinex WebSocket-anslutning endast om flagga är på
     try:
-        await bitfinex_ws.connect()
-        logger.info("✅ WebSocket-anslutning etablerad")
-        # WS‑auth direkt om nycklar finns så att privata flöden (t.ex. margin miu) fungerar
-        try:
-            await bitfinex_ws.ensure_authenticated()
-        except Exception as e:
-            logger.warning(f"⚠️ WS‑auth misslyckades: {e}")
-        # Auto‑subscribe tickers från settings (om angivna) – flyttas bakom runtime‑toggle
+        if bool(get_ws_connect_on_start()):
+            import time as _t
+
+            _t0 = _t.perf_counter()
+            await bitfinex_ws.connect()
+            _t1 = _t.perf_counter()
+            logger.info("✅ WebSocket-anslutning etablerad (%.0f ms)", (_t1 - _t0) * 1000)
+            # WS‑auth direkt om nycklar finns så att privata flöden (t.ex. margin miu) fungerar
+            try:
+                _ta = _t.perf_counter()
+                await bitfinex_ws.ensure_authenticated()
+                _tb = _t.perf_counter()
+                logger.info("🔐 WS‑auth klar (%.0f ms)", (_tb - _ta) * 1000)
+            except Exception as e:
+                logger.warning(f"⚠️ WS‑auth misslyckades: {e}")
+        else:
+            logger.info("WS‑connect vid start är AV. Kan startas via WS‑test sidan eller API.")
     except Exception as e:
         logger.warning(f"⚠️ WebSocket-anslutning misslyckades: {e}")
 
@@ -165,8 +174,10 @@ _BASE_DIR = os.path.dirname(__file__)
 _FRONTEND_DIR = os.path.abspath(os.path.join(_BASE_DIR, "..", "frontend"))
 _WS_TEST_DIR = os.path.join(_FRONTEND_DIR, "ws-test")
 _RISK_PANEL_DIR = os.path.join(_FRONTEND_DIR, "risk-panel")
+_SHARED_DIR = os.path.join(_FRONTEND_DIR, "shared")
 app.mount("/ws-test", StaticFiles(directory=_WS_TEST_DIR, html=True), name="ws-test")
 app.mount("/risk-panel", StaticFiles(directory=_RISK_PANEL_DIR, html=True), name="risk-panel")
+app.mount("/shared", StaticFiles(directory=_SHARED_DIR, html=False), name="shared")
 
 
 @app.get("/risk-panel-legacy")

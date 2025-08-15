@@ -30,7 +30,76 @@
         </div>
       </div>
     </div>
+    <div class="card" id="quick-trade">
+      <h3>Quick Trade</h3>
+      <div class="row">
+        <input id="qt-symbol" placeholder="tBTCUSD" />
+        <select id="qt-side">
+          <option value="buy">BUY</option>
+          <option value="sell">SELL</option>
+        </select>
+      </div>
+      <div class="row">
+        <input id="qt-amount" placeholder="Amount (e.g. 0.001)" />
+        <input id="qt-price" placeholder="Price (blank = market)" />
+      </div>
+      <div class="inline" style="gap: 8px; margin-top: 10px">
+        <button id="qt-preview" class="secondary">Preview</button>
+        <button id="qt-trade">Trade</button>
+        <span id="qt-status" class="muted"></span>
+      </div>
+      <pre class="output" id="qt-out"></pre>
+    </div>
     <div id="app"></div>
+    <div class="card" id="advanced">
+      <details open>
+        <summary>Avancerat</summary>
+        <div class="card" style="margin-top: 10px">
+          <h4>Validation</h4>
+          <div class="row">
+            <input id="val-symbol" placeholder="tBTCUSD" />
+            <input id="val-tf" placeholder="1m" />
+          </div>
+          <div class="row">
+            <input id="val-limit" placeholder="Limit (ex 50)" />
+            <input id="val-max" placeholder="Max samples (ex 50)" />
+          </div>
+          <div class="inline" style="gap: 8px; margin-top: 10px">
+            <button id="val-run" class="secondary">Run Validation</button>
+            <span id="val-status" class="muted"></span>
+          </div>
+          <pre class="output" id="val-out"></pre>
+        </div>
+        <div class="card" style="margin-top: 10px">
+          <h4>Strategy</h4>
+          <div class="row">
+            <input id="st-symbol" placeholder="tBTCUSD (valfritt)" />
+            <select id="st-ema">
+              <option value="neutral">EMA neutral</option>
+              <option value="bullish">EMA bullish</option>
+              <option value="bearish">EMA bearish</option>
+            </select>
+          </div>
+          <div class="row">
+            <select id="st-rsi">
+              <option value="neutral">RSI neutral</option>
+              <option value="overbought">RSI overbought</option>
+              <option value="oversold">RSI oversold</option>
+            </select>
+            <select id="st-atr">
+              <option value="">ATR (valfritt)</option>
+              <option value="high">ATR high</option>
+              <option value="low">ATR low</option>
+            </select>
+          </div>
+          <div class="inline" style="gap: 8px; margin-top: 10px">
+            <button id="st-eval">Evaluate</button>
+            <span id="st-status" class="muted"></span>
+          </div>
+          <pre class="output" id="st-out"></pre>
+        </div>
+      </details>
+    </div>
     <script src="/risk-panel/risk-panel.js"></script>
   </body>
 </html>

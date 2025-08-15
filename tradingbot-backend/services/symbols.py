@@ -10,6 +10,7 @@ Ansvar:
 
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 from typing import Dict, List, Optional, Tuple
@@ -17,6 +18,17 @@ from typing import Dict, List, Optional, Tuple
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
+
+
+# Delad cache över alla instanser för att undvika upprepade REST‑anrop vid startup
+_CACHE: dict = {
+    "pairs": [],
+    "alias_fwd": {},
+    "alias_rev": {},
+    "ts": 0.0,
+    "ttl": 3600.0,
+}
+_REFRESH_LOCK: asyncio.Lock = asyncio.Lock()
 
 
 class SymbolService:
@@ -27,12 +39,12 @@ class SymbolService:
             base_dir, "docs", "legacy", "bitfinex_docs", "extracted", "symbols.json"
         )
         self._legacy_cache: list[str] = []
-        # Live config-cacher
-        self._pairs: list[str] = []  # ex. ["BTCUSD","ETHUSD", ...]
-        self._alias_fwd: dict[str, str] = {}  # RAW -> API (ex. ALGO -> ALG)
-        self._alias_rev: dict[str, str] = {}  # API -> RAW
-        self._last_refresh_ts: float = 0.0
-        self._ttl_seconds: float = 3600.0
+        # Delad cache används; behåll instansfält för bakåtkompatibilitet
+        self._pairs: list[str] = _CACHE["pairs"]
+        self._alias_fwd: dict[str, str] = _CACHE["alias_fwd"]
+        self._alias_rev: dict[str, str] = _CACHE["alias_rev"]
+        self._last_refresh_ts: float = _CACHE["ts"]
+        self._ttl_seconds: float = _CACHE["ttl"]
 
     def _load_legacy(self) -> list[str]:
         if self._legacy_cache:
@@ -78,24 +90,45 @@ class SymbolService:
             import time as _t
 
             now = _t.time()
-            if (now - float(self._last_refresh_ts or 0)) <= self._ttl_seconds:
+            # Läs delad cache först
+            if (now - float(_CACHE["ts"] or 0)) <= float(_CACHE["ttl"]):
+                # Synka instanspekare
+                self._pairs = _CACHE["pairs"]
+                self._alias_fwd = _CACHE["alias_fwd"]
+                self._alias_rev = _CACHE["alias_rev"]
+                self._last_refresh_ts = _CACHE["ts"]
                 return
-            # Hämta från BitfinexDataService
-            from services.bitfinex_data import BitfinexDataService
 
-            svc = BitfinexDataService()
-            pairs = await svc.get_configs_symbols() or []
-            fwd, rev = await svc.get_currency_symbol_map()
-            if pairs:
-                self._pairs = list(pairs)
-            self._alias_fwd = dict((k.upper(), v.upper()) for k, v in fwd.items())
-            self._alias_rev = dict((k.upper(), v.upper()) for k, v in rev.items())
-            self._last_refresh_ts = now
-            logger.info(
-                "SymbolService refresh: pairs=%s aliases=%s",
-                len(self._pairs),
-                len(self._alias_fwd),
-            )
+            async with _REFRESH_LOCK:
+                # Double‑check under lås
+                now = _t.time()
+                if (now - float(_CACHE["ts"] or 0)) <= float(_CACHE["ttl"]):
+                    self._pairs = _CACHE["pairs"]
+                    self._alias_fwd = _CACHE["alias_fwd"]
+                    self._alias_rev = _CACHE["alias_rev"]
+                    self._last_refresh_ts = _CACHE["ts"]
+                    return
+                # Hämta från BitfinexDataService
+                from services.bitfinex_data import BitfinexDataService
+
+                svc = BitfinexDataService()
+                pairs = await svc.get_configs_symbols() or []
+                fwd, rev = await svc.get_currency_symbol_map()
+                if pairs:
+                    _CACHE["pairs"] = list(pairs)
+                _CACHE["alias_fwd"] = {k.upper(): v.upper() for k, v in fwd.items()}
+                _CACHE["alias_rev"] = {k.upper(): v.upper() for k, v in rev.items()}
+                _CACHE["ts"] = now
+                # Synka instanspekare
+                self._pairs = _CACHE["pairs"]
+                self._alias_fwd = _CACHE["alias_fwd"]
+                self._alias_rev = _CACHE["alias_rev"]
+                self._last_refresh_ts = _CACHE["ts"]
+                logger.info(
+                    "SymbolService refresh: pairs=%s aliases=%s",
+                    len(self._pairs),
+                    len(self._alias_fwd),
+                )
         except Exception as e:
             logger.warning("SymbolService refresh misslyckades: %s", e)
 

@@ -71,7 +71,9 @@ class SchedulerService:
                 now = datetime.now(UTC)
                 if now >= next_run_at:
                     await self._safe_run_equity_snapshot(reason="interval")
-                    next_run_at = now.replace(microsecond=0) + timedelta(seconds=self.snapshot_interval_seconds)
+                    next_run_at = now.replace(microsecond=0) + timedelta(
+                        seconds=self.snapshot_interval_seconds
+                    )
                 # Kör cache-retention högst en gång per 6 timmar
                 await self._maybe_enforce_cache_retention(now)
                 # Kör probabilistisk validering enligt intervall
@@ -213,13 +215,13 @@ class SchedulerService:
                     logger.debug(f"prob validation misslyckades för {sym}: {ie}")
             # aggregat (medel över symboler)
             if agg_brier_vals:
-                metrics_store.setdefault("prob_validation", {})["brier"] = sum(agg_brier_vals) / max(
-                    1, len(agg_brier_vals)
-                )
+                metrics_store.setdefault("prob_validation", {})["brier"] = sum(
+                    agg_brier_vals
+                ) / max(1, len(agg_brier_vals))
             if agg_logloss_vals:
-                metrics_store.setdefault("prob_validation", {})["logloss"] = sum(agg_logloss_vals) / max(
-                    1, len(agg_logloss_vals)
-                )
+                metrics_store.setdefault("prob_validation", {})["logloss"] = sum(
+                    agg_logloss_vals
+                ) / max(1, len(agg_logloss_vals))
             # rolling windows
             try:
                 windows_raw = getattr(s, "PROB_VALIDATE_WINDOWS_MINUTES", None) or ""
@@ -323,7 +325,9 @@ class SchedulerService:
             # försök reload om PROB_MODEL_FILE pekar på en fil vi just skrev
             try:
                 if prob_model.reload():
-                    metrics_store.setdefault("prob_retrain", {})["last_success"] = int(now.timestamp())
+                    metrics_store.setdefault("prob_retrain", {})["last_success"] = int(
+                        now.timestamp()
+                    )
             except Exception:
                 pass
             self._last_prob_retrain_at = now

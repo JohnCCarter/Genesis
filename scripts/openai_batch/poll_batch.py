@@ -1,8 +1,8 @@
 import argparse
 import json
 import os
-import time
 from pathlib import Path
+import time
 
 from dotenv import load_dotenv
 from openai import OpenAI

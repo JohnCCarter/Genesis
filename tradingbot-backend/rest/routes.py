@@ -43,10 +43,12 @@ from services.runtime_mode import (
     get_core_mode,
     get_prev_rate_limit,
     get_validation_on_start,
+    get_ws_connect_on_start,
     get_ws_strategy_enabled,
     set_core_mode,
     set_prev_rate_limit,
     set_validation_on_start,
+    set_ws_connect_on_start,
     set_ws_strategy_enabled,
 )
 from services.strategy import evaluate_weighted_strategy
@@ -3452,6 +3454,21 @@ async def set_validation_warmup(payload: CoreModeRequest, _: bool = Depends(requ
         return {"ok": True, "validation_on_start": bool(get_validation_on_start())}
     except Exception as e:
         logger.exception(f"Fel vid set validation-warmup: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.get("/mode/ws-connect-on-start")
+async def get_ws_connect_toggle(_: bool = Depends(require_auth)):
+    return {"ws_connect_on_start": bool(get_ws_connect_on_start())}
+
+
+@router.post("/mode/ws-connect-on-start")
+async def set_ws_connect_toggle(payload: CoreModeRequest, _: bool = Depends(require_auth)):
+    try:
+        set_ws_connect_on_start(bool(payload.enabled))
+        return {"ok": True, "ws_connect_on_start": bool(get_ws_connect_on_start())}
+    except Exception as e:
+        logger.exception(f"Fel vid set ws-connect-on-start: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 

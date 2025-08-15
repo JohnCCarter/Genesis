@@ -121,6 +121,19 @@ AUTH_REQUIRED=True
 # (Valfritt) Telegram-notiser
 TELEGRAM_BOT_TOKEN=123456:ABC-DEF...  # BotFather token
 TELEGRAM_CHAT_ID=123456789           # Chat eller kanal-ID
+# Validering (lätta defaults för snabb start)
+# Körs periodiskt av scheduler om PROB_VALIDATE_ENABLED=True
+PROB_VALIDATE_ENABLED=true
+PROB_VALIDATE_INTERVAL_MINUTES=120
+PROB_VALIDATE_TIMEFRAME=1m
+PROB_VALIDATE_LIMIT=50           # var låg i utveckling, höj manuellt vid behov
+PROB_VALIDATE_MAX_SAMPLES=50     # var låg i utveckling, höj manuellt vid behov
+
+# WS vid start (rekommenderas False i utveckling – starta från ws‑test vid behov)
+# Kan togglas via GET/POST /api/v2/mode/ws-connect-on-start
+# ws_connect_on_start påverkar bara startup och kräver omstart för effekt
+# (runtime‑WS påverkas av dina manuella subar och WS‑strategy‑toggle)
+
 ```
 
 3. Se `API_KEY_SETUP.md` för instruktioner om hur du skapar och konfigurerar Bitfinex API-nycklar.

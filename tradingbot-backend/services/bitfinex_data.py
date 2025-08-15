@@ -483,10 +483,13 @@ class BitfinexDataService:
 
             # Multi-request för exchange + margin
             url = f"{self.base_url}/conf/pub:list:pair:exchange,pub:list:pair:margin"
+            _t0 = _t.perf_counter()
             async with httpx.AsyncClient(timeout=self.settings.DATA_HTTP_TIMEOUT) as client:
                 resp = await client.get(url)
                 resp.raise_for_status()
                 data = resp.json() or []
+                _t1 = _t.perf_counter()
+                logger.info("⚙️ configs symbols fetch (%.0f ms)", (_t1 - _t0) * 1000)
                 pairs: list[str] = []
                 # data är en lista av listor; slå ihop
                 if isinstance(data, list):
@@ -527,10 +530,13 @@ class BitfinexDataService:
                     return fwd, rev  # type: ignore[return-value]
 
             url = f"{self.base_url}/conf/pub:map:currency:sym"
+            _t0 = _t.perf_counter()
             async with httpx.AsyncClient(timeout=self.settings.DATA_HTTP_TIMEOUT) as client:
                 resp = await client.get(url)
                 resp.raise_for_status()
                 data = resp.json() or []
+                _t1 = _t.perf_counter()
+                logger.info("⚙️ currency map fetch (%.0f ms)", (_t1 - _t0) * 1000)
                 fwd: dict[str, str] = {}
                 rev: dict[str, str] = {}
                 # Förväntat format: [[ [RAW, API], [RAW, API], ... ]]
