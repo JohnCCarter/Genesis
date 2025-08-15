@@ -5,7 +5,8 @@ Den här mappen innehåller en minimal uppsättning för att köra OpenAI Batch�
 ## Innehåll
 - `requirements.txt` – beroenden
 - `env.example` – exempelmiljö (kopiera till `.env`)
-- `batch_examples.jsonl` – exempel på batch‑inputs i JSONL
+- `batch_examples.jsonl` – exempel på batch‑inputs i JSONL (Chat Completions)
+- `batch_examples_responses.jsonl` – exempel för Responses‑API
 - `submit_batch.py` – skickar ett batch‑jobb
 - `poll_batch.py` – hämtar status och laddar ner resultat
 
@@ -38,13 +39,17 @@ $env:OPENAI_BATCH_COMPLETION_WINDOW = "24h"
 ```
 
 ## Körning
-- Skicka batch (utan override):
+- Chat Completions (t.ex. gpt‑4o‑mini):
 ```powershell
-python submit_batch.py --input $env:OPENAI_BATCH_INPUT_FILE --endpoint $env:OPENAI_BATCH_ENDPOINT --window $env:OPENAI_BATCH_COMPLETION_WINDOW --desc "demo-batch"
+python submit_batch.py --input batch_examples.jsonl --endpoint /v1/chat/completions --window 24h --desc "demo-chat"
 ```
-- Skicka batch med modell‑override (t.ex. "gpt5-high-fast" om ditt konto har access):
+- Responses‑API med `gpt-5-chat-latest`:
 ```powershell
-python submit_batch.py --input batch_examples.jsonl --endpoint /v1/chat/completions --window 24h --override-model gpt5-high-fast --desc "demo-gpt5"
+python submit_batch.py --input batch_examples_responses.jsonl --endpoint /v1/responses --window 24h --desc "demo-gpt5"
+```
+- Modell‑override (gäller båda formaten; ändrar `body.model` innan uppladdning):
+```powershell
+python submit_batch.py --input batch_examples_responses.jsonl --endpoint /v1/responses --window 24h --override-model gpt-5-chat-latest --desc "demo-override"
 ```
 - Polla och hämta resultat (anger batch‑ID som skapades):
 ```powershell
@@ -52,7 +57,7 @@ python poll_batch.py --batch-id bat_12345 --out results
 ```
 
 ## Noteringar
-- `batch_examples.jsonl` visar officiellt batch‑format (en rad per request) för Chat Completions‑endpoint.
-- `--override-model` skriver temporärt om varje rad till vald modell innan uppladdning.
+- `batch_examples.jsonl` (Chat Completions) och `batch_examples_responses.jsonl` (Responses) har olika schema i `body`.
+- `--override-model` skriver temporärt om modellnamn innan uppladdning. Du ansvarar för att formatet (messages vs input) matchar vald endpoint.
 - Skripten använder OpenAI Python SDK v1 och hanterar fel, backoff och nedladdning av output/error‑filer.
-- Dokumentation: `https://platform.openai.com/docs/guides/batch`.
+- Dokumentation: `https://platform.openai.com/docs/guides/batch` och `https://platform.openai.com/docs/models/gpt-5-chat-latest`.
