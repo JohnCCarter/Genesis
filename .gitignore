@@ -269,3 +269,7 @@ Thumbs.db
 logs/
 *.log.*
 tradingbot.log
+
+# OpenAI Batch local artifacts
+scripts/openai_batch/.venv/
+scripts/openai_batch/results/
