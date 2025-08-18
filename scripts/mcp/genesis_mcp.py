@@ -154,4 +154,11 @@ async def place_order(
 
 
 if __name__ == "__main__":
-    app.run()
+    # Defaulta till stdio-transport för MCP-klienter som Cursor/Lovable
+    mode = os.getenv("MCP_TRANSPORT", "stdio").lower()
+    if mode == "stdio":
+        import asyncio as _asyncio
+
+        _asyncio.run(app.run_stdio_async())
+    else:
+        app.run()

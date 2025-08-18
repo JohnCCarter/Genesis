@@ -1,81 +1,13 @@
 {
   "equity": [
     {
-      "date": "2025-08-08",
-      "total_usd": -4.11544,
-      "wallets_usd": 0.0,
-      "unrealized_pnl_usd": -4.11544,
-      "positions_count": 1,
-      "realized_usd": 0.0
-    },
-    {
-      "date": "2025-08-09",
-      "total_usd": 148768.77508062,
-      "wallets_usd": 148794.17684062,
-      "unrealized_pnl_usd": -25.40176,
-      "positions_count": 2,
-      "realized_usd": 0.0,
-      "day_change_usd": 148772.89052062,
-      "realized_day_change_usd": 0.0
-    },
-    {
-      "date": "2025-08-10",
-      "total_usd": 149017.9051981,
-      "wallets_usd": 148988.5367181,
-      "unrealized_pnl_usd": 29.36848,
-      "positions_count": 3,
-      "realized_usd": 0.0,
-      "day_change_usd": 249.13011748,
-      "realized_day_change_usd": 0.0
-    },
-    {
-      "date": "2025-08-11",
-      "total_usd": 149211.20664351,
-      "wallets_usd": 149156.73846351,
-      "unrealized_pnl_usd": 54.46818,
-      "positions_count": 3,
-      "realized_usd": 0.0,
-      "day_change_usd": 193.30144541,
-      "realized_day_change_usd": 0.0
-    },
-    {
-      "date": "2025-08-12",
-      "total_usd": 225495.30778117,
-      "wallets_usd": 225490.44882017,
-      "unrealized_pnl_usd": 4.858961,
-      "positions_count": 3,
-      "realized_usd": 0.0,
-      "day_change_usd": 76284.10113766,
-      "realized_day_change_usd": 0.0
-    },
-    {
-      "date": "2025-08-13",
-      "total_usd": 238673.60971804,
-      "wallets_usd": 238674.51330524,
-      "unrealized_pnl_usd": -0.9035872,
-      "positions_count": 0,
-      "realized_usd": 0.0,
-      "day_change_usd": 13178.30193687,
-      "realized_day_change_usd": 0.0
-    },
-    {
-      "date": "2025-08-14",
-      "total_usd": 234808.3769856,
-      "wallets_usd": 234848.1763792,
-      "unrealized_pnl_usd": -39.7993936,
-      "positions_count": 2,
-      "realized_usd": 0.0,
-      "day_change_usd": -3865.23273244,
-      "realized_day_change_usd": 0.0
-    },
-    {
-      "date": "2025-08-15",
-      "total_usd": 234657.01487899,
-      "wallets_usd": 234691.05541339,
-      "unrealized_pnl_usd": -34.0405344,
+      "date": "2025-08-18",
+      "total_usd": 228657.90407736,
+      "wallets_usd": 228715.92275936,
+      "unrealized_pnl_usd": -58.018682,
       "positions_count": 5,
       "realized_usd": 0.0,
-      "day_change_usd": -151.36210661,
+      "day_change_usd": 0.0,
       "realized_day_change_usd": 0.0
     }
   ]

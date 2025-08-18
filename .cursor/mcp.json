@@ -6,7 +6,7 @@
         "/d",
         "/s",
         "/c",
-        "\"\"C:\\Users\\fa06662\\HCP\\H\u00e4mtade filer\\Genesis\\scripts\\mcp\\.venv\\Scripts\\python.exe\" \"C:\\Users\\fa06662\\HCP\\H\u00e4mtade filer\\Genesis\\scripts\\mcp\\genesis_mcp.py\"\""
+        "\"\"C:\\Users\\fa06662\\HCP\\Hämtade filer\\Genesis\\scripts\\mcp\\.venv\\Scripts\\python.exe\" \"C:\\Users\\fa06662\\HCP\\Hämtade filer\\Genesis\\scripts\\mcp\\genesis_mcp.py\"\""
       ],
       "env": {
         "GENESIS_BASE_URL": "http://127.0.0.1:8000",
