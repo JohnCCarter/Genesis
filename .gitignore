@@ -248,6 +248,9 @@ debug_settings.py
 
 # Frontend
 frontend/_backup/
+frontend/dashboard/node_modules/
+frontend/dashboard/dist/
+frontend/dashboard/.vite/
 
 # OS generated files
 .DS_Store
