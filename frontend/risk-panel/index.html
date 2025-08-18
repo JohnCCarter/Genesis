@@ -6,6 +6,7 @@
     <title>Risk Panel</title>
     <link rel="stylesheet" href="/risk-panel/risk-panel.css" />
     <script src="/shared/tb-ui.js"></script>
+    <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
   </head>
   <body>
     <h2>Risk-baserat orderpanel</h2>
@@ -18,14 +19,15 @@
             <span id="ws-auth" class="badge warn">-</span>
           </div>
         </div>
-        <div class="inline" style="justify-content: end; gap: 12px">
+        <div class="inline justify-end gap-12">
           <label class="inline"
-            ><input type="checkbox" id="toggle-ws-strategy" /> WS
-            Strategy</label
+            ><input type="checkbox" id="toggle-ws-strategy" /> WS Strategy
+            <span id="badge-ws-strategy" class="badge warn">-</span></label
           >
           <label class="inline"
             ><input type="checkbox" id="toggle-validation-warmup" /> Validation
-            warm‑up</label
+            warm‑up
+            <span id="badge-validation" class="badge warn">-</span></label
           >
         </div>
       </div>
@@ -43,60 +45,69 @@
         <input id="qt-amount" placeholder="Amount (e.g. 0.001)" />
         <input id="qt-price" placeholder="Price (blank = market)" />
       </div>
-      <div class="inline" style="gap: 8px; margin-top: 10px">
+      <div class="inline gap-8 mt-10">
         <button id="qt-preview" class="secondary">Preview</button>
         <button id="qt-trade">Trade</button>
         <span id="qt-status" class="muted"></span>
       </div>
       <pre class="output" id="qt-out"></pre>
     </div>
-    <div id="app"></div>
+
+    <div class="card" id="errors">
+      <h3>Senaste fel</h3>
+      <pre class="output" id="err-log"></pre>
+    </div>
+
     <div class="card" id="advanced">
       <details open>
         <summary>Avancerat</summary>
-        <div class="card" style="margin-top: 10px">
-          <h4>Validation</h4>
-          <div class="row">
-            <input id="val-symbol" placeholder="tBTCUSD" />
-            <input id="val-tf" placeholder="1m" />
-          </div>
-          <div class="row">
-            <input id="val-limit" placeholder="Limit (ex 50)" />
-            <input id="val-max" placeholder="Max samples (ex 50)" />
-          </div>
-          <div class="inline" style="gap: 8px; margin-top: 10px">
-            <button id="val-run" class="secondary">Run Validation</button>
-            <span id="val-status" class="muted"></span>
-          </div>
-          <pre class="output" id="val-out"></pre>
+        <div class="card mt-10">
+          <details>
+            <summary>Validation</summary>
+            <div class="row mt-10">
+              <input id="val-symbol" placeholder="tBTCUSD" />
+              <input id="val-tf" placeholder="1m" />
+            </div>
+            <div class="row">
+              <input id="val-limit" placeholder="Limit (ex 50)" />
+              <input id="val-max" placeholder="Max samples (ex 50)" />
+            </div>
+            <div class="inline gap-8 mt-10">
+              <button id="val-run" class="secondary">Run Validation</button>
+              <span id="val-status" class="muted"></span>
+            </div>
+            <pre class="output" id="val-out"></pre>
+          </details>
         </div>
-        <div class="card" style="margin-top: 10px">
-          <h4>Strategy</h4>
-          <div class="row">
-            <input id="st-symbol" placeholder="tBTCUSD (valfritt)" />
-            <select id="st-ema">
-              <option value="neutral">EMA neutral</option>
-              <option value="bullish">EMA bullish</option>
-              <option value="bearish">EMA bearish</option>
-            </select>
-          </div>
-          <div class="row">
-            <select id="st-rsi">
-              <option value="neutral">RSI neutral</option>
-              <option value="overbought">RSI overbought</option>
-              <option value="oversold">RSI oversold</option>
-            </select>
-            <select id="st-atr">
-              <option value="">ATR (valfritt)</option>
-              <option value="high">ATR high</option>
-              <option value="low">ATR low</option>
-            </select>
-          </div>
-          <div class="inline" style="gap: 8px; margin-top: 10px">
-            <button id="st-eval">Evaluate</button>
-            <span id="st-status" class="muted"></span>
-          </div>
-          <pre class="output" id="st-out"></pre>
+        <div class="card mt-10">
+          <details>
+            <summary>Strategy</summary>
+            <div class="row mt-10">
+              <input id="st-symbol" placeholder="tBTCUSD (valfritt)" />
+              <select id="st-ema">
+                <option value="neutral">EMA neutral</option>
+                <option value="bullish">EMA bullish</option>
+                <option value="bearish">EMA bearish</option>
+              </select>
+            </div>
+            <div class="row">
+              <select id="st-rsi">
+                <option value="neutral">RSI neutral</option>
+                <option value="overbought">RSI overbought</option>
+                <option value="oversold">RSI oversold</option>
+              </select>
+              <select id="st-atr">
+                <option value="">ATR (valfritt)</option>
+                <option value="high">ATR high</option>
+                <option value="low">ATR low</option>
+              </select>
+            </div>
+            <div class="inline gap-8 mt-10">
+              <button id="st-eval">Evaluate</button>
+              <span id="st-status" class="muted"></span>
+            </div>
+            <pre class="output" id="st-out"></pre>
+          </details>
         </div>
       </details>
     </div>

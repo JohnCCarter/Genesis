@@ -3,12 +3,25 @@
   const wsAuthEl = document.getElementById("ws-auth");
   const toggleWs = document.getElementById("toggle-ws-strategy");
   const toggleVal = document.getElementById("toggle-validation-warmup");
+  const badgeWs = document.getElementById("badge-ws-strategy");
+  const badgeVal = document.getElementById("badge-validation");
+  const errLog = document.getElementById("err-log");
 
   function setBadge(el, ok, labelIfOk, labelIfNot) {
     if (!el) return;
     el.classList.remove("ok", "warn", "err");
     el.classList.add(ok ? "ok" : "warn");
     el.textContent = ok ? labelIfOk || "OK" : labelIfNot || "-";
+  }
+
+  function appendError(msg) {
+    try {
+      const s = `[${new Date().toISOString()}] ${String(msg)}`;
+      if (errLog) {
+        errLog.textContent = (errLog.textContent || "") + s + "\n";
+        errLog.scrollTop = errLog.scrollHeight;
+      }
+    } catch {}
   }
 
   async function refreshWsStatus() {
@@ -26,6 +39,7 @@
     } catch (e) {
       setBadge(wsConnEl, false, "Connected", "Disc");
       setBadge(wsAuthEl, false, "Auth", "NoAuth");
+      appendError(`WS status fel: ${e}`);
     }
   }
 
@@ -36,7 +50,9 @@
         { headers: TB.headersWithToken() },
         6000
       );
-      if (toggleWs) toggleWs.checked = !!(ws && ws.enabled);
+      const enabled = !!(ws && (ws.enabled ?? ws.ws_strategy_enabled));
+      if (toggleWs) toggleWs.checked = enabled;
+      setBadge(badgeWs, enabled, "On", "Off");
     } catch {}
     try {
       const v = await TB.fetchJsonWithTimeout(
@@ -44,7 +60,9 @@
         { headers: TB.headersWithToken() },
         6000
       );
-      if (toggleVal) toggleVal.checked = !!(v && v.validation_on_start);
+      const enabled = !!(v && v.validation_on_start);
+      if (toggleVal) toggleVal.checked = enabled;
+      setBadge(badgeVal, enabled, "On", "Off");
     } catch {}
   }
 
@@ -61,9 +79,12 @@
             },
             6000
           );
-          TB.toast("WS strategy: " + (toggleWs.checked ? "On" : "Off"));
+          const enabled = !!toggleWs.checked;
+          TB.toast("WS strategy: " + (enabled ? "On" : "Off"));
+          setBadge(badgeWs, enabled, "On", "Off");
         } catch (e) {
           TB.toast("Fel: " + e);
+          appendError(`Toggle WS strategy fel: ${e}`);
           toggleWs.checked = !toggleWs.checked;
         }
       };
@@ -80,9 +101,12 @@
             },
             6000
           );
-          TB.toast("Validation warm-up: " + (toggleVal.checked ? "On" : "Off"));
+          const enabled = !!toggleVal.checked;
+          TB.toast("Validation warm-up: " + (enabled ? "On" : "Off"));
+          setBadge(badgeVal, enabled, "On", "Off");
         } catch (e) {
           TB.toast("Fel: " + e);
+          appendError(`Toggle validation fel: ${e}`);
           toggleVal.checked = !toggleVal.checked;
         }
       };
@@ -108,6 +132,7 @@
     function busy(btn, on) {
       if (!btn) return;
       btn.disabled = !!on;
+      btn.classList.toggle("loading", !!on);
       btn.textContent = on
         ? btn.textContent.replace(/\.\.\.$/, "") + "..."
         : btn.getAttribute("data-label") ||
@@ -182,6 +207,7 @@
           : "Kunde inte hämta pris";
       } catch (e) {
         if (elOut) elOut.textContent = String(e);
+        appendError(`Preview fel: ${e}`);
       } finally {
         busy(btnPrev, false);
       }
@@ -233,6 +259,7 @@
       } catch (e) {
         if (elOut) elOut.textContent = String(e);
         TB.toast("Fel: " + e);
+        appendError(`Trade fel: ${e}`);
       } finally {
         busy(btnTrade, false);
       }
@@ -274,6 +301,7 @@
       } catch (e) {
         if (vOut) vOut.textContent = String(e);
         TB.toast("Fel: " + e);
+        appendError(`Validation fel: ${e}`);
       } finally {
         busy(vBtn, false);
       }
@@ -313,6 +341,7 @@
       } catch (e) {
         if (sOut) sOut.textContent = String(e);
         TB.toast("Fel: " + e);
+        appendError(`Strategy eval fel: ${e}`);
       } finally {
         busy(sBtn, false);
       }

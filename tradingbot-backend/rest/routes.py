@@ -3721,6 +3721,31 @@ async def get_ws_strategy(_: bool = Depends(require_auth)):
 async def set_ws_strategy(payload: CoreModeRequest, _: bool = Depends(require_auth)):
     try:
         set_ws_strategy_enabled(bool(payload.enabled))
+        # Auto‑subscribe när WS Strategy slås på
+        try:
+            if bool(payload.enabled):
+                s = Settings()
+                raw = (getattr(s, "WS_SUBSCRIBE_SYMBOLS", None) or "").strip()
+                if raw:
+                    syms = [x.strip() for x in raw.split(",") if x.strip()]
+                else:
+                    # Fallback: standardpar
+                    syms = [f"t{getattr(s, 'DEFAULT_TRADING_PAIR', 'BTCUSD')}"]
+                import asyncio as _async
+
+                from services.bitfinex_websocket import bitfinex_ws as _ws
+
+                for sym in syms:
+                    try:
+                        _async.create_task(
+                            _ws.subscribe_with_strategy_evaluation(
+                                sym, _ws._handle_ticker_with_strategy
+                            )
+                        )
+                    except Exception:
+                        pass
+        except Exception:
+            pass
         return {"ok": True, "ws_strategy_enabled": bool(get_ws_strategy_enabled())}
     except Exception as e:
         logger.exception(f"Fel vid set ws-strategy: {e}")

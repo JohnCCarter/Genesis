@@ -66,6 +66,7 @@ button {
   background: #2ea44f;
   color: #fff;
   cursor: pointer;
+  position: relative;
 }
 button.secondary {
   background: #57606a;
@@ -77,4 +78,38 @@ pre.output {
   background: #f6f8fa;
   border-radius: 6px;
   padding: 12px;
+}
+
+/* Utility classes (ersätter inline-stilar) */
+.justify-end {
+  justify-content: end;
+}
+.gap-12 {
+  gap: 12px;
+}
+.gap-8 {
+  gap: 8px;
+}
+.mt-10 {
+  margin-top: 10px;
+}
+
+/* Icke-blockerande knapp-spinner */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+button.loading::after {
+  content: "";
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  position: absolute;
+  right: -22px;
+  top: 50%;
+  transform: translateY(-50%);
 }
