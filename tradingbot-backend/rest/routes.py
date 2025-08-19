@@ -2335,8 +2335,9 @@ async def prob_retrain_run(req: ProbRetrainRunRequest, _: bool = Depends(require
         user_dir = req.output_dir
         # Validate output_dir: must be within safe_root
         if user_dir:
-            out_dir = _os.path.normpath(_os.path.join(safe_root, user_dir))
-            if not out_dir.startswith(_os.path.abspath(safe_root)):
+            out_dir = _os.path.abspath(_os.path.join(safe_root, user_dir))
+            safe_root_abs = _os.path.abspath(safe_root)
+            if _os.path.commonpath([safe_root_abs, out_dir]) != safe_root_abs:
                 raise HTTPException(status_code=400, detail="Invalid output_dir: must be within allowed directory.")
         else:
             out_dir = _os.path.abspath(safe_root)
