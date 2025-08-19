@@ -58,23 +58,20 @@ async def lifespan(app: FastAPI):  # noqa: ARG001
     except Exception as e:
         logger.warning(f"⚠️ WebSocket-anslutning misslyckades: {e}")
 
-    # Starta scheduler endast om ej CORE_MODE
+    # Starta scheduler
     try:
-        if not Settings().CORE_MODE:
-            from services.scheduler import scheduler
+        from services.scheduler import scheduler
 
-            scheduler.start()
-            # Valfri warm-up av probabilistisk validering vid start baserat på runtime-flagga
-            try:
-                if bool(get_validation_on_start()):
-                    import asyncio as _asyncio
+        scheduler.start()
+        # Valfri warm-up av probabilistisk validering vid start baserat på runtime-flagga
+        try:
+            if bool(get_validation_on_start()):
+                import asyncio as _asyncio
 
-                    _asyncio.create_task(scheduler.run_prob_validation_once())
-                    logger.info("🟡 Validation warm-up schemalagd vid startup")
-            except Exception as _e:
-                logger.debug("%s", f"Warm-up init fel: {_e}")
-        else:
-            logger.info("CORE_MODE aktivt: hoppar över scheduler")
+                _asyncio.create_task(scheduler.run_prob_validation_once())
+                logger.info("🟡 Validation warm-up schemalagd vid startup")
+        except Exception as _e:
+            logger.debug("%s", f"Warm-up init fel: {_e}")
     except Exception as e:
         logger.warning(f"⚠️ Kunde inte starta scheduler: {e}")
 
@@ -92,10 +89,9 @@ async def lifespan(app: FastAPI):  # noqa: ARG001
 
     # Stoppa scheduler om den körs
     try:
-        if not Settings().CORE_MODE:
-            from services.scheduler import scheduler
+        from services.scheduler import scheduler
 
-            await scheduler.stop()
+        await scheduler.stop()
     except Exception as e:
         logger.warning(f"⚠️ Fel vid stopp av scheduler: {e}")
 
@@ -339,17 +335,14 @@ async def latency_middleware(request: Request, call_next):
     return response
 
 
-# Wrappar endast Socket.IO när Core Mode inte är aktivt
-if not settings.CORE_MODE:
-    _socketio = importlib.import_module("socketio")
-    app = _socketio.ASGIApp(
-        socket_app,
-        other_asgi_app=app,
-        socketio_path="/ws/socket.io",
-    )
-    logger.info("Socket.IO UI aktiverad")
-else:
-    logger.info("CORE_MODE: Socket.IO UI avstängd")
+# Wrappar alltid Socket.IO UI
+_socketio = importlib.import_module("socketio")
+app = _socketio.ASGIApp(
+    socket_app,
+    other_asgi_app=app,
+    socketio_path="/ws/socket.io",
+)
+logger.info("Socket.IO UI aktiverad")
 
 if __name__ == "__main__":
     from config.settings import Settings as _S

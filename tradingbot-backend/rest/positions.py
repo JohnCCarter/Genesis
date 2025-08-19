@@ -76,10 +76,14 @@ class PositionsService:
             Lista med Position-objekt
         """
         try:
+            # Safeguard: saknade nycklar → tom lista istället för 500
+            if not (self.settings.BITFINEX_API_KEY and self.settings.BITFINEX_API_SECRET):
+                logger.info("BITFINEX_API_KEY/SECRET saknas – returnerar tom positionslista")
+                return []
             endpoint = "auth/r/positions"
             headers = build_auth_headers(endpoint)
 
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient(timeout=httpx.Timeout(15.0)) as client:
                 logger.info(f"🌐 REST API: Hämtar positioner från {self.base_url}/{endpoint}")
                 try:
                     response = await client.post(f"{self.base_url}/{endpoint}", headers=headers)
@@ -100,7 +104,7 @@ class PositionsService:
 
         except Exception as e:
             logger.error(f"Fel vid hämtning av positioner: {e}")
-            raise
+            return []
 
     async def get_position_by_symbol(self, symbol: str) -> Position | None:
         """

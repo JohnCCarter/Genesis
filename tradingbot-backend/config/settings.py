@@ -15,7 +15,6 @@ class Settings(_BaseSettings):
     """Konfigurationsklass för applikationsinställningar."""
 
     # Applikationskonfiguration
-    CORE_MODE: bool = False  # Enkel drift: endast kärnfunktioner aktiva
     # Bindningsadress: defaulta till loopback i dev, 0.0.0.0 i container/CI via env
     HOST: str = _os.environ.get("HOST", "127.0.0.1")
     PORT: int = 8000

@@ -93,3 +93,12 @@ known_first_party = [
 skip_glob = [
     "docs/legacy/**",
 ]
+
+[tool.bandit]
+exclude_dirs = [
+  "tests",
+  ".venv",
+  "venv",
+  "build",
+  "dist"
+]

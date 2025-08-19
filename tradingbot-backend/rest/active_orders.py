@@ -35,19 +35,32 @@ class ActiveOrdersService:
             Lista med OrderResponse-objekt
         """
         try:
+            # Safeguard: om API‑nycklar saknas, returnera tom lista i stället för att krascha UI
+            if not (self.settings.BITFINEX_API_KEY and self.settings.BITFINEX_API_SECRET):
+                logger.info(
+                    "BITFINEX_API_KEY/SECRET saknas – returnerar tom lista för aktiva ordrar"
+                )
+                return []
             endpoint = "auth/r/orders"
             # För v2 auth/r endpoints ska body vara en tom JSON {} och signaturen inkludera '{}'
             empty_json = "{}"
             headers = build_auth_headers(endpoint, payload_str=empty_json)
 
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient(timeout=httpx.Timeout(15.0)) as client:
                 logger.info(f"🌐 REST API: Hämtar aktiva ordrar från {self.base_url}/{endpoint}")
                 response = await client.post(
                     f"{self.base_url}/{endpoint}",
                     headers=headers,
                     content=empty_json.encode("utf-8"),
                 )
-                response.raise_for_status()
+                try:
+                    response.raise_for_status()
+                except httpx.HTTPStatusError as he:
+                    status = he.response.status_code if he.response is not None else "?"
+                    logger.warning(
+                        f"Bitfinex svarade {status} vid hämtning av aktiva ordrar – returnerar tom lista"
+                    )
+                    return []
 
                 orders_data = response.json()
                 logger.info(f"✅ REST API: Hämtade {len(orders_data)} aktiva ordrar")
@@ -56,8 +69,9 @@ class ActiveOrdersService:
                 return orders
 
         except Exception as e:
+            # Tystare fallback för UI: returnera tom lista vid oväntade fel
             logger.error(f"Fel vid hämtning av aktiva ordrar: {e}")
-            raise
+            return []
 
     async def get_active_orders_by_symbol(self, symbol: str) -> list[OrderResponse]:
         """

@@ -167,18 +167,68 @@ class LedgerEntry(BaseModel):
 
     @classmethod
     def from_bitfinex_data(cls, data: list) -> "LedgerEntry":
-        """Skapar en LedgerEntry från Bitfinex API-data."""
-        if len(data) < 7:
+        """Skapar en LedgerEntry från Bitfinex API-data.
+
+        Bitfinex kan returnera olika ordningar. Robust parsing:
+        Förväntade fält: id (int), currency (str), mts (ms), amount (float), balance (float), description (str), wallet (str)
+        """
+        if not isinstance(data, (list, tuple)) or len(data) < 5:
             raise ValueError(f"Ogiltig ledgerdata: {data}")
 
+        try:
+            _id = int(data[0])
+        except Exception:
+            _id = 0
+        _currency = str(data[1]) if len(data) > 1 else ""
+
+        # Hitta timestamp (ms)
+        _mts_ms = None
+        for item in data:
+            if isinstance(item, (int, float)) and float(item) > 10_000_000_000:
+                _mts_ms = int(item)
+                break
+        created = datetime.fromtimestamp(_mts_ms / 1000) if _mts_ms else datetime.now()
+
+        # Kandidater för numeriska amount/balance är de första två float-konverterbara
+        numeric_vals: list[float] = []
+        for item in data:
+            if isinstance(item, (int, float)):
+                # uteslut id och mts
+                if int(item) == _id:
+                    continue
+                if _mts_ms and int(item) == _mts_ms:
+                    continue
+                numeric_vals.append(float(item))
+            else:
+                # Försök tolka str som float
+                try:
+                    val = float(item)
+                    numeric_vals.append(val)
+                except Exception:
+                    pass
+        amount = numeric_vals[0] if len(numeric_vals) >= 1 else 0.0
+        balance = numeric_vals[1] if len(numeric_vals) >= 2 else 0.0
+
+        # Beskrivning = första sträng som inte är currency och inte wallet-type token
+        desc = ""
+        wallet = ""
+        for item in data:
+            if isinstance(item, str):
+                low = item.strip().lower()
+                if low in ("exchange", "margin", "funding"):
+                    if not wallet:
+                        wallet = item
+                    continue
+                if item != _currency and not desc:
+                    desc = item
         return cls(
-            id=int(data[0]),
-            currency=data[1],
-            amount=float(data[2]),
-            balance=float(data[3]),
-            description=data[4],
-            created_at=(datetime.fromtimestamp(data[5] / 1000) if data[5] else datetime.now()),
-            wallet_type=data[6],
+            id=_id,
+            currency=_currency,
+            amount=float(amount),
+            balance=float(balance),
+            description=desc,
+            created_at=created,
+            wallet_type=wallet or "",
         )
 
 

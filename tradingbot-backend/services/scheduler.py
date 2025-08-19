@@ -61,6 +61,13 @@ class SchedulerService:
             self._task = None
         logger.info("🛑 Scheduler stoppad")
 
+    def is_running(self) -> bool:
+        """Returnerar om schemaläggaren körs."""
+        try:
+            return bool(self._running and self._task and not self._task.done())
+        except Exception:
+            return False
+
     async def _run_loop(self) -> None:
         """Huvudloop för periodiska jobb."""
         # Första körning direkt vid start för att få en initial snapshot

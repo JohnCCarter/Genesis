@@ -7,7 +7,7 @@ Inkluderar strategiutvärdering och orderhantering.
 
 import os
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from indicators.atr import calculate_atr
 from indicators.ema import calculate_ema
@@ -175,7 +175,6 @@ def evaluate_strategy(data: dict[str, list[float]]) -> dict[str, Any]:
         try:
             # Features till probabilistisk modell (enkla, utökas senare)
             try:
-                from config.settings import Settings as _S
                 from services.prob_model import prob_model
 
                 # Skala features: positivt när buy‑vänligt, negativt åt sell
@@ -184,8 +183,9 @@ def evaluate_strategy(data: dict[str, list[float]]) -> dict[str, Any]:
                     30.0 - min(max(rsi, 0.0), 100.0)
                 ) / 30.0  # <30 → positiv, >70 → negativ (klipps av modellen)
                 probs = prob_model.predict_proba({"ema": f_ema, "rsi": f_rsi})
+                top = max(probs.items(), key=lambda kv: kv[1])[0]
                 weighted = {
-                    "signal": max(probs, key=probs.get),
+                    "signal": top,
                     "probabilities": {k: round(float(v), 6) for k, v in probs.items()},
                 }
             except Exception:
@@ -195,9 +195,85 @@ def evaluate_strategy(data: dict[str, list[float]]) -> dict[str, Any]:
                 )
                 rsi_sig = "buy" if rsi < 30 else ("sell" if rsi > 70 else "neutral")
                 atr_vol = "high" if (atr / current_price) > 0.02 else "low"
+                # Auto-regime / auto-weights (preset) om aktiverat
+                try:
+                    from indicators.regime import detect_regime
+                    from strategy.weights import PRESETS, clamp_simplex
+
+                    # Läs auto-flaggor/trösklar från strategy_settings.json (baseline)
+                    base = ssvc.get_settings(
+                        symbol=(data.get("symbol") if isinstance(data, dict) else None)
+                    )
+                    # Default thresholds
+                    cfg = {
+                        "ADX_PERIOD": 14,
+                        "ADX_HIGH": 25.0,
+                        "ADX_LOW": 15.0,
+                        "SLOPE_Z_HIGH": 1.0,
+                        "SLOPE_Z_LOW": 0.3,
+                    }
+                    # Försök läsa extra fält från settings-filen om de finns
+                    try:
+                        import json
+                        import os
+
+                        cfg_path = os.path.join(
+                            os.path.dirname(os.path.dirname(__file__)),
+                            "config",
+                            "strategy_settings.json",
+                        )
+                        with open(cfg_path, encoding="utf-8") as f:
+                            raw = json.load(f)
+                        for k in cfg.keys():
+                            if k in raw:
+                                cfg[k] = raw[k]
+                        auto_regime = bool(raw.get("AUTO_REGIME_ENABLED", True))
+                        auto_weights = bool(raw.get("AUTO_WEIGHTS_ENABLED", True))
+                    except Exception:
+                        auto_regime = True
+                        auto_weights = True
+
+                    w_map = {"ema": base.ema_weight, "rsi": base.rsi_weight, "atr": base.atr_weight}
+                    if auto_regime and auto_weights:
+                        regime = detect_regime(highs, lows, prices, cfg)
+                        preset = PRESETS.get(regime, PRESETS["balanced"])
+                        w_map = clamp_simplex(
+                            {
+                                "ema": float(preset.get("w_ema", w_map["ema"])),
+                                "rsi": float(preset.get("w_rsi", w_map["rsi"])),
+                                "atr": float(preset.get("w_atr", w_map["atr"])),
+                            }
+                        )
+                except Exception:
+                    w_map = None
+
+                # Använd evaluate_weighted_strategy (har settings-hook). Om vi har w_map, räkna om lätt för UI‑prob.
                 weighted = evaluate_weighted_strategy(
                     {"ema": ema_sig, "rsi": rsi_sig, "atr": atr_vol}
                 )
+                try:
+                    if w_map:
+                        ema_term = 1 if ema_sig == "buy" else (-1 if ema_sig == "sell" else 0)
+                        rsi_term = 1 if rsi_sig == "buy" else (-1 if rsi_sig == "sell" else 0)
+                        score = float(w_map["ema"]) * float(ema_term) + float(w_map["rsi"]) * float(
+                            rsi_term
+                        )
+                        final = "buy" if score > 0 else ("sell" if score < 0 else "hold")
+                        conf = float(abs(score))
+                        ph = max(0.0, 1.0 - conf)
+                        pb = conf if final == "buy" else 0.0
+                        ps = conf if final == "sell" else 0.0
+                        tot = max(1e-9, pb + ps + ph)
+                        weighted = {
+                            "signal": final,
+                            "probabilities": {
+                                "buy": round(pb / tot, 6),
+                                "sell": round(ps / tot, 6),
+                                "hold": round(ph / tot, 6),
+                            },
+                        }
+                except Exception:
+                    pass
         except Exception as e:
             logger.warning(f"Kunde inte beräkna viktad strategi: {e}")
             weighted = {

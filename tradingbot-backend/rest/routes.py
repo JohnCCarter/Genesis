@@ -40,13 +40,9 @@ from services.prob_model import prob_model
 from services.prob_validation import validate_on_candles
 from services.risk_manager import RiskManager
 from services.runtime_mode import (
-    get_core_mode,
-    get_prev_rate_limit,
     get_validation_on_start,
     get_ws_connect_on_start,
     get_ws_strategy_enabled,
-    set_core_mode,
-    set_prev_rate_limit,
     set_validation_on_start,
     set_ws_connect_on_start,
     set_ws_strategy_enabled,
@@ -967,19 +963,14 @@ async def get_active_orders_endpoint(_: bool = Depends(require_auth)):
     """
     Hämtar alla aktiva ordrar.
     """
-    try:
-        # Skapa en instans av ActiveOrdersService
-        active_orders_service = ActiveOrdersService()
+    # Skapa en instans av ActiveOrdersService
+    active_orders_service = ActiveOrdersService()
 
-        # Hämta alla aktiva ordrar
-        orders = await active_orders_service.get_active_orders()
+    # Hämta alla aktiva ordrar (tolerant: tjänsten returnerar tom lista vid fel)
+    orders = await active_orders_service.get_active_orders()
 
-        # Konvertera varje order till vår API OrderResponse-modell
-        return [OrderResponse(success=True, data=order) for order in orders]
-
-    except Exception as e:
-        logger.exception(f"Fel vid hämtning av aktiva ordrar: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+    # Konvertera varje order till vår API OrderResponse-modell
+    return [OrderResponse(success=True, data=order) for order in orders]
 
 
 @router.get("/orders/symbol/{symbol}", response_model=list[OrderResponse])
@@ -1551,6 +1542,77 @@ async def update_strategy_settings(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# --- Auto-regim / Auto-vikter toggles ---
+class StrategyAutoPayload(BaseModel):
+    AUTO_REGIME_ENABLED: bool | None = None
+    AUTO_WEIGHTS_ENABLED: bool | None = None
+
+
+@router.get("/strategy/auto")
+async def get_strategy_auto(_: bool = Depends(require_auth)):
+    try:
+        import json
+        import os
+
+        cfg_path = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)), "config", "strategy_settings.json"
+        )
+        data: dict[str, object]
+        try:
+            with open(cfg_path, encoding="utf-8") as f:
+                data = json.load(f)
+        except FileNotFoundError:
+            data = {}
+        except Exception as e:  # pragma: no cover
+            logger.warning(f"Kunde inte läsa strategy_settings.json: {e}")
+            data = {}
+        return {
+            "AUTO_REGIME_ENABLED": bool(data.get("AUTO_REGIME_ENABLED", True)),
+            "AUTO_WEIGHTS_ENABLED": bool(data.get("AUTO_WEIGHTS_ENABLED", True)),
+        }
+    except Exception as e:
+        logger.exception(f"Fel vid hämtning av strategy auto-flaggor: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/strategy/auto")
+async def update_strategy_auto(payload: StrategyAutoPayload, _: bool = Depends(require_auth)):
+    try:
+        import json
+        import os
+
+        cfg_path = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)), "config", "strategy_settings.json"
+        )
+        try:
+            with open(cfg_path, encoding="utf-8") as f:
+                data = json.load(f)
+                if not isinstance(data, dict):
+                    data = {}
+        except FileNotFoundError:
+            data = {}
+        except Exception as e:
+            logger.warning(f"Kunde inte läsa strategy_settings.json: {e}")
+            data = {}
+
+        if payload.AUTO_REGIME_ENABLED is not None:
+            data["AUTO_REGIME_ENABLED"] = bool(payload.AUTO_REGIME_ENABLED)
+        if payload.AUTO_WEIGHTS_ENABLED is not None:
+            data["AUTO_WEIGHTS_ENABLED"] = bool(payload.AUTO_WEIGHTS_ENABLED)
+
+        os.makedirs(os.path.dirname(cfg_path), exist_ok=True)
+        with open(cfg_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+
+        return {
+            "AUTO_REGIME_ENABLED": bool(data.get("AUTO_REGIME_ENABLED", True)),
+            "AUTO_WEIGHTS_ENABLED": bool(data.get("AUTO_WEIGHTS_ENABLED", True)),
+        }
+    except Exception as e:
+        logger.exception(f"Fel vid uppdatering av strategy auto-flaggor: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # Position sizing endpoint (enkel riskprocent-variant)
 class PositionSizeRequest(BaseModel):
     symbol: str
@@ -1840,6 +1902,37 @@ async def market_symbols_config(format: str = "v2", _: bool = Depends(require_au
     except Exception as e:
         logger.exception(f"Fel vid configs symbols: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/market/symbols/paper")
+async def market_symbols_paper(format: str = "v2", _: bool = Depends(require_auth)):
+    """Returnera fasta Bitfinex paper‑symboler (16 st), v2/t‑format.
+
+    Exakt lista enligt Bitfinex paper account:
+    TESTADA, TESTALGO, TESTAPT, TESTAVAX, TESTBTC (USD, USDT), TESTDOGE, TESTDOT,
+    TESTEOS, TESTETH, TESTFIL, TESTLTC, TESTNEAR, TESTSOL, TESTXAUT, TESTXTZ.
+    """
+    usd_only = [
+        "ADA",
+        "ALGO",
+        "APT",
+        "AVAX",
+        "DOGE",
+        "DOT",
+        "EOS",
+        "ETH",
+        "FIL",
+        "LTC",
+        "NEAR",
+        "SOL",
+        "XAUT",
+        "XTZ",
+    ]
+    syms = [f"tTEST{b}:TESTUSD" for b in usd_only]
+    syms.extend(["tTESTBTC:TESTUSD", "tTESTBTC:TESTUSDT"])  # BTC har två quotes på paper
+    if format.lower() in ("v2", "t", "bitfinex_v2"):
+        return syms
+    return [s[1:] if s.startswith("t") else s for s in syms]
 
 
 @router.get("/market/candles/{symbol}")
@@ -3497,13 +3590,22 @@ async def ui_capabilities(_: bool = Depends(require_auth)):
             "prob": {
                 "validate_enabled": bool(getattr(s, "PROB_VALIDATE_ENABLED", True)),
                 "model_enabled": bool(getattr(s, "PROB_MODEL_ENABLED", False)),
+                "autotrade_enabled": bool(getattr(s, "PROB_AUTOTRADE_ENABLED", False)),
             },
             "dry_run": bool(getattr(s, "DRY_RUN_ENABLED", False)),
+            "trading_paused": bool(getattr(s, "TRADING_PAUSED", False)),
+            "scheduler_running": False,
             "rate_limit": {
                 "order_max": int(getattr(s, "ORDER_RATE_LIMIT_MAX", 0) or 0),
                 "order_window": int(getattr(s, "ORDER_RATE_LIMIT_WINDOW", 0) or 0),
             },
         }
+        try:
+            from services.scheduler import scheduler
+
+            caps["scheduler_running"] = bool(scheduler.is_running())
+        except Exception:
+            pass
         return caps
     except Exception as e:
         logger.exception(f"UI capabilities error: {e}")
@@ -3655,60 +3757,11 @@ class TemplatesPayload(BaseModel):
     templates: list[dict[str, Any]]
 
 
-# --- Runtime mode (Core Mode) ---
+# --- Toggle request model ---
 
 
 class CoreModeRequest(BaseModel):
     enabled: bool
-
-
-@router.get("/mode/core")
-async def get_core_mode_status(_: bool = Depends(require_auth)):
-    return {"core_mode": bool(get_core_mode())}
-
-
-@router.post("/mode/core")
-async def set_core_mode_status(payload: CoreModeRequest, _: bool = Depends(require_auth)):
-    try:
-        # Spara nuvarande rate-limit för återställning
-        try:
-            max_requests = int(getattr(settings, "ORDER_RATE_LIMIT_MAX", 0) or 0)
-            window_seconds = int(getattr(settings, "ORDER_RATE_LIMIT_WINDOW", 0) or 0)
-            if get_prev_rate_limit() is None:
-                set_prev_rate_limit(max_requests, window_seconds)
-        except Exception:
-            pass
-
-        # Slå på/av core mode i runtime-flagga
-        set_core_mode(bool(payload.enabled))
-
-        # När CoreMode aktiveras: sätt rate-limit inert via env override i process
-        # (enkel variant: sätt settings-attributen; i prod bör dessa komma från env)
-        if payload.enabled:
-            try:
-                settings.ORDER_RATE_LIMIT_MAX = 0
-                settings.ORDER_RATE_LIMIT_WINDOW = 0
-            except Exception:
-                pass
-        else:
-            # Återställ ev. tidigare rate-limit-värden
-            prev = get_prev_rate_limit()
-            if prev:
-                try:
-                    settings.ORDER_RATE_LIMIT_MAX, settings.ORDER_RATE_LIMIT_WINDOW = prev
-                except Exception:
-                    pass
-
-        # Notifiera via WS (best effort)
-        _emit_notification(
-            "info",
-            "Core mode",
-            {"enabled": bool(payload.enabled)},
-        )
-        return {"core_mode": bool(payload.enabled)}
-    except Exception as e:
-        logger.exception(f"Fel vid core-mode toggle: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # --- Runtime toggles: WS strategy & Validation warmup ---
@@ -3908,3 +3961,158 @@ async def update_trading_windows(req: UpdateWindowsRequest, _: bool = Depends(re
     except Exception as e:
         logger.exception(f"Fel vid uppdatering av trading windows: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+# --- Runtime toggles: DRY RUN ---
+@router.get("/mode/dry-run")
+async def get_dry_run(_: bool = Depends(require_auth)):
+    try:
+        return {"dry_run_enabled": bool(getattr(settings, "DRY_RUN_ENABLED", False))}
+    except Exception as e:
+        logger.exception(f"Fel vid get dry-run: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/mode/dry-run")
+async def set_dry_run(payload: CoreModeRequest, _: bool = Depends(require_auth)):
+    try:
+        # Uppdatera runtime-config och env
+        try:
+            import os as _os
+
+            _os.environ["DRY_RUN_ENABLED"] = "True" if payload.enabled else "False"
+        except Exception:
+            pass
+        try:
+            settings.DRY_RUN_ENABLED = bool(payload.enabled)
+        except Exception:
+            pass
+        _emit_notification("info", "Dry run", {"enabled": bool(payload.enabled)})
+        return {"dry_run_enabled": bool(getattr(settings, "DRY_RUN_ENABLED", False))}
+    except Exception as e:
+        logger.exception(f"Fel vid set dry-run: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# --- Runtime toggles: TRADING PAUSED ---
+@router.get("/mode/trading-paused")
+async def get_trading_paused(_: bool = Depends(require_auth)):
+    try:
+        return {"trading_paused": bool(getattr(settings, "TRADING_PAUSED", False))}
+    except Exception as e:
+        logger.exception(f"Fel vid get trading-paused: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/mode/trading-paused")
+async def set_trading_paused(payload: CoreModeRequest, _: bool = Depends(require_auth)):
+    try:
+        # Uppdatera runtime-config och env
+        try:
+            import os as _os
+
+            _os.environ["TRADING_PAUSED"] = "True" if payload.enabled else "False"
+        except Exception:
+            pass
+        try:
+            settings.TRADING_PAUSED = bool(payload.enabled)
+        except Exception:
+            pass
+        _emit_notification("info", "Trading paused", {"enabled": bool(payload.enabled)})
+        return {"trading_paused": bool(getattr(settings, "TRADING_PAUSED", False))}
+    except Exception as e:
+        logger.exception(f"Fel vid set trading-paused: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# --- Runtime toggles: Probability Model ---
+@router.get("/mode/prob-model")
+async def get_prob_model(_: bool = Depends(require_auth)):
+    try:
+        from services.prob_model import prob_model
+
+        # Sann källa är runtime‑objektet; fallback till Settings
+        enabled = bool(getattr(prob_model, "enabled", False))
+        if enabled is False:
+            try:
+                enabled = bool(getattr(Settings(), "PROB_MODEL_ENABLED", False))
+            except Exception:
+                pass
+        return {"prob_model_enabled": bool(enabled)}
+    except Exception as e:
+        logger.exception(f"Fel vid get prob-model: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/mode/prob-model")
+async def set_prob_model(payload: CoreModeRequest, _: bool = Depends(require_auth)):
+    try:
+        import os as _os
+
+        from services.prob_model import prob_model
+
+        _os.environ["PROB_MODEL_ENABLED"] = "True" if payload.enabled else "False"
+        try:
+            prob_model.enabled = bool(payload.enabled)
+        except Exception:
+            pass
+        _emit_notification("info", "Prob model", {"enabled": bool(payload.enabled)})
+        return {"prob_model_enabled": bool(getattr(prob_model, "enabled", False))}
+    except Exception as e:
+        logger.exception(f"Fel vid set prob-model: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# --- Runtime toggles: Autotrade ---
+@router.get("/mode/autotrade")
+async def get_autotrade(_: bool = Depends(require_auth)):
+    try:
+        return {"autotrade_enabled": bool(getattr(Settings(), "PROB_AUTOTRADE_ENABLED", False))}
+    except Exception as e:
+        logger.exception(f"Fel vid get autotrade: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/mode/autotrade")
+async def set_autotrade(payload: CoreModeRequest, _: bool = Depends(require_auth)):
+    try:
+        import os as _os
+
+        _os.environ["PROB_AUTOTRADE_ENABLED"] = "True" if payload.enabled else "False"
+        _emit_notification("info", "Autotrade", {"enabled": bool(payload.enabled)})
+        return {"autotrade_enabled": bool(getattr(Settings(), "PROB_AUTOTRADE_ENABLED", False))}
+    except Exception as e:
+        logger.exception(f"Fel vid set autotrade: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# --- Runtime toggles: Scheduler ---
+@router.get("/mode/scheduler")
+async def get_scheduler(_: bool = Depends(require_auth)):
+    try:
+        from services.scheduler import scheduler
+
+        return {"scheduler_running": bool(scheduler.is_running())}
+    except Exception as e:
+        logger.exception(f"Fel vid get scheduler: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/mode/scheduler")
+async def set_scheduler(payload: CoreModeRequest, _: bool = Depends(require_auth)):
+    try:
+        from services.scheduler import scheduler
+
+        if bool(payload.enabled):
+            scheduler.start()
+        else:
+            try:
+                await scheduler.stop()
+            except TypeError:
+                # if called in non-async context by mistake, ignore
+                pass
+        _emit_notification("info", "Scheduler", {"enabled": bool(payload.enabled)})
+        return {"scheduler_running": bool(scheduler.is_running())}
+    except Exception as e:
+        logger.exception(f"Fel vid set scheduler: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

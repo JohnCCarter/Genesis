@@ -58,13 +58,24 @@ class WalletService:
             Lista med WalletBalance-objekt
         """
         try:
+            # Safeguard: saknade nycklar → tom lista istället för 500
+            if not (self.settings.BITFINEX_API_KEY and self.settings.BITFINEX_API_SECRET):
+                logger.info("BITFINEX_API_KEY/SECRET saknas – returnerar tom wallet-lista")
+                return []
             endpoint = "auth/r/wallets"
             headers = build_auth_headers(endpoint)
 
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient(timeout=httpx.Timeout(15.0)) as client:
                 logger.info(f"🌐 REST API: Hämtar plånböcker från {self.base_url}/{endpoint}")
                 response = await client.post(f"{self.base_url}/{endpoint}", headers=headers)
-                response.raise_for_status()
+                try:
+                    response.raise_for_status()
+                except httpx.HTTPStatusError as he:
+                    status = he.response.status_code if he.response is not None else "?"
+                    logger.warning(
+                        f"Bitfinex svarade {status} vid hämtning av wallets – returnerar tom lista"
+                    )
+                    return []
 
                 wallets_data = response.json()
                 logger.info(f"✅ REST API: Hämtade {len(wallets_data)} plånböcker")
@@ -74,7 +85,7 @@ class WalletService:
 
         except Exception as e:
             logger.error(f"Fel vid hämtning av plånböcker: {e}")
-            raise
+            return []
 
     async def get_wallet_by_type_and_currency(
         self, wallet_type: str, currency: str
