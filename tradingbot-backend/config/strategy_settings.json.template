@@ -1,0 +1,10 @@
+{
+  "ema_weight": 0.4,
+  "rsi_weight": 0.4,
+  "atr_weight": 0.2,
+  "ema_period": 3,
+  "rsi_period": 21,
+  "atr_period": 2,
+  "AUTO_REGIME_ENABLED": true,
+  "AUTO_WEIGHTS_ENABLED": true
+}

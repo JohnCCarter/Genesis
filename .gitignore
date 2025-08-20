@@ -145,11 +145,10 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+# Config files - exclude actual configs but include templates
 tradingbot-backend/config/*.json
-!tradingbot-backend/config/trading_rules.json
-!tradingbot-backend/config/strategy_settings.json
+!tradingbot-backend/config/*.json.template
 !tradingbot-backend/config/order_templates.json
-!tradingbot-backend/config/performance_history.json
 
 # Spyder project settings
 .spyderproject
