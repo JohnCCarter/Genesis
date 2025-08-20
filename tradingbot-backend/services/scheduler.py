@@ -40,6 +40,7 @@ class SchedulerService:
         self._last_retention_at: datetime | None = None
         self._last_prob_validate_at: datetime | None = None
         self._last_prob_retrain_at: datetime | None = None
+        self._last_regime_update_at: datetime | None = None
 
     def start(self) -> None:
         """Starta bakgrundsloopen om den inte redan körs."""
@@ -87,6 +88,8 @@ class SchedulerService:
                 await self._maybe_run_prob_validation(now)
                 # Kör schemalagd retraining
                 await self._maybe_run_prob_retraining(now)
+                # Kör automatisk regim-uppdatering
+                await self._maybe_update_regime(now)
                 # Sov en kort stund för att inte spinna
                 await asyncio.sleep(1)
             except asyncio.CancelledError:
@@ -340,6 +343,81 @@ class SchedulerService:
             self._last_prob_retrain_at = now
         except Exception as e:
             logger.debug("%s", f"Prob retraining fel: {e}")
+
+    async def _maybe_update_regime(self, now: datetime) -> None:
+        """
+        Automatisk regim-uppdatering baserat på aktuell marknadsregim.
+
+        Uppdaterar strategi-vikter automatiskt när marknadsregimen ändras.
+        Kör endast om AUTO_REGIME_ENABLED och AUTO_WEIGHTS_ENABLED är aktiverade.
+        """
+        try:
+            from services.strategy import update_settings_from_regime
+            from services.symbols import SymbolService
+
+            # Kontrollera intervall (varje timme)
+            interval_minutes = 1
+            if self._last_regime_update_at and (now - self._last_regime_update_at) < timedelta(
+                minutes=max(1, interval_minutes)
+            ):
+                return
+
+            # Kontrollera om auto-regim är aktiverat
+            try:
+                import json
+                import os
+
+                cfg_path = os.path.join(
+                    os.path.dirname(os.path.dirname(__file__)), "config", "strategy_settings.json"
+                )
+                with open(cfg_path, encoding="utf-8") as f:
+                    data = json.load(f)
+                auto_regime = bool(data.get("AUTO_REGIME_ENABLED", True))
+                auto_weights = bool(data.get("AUTO_WEIGHTS_ENABLED", True))
+                if not (auto_regime and auto_weights):
+                    return
+            except Exception:
+                return
+
+            # Hämta aktiva symboler
+            sym_svc = SymbolService()
+            await sym_svc.refresh()
+
+            # Uppdatera regim för varje symbol
+            symbols = sym_svc.get_symbols(test_only=True, fmt="v2")[:5]  # Begränsa till 5 symboler
+            for symbol in symbols:
+                try:
+                    new_weights = update_settings_from_regime(symbol)
+                    logger.info(f"🔄 Automatisk regim-uppdatering för {symbol}: {new_weights}")
+
+                    # Skicka notifikation till UI
+                    try:
+                        from ws.manager import socket_app
+
+                        asyncio.create_task(
+                            socket_app.emit(
+                                "notification",
+                                {
+                                    "type": "info",
+                                    "title": "Regim uppdaterad",
+                                    "payload": {
+                                        "symbol": symbol,
+                                        "weights": new_weights,
+                                        "timestamp": now.isoformat(),
+                                    },
+                                },
+                            )
+                        )
+                    except Exception:
+                        pass
+
+                except Exception as e:
+                    logger.warning(f"Kunde inte uppdatera regim för {symbol}: {e}")
+
+            self._last_regime_update_at = now
+
+        except Exception as e:
+            logger.debug(f"Automatisk regim-uppdatering fel: {e}")
 
 
 # En global instans som kan återanvändas av applikationen

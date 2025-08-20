@@ -20,7 +20,7 @@ def ema(series: list[float], span: int) -> list[float]:
     return out
 
 
-def ema_z(close: list[float], fast: int = 12, slow: int = 26, z_win: int = 200) -> list[float]:
+def ema_z(close: list[float], fast: int = 3, slow: int = 7, z_win: int = 200) -> list[float]:
     if not close:
         return []
     ef = np.array(ema(close, fast), dtype=float)
@@ -44,14 +44,18 @@ def detect_regime(high: list[float], low: list[float], close: list[float], cfg: 
     a = float(adx_vals[-1]) if adx_vals else 0.0
     ez_vals = ema_z(
         close,
-        int(cfg.get("EMA_FAST", 12)),
-        int(cfg.get("EMA_SLOW", 26)),
+        int(cfg.get("EMA_FAST", 3)),
+        int(cfg.get("EMA_SLOW", 7)),
         int(cfg.get("Z_WIN", 200)),
     )
     ez = float(ez_vals[-1]) if ez_vals else 0.0
     ez_abs = abs(ez)
-    if a >= float(cfg.get("ADX_HIGH", 25.0)) or ez_abs >= float(cfg.get("SLOPE_Z_HIGH", 1.0)):
+
+    # Trend: hög ADX eller stark EMA-slope
+    if a >= float(cfg.get("ADX_HIGH", 30.0)) or ez_abs >= float(cfg.get("SLOPE_Z_HIGH", 1.0)):
         return "trend"
-    if a <= float(cfg.get("ADX_LOW", 15.0)) and ez_abs <= float(cfg.get("SLOPE_Z_LOW", 0.3)):
+    # Range: låg ADX och svag EMA-slope
+    if a <= float(cfg.get("ADX_LOW", 15.0)) and ez_abs <= float(cfg.get("SLOPE_Z_LOW", 0.5)):
         return "range"
+    # Balanced: mellanliggande värden
     return "balanced"

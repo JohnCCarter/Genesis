@@ -8,6 +8,7 @@ import { RiskPanel } from './components/RiskPanel';
 import { HistoryPanel } from './components/HistoryPanel';
 import { MarketPanel } from './components/MarketPanel';
 import { SystemPanel } from './components/SystemPanel';
+import EnhancedAutoTradingPanel from './components/EnhancedAutoTradingPanel';
 
 function Badge({ ok, label }: { ok: boolean; label: string }) {
     return (
@@ -255,6 +256,15 @@ function App() {
                 <div>
                     <h2 style={{ margin: '16px 0 8px' }}>Market</h2>
                     <MarketPanel />
+                </div>
+                <div>
+                    <h2 style={{ margin: '16px 0 8px' }}>Enhanced Auto-Trading</h2>
+                    <EnhancedAutoTradingPanel symbols={[
+                        "TESTADA:TESTUSD", "TESTALGO:TESTUSD", "TESTAPT:TESTUSD", "TESTAVAX:TESTUSD",
+                        "TESTBTC:TESTUSD", "TESTBTC:TESTUSDT", "TESTDOGE:TESTUSD", "TESTDOT:TESTUSD",
+                        "TESTEOS:TESTUSD", "TESTETH:TESTUSD", "TESTFIL:TESTUSD", "TESTLTC:TESTUSD",
+                        "TESTNEAR:TESTUSD", "TESTSOL:TESTUSD", "TESTXAUT:TESTUSD", "TESTXTZ:TESTUSD"
+                    ]} />
                 </div>
                 <div>
                     <h2 style={{ margin: '16px 0 8px' }}>Historik</h2>

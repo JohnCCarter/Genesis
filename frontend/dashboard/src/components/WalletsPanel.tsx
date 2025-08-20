@@ -23,7 +23,7 @@ export function WalletsPanel() {
 
     React.useEffect(() => {
         refresh();
-        const id = setInterval(refresh, 10000);
+        const id = setInterval(refresh, 90000);
         return () => clearInterval(id);
     }, [refresh]);
 

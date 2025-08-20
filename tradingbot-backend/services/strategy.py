@@ -155,15 +155,13 @@ def evaluate_strategy(data: dict[str, list[float]]) -> dict[str, Any]:
     if ema and rsi and atr:
         current_price = prices[-1]
 
-        # Trading-logik
-        if rsi < 30 and current_price > ema:
+        # Trading-logik (mindre strikta trösklar för testning)
+        if rsi < 35:
             signal = "BUY"
-            reason = f"RSI översåld ({rsi:.2f}) och pris över EMA ({current_price:.4f} > {ema:.4f})"
-        elif rsi > 70 and current_price < ema:
+            reason = f"RSI översåld ({rsi:.2f}) - köpsignal"
+        elif rsi > 65:
             signal = "SELL"
-            reason = (
-                f"RSI överköpt ({rsi:.2f}) och pris under EMA ({current_price:.4f} < {ema:.4f})"
-            )
+            reason = f"RSI överköpt ({rsi:.2f}) - säljsignal"
         elif 40 < rsi < 60:
             signal = "HOLD"
             reason = f"RSI neutral ({rsi:.2f}) - vänta på tydligare signal"
@@ -299,3 +297,174 @@ def evaluate_strategy(data: dict[str, list[float]]) -> dict[str, Any]:
 
     logger.info(f"Strategiutvärdering: {signal} - {reason}")
     return result
+
+
+def update_settings_from_regime(symbol: str | None = None) -> dict[str, float]:
+    """
+    Uppdaterar strategi-settings baserat på aktuell regim och auto-flaggor.
+
+    Args:
+        symbol: Symbol att uppdatera settings för (None = global)
+
+    Returns:
+        Dict med nya vikter
+    """
+    try:
+        from indicators.regime import detect_regime
+        from services.bitfinex_data import BitfinexDataService
+        from services.strategy_settings import StrategySettingsService
+        from strategy.weights import PRESETS, clamp_simplex
+
+        # Läs aktuella settings och auto-flaggor
+        settings_service = StrategySettingsService()
+        current_settings = settings_service.get_settings(symbol=symbol)
+
+        # Läs auto-flaggor från strategy_settings.json
+        try:
+            import json
+            import os
+
+            cfg_path = os.path.join(
+                os.path.dirname(os.path.dirname(__file__)),
+                "config",
+                "strategy_settings.json",
+            )
+            with open(cfg_path, encoding="utf-8") as f:
+                raw = json.load(f)
+            auto_regime = bool(raw.get("AUTO_REGIME_ENABLED", True))
+            auto_weights = bool(raw.get("AUTO_WEIGHTS_ENABLED", True))
+        except Exception:
+            auto_regime = True
+            auto_weights = True
+
+        if not (auto_regime and auto_weights):
+            return {
+                "ema_weight": current_settings.ema_weight,
+                "rsi_weight": current_settings.rsi_weight,
+                "atr_weight": current_settings.atr_weight,
+            }
+
+        # Hämta marknadsdata för regim-detektering
+        if not symbol:
+            symbol = "tBTCUSD"  # Default symbol
+
+        data_service = BitfinexDataService()
+        # Använd asyncio för att köra async get_candles synkront
+        import asyncio
+
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                # Om vi redan är i en async context, skapa en ny loop
+                import concurrent.futures
+
+                with concurrent.futures.ThreadPoolExecutor() as executor:
+                    future = executor.submit(
+                        asyncio.run, data_service.get_candles(symbol, "1m", limit=50)
+                    )
+                    candles = future.result()
+            else:
+                candles = loop.run_until_complete(data_service.get_candles(symbol, "1m", limit=50))
+        except Exception:
+            # Fallback: returnera None om vi inte kan hämta data
+            candles = None
+
+        if not candles or len(candles) < 20:
+            return {
+                "ema_weight": current_settings.ema_weight,
+                "rsi_weight": current_settings.rsi_weight,
+                "atr_weight": current_settings.atr_weight,
+            }
+
+        # Extrahera high, low, close
+        highs = [float(candle[3]) for candle in candles if len(candle) >= 4]
+        lows = [float(candle[4]) for candle in candles if len(candle) >= 5]
+        closes = [float(candle[2]) for candle in candles if len(candle) >= 3]
+
+        if len(highs) < 20 or len(lows) < 20 or len(closes) < 20:
+            return {
+                "ema_weight": current_settings.ema_weight,
+                "rsi_weight": current_settings.rsi_weight,
+                "atr_weight": current_settings.atr_weight,
+            }
+
+        # Konfiguration för regim-detektering (känsligare för testning)
+        cfg = {
+            "ADX_PERIOD": 14,
+            "ADX_HIGH": 30,
+            "ADX_LOW": 15,
+            "SLOPE_Z_HIGH": 1.0,
+            "SLOPE_Z_LOW": 0.5,
+        }
+
+        # Detektera regim och applicera preset
+        regime = detect_regime(highs, lows, closes, cfg)
+        preset = PRESETS.get(regime, PRESETS["balanced"])
+
+        logger.info(f"Detekterad regim: {regime}")
+        logger.info(f"Preset för regim '{regime}': {preset}")
+        logger.info(f"PRESETS keys: {list(PRESETS.keys())}")
+
+        # Använd preset-värden direkt - de har redan summan 1.0
+        new_weights = {
+            "ema": float(preset.get("w_ema", current_settings.ema_weight)),
+            "rsi": float(preset.get("w_rsi", current_settings.rsi_weight)),
+            "atr": float(preset.get("w_atr", current_settings.atr_weight)),
+        }
+
+        logger.info(f"Nya vikter: {new_weights}")
+        logger.info(
+            f"Preset w_ema: {preset.get('w_ema')}, w_rsi: {preset.get('w_rsi')}, w_atr: {preset.get('w_atr')}"
+        )
+
+        # Uppdatera settings
+        from services.strategy_settings import StrategySettings
+
+        updated_settings = StrategySettings(
+            ema_weight=new_weights["ema"],
+            rsi_weight=new_weights["rsi"],
+            atr_weight=new_weights["atr"],
+            ema_period=current_settings.ema_period,
+            rsi_period=current_settings.rsi_period,
+            atr_period=current_settings.atr_period,
+        )
+
+        settings_service.save_settings(updated_settings, symbol=symbol)
+
+        # Uppdatera också strategy_settings.json med nya vikter
+        try:
+            import json
+            import os
+
+            cfg_path = os.path.join(
+                os.path.dirname(os.path.dirname(__file__)),
+                "config",
+                "strategy_settings.json",
+            )
+            with open(cfg_path, encoding="utf-8") as f:
+                data = json.load(f)
+
+            # Uppdatera bara vikterna, behåll auto-flaggor
+            data["ema_weight"] = new_weights["ema"]
+            data["rsi_weight"] = new_weights["rsi"]
+            data["atr_weight"] = new_weights["atr"]
+
+            with open(cfg_path, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+
+        except Exception as e:
+            logger.warning(f"Kunde inte uppdatera strategy_settings.json: {e}")
+
+        logger.info(
+            f"Settings uppdaterade för {symbol} baserat på regim '{regime}': EMA={new_weights['ema']:.2f}, RSI={new_weights['rsi']:.2f}, ATR={new_weights['atr']:.2f}"
+        )
+
+        return {
+            "ema_weight": new_weights["ema"],
+            "rsi_weight": new_weights["rsi"],
+            "atr_weight": new_weights["atr"],
+        }
+
+    except Exception as e:
+        logger.warning(f"Kunde inte uppdatera settings från regim: {e}")
+        return {"ema_weight": 0.4, "rsi_weight": 0.4, "atr_weight": 0.2}
