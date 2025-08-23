@@ -2333,14 +2333,16 @@ async def prob_retrain_run(req: ProbRetrainRunRequest, _: bool = Depends(require
         limit = int(req.limit or getattr(s, "PROB_RETRAIN_LIMIT", 5000) or 5000)
         safe_root = str(getattr(s, "PROB_RETRAIN_OUTPUT_DIR", "config/models"))
         user_dir = req.output_dir
-        # Validate output_dir: must be within safe_root
+        # Validate output_dir: must be within safe_root and not absolute
         if user_dir:
-            out_dir = _os.path.abspath(_os.path.join(safe_root, user_dir))
-            safe_root_abs = _os.path.abspath(safe_root)
-            if _os.path.commonpath([safe_root_abs, out_dir]) != safe_root_abs:
+            if _os.path.isabs(user_dir):
+                raise HTTPException(status_code=400, detail="Invalid output_dir: must be a relative path.")
+            out_dir = _os.path.realpath(_os.path.join(safe_root, user_dir))
+            safe_root_real = _os.path.realpath(safe_root)
+            if _os.path.commonpath([safe_root_real, out_dir]) != safe_root_real:
                 raise HTTPException(status_code=400, detail="Invalid output_dir: must be within allowed directory.")
         else:
-            out_dir = _os.path.abspath(safe_root)
+            out_dir = _os.path.realpath(safe_root)
         _os.makedirs(out_dir, exist_ok=True)
 
         written: list[str] = []
