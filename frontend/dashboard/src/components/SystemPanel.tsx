@@ -1,6 +1,6 @@
 import React from 'react';
-import { get, getText, post } from '../lib/api';
 import { io } from 'socket.io-client';
+import { ensureToken, get, getText, post } from '../lib/api';
 
 export function SystemPanel() {
     const [health, setHealth] = React.useState<any>(null);
@@ -82,9 +82,15 @@ export function SystemPanel() {
                 <h4 style={{ margin: '0 0 8px' }}>Debug</h4>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 8 }}>
                     <span style={{ padding: '2px 8px', borderRadius: 12, background: wsStatus === 'connected' ? '#d7f5dd' : '#ffdada' }}>{wsStatus}</span>
-                    <button onClick={() => {
+                    <button onClick={async () => {
                         if (socketRef.current) return;
-                        const s = io(String(WS_BASE), { path: '/ws/socket.io', transports: ['websocket'], withCredentials: true });
+                        try {
+                            await ensureToken();
+                        } catch {}
+                        const tk = localStorage.getItem('genesis_access_token');
+                        const base = String(WS_BASE);
+                        const url = tk ? `${base}${base.includes('?') ? '&' : '?'}token=${encodeURIComponent(tk)}` : base;
+                        const s = io(url, { path: '/ws/socket.io', transports: ['websocket'] });
                         socketRef.current = s;
                         s.on('connect', () => { setWsStatus('connected'); setWsLog((v) => v + `\n[${new Date().toISOString()}] connected`); });
                         s.on('disconnect', () => { setWsStatus('disconnected'); setWsLog((v) => v + `\n[${new Date().toISOString()}] disconnected`); socketRef.current = null; });

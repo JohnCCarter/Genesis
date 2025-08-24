@@ -1,5 +1,6 @@
 import React from 'react';
 import { get, post } from '../lib/api';
+import { TEST_SYMBOLS } from '../lib/testSymbols';
 
 type Position = any;
 
@@ -7,6 +8,7 @@ export function PositionsPanel() {
     const [positions, setPositions] = React.useState<Position[]>([]);
     const [loading, setLoading] = React.useState(false);
     const [error, setError] = React.useState<string | null>(null);
+    const [filterSymbol, setFilterSymbol] = React.useState<string>('');
 
     const refresh = React.useCallback(async () => {
         try {
@@ -34,11 +36,26 @@ export function PositionsPanel() {
         } catch { }
     }
 
+    const shown = React.useMemo(() => {
+        if (!filterSymbol) return positions;
+        return positions.filter((p: any) => String(p?.symbol || '').toUpperCase() === filterSymbol.toUpperCase());
+    }, [positions, filterSymbol]);
+
     return (
         <div style={{ border: '1px solid #e1e4e8', borderRadius: 6, padding: 12 }}>
             <h3 style={{ margin: '0 0 8px' }}>Positioner</h3>
-            <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 12, alignItems: 'center' }}>
                 <button onClick={refresh} disabled={loading}>Uppdatera</button>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span>Filter</span>
+                    <select value={filterSymbol} onChange={(e) => setFilterSymbol(e.target.value)}>
+                        <option value="">Alla</option>
+                        {TEST_SYMBOLS.map(s => {
+                            const v = `t${s}`;
+                            return <option key={s} value={v}>{v}</option>;
+                        })}
+                    </select>
+                </label>
             </div>
             {error && (
                 <div style={{ background: '#ffebe9', color: '#86181d', padding: 8, borderRadius: 4, marginBottom: 12 }}>
@@ -59,8 +76,8 @@ export function PositionsPanel() {
                             </tr>
                         </thead>
                         <tbody>
-                            {positions?.length ? (
-                                positions.map((p: any, i: number) => (
+                            {shown?.length ? (
+                                shown.map((p: any, i: number) => (
                                     <tr key={i}>
                                         <td>{p?.symbol || '-'}</td>
                                         <td>{p?.amount ?? '-'}</td>

@@ -29,6 +29,16 @@
       "realized_usd": 0.0,
       "day_change_usd": -1238.71251329,
       "realized_day_change_usd": 0.0
+    },
+    {
+      "date": "2025-08-22",
+      "total_usd": 204728.72194189,
+      "wallets_usd": 204728.72194189,
+      "unrealized_pnl_usd": 0.0,
+      "positions_count": 0,
+      "realized_usd": 0.0,
+      "day_change_usd": -20403.43625471,
+      "realized_day_change_usd": 0.0
     }
   ]
 }

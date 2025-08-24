@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { get, post } from '../lib/api';
+import { TEST_SYMBOLS } from '../lib/testSymbols';
 
 interface EnhancedAutoStatus {
     active_symbols: string[];
@@ -13,11 +14,7 @@ interface EnhancedAutoStatus {
     last_trades: Record<string, string>;
 }
 
-interface EnhancedAutoTradingPanelProps {
-    symbols: string[];
-}
-
-const EnhancedAutoTradingPanel: React.FC<EnhancedAutoTradingPanelProps> = ({ symbols }) => {
+const EnhancedAutoTradingPanel: React.FC = () => {
     const [status, setStatus] = useState<EnhancedAutoStatus | null>(null);
     const [selectedSymbol, setSelectedSymbol] = useState<string>('');
     const [loading, setLoading] = useState(false);
@@ -149,8 +146,8 @@ const EnhancedAutoTradingPanel: React.FC<EnhancedAutoTradingPanelProps> = ({ sym
                             className="form-select"
                         >
                             <option value="">Välj symbol...</option>
-                            {symbols.map(symbol => (
-                                <option key={symbol} value={symbol}>{symbol}</option>
+                            {TEST_SYMBOLS.map(symbol => (
+                                <option key={symbol} value={`t${symbol}`}>{`t${symbol}`}</option>
                             ))}
                         </select>
                         {selectedSymbol && (
@@ -284,7 +281,7 @@ const EnhancedAutoTradingPanel: React.FC<EnhancedAutoTradingPanelProps> = ({ sym
                 )}
             </div>
 
-            <style jsx>{`
+            <style>{`
         .panel {
           background: #1a1a1a;
           border: 1px solid #333;

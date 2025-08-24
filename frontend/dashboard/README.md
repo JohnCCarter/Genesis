@@ -1,3 +1,40 @@
+# Genesis Frontend (Dashboard)
+
+## Start
+
+1) Installera beroenden:
+```
+npm install
+```
+
+2) Starta dev-server (port 5173):
+```
+VITE_API_BASE=http://127.0.0.1:8000 npm run dev
+```
+
+Alternativt via skript i repo-roten:
+```
+pwsh -File ../../scripts/start_frontend.ps1
+# eller
+bash ../../scripts/start_frontend.sh
+```
+
+## Konfiguration
+
+- API-bas konfigureras via `VITE_API_BASE` (default `http://127.0.0.1:8000`).
+- Frontend hämtar JWT via `POST /api/v2/auth/ws-token` och skickar som `Authorization: Bearer <token>`.
+
+## Sidor
+
+- `/` Dashboard: status, toggles, QuickTrade, paneler (Risk, Market, Wallets, Positions), Validation, Enhanced Auto.
+- `/debug` DebugPage: WS subscribe/unsubscribe och vy av aktiva subs.
+
+## Bygg
+
+```
+npm run build
+```
+
 # Genesis Trading Bot - Frontend Dashboard
 
 Detta är frontend-delen av Genesis Trading Bot, en React-baserad dashboard för att övervaka och styra trading-boten.
