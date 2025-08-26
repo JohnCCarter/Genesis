@@ -277,7 +277,7 @@ class EnhancedAutoTrader:
 
         except Exception as e:
             logger.error(f"❌ Fel vid status hämtning: {e}")
-            return {"error": str(e)}
+            return {"error": "An internal error occurred, please try again later."}
 
     async def stop_all_enhanced_trading(self):
         """Stoppa all enhanced auto-trading"""
