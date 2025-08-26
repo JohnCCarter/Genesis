@@ -4144,9 +4144,9 @@ async def get_all_regimes(_: bool = Depends(require_auth)):
     def calculate_trading_probability(regime, confidence):
         """Beräknar trading probability baserat på regim och confidence"""
         base_probabilities = {
-            'trend': 0.85,  # 85% chans att trade trend
-            'balanced': 0.60,  # 60% chans att trade balanced
-            'range': 0.25,  # 25% chans att trade range
+            "trend": 0.85,  # 85% chans att trade trend
+            "balanced": 0.60,  # 60% chans att trade balanced
+            "range": 0.25,  # 25% chans att trade range
         }
 
         # Justera baserat på confidence
@@ -4160,7 +4160,7 @@ async def get_all_regimes(_: bool = Depends(require_auth)):
         if confidence < 30:
             return "LOW_CONFIDENCE"
         elif trading_prob > 70:
-            return "STRONG_BUY" if regime == 'trend' else "BUY"
+            return "STRONG_BUY" if regime == "trend" else "BUY"
         elif trading_prob > 40:
             return "WEAK_BUY"
         elif trading_prob > 20:
@@ -4213,10 +4213,10 @@ async def get_all_regimes(_: bool = Depends(require_auth)):
     enhanced_regimes = []
     for regime_data in test_regimes:
         confidence = calculate_confidence_score(
-            regime_data['adx_value'], regime_data['ema_z_value']
+            regime_data["adx_value"], regime_data["ema_z_value"]
         )
-        trading_prob = calculate_trading_probability(regime_data['regime'], confidence)
-        recommendation = get_recommendation(regime_data['regime'], confidence, trading_prob)
+        trading_prob = calculate_trading_probability(regime_data["regime"], confidence)
+        recommendation = get_recommendation(regime_data["regime"], confidence, trading_prob)
 
         enhanced_regimes.append(
             {
@@ -4228,11 +4228,11 @@ async def get_all_regimes(_: bool = Depends(require_auth)):
         )
 
     # Beräkna sammanfattning
-    trend_count = len([r for r in enhanced_regimes if r['regime'] == 'trend'])
-    balanced_count = len([r for r in enhanced_regimes if r['regime'] == 'balanced'])
-    range_count = len([r for r in enhanced_regimes if r['regime'] == 'range'])
-    avg_confidence = sum(r['confidence_score'] for r in enhanced_regimes) / len(enhanced_regimes)
-    total_trading_prob = sum(r['trading_probability'] for r in enhanced_regimes)
+    trend_count = len([r for r in enhanced_regimes if r["regime"] == "trend"])
+    balanced_count = len([r for r in enhanced_regimes if r["regime"] == "balanced"])
+    range_count = len([r for r in enhanced_regimes if r["regime"] == "range"])
+    avg_confidence = sum(r["confidence_score"] for r in enhanced_regimes) / len(enhanced_regimes)
+    total_trading_prob = sum(r["trading_probability"] for r in enhanced_regimes)
 
     logger.info("📊 Returnerar enhanced regim-data med confidence scores")
 
@@ -4305,7 +4305,7 @@ async def get_strategy_regime(symbol: str, _: bool = Depends(require_auth)):
 
     except Exception as e:
         logger.warning(f"Fel vid regim-detektering för {symbol}: {e}")
-        return {"regime": "error", "error": str(e)}
+        return {"regime": "error", "error": "An internal error has occurred"}
 
 
 @router.post("/strategy/update-from-regime")
@@ -4539,8 +4539,8 @@ async def refresh_signals(request: dict, _: bool = Depends(require_auth)):
     try:
         from services.signal_generator import SignalGeneratorService
 
-        symbols = request.get('symbols', None)
-        force_refresh = request.get('force_refresh', True)
+        symbols = request.get("symbols", None)
+        force_refresh = request.get("force_refresh", True)
 
         signal_service = SignalGeneratorService()
         signals = await signal_service.generate_live_signals(symbols, force_refresh)
@@ -4600,7 +4600,10 @@ async def clear_cache(symbol: str | None = None, timeframe: str | None = None):
 
     except Exception as e:
         logger.error(f"❌ Fel vid cache rensning: {e}")
-        return {"ok": False, "error": str(e)}
+        return {
+            "ok": False,
+            "error": "An internal error has occurred; please contact support if the problem persists.",
+        }
 
 
 @router.get("/cache/stats")
@@ -4614,4 +4617,4 @@ async def get_cache_stats():
 
     except Exception as e:
         logger.error(f"❌ Fel vid hämtning av cache stats: {e}")
-        return {"error": str(e)}
+        return {"error": "An internal error has occurred"}
