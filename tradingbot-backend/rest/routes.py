@@ -4614,4 +4614,4 @@ async def get_cache_stats():
 
     except Exception as e:
         logger.error(f"❌ Fel vid hämtning av cache stats: {e}")
-        return {"error": str(e)}
+        return {"error": "An internal error has occurred"}
