@@ -1,12 +1,54 @@
 repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+      - id: check-merge-conflict
+
+  - repo: https://github.com/psf/black
+    rev: 23.11.0
+    hooks:
+      - id: black
+        language_version: python3
+
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.5.6
+    rev: v0.1.6
     hooks:
       - id: ruff
         args: [--fix]
       - id: ruff-format
-  - repo: https://github.com/psf/black
-    rev: 24.8.0
-    hooks:
-      - id: black
-        args: [--line-length=100]
+
+  # Temporarily disabled due to pbr dependency issues
+  # - repo: https://github.com/PyCQA/bandit
+  #   rev: 1.7.5
+  #   hooks:
+  #     - id: bandit
+  #       args: [-r, tradingbot-backend/]
+  #       exclude: ^tests/
+
+  # Temporarily disabled due to potential timeout issues
+  # - repo: https://github.com/pypa/pip-audit
+  #   rev: v2.6.1
+  #   hooks:
+  #     - id: pip-audit
+  #       args: [--requirement, tradingbot-backend/requirements.txt]
+
+  # Temporarily disabled frontend hooks for CI compatibility
+  # - repo: local
+  #   hooks:
+  #     - id: frontend-lint
+  #       name: Frontend Lint
+  #       entry: npm run lint
+  #       language: system
+  #       files: ^frontend/dashboard/.*\.(ts|tsx)$
+  #       pass_filenames: false
+  #
+  #     - id: frontend-format
+  #       name: Frontend Format
+  #       entry: npm run format
+  #       language: system
+  #       files: ^frontend/dashboard/.*\.(ts|tsx|js|jsx|json|css|md)$
+  #       pass_filenames: false

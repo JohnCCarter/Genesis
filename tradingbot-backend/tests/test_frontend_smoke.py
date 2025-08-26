@@ -17,8 +17,21 @@ def test_get_ws_token():
 
 
 def test_wallets_requires_auth():
-    r = client.get("/api/v2/wallets")
-    assert r.status_code in (401, 403)
+    import os
+
+    # Temporärt sätt AUTH_REQUIRED till True för denna test
+    original_auth = os.environ.get("AUTH_REQUIRED")
+    os.environ["AUTH_REQUIRED"] = "True"
+
+    try:
+        r = client.get("/api/v2/wallets")
+        assert r.status_code in (401, 403)
+    finally:
+        # Återställ original-värdet
+        if original_auth is not None:
+            os.environ["AUTH_REQUIRED"] = original_auth
+        else:
+            os.environ.pop("AUTH_REQUIRED", None)
 
 
 def test_wallets_with_token():
@@ -30,5 +43,3 @@ def test_wallets_with_token():
     assert token
     r = client.get("/api/v2/wallets", headers={"Authorization": f"Bearer {token}"})
     assert r.status_code in (200, 204)
-
-

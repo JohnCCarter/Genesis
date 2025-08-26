@@ -49,10 +49,10 @@ select = ["E", "F", "W", "B", "I", "UP", "C90", "ARG", "N", "ANN", "PL", "RUF"]
 "tradingbot-backend/main.py" = ["ARG001", "ANN001", "N814"]
 
 [tool.ruff.format]
-quote-style = "preserve"
+quote-style = "double"
 indent-style = "space"
 skip-magic-trailing-comma = false
-line-ending = "lf"
+line-ending = "auto"
 
 
 [tool.black]

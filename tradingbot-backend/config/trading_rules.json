@@ -22,5 +22,5 @@
   "max_trades_per_day": 100,
   "trade_cooldown_seconds": 5,
   "paused": false,
-  "max_trades_per_symbol_per_day": 10
+  "max_trades_per_symbol_per_day": 1
 }

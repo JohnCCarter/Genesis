@@ -231,9 +231,9 @@ class BitfinexDataService:
                     if not already_subscribed:
                         # registrera strategi/ticker-callback om inte finns
                         if eff_symbol not in getattr(bitfinex_ws, "strategy_callbacks", {}):
-                            bitfinex_ws.strategy_callbacks[eff_symbol] = (
-                                bitfinex_ws._handle_ticker_with_strategy
-                            )
+                            bitfinex_ws.strategy_callbacks[
+                                eff_symbol
+                            ] = bitfinex_ws._handle_ticker_with_strategy
                         await bitfinex_ws.subscribe_ticker(
                             eff_symbol, bitfinex_ws._handle_ticker_with_strategy
                         )
@@ -357,9 +357,9 @@ class BitfinexDataService:
                     except Exception as e:
                         last_exc = e
                         if attempt < retries:
-                            delay = min(
-                                backoff_max, backoff_base * (2**attempt)
-                            ) + random.uniform(0, 0.1)
+                            delay = min(backoff_max, backoff_base * (2**attempt)) + random.uniform(
+                                0, 0.1
+                            )
                             await asyncio.sleep(delay)
                             continue
                         break
@@ -619,9 +619,9 @@ class BitfinexDataService:
                     except Exception as e:
                         last_exc = e
                         if attempt < retries:
-                            delay = min(
-                                backoff_max, backoff_base * (2**attempt)
-                            ) + random.uniform(0, 0.1)
+                            delay = min(backoff_max, backoff_base * (2**attempt)) + random.uniform(
+                                0, 0.1
+                            )
                             await asyncio.sleep(delay)
                             continue
                         break

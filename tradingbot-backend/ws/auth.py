@@ -268,9 +268,7 @@ def authenticate_socket_io(environ) -> bool:
         if auth_header.startswith("Bearer "):
             token = auth_header[7:]  # Ta bort "Bearer " prefix
         else:
-            logger.warning(
-                "❌ Felaktigt format på Authorization-header (måste vara 'Bearer TOKEN')"
-            )
+            logger.warning("❌ Felaktigt format på Authorization-header (måste vara 'Bearer TOKEN')")
             return False
 
         # Validera token

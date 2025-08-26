@@ -140,6 +140,7 @@ celerybeat.pid
 !.env.example
 .envrc
 .venv
+.venv_clean
 env/
 venv/
 ENV/
@@ -149,6 +150,8 @@ venv.bak/
 tradingbot-backend/config/*.json
 !tradingbot-backend/config/*.json.template
 !tradingbot-backend/config/order_templates.json
+# tillåt exempel-miljöfil
+!tradingbot-backend/env.example
 
 # Spyder project settings
 .spyderproject
@@ -188,9 +191,9 @@ cython_debug/
 .abstra/
 
 # Visual Studio Code
-#  Visual Studio Code specific template is maintained in a separate VisualStudioCode.gitignore 
+#  Visual Studio Code specific template is maintained in a separate VisualStudioCode.gitignore
 #  that can be found at https://github.com/github/gitignore/blob/main/Global/VisualStudioCode.gitignore
-#  and can be added to the global gitignore or merged into this file. However, if you prefer, 
+#  and can be added to the global gitignore or merged into this file. However, if you prefer,
 #  you could uncomment the following to ignore the entire vscode folder
 # .vscode/
 
@@ -214,6 +217,7 @@ __marimo__/
 
 # Bitfinex nonce-tracking
 .nonce_tracker.json
+bandit-report*.json
 
 # Trading Bot specific exclusions
 # Temporary token files (may contain test data)
@@ -255,6 +259,8 @@ frontend/dashboard/.vite/
 frontend/dashboard/.env
 frontend/dashboard/.env.*
 !frontend/dashboard/.env.example
+frontend/dashboard/.eslintcache
+frontend/dashboard/coverage/
 
 # OS generated files
 .DS_Store

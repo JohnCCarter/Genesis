@@ -8,7 +8,11 @@ Projektet använder Pydantic v1 (BaseSettings) enligt requirements.
 import os as _os
 from typing import List, Optional
 
-from pydantic import BaseSettings as _BaseSettings
+# Kompatibilitet: Pydantic v2 (pydantic-settings) och v1 (pydantic)
+try:  # Pydantic v2
+    from pydantic_settings import BaseSettings as _BaseSettings  # type: ignore
+except Exception:  # Fall tillbaka till v1
+    from pydantic import BaseSettings as _BaseSettings  # type: ignore
 
 
 class Settings(_BaseSettings):
@@ -120,6 +124,14 @@ class Settings(_BaseSettings):
     ORDER_MAX_RETRIES: int = 2
     ORDER_BACKOFF_BASE_MS: int = 300
     ORDER_BACKOFF_MAX_MS: int = 2000
+
+    # Bitfinex API Rate Limiting
+    BITFINEX_RATE_LIMIT_REQUESTS_PER_MINUTE: int = 30
+    BITFINEX_RATE_LIMIT_BURST_SIZE: int = 5
+    BITFINEX_RATE_LIMIT_WINDOW_SECONDS: int = 60
+    BITFINEX_RATE_LIMIT_ENABLED: bool = True
+    BITFINEX_SERVER_BUSY_BACKOFF_MIN_SECONDS: float = 2.0
+    BITFINEX_SERVER_BUSY_BACKOFF_MAX_SECONDS: float = 10.0
 
     # WS ticker prioritet: anse WS-data färsk i X sekunder innan REST-fallback
     WS_TICKER_STALE_SECS: int = 10

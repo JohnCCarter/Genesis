@@ -31,6 +31,7 @@ Implementera live trading signals som genererar automatiska köp/sälj-beslut ba
 #### **1.3 Signal Data Model**
 
 - [ ] Skapa `models/signal_models.py`:
+
   ```python
   class SignalResponse(BaseModel):
       symbol: str
@@ -373,6 +374,6 @@ frontend/dashboard/src/components/
 
 ---
 
-**Skapad:** 2025-08-20  
-**Status:** Ready for implementation  
+**Skapad:** 2025-08-20
+**Status:** Ready for implementation
 **Prioritet:** Högsta (Live Trading Signals)

@@ -35,9 +35,7 @@ class SymbolService:
     def __init__(self) -> None:
         # Legacy fil-stöd (fallback)
         base_dir = os.path.dirname(os.path.dirname(__file__))  # tradingbot-backend/
-        self.file_path = os.path.join(
-            base_dir, "docs", "legacy", "bitfinex_docs", "extracted", "symbols.json"
-        )
+        self.file_path = os.path.join(base_dir, "docs", "scraper", "symbols.json")
         self._legacy_cache: list[str] = []
         # Delad cache används; behåll instansfält för bakåtkompatibilitet
         self._pairs: list[str] = _CACHE["pairs"]

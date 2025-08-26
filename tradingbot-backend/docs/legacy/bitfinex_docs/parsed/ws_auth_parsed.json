@@ -1,5 +1,0 @@
-{
-  "title": "Introduction",
-  "description": "Channels that require authentication should use the domain:\nwss://api.bitfinex.com/",
-  "sections": []
-}
