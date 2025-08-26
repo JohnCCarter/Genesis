@@ -11,6 +11,7 @@ import { SystemPanel } from '../components/SystemPanel';
 import { Toggles } from '../components/Toggles';
 import { ValidationPanel } from '../components/ValidationPanel';
 import { WalletsPanel } from '../components/WalletsPanel';
+import { PerformancePanel } from '../components/PerformancePanel';
 import { ensureToken, get, getApiBase } from '../lib/api';
 
 export default function DashboardPage() {
@@ -27,9 +28,9 @@ export default function DashboardPage() {
         ].slice(0, 50));
         await ensureToken();
         try {
-            const s = await get('/api/v2/ws/pool/status');
-            setStatus(s);
-            Promise.all([
+            // Batcha API-anrop för bättre prestanda
+            const [s, c, dry, paused, pm, at, sch, wsst, warm, auto] = await Promise.all([
+                get('/api/v2/ws/pool/status'),
                 get('/api/v2/ui/capabilities').catch(() => null),
                 get('/api/v2/mode/dry-run').catch(() => null),
                 get('/api/v2/mode/trading-paused').catch(() => null),
@@ -39,19 +40,21 @@ export default function DashboardPage() {
                 get('/api/v2/mode/ws-strategy').catch(() => null),
                 get('/api/v2/mode/validation-warmup').catch(() => null),
                 get('/api/v2/strategy/auto').catch(() => null),
-            ]).then(([c, dry, paused, pm, at, sch, wsst, warm, auto]) => {
-                if (c) setCaps(c);
-                if (auto) setStrategyAuto(auto);
-                setModes({
-                    dry_run_enabled: dry ? !!dry.dry_run_enabled : undefined,
-                    trading_paused: paused ? !!paused.trading_paused : undefined,
-                    prob_model_enabled: pm ? !!pm.prob_model_enabled : undefined,
-                    autotrade_enabled: at ? !!at.autotrade_enabled : undefined,
-                    scheduler_running: sch ? !!sch.scheduler_running : undefined,
-                    ws_strategy_enabled: wsst ? !!wsst.ws_strategy_enabled : undefined,
-                    validation_on_start: warm ? !!warm.validation_on_start : undefined,
-                });
+            ]);
+
+            setStatus(s);
+            if (c) setCaps(c);
+            if (auto) setStrategyAuto(auto);
+            setModes({
+                dry_run_enabled: dry ? !!dry.dry_run_enabled : undefined,
+                trading_paused: paused ? !!paused.trading_paused : undefined,
+                prob_model_enabled: pm ? !!pm.prob_model_enabled : undefined,
+                autotrade_enabled: at ? !!at.autotrade_enabled : undefined,
+                scheduler_running: sch ? !!sch.scheduler_running : undefined,
+                ws_strategy_enabled: wsst ? !!wsst.ws_strategy_enabled : undefined,
+                validation_on_start: warm ? !!warm.validation_on_start : undefined,
             });
+
             setLog(l => [
                 `[${new Date().toLocaleTimeString()}] refresh ok`,
                 ...l
@@ -66,7 +69,7 @@ export default function DashboardPage() {
 
     React.useEffect(() => {
         refresh();
-        const id = setInterval(refresh, 5000);
+        const id = setInterval(refresh, 300000); // Öka till 5 minuter för bättre prestanda
         return () => clearInterval(id);
     }, [refresh]);
 
@@ -122,9 +125,11 @@ export default function DashboardPage() {
                     <h2 style={{ margin: '16px 0 8px' }}>Validation</h2>
                     <ValidationPanel />
                 </div>
+                <div>
+                    <h2 style={{ margin: '16px 0 8px' }}>Performance Monitor</h2>
+                    <PerformancePanel />
+                </div>
             </div>
         </div>
     );
 }
-
-

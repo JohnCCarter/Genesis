@@ -60,7 +60,7 @@ export function RiskPanel() {
 
     React.useEffect(() => {
         refresh();
-        const id = setInterval(refresh, 30000);
+        const id = setInterval(refresh, 120000); // Öka från 30s till 120s
         return () => clearInterval(id);
     }, [refresh]);
 
@@ -257,5 +257,3 @@ export function RiskPanel() {
         </div>
     );
 }
-
-

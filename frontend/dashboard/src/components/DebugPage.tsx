@@ -5,33 +5,33 @@ export function DebugPage() {
     const [subs, setSubs] = React.useState<any>(null);
     const [channel, setChannel] = React.useState<'ticker' | 'trades' | 'candles'>('ticker');
     const [timeframe, setTimeframe] = React.useState('1m');
-    const [symbol, setSymbol] = React.useState('tTESTBTC:TESTUSD');
+    const [symbol, setSymbol] = React.useState('TESTBTC:TESTUSD');
     const [log, setLog] = React.useState<string[]>([]);
 
     async function refreshSubs() {
         try {
             const s = await get('/api/v2/ws/pool/status');
             setSubs(s);
-        } catch {}
+        } catch { }
     }
 
     async function subscribe() {
         try {
             await post('/api/v2/ws/subscribe', { channel, symbol, timeframe });
-            setLog((l) => [ `subscribed ${channel}:${symbol}:${timeframe}`, ...l ].slice(0, 200));
+            setLog((l) => [`subscribed ${channel}:${symbol}:${timeframe}`, ...l].slice(0, 200));
             await refreshSubs();
         } catch (e: any) {
-            setLog((l) => [ `error sub: ${e?.message}`, ...l ].slice(0, 200));
+            setLog((l) => [`error sub: ${e?.message}`, ...l].slice(0, 200));
         }
     }
 
     async function unsubscribe() {
         try {
             await post('/api/v2/ws/unsubscribe', { channel, symbol, timeframe });
-            setLog((l) => [ `unsub ${channel}:${symbol}:${timeframe}`, ...l ].slice(0, 200));
+            setLog((l) => [`unsub ${channel}:${symbol}:${timeframe}`, ...l].slice(0, 200));
             await refreshSubs();
         } catch (e: any) {
-            setLog((l) => [ `error unsub: ${e?.message}`, ...l ].slice(0, 200));
+            setLog((l) => [`error unsub: ${e?.message}`, ...l].slice(0, 200));
         }
     }
 
@@ -74,5 +74,3 @@ export function DebugPage() {
         </div>
     );
 }
-
-

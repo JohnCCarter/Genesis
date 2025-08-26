@@ -51,8 +51,7 @@ export function PositionsPanel() {
                     <select value={filterSymbol} onChange={(e) => setFilterSymbol(e.target.value)}>
                         <option value="">Alla</option>
                         {TEST_SYMBOLS.map(s => {
-                            const v = `t${s}`;
-                            return <option key={s} value={v}>{v}</option>;
+                            return <option key={s.symbol} value={s.symbol}>{s.symbol}</option>;
                         })}
                     </select>
                 </label>
@@ -101,5 +100,3 @@ export function PositionsPanel() {
         </div>
     );
 }
-
-

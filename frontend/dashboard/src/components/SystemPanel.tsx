@@ -38,9 +38,12 @@ export function SystemPanel() {
     React.useEffect(() => {
         refresh();
         refreshSubs();
-        const id = setInterval(refresh, 15000);
-        const id2 = setInterval(refreshSubs, 15000);
-        return () => clearInterval(id);
+        const id = setInterval(refresh, 120000); // Öka från 60s till 120s för bättre prestanda
+        const id2 = setInterval(refreshSubs, 120000); // Öka från 60s till 120s för bättre prestanda
+        return () => {
+            clearInterval(id);
+            clearInterval(id2);
+        };
     }, [refresh, refreshSubs]);
 
     const [metrics, setMetrics] = React.useState<string | null>(null);
@@ -86,7 +89,7 @@ export function SystemPanel() {
                         if (socketRef.current) return;
                         try {
                             await ensureToken();
-                        } catch {}
+                        } catch { }
                         const tk = localStorage.getItem('genesis_access_token');
                         const base = String(WS_BASE);
                         const url = tk ? `${base}${base.includes('?') ? '&' : '?'}token=${encodeURIComponent(tk)}` : base;

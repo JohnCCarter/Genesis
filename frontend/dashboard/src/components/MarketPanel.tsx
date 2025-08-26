@@ -34,21 +34,26 @@ export function MarketPanel() {
             setWatchlist(items);
             if (st) {
                 console.log('Settings från API:', st);
+                console.log('Settings periods - EMA:', st.ema_period, 'RSI:', st.rsi_period, 'ATR:', st.atr_period);
+                console.log('Settings weights - EMA:', st.ema_weight, 'RSI:', st.rsi_weight, 'ATR:', st.atr_weight);
                 setSettings(st);
             }
             if (au) setAuto(au);
 
-            // Hämta aktuell regim om auto-regim är aktiverat
+            // Hämta aktuell regim om auto-regim är aktiverat (endast om nödvändigt)
             if (au?.AUTO_REGIME_ENABLED && items.length > 0) {
                 const firstSymbol = items[0]?.symbol || 'tBTCUSD';
-                try {
-                    const regimeRes = await get(`/api/v2/strategy/regime/${firstSymbol}`);
-                    console.log('Regim response:', regimeRes);
-                    setCurrentRegime(regimeRes);
-                } catch (e) {
-                    console.error('Regim error:', e);
-                    setCurrentRegime(null);
-                }
+                // Lägg till i nästa batch istället för separat anrop
+                setTimeout(async () => {
+                    try {
+                        const regimeRes = await get(`/api/v2/strategy/regime/${firstSymbol}`);
+                        console.log('Regim response:', regimeRes);
+                        setCurrentRegime(regimeRes);
+                    } catch (e) {
+                        console.error('Regim error:', e);
+                        setCurrentRegime(null);
+                    }
+                }, 100); // Kort delay för att inte blockera huvudflödet
             }
         } catch (e: any) {
             setError(e?.message || 'Kunde inte hämta watchlist');
@@ -57,7 +62,7 @@ export function MarketPanel() {
 
     React.useEffect(() => {
         refresh();
-        const id = setInterval(refresh, 15000);
+        const id = setInterval(refresh, 300000); // Öka till 5 minuter (300 sekunder)
         return () => clearInterval(id);
     }, [refresh]);
 
@@ -356,8 +361,13 @@ export function MarketPanel() {
                                 body: JSON.stringify(payload),
                             });
                             if (!res.ok) throw new Error(await res.text());
+                            const savedData = await res.json();
+                            console.log('Settings sparade:', savedData);
+                            console.log('Sparade periods - EMA:', savedData.ema_period, 'RSI:', savedData.rsi_period, 'ATR:', savedData.atr_period);
+                            console.log('Sparade weights - EMA:', savedData.ema_weight, 'RSI:', savedData.rsi_weight, 'ATR:', savedData.atr_weight);
                             setSaveMsg('Sparat');
-                            await refresh();
+                            // Uppdatera settings direkt med sparad data istället för att refresha
+                            setSettings(savedData);
                         } catch (e: any) {
                             setSaveMsg(e?.message || 'Misslyckades');
                         } finally {
@@ -484,5 +494,3 @@ export function MarketPanel() {
         </div >
     );
 }
-
-

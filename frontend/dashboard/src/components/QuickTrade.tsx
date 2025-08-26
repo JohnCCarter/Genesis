@@ -3,7 +3,7 @@ import { get, post } from '../lib/api';
 import { TEST_SYMBOLS } from '../lib/testSymbols';
 
 export function QuickTrade() {
-    const [symbol, setSymbol] = React.useState<string>(localStorage.getItem('qt_symbol') || 'tTESTBTC:TESTUSD');
+    const [symbol, setSymbol] = React.useState<string>(localStorage.getItem('qt_symbol') || 'TESTBTC:TESTUSD');
     const [side, setSide] = React.useState<'buy' | 'sell'>((localStorage.getItem('qt_side') as any) || 'buy');
     const [amount, setAmount] = React.useState<string>(localStorage.getItem('qt_amount') || '0.001');
     const [price, setPrice] = React.useState<string>(localStorage.getItem('qt_price') || '');
@@ -76,7 +76,7 @@ export function QuickTrade() {
                     <label>Symbol</label>
                     <select value={symbol} onChange={(e) => setSymbol(e.target.value)} style={{ width: '100%' }}>
                         {TEST_SYMBOLS.map(s => (
-                            <option key={s} value={`t${s}`}>{`t${s}`}</option>
+                            <option key={s.symbol} value={s.symbol}>{s.symbol}</option>
                         ))}
                     </select>
                 </div>
@@ -122,5 +122,3 @@ export function QuickTrade() {
         </div>
     );
 }
-
-

@@ -230,8 +230,7 @@ test_direct_bitfinex.py
 simple_socketio_server.py
 simple_ws_test_server.py
 ws_test.html
-# Ignore legacy example sources locally, but keep them in CI formatting
-# (Allow commit by overriding here)
+# Legacy files removed - no longer needed
 # tradingbot-backend/docs/legacy/**
 
 # Debug and development files

@@ -2,7 +2,7 @@ import React from 'react';
 import { post } from '../lib/api';
 
 export function ValidationPanel() {
-    const [symbol, setSymbol] = React.useState('tTESTBTC:TESTUSD');
+    const [symbol, setSymbol] = React.useState('TESTBTC:TESTUSD');
     const [timeframe, setTimeframe] = React.useState('1m');
     const [limit, setLimit] = React.useState(100);
     const [maxSamples, setMaxSamples] = React.useState(200);
@@ -58,5 +58,3 @@ export function ValidationPanel() {
         </div>
     );
 }
-
-

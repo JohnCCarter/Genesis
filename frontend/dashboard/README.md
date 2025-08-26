@@ -2,17 +2,20 @@
 
 ## Start
 
-1) Installera beroenden:
+1. Installera beroenden:
+
 ```
 npm install
 ```
 
-2) Starta dev-server (port 5173):
+2. Starta dev-server (port 5173):
+
 ```
 VITE_API_BASE=http://127.0.0.1:8000 npm run dev
 ```
 
 Alternativt via skript i repo-roten:
+
 ```
 pwsh -File ../../scripts/start_frontend.ps1
 # eller
@@ -213,7 +216,7 @@ Dashboarden använder backend REST API:er för:
 API-anrop använder JWT-tokens från localStorage:
 
 ```typescript
-const token = localStorage.getItem("auth_token");
+const token = localStorage.getItem('auth_token');
 const headers = { Authorization: `Bearer ${token}` };
 ```
 
@@ -224,7 +227,7 @@ const headers = { Authorization: `Bearer ${token}` };
 Dashboarden ansluter automatiskt till backend WebSocket:
 
 ```typescript
-import { io } from "socket.io-client";
+import { io } from 'socket.io-client';
 const socket = io(import.meta.env.VITE_WS_URL);
 ```
 

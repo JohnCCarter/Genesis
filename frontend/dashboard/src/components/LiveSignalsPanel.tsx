@@ -50,7 +50,7 @@ export function LiveSignalsPanel() {
 
     React.useEffect(() => {
         if (!auto) return;
-        const id = window.setInterval(fetchSignals, 15000);
+        const id = window.setInterval(fetchSignals, 300000); // Öka till 5 minuter
         return () => window.clearInterval(id);
     }, [auto, fetchSignals]);
 
@@ -118,5 +118,3 @@ export function LiveSignalsPanel() {
         </div>
     );
 }
-
-

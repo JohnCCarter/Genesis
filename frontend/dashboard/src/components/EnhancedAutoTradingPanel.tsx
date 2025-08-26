@@ -25,6 +25,9 @@ const EnhancedAutoTradingPanel: React.FC = () => {
         try {
             setLoading(true);
             const data = await get('/api/v2/enhanced-auto/status');
+            console.log('Enhanced Auto Status:', data);
+            console.log('Active symbols:', data?.active_symbols);
+            console.log('Last signals:', data?.last_signals);
             setStatus(data);
             setLastUpdate(new Date());
         } catch (error) {
@@ -76,10 +79,10 @@ const EnhancedAutoTradingPanel: React.FC = () => {
         }
     };
 
-    // Hämta status vid mount och var 30:e sekund
+    // Hämta status vid mount och var 60:e sekund
     useEffect(() => {
         fetchStatus();
-        const interval = setInterval(fetchStatus, 30000);
+        const interval = setInterval(fetchStatus, 300000); // Öka till 5 minuter
         return () => clearInterval(interval);
     }, []);
 
@@ -147,7 +150,7 @@ const EnhancedAutoTradingPanel: React.FC = () => {
                         >
                             <option value="">Välj symbol...</option>
                             {TEST_SYMBOLS.map(symbol => (
-                                <option key={symbol} value={`t${symbol}`}>{`t${symbol}`}</option>
+                                <option key={symbol.symbol} value={symbol.symbol}>{symbol.symbol}</option>
                             ))}
                         </select>
                         {selectedSymbol && (
@@ -213,6 +216,15 @@ const EnhancedAutoTradingPanel: React.FC = () => {
                                             </div>
                                         )}
 
+                                        {!signalInfo && (
+                                            <div className="signal-info">
+                                                <div className="signal-item">
+                                                    <span className="label">Status:</span>
+                                                    <span className="value">Ingen signal än</span>
+                                                </div>
+                                            </div>
+                                        )}
+
                                         {lastTrade && (
                                             <div className="trade-info">
                                                 <div className="trade-item">
@@ -234,7 +246,7 @@ const EnhancedAutoTradingPanel: React.FC = () => {
                         <h4>Senaste Signals (Inaktiva)</h4>
                         <div className="signal-grid">
                             {Object.entries(status.last_signals)
-                                .filter(([symbol]) => !isActive(symbol))
+                                .filter(([symbol]) => !status?.active_symbols?.includes(symbol))
                                 .map(([symbol, signalInfo]) => (
                                     <div key={symbol} className="signal-card inactive">
                                         <div className="signal-header">
