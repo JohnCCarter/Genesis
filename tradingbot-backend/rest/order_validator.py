@@ -105,6 +105,7 @@ class OrderValidator:
 
         # Grundläggande symboler (inkl. de testsymboler du använder)
         test_syms = [
+            # Med t prefix (för API-anrop)
             "tTESTADA:TESTUSD",
             "tTESTALGO:TESTUSD",
             "tTESTAPT:TESTUSD",
@@ -121,6 +122,23 @@ class OrderValidator:
             "tTESTSOL:TESTUSD",
             "tTESTXAUT:TESTUSD",
             "tTESTXTZ:TESTUSD",
+            # Utan t prefix (för frontend)
+            "TESTADA:TESTUSD",
+            "TESTALGO:TESTUSD",
+            "TESTAPT:TESTUSD",
+            "TESTAVAX:TESTUSD",
+            "TESTBTC:TESTUSD",
+            "TESTBTC:TESTUSDT",
+            "TESTDOGE:TESTUSD",
+            "TESTDOT:TESTUSD",
+            "TESTEOS:TESTUSD",
+            "TESTETH:TESTUSD",
+            "TESTFIL:TESTUSD",
+            "TESTLTC:TESTUSD",
+            "TESTNEAR:TESTUSD",
+            "TESTSOL:TESTUSD",
+            "TESTXAUT:TESTUSD",
+            "TESTXTZ:TESTUSD",
         ]
         # Bygg live-lista via SymbolService om möjligt
         try:
@@ -129,8 +147,7 @@ class OrderValidator:
             from services.symbols import SymbolService
 
             svc = SymbolService()
-            # Kör refresh synkront i denna tråd (validation anropas sällan och tidig init är ok)
-            _asyncio.get_event_loop().run_until_complete(svc.refresh())
+            # Använd befintlig cache istället för att köra refresh synkront
             live_pairs = getattr(svc, "_pairs", [])  # ex. ["BTCUSD","ETHUSD",...]
             live = [{"symbol": f"t{p}"} for p in live_pairs]
         except Exception:

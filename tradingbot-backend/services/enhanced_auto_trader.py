@@ -91,7 +91,7 @@ class EnhancedAutoTrader:
     async def _handle_realtime_signal(self, result: dict):
         """Hantera realtids signal från befintligt system"""
         try:
-            symbol = result.get('symbol')
+            symbol = result.get("symbol")
             if not symbol or symbol not in self.active_symbols:
                 return
 

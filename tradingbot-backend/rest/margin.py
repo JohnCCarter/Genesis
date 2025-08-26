@@ -77,6 +77,9 @@ class MarginService:
         self.base_url = (
             getattr(self.settings, "BITFINEX_AUTH_API_URL", None) or self.settings.BITFINEX_API_URL
         )
+        # OPTIMERING: In-memory cache för margin-status per symbol
+        self._margin_status_cache = {}
+        self._margin_status_cache_ttl = 60  # 1 minut TTL
 
     def _convert_v1_to_v2_format(self, v1_data: dict[str, Any]) -> list[Any]:
         """
@@ -377,6 +380,152 @@ class MarginService:
         except Exception as e:
             logger.error(f"Fel vid symbol margin status: {e}")
             return {"symbol": symbol, "source": "error"}
+
+    async def get_symbol_margin_status_batch(self, symbols: list[str]) -> dict[str, dict[str, Any]]:
+        """
+        OPTIMERAD: Batch-hämtning av margin-status för flera symboler.
+        Minskar API-anrop genom att hämta all data på en gång.
+
+        Args:
+            symbols: Lista med symboler att hämta margin-status för
+
+        Returns:
+            Dict med symbol -> margin-status mapping
+        """
+        try:
+            import time
+
+            now = time.time()
+            results = {}
+
+            # 1. Kontrollera cache först
+            symbols_to_fetch = []
+            for symbol in symbols:
+                eff = symbol
+                try:
+                    from services.symbols import SymbolService
+
+                    svc = SymbolService()
+                    await svc.refresh()
+                    eff = svc.resolve(symbol)
+                except Exception:
+                    pass
+
+                cache_key = f"margin_status_{eff}"
+                cached = self._margin_status_cache.get(cache_key)
+                if cached and (now - cached["timestamp"]) < self._margin_status_cache_ttl:
+                    logger.debug(f"📋 Använder cached margin-status för {eff}")
+                    results[symbol] = cached["data"]
+                else:
+                    symbols_to_fetch.append((symbol, eff))
+
+            if not symbols_to_fetch:
+                return results
+
+            # 2. Batch-hämta från WebSocket först
+            ws_results = {}
+            try:
+                from services.bitfinex_websocket import bitfinex_ws
+
+                for symbol, eff in symbols_to_fetch:
+                    arr = (bitfinex_ws.margin_sym or {}).get(eff)
+                    if isinstance(arr, list) and arr:
+                        # Försök tolka fält: [tradable, gross, buy, sell, ...]
+                        tradable = float(arr[0]) if len(arr) >= 1 and arr[0] is not None else None
+                        buy = float(arr[2]) if len(arr) >= 3 and arr[2] is not None else None
+                        sell = float(arr[3]) if len(arr) >= 4 and arr[3] is not None else None
+
+                        result = {
+                            "symbol": eff,
+                            "source": "ws",
+                            "tradable": tradable,
+                            "buy": buy,
+                            "sell": sell,
+                        }
+                        ws_results[symbol] = result
+
+                        # Spara i cache
+                        cache_key = f"margin_status_{eff}"
+                        self._margin_status_cache[cache_key] = {"timestamp": now, "data": result}
+            except Exception as e:
+                logger.warning(f"⚠️ WS batch margin-status misslyckades: {e}")
+
+            # 3. REST fallback för symboler som inte fick WS-data
+            rest_symbols = [(s, eff) for s, eff in symbols_to_fetch if s not in ws_results]
+            if rest_symbols:
+                logger.info(
+                    f"🔄 Batch-hämtar margin-status för {len(rest_symbols)} symboler via REST"
+                )
+
+                # Batch-hämta margin limits
+                try:
+                    margin_limits = await self.get_margin_limits()
+                    limits_by_pair = {limit.on_pair.lower(): limit for limit in margin_limits}
+
+                    for symbol, eff in rest_symbols:
+                        limit = limits_by_pair.get(eff.lower())
+                        if limit:
+                            result = {
+                                "symbol": eff,
+                                "source": "rest",
+                                "tradable": float(limit.tradable_balance),
+                                "buy": None,
+                                "sell": None,
+                            }
+                        else:
+                            result = {
+                                "symbol": eff,
+                                "source": "none",
+                                "tradable": None,
+                                "buy": None,
+                                "sell": None,
+                            }
+
+                        results[symbol] = result
+
+                        # Spara i cache
+                        cache_key = f"margin_status_{eff}"
+                        self._margin_status_cache[cache_key] = {"timestamp": now, "data": result}
+
+                except Exception as e:
+                    logger.warning(f"⚠️ REST batch margin-status misslyckades: {e}")
+                    # Fallback till individuella anrop
+                    for symbol, eff in rest_symbols:
+                        try:
+                            result = await self.get_symbol_margin_status(symbol)
+                            results[symbol] = result
+                        except Exception:
+                            results[symbol] = {
+                                "symbol": eff,
+                                "source": "error",
+                                "tradable": None,
+                                "buy": None,
+                                "sell": None,
+                            }
+
+            # Lägg till WS-resultat
+            results.update(ws_results)
+
+            logger.info(f"✅ Batch margin-status klar: {len(results)}/{len(symbols)} symboler")
+            return results
+
+        except Exception as e:
+            logger.error(f"❌ Batch margin-status fel: {e}")
+            # Fallback till individuella anrop
+            results = {}
+            for symbol in symbols:
+                try:
+                    result = await self.get_symbol_margin_status(symbol)
+                    results[symbol] = result
+                except Exception:
+                    results[symbol] = {
+                        "symbol": symbol,
+                        "source": "error",
+                        "tradable": None,
+                        "buy": None,
+                        "sell": None,
+                    }
+            return results
 
 
 # Skapa en global instans av MarginService

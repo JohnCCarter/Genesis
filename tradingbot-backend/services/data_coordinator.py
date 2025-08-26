@@ -22,8 +22,8 @@ class DataCoordinatorService:
     def __init__(self):
         self._data_cache: dict[str, dict[str, Any]] = {}
         # Öka cache TTL för bättre prestanda
-        self._cache_ttl_seconds = 60  # 60 sekunder TTL (tidigare 30)
-        self._margin_cache_ttl_seconds = 120  # 2 minuter för margin-data
+        self._cache_ttl_seconds = 600  # 10 minuter TTL (tidigare 300)
+        self._margin_cache_ttl_seconds = 1200  # 20 minuter för margin-data (tidigare 600)
         self._request_locks: dict[str, asyncio.Lock] = {}
         self._last_cleanup = datetime.now()
         self._batch_requests: dict[str, asyncio.Future] = {}

@@ -55,7 +55,7 @@ def test_nonce_generation(key_id: str, count: int = 10) -> list[tuple[str, int]]
         diff = nonce_int - prev_nonce if prev_nonce > 0 else 0
         results.append((nonce, diff))
         prev_nonce = nonce_int
-        time.sleep(0.001)  # Liten paus mellan genereringar
+        # time.sleep(0.001)  # Liten paus mellan genereringar - REMOVED för prestanda
 
     return results
 

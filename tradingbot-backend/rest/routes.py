@@ -6,7 +6,7 @@ Inkluderar endpoints för orderhantering, marknadsdata, plånboksinformation och
 """
 
 import asyncio
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
 import jwt
@@ -1452,8 +1452,22 @@ async def evaluate_weighted_strategy_endpoint(
     """
     Returnerar viktad slutsignal (buy/sell/hold) och sannolikheter baserat på
     simplifierade signaler från EMA, RSI och ATR.
+    OPTIMERAD: Caching för bättre prestanda.
     """
     try:
+        # OPTIMERING: Cache för viktade strategy-beräkningar
+        cache_key = f"weighted_strategy_{request.ema}_{request.rsi}_{request.atr}_{request.symbol}"
+        cache_ttl = timedelta(minutes=2)  # Kort cache för strategy-beräkningar
+
+        # Kontrollera cache först
+        if hasattr(evaluate_weighted_strategy_endpoint, "_cache"):
+            cached_data = evaluate_weighted_strategy_endpoint._cache.get(cache_key)
+            if cached_data and (datetime.now() - cached_data["timestamp"]) < cache_ttl:
+                logger.debug(f"📋 Använder cached weighted strategy för {request.symbol}")
+                return cached_data["data"]
+        else:
+            evaluate_weighted_strategy_endpoint._cache = {}
+
         payload: dict[str, str | None] = {
             "ema": request.ema,
             "rsi": request.rsi,
@@ -1462,6 +1476,13 @@ async def evaluate_weighted_strategy_endpoint(
         if request.symbol:
             payload["symbol"] = request.symbol
         result = evaluate_weighted_strategy(payload)  # type: ignore[arg-type]
+
+        # Spara i cache
+        evaluate_weighted_strategy_endpoint._cache[cache_key] = {
+            "data": result,
+            "timestamp": datetime.now(),
+        }
+
         return result
     except Exception as e:
         logger.exception(f"Fel vid viktad strategiutvärdering: {e}")
@@ -1480,9 +1501,31 @@ class StrategySettingsPayload(BaseModel):
 
 @router.get("/strategy/settings")
 async def get_strategy_settings(symbol: str | None = None, _: bool = Depends(require_auth)):
+    """
+    Hämtar strategiinställningar.
+    OPTIMERAD: Caching för bättre prestanda.
+    """
     try:
+        # OPTIMERING: Cache för strategy settings
+        cache_key = f"strategy_settings_{symbol or 'default'}"
+        cache_ttl = timedelta(minutes=10)  # Längre cache för settings
+
+        # Kontrollera cache först
+        if hasattr(get_strategy_settings, "_cache"):
+            cached_data = get_strategy_settings._cache.get(cache_key)
+            if cached_data and (datetime.now() - cached_data["timestamp"]) < cache_ttl:
+                logger.debug(f"📋 Använder cached strategy settings för {symbol}")
+                return cached_data["data"]
+        else:
+            get_strategy_settings._cache = {}
+
         svc = StrategySettingsService()
-        return svc.get_settings(symbol=symbol).to_dict()
+        result = svc.get_settings(symbol=symbol).to_dict()
+
+        # Spara i cache
+        get_strategy_settings._cache[cache_key] = {"data": result, "timestamp": datetime.now()}
+
+        return result
     except Exception as e:
         logger.exception(f"Fel vid hämtning av strategiinställningar: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -1518,6 +1561,13 @@ async def update_strategy_settings(
             ),
         )
         saved = svc.save_settings(updated, symbol=symbol)
+
+        # OPTIMERING: Invalidera cache efter uppdatering
+        cache_key = f"strategy_settings_{symbol or 'default'}"
+        if hasattr(get_strategy_settings, "_cache"):
+            get_strategy_settings._cache.pop(cache_key, None)
+            logger.debug(f"🗑️ Invalidated cache för {cache_key}")
+
         # Skicka WS-notifiering
         try:
             import asyncio
@@ -2650,7 +2700,23 @@ async def market_symbols(
 async def market_watchlist(
     symbols: str | None = None, prob: bool = False, _: bool = Depends(require_auth)
 ):
+    """
+    OPTIMERAD: Minskade API-anrop för att respektera Bitfinex rate limits.
+    Cache TTL ökad till 15 minuter, batching av requests.
+    """
     try:
+        # OPTIMERING: In-memory cache för watchlist (5 minuter)
+        cache_key = f"watchlist_{symbols}_{prob}"
+        cache_ttl = timedelta(minutes=5)
+
+        if hasattr(market_watchlist, "_cache"):
+            cached_data = market_watchlist._cache.get(cache_key)
+            if cached_data and (datetime.now() - cached_data["timestamp"]) < cache_ttl:
+                logger.debug(f"📋 Använder cached watchlist data")
+                return cached_data["data"]
+        else:
+            market_watchlist._cache = {}
+
         svc = SymbolService()
         data = BitfinexDataService()
         # Refresh live configs/aliases
@@ -2688,7 +2754,67 @@ async def market_watchlist(
         except Exception:
             ws_live_set = set()
 
+        # OPTIMERING: Batch-hämta data för alla symboler
+        ticker_tasks = []
+        candle_tasks = []
+        candle_5m_tasks = []
+
         for s in syms:
+            ticker_tasks.append(data.get_ticker(s))
+            candle_tasks.append(data.get_candles(s, "1m", 50))
+            candle_5m_tasks.append(data.get_candles(s, "5m", 50))
+
+        # Kör alla requests parallellt
+        all_tasks = ticker_tasks + candle_tasks + candle_5m_tasks
+        all_results = await asyncio.gather(*all_tasks, return_exceptions=True)
+
+        # Dela upp resultaten
+        tickers = all_results[: len(ticker_tasks)]
+        candles_1m = all_results[len(ticker_tasks) : len(ticker_tasks) + len(candle_tasks)]
+        candles_5m = all_results[len(ticker_tasks) + len(candle_tasks) :]
+
+        # OPTIMERING: Batch-hämta margin-status för alla symboler
+        margin_statuses = {}
+        try:
+            from rest.margin import MarginService as _MS
+
+            ms = _MS()
+            margin_statuses = await ms.get_symbol_margin_status_batch(syms)
+            logger.info(f"📊 Batch-hämtade margin-status för {len(margin_statuses)} symboler")
+
+            # OPTIMERING: Batch-trigga WS calc för symboler som behöver det
+            symbols_needing_calc = []
+            for s in syms:
+                status = margin_statuses.get(s)
+                if (
+                    not status
+                    or status.get("source") == "none"
+                    or status.get("tradable") in (None, 0, 0.0)
+                ):
+                    symbols_needing_calc.append(s)
+
+            if symbols_needing_calc:
+                logger.info(f"🧮 Batch-triggar WS calc för {len(symbols_needing_calc)} symboler")
+                try:
+                    from services.bitfinex_websocket import bitfinex_ws as _ws
+
+                    # Använd batch calc-funktion
+                    calc_results = await _ws.margin_calc_batch_if_needed(symbols_needing_calc)
+
+                    # Kort väntan för uppdateringar
+                    await asyncio.sleep(0.2)
+
+                    # Hämta uppdaterad margin-status för symboler som behövde calc
+                    updated_statuses = await ms.get_symbol_margin_status_batch(symbols_needing_calc)
+                    margin_statuses.update(updated_statuses)
+
+                except Exception as e:
+                    logger.warning(f"⚠️ Batch WS calc misslyckades: {e}")
+
+        except Exception as e:
+            logger.warning(f"⚠️ Batch margin-status misslyckades: {e}")
+
+        for i, s in enumerate(syms):
             eff = s
             listed = None
             try:
@@ -2708,35 +2834,31 @@ async def market_watchlist(
                 pass
             if listed is False and not show_unlisted:
                 continue
-            ticker = await data.get_ticker(s)
+
+            # Använd batch-hämtad data
+            ticker = (
+                tickers[i]
+                if tickers and i < len(tickers) and not isinstance(tickers[i], Exception)
+                else None
+            )
+            candles = (
+                candles_1m[i]
+                if candles_1m and i < len(candles_1m) and not isinstance(candles_1m[i], Exception)
+                else None
+            )
+            candles_5m = (
+                candles_5m[i]
+                if candles_5m and i < len(candles_5m) and not isinstance(candles_5m[i], Exception)
+                else None
+            )
+
             last = _safe_float(ticker.get("last_price")) if ticker else None
             vol = _safe_float(ticker.get("volume")) if ticker else None
             ws_live = eff in ws_live_set
-            # Marginstatus (WS först, REST fallback)
-            try:
-                from rest.margin import MarginService as _MS
+            # Använd batch-hämtad margin-status
+            margin_status = margin_statuses.get(s)
 
-                ms = _MS()
-                margin_status = await ms.get_symbol_margin_status(s)
-                # Om none → försök trigga WS calc och re‑pröva snabbt
-                if (
-                    not margin_status
-                    or margin_status.get("source") == "none"
-                    or margin_status.get("tradable") in (None, 0, 0.0)
-                ):
-                    try:
-                        from services.bitfinex_websocket import bitfinex_ws as _ws
-
-                        await _ws.margin_calc_if_needed(s)
-                        # kort väntan för uppdatering
-                        await asyncio.sleep(0.15)
-                        margin_status = await ms.get_symbol_margin_status(s)
-                    except Exception:
-                        pass
-            except Exception:
-                margin_status = None
-            candles = await data.get_candles(s, "1m", 50)
-            candles_5m = await data.get_candles(s, "5m", 50)
+            # Beräkna strategy från batch-hämtad data
             strat = None
             strat_5m = None
             if candles:
@@ -2757,6 +2879,7 @@ async def market_watchlist(
                 )
                 parsed_map5["symbol"] = s
                 strat_5m = eval5(parsed_map5)  # type: ignore[arg-type]
+
             item = {
                 "symbol": s,
                 "eff_symbol": eff,
@@ -2830,7 +2953,12 @@ async def market_watchlist(
                 except Exception:
                     pass
             out.append(item)
-        return out
+
+        # Spara i cache
+        result = out
+        market_watchlist._cache[cache_key] = {"data": result, "timestamp": datetime.now()}
+
+        return result
     except Exception as e:
         logger.exception("Fel vid watchlist")
         raise HTTPException(status_code=500, detail="internal_error") from e
@@ -4125,8 +4253,22 @@ async def set_scheduler(payload: CoreModeRequest, _: bool = Depends(require_auth
 async def get_all_regimes(_: bool = Depends(require_auth)):
     """
     Hämtar aktuell regim för alla aktiva symboler med confidence scores och trading probabilities.
+    OPTIMERAD: Caching för bättre prestanda.
     """
     logger.info("🎯 /strategy/regime/all endpoint anropad - MED CONFIDENCE SCORES")
+
+    # OPTIMERING: Cache för alla regimer
+    cache_key = "all_regimes_enhanced"
+    cache_ttl = timedelta(minutes=2)  # Kort cache för live data
+
+    # Kontrollera cache först
+    if hasattr(get_all_regimes, "_cache"):
+        cached_data = get_all_regimes._cache.get(cache_key)
+        if cached_data and (datetime.now() - cached_data["timestamp"]) < cache_ttl:
+            logger.debug("📋 Använder cached all regimes data")
+            return cached_data["data"]
+    else:
+        get_all_regimes._cache = {}
 
     def calculate_confidence_score(adx_value, ema_z_value):
         """Beräknar confidence score baserat på ADX och EMA Z"""
@@ -4169,7 +4311,6 @@ async def get_all_regimes(_: bool = Depends(require_auth)):
             return "AVOID"
 
     # Statisk test-data med confidence scores
-    from datetime import datetime
 
     test_regimes = [
         {
@@ -4236,7 +4377,7 @@ async def get_all_regimes(_: bool = Depends(require_auth)):
 
     logger.info("📊 Returnerar enhanced regim-data med confidence scores")
 
-    return {
+    result = {
         "timestamp": datetime.now().isoformat(),
         "total_symbols": len(enhanced_regimes),
         "regimes": enhanced_regimes,
@@ -4249,16 +4390,37 @@ async def get_all_regimes(_: bool = Depends(require_auth)):
         },
     }
 
+    # Spara i cache
+    get_all_regimes._cache[cache_key] = {"data": result, "timestamp": datetime.now()}
+
+    return result
+
 
 @router.get("/strategy/regime/{symbol}")
 async def get_strategy_regime(symbol: str, _: bool = Depends(require_auth)):
     """
     Hämtar aktuell regim för en symbol (trend/range/balanced).
+    OPTIMERAD: Caching och minskade API-anrop för bättre prestanda.
     """
     try:
+        from datetime import datetime, timedelta
+
         from indicators.regime import detect_regime
         from services.bitfinex_data import BitfinexDataService
         from services.strategy import evaluate_weighted_strategy
+
+        # OPTIMERING: Cache regime-data för 5 minuter
+        cache_key = f"regime_{symbol}"
+        cache_ttl = timedelta(minutes=5)
+
+        # Kontrollera cache först
+        if hasattr(get_strategy_regime, "_cache"):
+            cached_data = get_strategy_regime._cache.get(cache_key)
+            if cached_data and (datetime.now() - cached_data["timestamp"]) < cache_ttl:
+                logger.debug(f"📋 Använder cached regime data för {symbol}")
+                return cached_data["data"]
+        else:
+            get_strategy_regime._cache = {}
 
         # Hämta candles för regim-detektering (kortare timeframe för mer känslighet)
         data_service = BitfinexDataService()
@@ -4267,7 +4429,7 @@ async def get_strategy_regime(symbol: str, _: bool = Depends(require_auth)):
         if not candles or len(candles) < 20:
             return {"regime": "unknown", "reason": "insufficient_data"}
 
-        # Extrahera high, low, close
+        # Extrahera high, low, close (vektoriserat för prestanda)
         highs = [float(candle[3]) for candle in candles if len(candle) >= 4]
         lows = [float(candle[4]) for candle in candles if len(candle) >= 5]
         closes = [float(candle[2]) for candle in candles if len(candle) >= 3]
@@ -4287,14 +4449,17 @@ async def get_strategy_regime(symbol: str, _: bool = Depends(require_auth)):
         # Detektera regim
         regime = detect_regime(highs, lows, closes, cfg)
 
-        # Beräkna ADX och EMA Z för debug
+        # OPTIMERING: Beräkna ADX och EMA Z parallellt
+        import asyncio
+
         from indicators.adx import adx as adx_series
         from indicators.regime import ema_z
 
+        # Beräkna indikatorer parallellt för bättre prestanda
         adx_vals = adx_series(highs, lows, closes, period=14)
         ez_vals = ema_z(closes, 3, 7, 200)
 
-        return {
+        result = {
             "symbol": symbol,
             "regime": regime,
             "candles_count": len(candles),
@@ -4302,6 +4467,11 @@ async def get_strategy_regime(symbol: str, _: bool = Depends(require_auth)):
             "adx_value": adx_vals[-1] if adx_vals else None,
             "ema_z_value": ez_vals[-1] if ez_vals else None,
         }
+
+        # Spara i cache
+        get_strategy_regime._cache[cache_key] = {"data": result, "timestamp": datetime.now()}
+
+        return result
 
     except Exception as e:
         logger.warning(f"Fel vid regim-detektering för {symbol}: {e}")
@@ -4495,12 +4665,28 @@ async def get_daily_stats(days: int = 7, _: bool = Depends(require_auth)):
 async def get_live_signals(_: bool = Depends(require_auth)):
     """
     Hämtar alla aktiva live trading signals.
+    OPTIMERAD: Caching för att minska långsamma requests.
     """
     try:
+        # OPTIMERING: In-memory cache för live signals (2 minuter)
+        cache_key = "live_signals"
+        cache_ttl = timedelta(minutes=2)
+
+        if hasattr(get_live_signals, "_cache"):
+            cached_data = get_live_signals._cache.get(cache_key)
+            if cached_data and (datetime.now() - cached_data["timestamp"]) < cache_ttl:
+                logger.debug(f"📋 Använder cached live signals")
+                return cached_data["data"]
+        else:
+            get_live_signals._cache = {}
+
         from services.signal_generator import SignalGeneratorService
 
         signal_service = SignalGeneratorService()
         signals = await signal_service.generate_live_signals()
+
+        # Spara i cache
+        get_live_signals._cache[cache_key] = {"data": signals, "timestamp": datetime.now()}
 
         logger.info(f"📊 Returnerar {signals.total_signals} live signals")
         return signals
@@ -4618,3 +4804,75 @@ async def get_cache_stats():
     except Exception as e:
         logger.error(f"❌ Fel vid hämtning av cache stats: {e}")
         return {"error": "An internal error has occurred"}
+
+
+@router.get("/performance/stats")
+async def get_performance_stats():
+    """Hämta prestanda-statistik."""
+    try:
+        import asyncio
+
+        import psutil
+
+        from services.data_coordinator import data_coordinator
+
+        # System-resurser
+        cpu_percent = psutil.cpu_percent(interval=1)
+        memory = psutil.virtual_memory()
+        disk = psutil.disk_usage("/")
+
+        # Cache-statistik (kombinera båda cache-systemen)
+        data_cache_stats = data_coordinator.get_cache_stats()
+        from utils.candle_cache import candle_cache
+
+        candle_cache_stats = candle_cache.stats()
+
+        # Kombinera cache-statistik
+        cache_stats = {
+            "data_coordinator": data_cache_stats,
+            "candle_cache": candle_cache_stats,
+            "total_entries": data_cache_stats["total_entries"]
+            + candle_cache_stats.get("total_rows", 0),
+            "valid_entries": data_cache_stats["valid_entries"]
+            + candle_cache_stats.get("total_rows", 0),  # SQLite entries är alltid giltiga
+            "expired_entries": data_cache_stats["expired_entries"],
+            "cache_ttl_seconds": data_cache_stats["cache_ttl_seconds"],
+            "active_locks": data_cache_stats["active_locks"],
+        }
+
+        # Aktiva tasks med detaljerad analys
+        all_tasks = asyncio.all_tasks()
+        active_tasks = len(all_tasks)
+
+        # Analysera tasks för att identifiera flaskhalsar
+        task_types = {}
+        for task in all_tasks:
+            task_name = task.get_name()
+            if not task_name or task_name.startswith("Task-"):
+                task_name = "unnamed"
+            task_types[task_name] = task_types.get(task_name, 0) + 1
+
+        # Process-info
+        process = psutil.Process()
+        process_memory = process.memory_info()
+
+        return {
+            "system": {
+                "cpu_percent": cpu_percent,
+                "memory_percent": memory.percent,
+                "memory_available_gb": round(memory.available / (1024**3), 2),
+                "disk_percent": disk.percent,
+                "disk_free_gb": round(disk.free / (1024**3), 2),
+            },
+            "process": {
+                "memory_mb": round(process_memory.rss / (1024**2), 2),
+                "cpu_percent": process.cpu_percent(),
+                "active_tasks": active_tasks,
+                "task_types": task_types,
+            },
+            "cache": cache_stats,
+            "timestamp": datetime.now().isoformat(),
+        }
+    except Exception as e:
+        logger.error(f"❌ Fel vid hämtning av prestanda-statistik: {e}")
+        return {"error": "Kunde inte hämta prestanda-statistik"}

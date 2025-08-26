@@ -26,7 +26,7 @@ _CACHE: dict = {
     "alias_fwd": {},
     "alias_rev": {},
     "ts": 0.0,
-    "ttl": 3600.0,
+    "ttl": 14400.0,  # Öka från 2 timmar till 4 timmar för bättre prestanda
 }
 _REFRESH_LOCK: asyncio.Lock = asyncio.Lock()
 

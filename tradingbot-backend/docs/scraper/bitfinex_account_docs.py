@@ -18,9 +18,7 @@ import requests
 from bs4 import BeautifulSoup
 
 # Konfigurera loggning
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger("bitfinex_account_scraper")
 
 # Konstanter
@@ -57,9 +55,7 @@ class BitfinexAccountScraper:
         self.cache_dir = cache_dir or CACHE_DIR
         self.cache_validity_days = cache_validity_days
         self.session = requests.Session()
-        self.session.headers.update(
-            {"User-Agent": "Mozilla/5.0 Genesis-Trading-Bot Account Documentation Helper"}
-        )
+        self.session.headers.update({"User-Agent": "Mozilla/5.0 Genesis-Trading-Bot Account Documentation Helper"})
 
         # Skapa cache-katalog om den inte finns
         os.makedirs(self.cache_dir, exist_ok=True)
@@ -121,9 +117,7 @@ class BitfinexAccountScraper:
             if cache_file.exists():
                 try:
                     with open(cache_file, "r", encoding="utf-8") as f:
-                        logger.warning(
-                            f"Använder gammal cache för {section}_account på grund av nätverksfel"
-                        )
+                        logger.warning(f"Använder gammal cache för {section}_account på grund av nätverksfel")
                         return json.load(f)
                 except (json.JSONDecodeError, IOError):
                     pass
@@ -152,9 +146,7 @@ class BitfinexAccountScraper:
         }
 
         # Försök hitta beskrivning
-        description_section = soup.find(
-            string=re.compile("Retrieve your wallet balances", re.IGNORECASE)
-        )
+        description_section = soup.find(string=re.compile("Retrieve your wallet balances", re.IGNORECASE))
         if description_section and description_section.parent:
             result["description"] = description_section.get_text(strip=True)
 

@@ -73,11 +73,7 @@ class DocsOrganizer:
                 category = "test"
             else:
                 # Hitta quote currency
-                parts = (
-                    symbol_name.split(":")
-                    if ":" in symbol_name
-                    else [symbol_name[:-3], symbol_name[-3:]]
-                )
+                parts = symbol_name.split(":") if ":" in symbol_name else [symbol_name[:-3], symbol_name[-3:]]
                 quote = parts[-1]
 
                 if quote in ["BTC", "ETH", "LEO"]:
@@ -148,9 +144,7 @@ class DocsOrganizer:
         api_info = []
 
         # Hitta alla API-sektioner
-        for section in soup.find_all(
-            ["div", "section"], class_=["api-section", "endpoint", "method"]
-        ):
+        for section in soup.find_all(["div", "section"], class_=["api-section", "endpoint", "method"]):
             endpoint = self._extract_endpoint(section)
             if endpoint:
                 api_info.append(endpoint)
@@ -213,8 +207,7 @@ class DocsOrganizer:
             # Kontrollera autentisering
             auth_text = section.get_text().lower()
             endpoint["authentication"] = any(
-                word in auth_text
-                for word in ["authenticated", "requires auth", "authorization required"]
+                word in auth_text for word in ["authenticated", "requires auth", "authorization required"]
             )
 
             # Hitta parametrar
@@ -238,9 +231,7 @@ class DocsOrganizer:
         parameters = []
 
         # Hitta parametertabell eller lista
-        param_section = section.find(
-            ["table", "div", "ul"], class_=["parameters", "params", "arguments"]
-        )
+        param_section = section.find(["table", "div", "ul"], class_=["parameters", "params", "arguments"])
         if not param_section:
             return parameters
 
@@ -267,9 +258,7 @@ class DocsOrganizer:
 
                 # Kontrollera om obligatorisk
                 required_text = param.get_text().lower()
-                param_info["required"] = (
-                    "required" in required_text and "optional" not in required_text
-                )
+                param_info["required"] = "required" in required_text and "optional" not in required_text
 
                 # Hitta beskrivning
                 desc_elem = param.find(["td", "span", "p"], class_=["description", "param-desc"])
@@ -277,9 +266,7 @@ class DocsOrganizer:
                     param_info["description"] = desc_elem.text.strip()
 
                 # Hitta standardvärde
-                default_elem = param.find(
-                    ["td", "span", "code"], class_=["default", "param-default"]
-                )
+                default_elem = param.find(["td", "span", "code"], class_=["default", "param-default"])
                 if default_elem:
                     param_info["default"] = default_elem.text.strip()
 
@@ -297,9 +284,7 @@ class DocsOrganizer:
         response = {"type": "", "description": "", "schema": {}, "examples": []}
 
         # Hitta svarssektion
-        response_section = section.find(
-            ["div", "section"], class_=["response", "returns", "result"]
-        )
+        response_section = section.find(["div", "section"], class_=["response", "returns", "result"])
         if not response_section:
             return response
 
@@ -325,9 +310,7 @@ class DocsOrganizer:
                     pass
 
             # Hitta exempel
-            for example in response_section.find_all(
-                ["pre", "code"], class_=["example", "json-example"]
-            ):
+            for example in response_section.find_all(["pre", "code"], class_=["example", "json-example"]):
                 try:
                     example_text = example.text.strip()
                     if example_text:

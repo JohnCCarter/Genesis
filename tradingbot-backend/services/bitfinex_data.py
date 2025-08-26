@@ -44,6 +44,8 @@ class BitfinexDataService:
             getattr(self.settings, "BITFINEX_PUBLIC_API_URL", None)
             or self.settings.BITFINEX_API_URL
         )
+        # Delad HTTP-klient för bättre prestanda
+        self._client: httpx.AsyncClient | None = None
 
     async def get_candles(
         self, symbol: str = "tBTCUSD", timeframe: str = "1m", limit: int = 100
@@ -53,7 +55,7 @@ class BitfinexDataService:
 
         Args:
             symbol: Trading pair (t.ex. 'tBTCUSD')
-            timeframe: Tidsram ('1m', '5m', '15m', '30m', '1h', '3h', '6h', '12h', '1D', '7D', '14D', '1M')
+            timeframe: Tidsram ('1m', '5m', '15m', '30m', '1h', '3h', '6h', '12h', '1D', '1W', '14D', '1M')
             limit: Antal candles att hämta (max 10000)
 
         Returns:
@@ -91,29 +93,36 @@ class BitfinexDataService:
             backoff_base = max(int(self.settings.DATA_BACKOFF_BASE_MS), 0) / 1000.0
             backoff_max = max(int(self.settings.DATA_BACKOFF_MAX_MS), 0) / 1000.0
             last_exc = None
+
+            # Använd delad klient för bättre prestanda med connection pooling
+            if self._client is None:
+                self._client = httpx.AsyncClient(
+                    timeout=timeout,
+                    limits=httpx.Limits(max_keepalive_connections=20, max_connections=100),
+                )
+
             for attempt in range(retries + 1):
                 try:
-                    async with httpx.AsyncClient(timeout=timeout) as client:
-                        logger.info("🌐 REST API: Hämtar candles från %s", url)
-                        response = await client.get(url, params=params)
-                        if response.status_code in (429, 500, 502, 503, 504):
-                            raise httpx.HTTPStatusError(
-                                "server busy",
-                                request=response.request,
-                                response=response,
-                            )
-                        response.raise_for_status()
-                        candles = response.json()
-                        logger.info(
-                            "✅ REST API: Hämtade %s candles för %s – cachar lokalt",
-                            len(candles),
-                            symbol,
+                    logger.info("🌐 REST API: Hämtar candles från %s", url)
+                    response = await self._client.get(url, params=params)
+                    if response.status_code in (429, 500, 502, 503, 504):
+                        raise httpx.HTTPStatusError(
+                            "server busy",
+                            request=response.request,
+                            response=response,
                         )
-                        try:
-                            candle_cache.store(symbol, timeframe, candles)
-                        except Exception:
-                            pass
-                        return candles
+                    response.raise_for_status()
+                    candles = response.json()
+                    logger.info(
+                        "✅ REST API: Hämtade %s candles för %s – cachar lokalt",
+                        len(candles),
+                        symbol,
+                    )
+                    try:
+                        candle_cache.store(symbol, timeframe, candles)
+                    except Exception:
+                        pass
+                    return candles
                 except Exception as e:
                     last_exc = e
                     if attempt < retries:
@@ -129,6 +138,12 @@ class BitfinexDataService:
         except Exception as e:
             logger.error("Fel vid hämtning av candles: %s", e)
             return None
+
+    async def close(self):
+        """Stäng HTTP-klienten."""
+        if self._client:
+            await self._client.aclose()
+            self._client = None
 
     async def get_ticker(self, symbol: str = "tBTCUSD") -> dict | None:
         """
@@ -186,17 +201,36 @@ class BitfinexDataService:
                 last_ts = None
                 last_price = None
                 cand_syms = [symbol, eff_symbol]
+
+                # DEBUG: Logga WebSocket-status
+                ws_connected = getattr(bitfinex_ws, "is_connected", False)
+                ws_has_attr = hasattr(bitfinex_ws, "_last_tick_ts")
+                logger.debug(
+                    f"🔍 WS-status för {symbol}: connected={ws_connected}, has_attr={ws_has_attr}"
+                )
+
                 for s in cand_syms:
                     if hasattr(bitfinex_ws, "_last_tick_ts"):
                         last_ts = bitfinex_ws._last_tick_ts.get(s)  # type: ignore[attr-defined]
                     if last_ts:
                         last_price = bitfinex_ws.latest_prices.get(s)
                         break
+
+                # DEBUG: Logga vad vi hittade
+                if last_ts:
+                    age_secs = _t.time() - float(last_ts)
+                    logger.debug(
+                        f"📡 WS-data för {symbol}: age={age_secs:.1f}s, price={last_price}"
+                    )
+                else:
+                    logger.debug(f"❌ Ingen WS-data för {symbol}")
+
                 if (
                     last_ts
                     and (_t.time() - float(last_ts)) <= ws_stale_secs
                     and last_price is not None
                 ):
+                    logger.info(f"✅ Använder färsk WS-data för {symbol}: {last_price}")
                     # Fyll från senaste fulla WS‑ticker-frame om tillgänglig
                     bid = None
                     ask = None
@@ -228,7 +262,12 @@ class BitfinexDataService:
                 try:
                     sub_key = f"ticker|{eff_symbol}"
                     already_subscribed = sub_key in getattr(bitfinex_ws, "subscriptions", {})
+                    logger.debug(
+                        f"🔍 WS-subscription för {symbol}: already_subscribed={already_subscribed}"
+                    )
+
                     if not already_subscribed:
+                        logger.info(f"📡 Auto-subscribing till WS ticker för {eff_symbol}")
                         # registrera strategi/ticker-callback om inte finns
                         if eff_symbol not in getattr(bitfinex_ws, "strategy_callbacks", {}):
                             bitfinex_ws.strategy_callbacks[
@@ -239,6 +278,7 @@ class BitfinexDataService:
                         )
                         # Vänta kort på första tick innan REST-fallback
                         warmup_deadline = _t.time() + (ws_warmup_ms / 1000.0)
+                        logger.debug(f"⏳ Väntar på WS-data för {symbol} i {ws_warmup_ms}ms")
                         while _t.time() < warmup_deadline:
                             last_ts = None
                             last_price = None
@@ -252,6 +292,9 @@ class BitfinexDataService:
                                 and (_t.time() - float(last_ts)) <= ws_stale_secs
                                 and last_price is not None
                             ):
+                                logger.info(
+                                    f"✅ Fick WS-data för {symbol} under warmup: {last_price}"
+                                )
                                 frame = None
                                 bid = ask = high = low = volume = None
                                 for s in cand_syms:
@@ -274,10 +317,11 @@ class BitfinexDataService:
                                     "volume": volume,
                                 }
                             await asyncio.sleep(0.05)
-                except Exception:
-                    pass
-            except Exception:
-                pass
+                        logger.debug(f"⏰ WS warmup timeout för {symbol}, fallback till REST")
+                except Exception as e:
+                    logger.warning(f"⚠️ WS auto-subscribe misslyckades för {symbol}: {e}")
+            except Exception as e:
+                logger.warning(f"⚠️ WS-logik misslyckades för {symbol}: {e}")
 
             endpoint = f"ticker/{eff_symbol}"
             url = f"{self.base_url}/{endpoint}"
@@ -313,7 +357,9 @@ class BitfinexDataService:
                 for attempt in range(retries + 1):
                     try:
                         async with httpx.AsyncClient(timeout=timeout) as client:
-                            logger.info("🌐 REST API: Hämtar ticker från %s", url)
+                            logger.info(
+                                f"🌐 REST API: Hämtar ticker från {url} (WS-fallback för {symbol})"
+                            )
                             response = await client.get(url)
                             if response.status_code in (429, 500, 502, 503, 504):
                                 raise httpx.HTTPStatusError(
@@ -660,9 +706,20 @@ class BitfinexDataService:
             return {"closes": [], "highs": [], "lows": []}
 
         # Bitfinex candle format: [MTS, OPEN, CLOSE, HIGH, LOW, VOLUME]
-        closes = [candle[2] for candle in candles]
-        highs = [candle[3] for candle in candles]
-        lows = [candle[4] for candle in candles]
+        closes = []
+        highs = []
+        lows = []
+
+        for candle in candles:
+            # Säkerställ att candle är en lista med minst 5 element
+            if isinstance(candle, list) and len(candle) >= 5:
+                try:
+                    closes.append(float(candle[2]))  # CLOSE
+                    highs.append(float(candle[3]))  # HIGH
+                    lows.append(float(candle[4]))  # LOW
+                except (ValueError, TypeError, IndexError):
+                    # Hoppa över ogiltiga candles
+                    continue
 
         logger.debug("Parsade %s datapunkter för strategiutvärdering", len(closes))
 

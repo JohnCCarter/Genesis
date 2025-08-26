@@ -468,3 +468,165 @@ def update_settings_from_regime(symbol: str | None = None) -> dict[str, float]:
     except Exception as e:
         logger.warning(f"Kunde inte uppdatera settings från regim: {e}")
         return {"ema_weight": 0.4, "rsi_weight": 0.4, "atr_weight": 0.2}
+
+
+def update_settings_from_regime_batch(symbols: list[str]) -> dict[str, dict[str, float]]:
+    """
+    OPTIMERAD: Batch-version av update_settings_from_regime.
+    Hämtar candles för alla symboler parallellt istället för sekventiellt.
+
+    Args:
+        symbols: Lista med symboler att uppdatera
+
+    Returns:
+        Dict med {symbol: {weights}} för varje symbol
+    """
+    try:
+        import asyncio
+
+        from indicators.regime import detect_regime
+        from services.bitfinex_data import BitfinexDataService
+        from services.strategy_settings import StrategySettingsService
+        from strategy.weights import PRESETS, clamp_simplex
+
+        # Läs aktuella settings och auto-flaggor
+        settings_service = StrategySettingsService()
+
+        # Läs auto-flaggor från strategy_settings.json
+        try:
+            import json
+            import os
+
+            cfg_path = os.path.join(
+                os.path.dirname(os.path.dirname(__file__)),
+                "config",
+                "strategy_settings.json",
+            )
+            with open(cfg_path, encoding="utf-8") as f:
+                raw = json.load(f)
+            auto_regime = bool(raw.get("AUTO_REGIME_ENABLED", True))
+            auto_weights = bool(raw.get("AUTO_WEIGHTS_ENABLED", True))
+        except Exception:
+            auto_regime = True
+            auto_weights = True
+
+        if not (auto_regime and auto_weights):
+            # Returnera nuvarande settings för alla symboler
+            return {
+                symbol: {
+                    "ema_weight": settings_service.get_settings(symbol=symbol).ema_weight,
+                    "rsi_weight": settings_service.get_settings(symbol=symbol).rsi_weight,
+                    "atr_weight": settings_service.get_settings(symbol=symbol).atr_weight,
+                }
+                for symbol in symbols
+            }
+
+        # OPTIMERING: Batch-hämta candles för alla symboler parallellt
+        data_service = BitfinexDataService()
+
+        async def get_candles_batch():
+            """Hämta candles för alla symboler parallellt"""
+            tasks = [data_service.get_candles(symbol, "1m", limit=50) for symbol in symbols]
+            return await asyncio.gather(*tasks, return_exceptions=True)
+
+        # Kör batch-hämtning
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                # Om vi redan är i en async context, skapa en ny loop
+                import concurrent.futures
+
+                with concurrent.futures.ThreadPoolExecutor() as executor:
+                    future = executor.submit(asyncio.run, get_candles_batch())
+                    all_candles = future.result()
+            else:
+                all_candles = loop.run_until_complete(get_candles_batch())
+        except Exception:
+            # Fallback: returnera nuvarande settings
+            return {
+                symbol: {
+                    "ema_weight": settings_service.get_settings(symbol=symbol).ema_weight,
+                    "rsi_weight": settings_service.get_settings(symbol=symbol).rsi_weight,
+                    "atr_weight": settings_service.get_settings(symbol=symbol).atr_weight,
+                }
+                for symbol in symbols
+            }
+
+        # Konfiguration för regim-detektering
+        cfg = {
+            "ADX_PERIOD": 14,
+            "ADX_HIGH": 30,
+            "ADX_LOW": 15,
+            "SLOPE_Z_HIGH": 1.0,
+            "SLOPE_Z_LOW": 0.5,
+        }
+
+        results = {}
+
+        # Bearbeta varje symbol
+        for i, symbol in enumerate(symbols):
+            try:
+                candles = all_candles[i]
+
+                # Hantera exceptions från batch-hämtning
+                if isinstance(candles, Exception) or not candles or len(candles) < 20:
+                    # Använd nuvarande settings
+                    current_settings = settings_service.get_settings(symbol=symbol)
+                    results[symbol] = {
+                        "ema_weight": current_settings.ema_weight,
+                        "rsi_weight": current_settings.rsi_weight,
+                        "atr_weight": current_settings.atr_weight,
+                    }
+                    continue
+
+                # Extrahera high, low, close
+                highs = [float(candle[3]) for candle in candles if len(candle) >= 4]
+                lows = [float(candle[4]) for candle in candles if len(candle) >= 5]
+                closes = [float(candle[2]) for candle in candles if len(candle) >= 3]
+
+                if len(highs) < 20 or len(lows) < 20 or len(closes) < 20:
+                    current_settings = settings_service.get_settings(symbol=symbol)
+                    results[symbol] = {
+                        "ema_weight": current_settings.ema_weight,
+                        "rsi_weight": current_settings.rsi_weight,
+                        "atr_weight": current_settings.atr_weight,
+                    }
+                    continue
+
+                # Detektera regim och applicera preset
+                regime = detect_regime(closes, highs, lows, cfg)
+                preset_weights = PRESETS.get(regime, PRESETS["balanced"])
+
+                # Applicera nya vikter
+                new_weights = clamp_simplex(preset_weights)
+                settings_service.update_settings(
+                    symbol=symbol,
+                    ema_weight=new_weights["ema"],
+                    rsi_weight=new_weights["rsi"],
+                    atr_weight=new_weights["atr"],
+                )
+
+                results[symbol] = new_weights
+
+            except Exception as e:
+                # Fallback till nuvarande settings
+                current_settings = settings_service.get_settings(symbol=symbol)
+                results[symbol] = {
+                    "ema_weight": current_settings.ema_weight,
+                    "rsi_weight": current_settings.rsi_weight,
+                    "atr_weight": current_settings.atr_weight,
+                }
+
+        return results
+
+    except Exception as e:
+        logger.error(f"Batch regim-uppdatering fel: {e}")
+        # Returnera nuvarande settings för alla symboler
+        return {
+            symbol: {
+                "ema_weight": settings_service.get_settings(symbol=symbol).ema_weight,
+                "rsi_weight": settings_service.get_settings(symbol=symbol).rsi_weight,
+                "atr_weight": settings_service.get_settings(symbol=symbol).atr_weight,
+            }
+            for symbol in symbols
+        }

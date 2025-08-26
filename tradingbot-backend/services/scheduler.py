@@ -31,8 +31,8 @@ class SchedulerService:
       beroenden och underlätta testning.
     """
 
-    def __init__(self, *, snapshot_interval_seconds: int = 60 * 15) -> None:
-        # Kör snapshot var 15:e minut (idempotent – uppdaterar dagens rad)
+    def __init__(self, *, snapshot_interval_seconds: int = 60 * 60) -> None:
+        # Kör snapshot var 60:e minut (idempotent – uppdaterar dagens rad) - Öka för prestanda
         self.snapshot_interval_seconds = max(60, int(snapshot_interval_seconds))
         self._task: asyncio.Task | None = None
         self._running: bool = False
@@ -62,6 +62,29 @@ class SchedulerService:
             self._task = None
         logger.info("🛑 Scheduler stoppad")
 
+    def _cleanup_completed_tasks(self) -> None:
+        """Rensa completed tasks för att minska memory usage."""
+        try:
+            all_tasks = asyncio.all_tasks()
+            completed_tasks = [task for task in all_tasks if task.done()]
+
+            if completed_tasks:
+                logger.debug(f"🧹 Rensade {len(completed_tasks)} completed tasks")
+
+                # Logga task-typer för debugging
+                task_types = {}
+                for task in completed_tasks:
+                    task_name = task.get_name()
+                    if not task_name or task_name.startswith("Task-"):
+                        task_name = "unnamed"
+                    task_types[task_name] = task_types.get(task_name, 0) + 1
+
+                if task_types:
+                    logger.debug(f"Completed task-typer: {task_types}")
+
+        except Exception as e:
+            logger.debug(f"Task cleanup fel: {e}")
+
     def is_running(self) -> bool:
         """Returnerar om schemaläggaren körs."""
         try:
@@ -82,7 +105,7 @@ class SchedulerService:
                     next_run_at = now.replace(microsecond=0) + timedelta(
                         seconds=self.snapshot_interval_seconds
                     )
-                # Kör cache-retention högst en gång per 6 timmar
+                # Kör cache-retention högst en gång per 12 timmar (minska frekvensen)
                 await self._maybe_enforce_cache_retention(now)
                 # Kör probabilistisk validering enligt intervall
                 await self._maybe_run_prob_validation(now)
@@ -90,8 +113,17 @@ class SchedulerService:
                 await self._maybe_run_prob_retraining(now)
                 # Kör automatisk regim-uppdatering
                 await self._maybe_update_regime(now)
-                # Sov en kort stund för att inte spinna
-                await asyncio.sleep(1)
+
+                # Cleanup: Rensa completed tasks var 10:e minut
+                if (
+                    not hasattr(self, "_last_task_cleanup")
+                    or (now - getattr(self, "_last_task_cleanup", now)).total_seconds() > 600
+                ):
+                    self._cleanup_completed_tasks()
+                    self._last_task_cleanup = now
+
+                # Sov längre för att minska CPU-användning
+                await asyncio.sleep(5)  # Öka från 1s till 5s
             except asyncio.CancelledError:
                 break
             except Exception as e:
@@ -145,10 +177,10 @@ class SchedulerService:
         """Enforce TTL/retention på candle-cache med låg frekvens.
 
         Läser inställningar vid varje körning så ändringar i .env fångas.
-        Kör endast om minst 6 timmar förflutit sedan senaste körning.
+        Kör endast om minst 12 timmar förflutit sedan senaste körning.
         """
         try:
-            if self._last_retention_at and (now - self._last_retention_at) < timedelta(hours=6):
+            if self._last_retention_at and (now - self._last_retention_at) < timedelta(hours=12):
                 return
             s = Settings()
             days = int(getattr(s, "CANDLE_CACHE_RETENTION_DAYS", 0) or 0)
@@ -350,13 +382,14 @@ class SchedulerService:
 
         Uppdaterar strategi-vikter automatiskt när marknadsregimen ändras.
         Kör endast om AUTO_REGIME_ENABLED och AUTO_WEIGHTS_ENABLED är aktiverade.
+        OPTIMERAD: Ökad från 1 minut till 15 minuter för att minska API-anrop.
         """
         try:
             from services.strategy import update_settings_from_regime
             from services.symbols import SymbolService
 
-            # Kontrollera intervall (varje timme)
-            interval_minutes = 1
+            # OPTIMERING: Ökad från 1 minut till 15 minuter
+            interval_minutes = 15
             if self._last_regime_update_at and (now - self._last_regime_update_at) < timedelta(
                 minutes=max(1, interval_minutes)
             ):
@@ -383,11 +416,16 @@ class SchedulerService:
             sym_svc = SymbolService()
             await sym_svc.refresh()
 
-            # Uppdatera regim för varje symbol
+            # OPTIMERING: Batch-uppdatera regim för alla symboler
             symbols = sym_svc.get_symbols(test_only=True, fmt="v2")[:5]  # Begränsa till 5 symboler
-            for symbol in symbols:
-                try:
-                    new_weights = update_settings_from_regime(symbol)
+
+            try:
+                from services.strategy import update_settings_from_regime_batch
+
+                # Batch-uppdatera alla symboler på en gång
+                all_weights = update_settings_from_regime_batch(symbols)
+
+                for symbol, new_weights in all_weights.items():
                     logger.info(f"🔄 Automatisk regim-uppdatering för {symbol}: {new_weights}")
 
                     # Skicka notifikation till UI
@@ -411,8 +449,8 @@ class SchedulerService:
                     except Exception:
                         pass
 
-                except Exception as e:
-                    logger.warning(f"Kunde inte uppdatera regim för {symbol}: {e}")
+            except Exception as e:
+                logger.warning(f"Kunde inte batch-uppdatera regim: {e}")
 
             self._last_regime_update_at = now
 

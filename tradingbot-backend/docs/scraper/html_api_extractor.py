@@ -45,9 +45,7 @@ class HtmlApiExtractor:
         api_info = []
 
         # Hitta alla API-sektioner
-        for section in soup.find_all(
-            ["div", "section"], class_=["api-section", "endpoint", "method"]
-        ):
+        for section in soup.find_all(["div", "section"], class_=["api-section", "endpoint", "method"]):
             # Extrahera endpoint-information
             endpoint = self._extract_endpoint(section)
             if endpoint:
@@ -84,9 +82,7 @@ class HtmlApiExtractor:
             path = None
 
             # Sök i olika format
-            method_elem = section.find(
-                ["span", "code"], class_=["method", "http-method", "api-method"]
-            )
+            method_elem = section.find(["span", "code"], class_=["method", "http-method", "api-method"])
             if method_elem:
                 method = method_elem.text.strip().upper()
             else:
@@ -98,9 +94,7 @@ class HtmlApiExtractor:
                         method = m
                         break
 
-            path_elem = section.find(
-                ["span", "code"], class_=["path", "endpoint", "url", "api-path"]
-            )
+            path_elem = section.find(["span", "code"], class_=["path", "endpoint", "url", "api-path"])
             if path_elem:
                 path = path_elem.text.strip()
             else:
@@ -219,9 +213,7 @@ class HtmlApiExtractor:
             return parameters
 
         # Hitta alla parametrar
-        for param in param_section.find_all(
-            ["tr", "li", "div"], class_=["parameter", "argument", "api-parameter"]
-        ):
+        for param in param_section.find_all(["tr", "li", "div"], class_=["parameter", "argument", "api-parameter"]):
             try:
                 param_info = {
                     "name": "",
@@ -244,9 +236,7 @@ class HtmlApiExtractor:
 
                 # Kontrollera om obligatorisk
                 required_text = param.get_text().lower()
-                param_info["required"] = (
-                    "required" in required_text and "optional" not in required_text
-                )
+                param_info["required"] = "required" in required_text and "optional" not in required_text
 
                 # Hitta beskrivning
                 desc_elem = param.find(["td", "span", "p"], class_=["description", "param-desc"])
@@ -254,16 +244,12 @@ class HtmlApiExtractor:
                     param_info["description"] = desc_elem.text.strip()
 
                 # Hitta standardvärde
-                default_elem = param.find(
-                    ["td", "span", "code"], class_=["default", "param-default"]
-                )
+                default_elem = param.find(["td", "span", "code"], class_=["default", "param-default"])
                 if default_elem:
                     param_info["default"] = default_elem.text.strip()
 
                 # Hitta exempel
-                example_elem = param.find(
-                    ["td", "span", "code"], class_=["example", "param-example"]
-                )
+                example_elem = param.find(["td", "span", "code"], class_=["example", "param-example"])
                 if example_elem:
                     param_info["example"] = example_elem.text.strip()
 
@@ -281,9 +267,7 @@ class HtmlApiExtractor:
         response = {"type": "", "description": "", "schema": {}, "examples": []}
 
         # Hitta svarssektion
-        response_section = section.find(
-            ["div", "section"], class_=["response", "returns", "result", "api-response"]
-        )
+        response_section = section.find(["div", "section"], class_=["response", "returns", "result", "api-response"])
         if not response_section:
             return response
 
@@ -309,9 +293,7 @@ class HtmlApiExtractor:
                     pass
 
             # Hitta exempel
-            for example in response_section.find_all(
-                ["pre", "code"], class_=["example", "json-example"]
-            ):
+            for example in response_section.find_all(["pre", "code"], class_=["example", "json-example"]):
                 try:
                     example_text = example.text.strip()
                     if example_text:
@@ -329,9 +311,7 @@ class HtmlApiExtractor:
         examples = []
 
         # Hitta alla exempel
-        for example in section.find_all(
-            ["div", "section"], class_=["example", "sample", "api-example"]
-        ):
+        for example in section.find_all(["div", "section"], class_=["example", "sample", "api-example"]):
             try:
                 example_info = {
                     "title": "",
@@ -393,18 +373,14 @@ class HtmlApiExtractor:
         # Bestäm underkategori baserat på sökväg och autentisering
         path = endpoint.get("path", "").lower()
 
-        if endpoint.get("authentication", False) or any(
-            word in path for word in ["auth", "key", "private"]
-        ):
+        if endpoint.get("authentication", False) or any(word in path for word in ["auth", "key", "private"]):
             subcategory = "authenticated"
         else:
             subcategory = "public"
 
         return category, subcategory
 
-    def save_endpoint(
-        self, endpoint: Dict[str, Any], category: str, subcategory: str, source: str
-    ) -> None:
+    def save_endpoint(self, endpoint: Dict[str, Any], category: str, subcategory: str, source: str) -> None:
         """
         Sparar en endpoint
 

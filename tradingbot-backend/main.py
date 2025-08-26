@@ -21,6 +21,8 @@ from rest.routes import router as rest_router
 from services.bitfinex_websocket import bitfinex_ws
 from services.metrics import observe_latency, render_prometheus_text
 from services.runtime_mode import get_validation_on_start, get_ws_connect_on_start
+from services.signal_service import signal_service
+from services.trading_service import trading_service
 from utils.logger import get_logger
 from ws.manager import socket_app
 
@@ -45,6 +47,12 @@ async def lifespan(app: FastAPI):  # noqa: ARG001
             await bitfinex_ws.connect()
             _t1 = _t.perf_counter()
             logger.info("✅ WebSocket-anslutning etablerad (%.0f ms)", (_t1 - _t0) * 1000)
+
+            # Koppla WebSocket service till enhetliga services
+            signal_service.set_websocket_service(bitfinex_ws)
+            trading_service.set_websocket_service(bitfinex_ws)
+            logger.info("🔗 Enhetliga services kopplade till WebSocket")
+
             # WS‑auth direkt om nycklar finns så att privata flöden (t.ex. margin miu) fungerar
             try:
                 _ta = _t.perf_counter()
@@ -68,7 +76,7 @@ async def lifespan(app: FastAPI):  # noqa: ARG001
             if bool(get_validation_on_start()):
                 import asyncio as _asyncio
 
-                _asyncio.create_task(scheduler.run_prob_validation_once())
+                _asyncio.create_task(scheduler.run_prob_validation_once(), name="validation-warmup")
                 logger.info("🟡 Validation warm-up schemalagd vid startup")
         except Exception as _e:
             logger.debug("%s", f"Warm-up init fel: {_e}")
@@ -92,8 +100,42 @@ async def lifespan(app: FastAPI):  # noqa: ARG001
         from services.scheduler import scheduler
 
         await scheduler.stop()
+        logger.info("✅ Scheduler stoppad")
     except Exception as e:
         logger.warning(f"⚠️ Fel vid stopp av scheduler: {e}")
+
+    # Rensa alla aktiva tasks
+    try:
+        import asyncio
+
+        all_tasks = [task for task in asyncio.all_tasks() if task is not asyncio.current_task()]
+        if all_tasks:
+            logger.info(f"🔄 Avbryter {len(all_tasks)} aktiva tasks...")
+            for task in all_tasks:
+                task.cancel()
+
+            # Vänta på att tasks avslutas (max 3 sekunder)
+            try:
+                await asyncio.wait_for(
+                    asyncio.gather(*all_tasks, return_exceptions=True), timeout=3.0
+                )
+                logger.info("✅ Alla tasks avbrutna")
+            except TimeoutError:
+                logger.warning("⚠️ Timeout vid avbrytning av tasks - fortsätter shutdown")
+    except Exception as e:
+        logger.warning(f"⚠️ Fel vid task cleanup: {e}")
+
+    # Stäng HTTP-klienter
+    try:
+        from services.bitfinex_data import BitfinexDataService
+
+        if hasattr(BitfinexDataService, "_client") and BitfinexDataService._client:
+            await BitfinexDataService._client.aclose()
+            logger.info("✅ HTTP-klient stängd")
+    except Exception as e:
+        logger.warning(f"⚠️ Fel vid stängning av HTTP-klient: {e}")
+
+    logger.info("✅ Shutdown komplett")
 
 
 # Skapa FastAPI-applikation
@@ -176,31 +218,9 @@ app.mount("/risk-panel", StaticFiles(directory=_RISK_PANEL_DIR, html=True), name
 app.mount("/shared", StaticFiles(directory=_SHARED_DIR, html=False), name="shared")
 
 
-@app.get("/risk-panel-legacy")
-async def risk_panel_legacy() -> FileResponse:
-    base_dir = os.path.dirname(__file__)
-    path = os.path.join(base_dir, "risk_panel.html")
-    return FileResponse(path)
-
-
-@app.get("/ws-test-legacy")
-async def ws_test_legacy() -> FileResponse:
-    base_dir = os.path.dirname(__file__)
-    path = os.path.join(base_dir, "ws_test.html")
-    return FileResponse(path)
-
-
 @app.get("/prob-test")
 async def prob_test_page() -> FileResponse:
-    import os
-
-    base_dir = os.path.dirname(__file__)
-    path = os.path.join(base_dir, "prob_test.html")
-    return FileResponse(path)
-
-
-@app.get("/prob_test.html")
-async def prob_test_html_alias() -> FileResponse:
+    """Probability test page - endast en endpoint för prob-testing"""
     import os
 
     base_dir = os.path.dirname(__file__)
@@ -304,35 +324,69 @@ async def metrics(request: Request) -> Response:
     )
 
 
-# Enkel ASGI-middleware för latens per endpoint
+# Förbättrad ASGI-middleware för latens och prestanda-monitoring
 @app.middleware("http")
 async def latency_middleware(request: Request, call_next):
     import time
 
     start = time.perf_counter()
-    response = await call_next(request)
-    duration_ms = int((time.perf_counter() - start) * 1000)
+
     try:
-        # path-template fås enklast via scope/route (kan vara None i root-asgi)
-        path_template = getattr(
-            getattr(request, "scope", {}),
-            "get",
-            lambda *_: None,
-        )("path")
-        # Försök att hämta route.path_params/template från
-        # request.scope["route"].path
-        route = request.scope.get("route")
-        if route is not None:
-            path_template = getattr(route, "path", path_template)
-        observe_latency(
-            path=path_template or request.url.path,
-            method=request.method,
-            status_code=getattr(response, "status_code", 0),
-            duration_ms=duration_ms,
+        response = await call_next(request)
+        duration_ms = int((time.perf_counter() - start) * 1000)
+
+        # Logga långsamma requests (>500ms)
+        if duration_ms > 500:
+            logger.warning(
+                "🐌 Långsam request: %s %s - %dms (status: %d)",
+                request.method,
+                request.url.path,
+                duration_ms,
+                getattr(response, "status_code", 0),
+            )
+
+        # Logga mycket långsamma requests (>2000ms)
+        if duration_ms > 2000:
+            logger.error(
+                "🚨 Mycket långsam request: %s %s - %dms (status: %d)",
+                request.method,
+                request.url.path,
+                duration_ms,
+                getattr(response, "status_code", 0),
+            )
+
+        try:
+            # path-template fås enklast via scope/route (kan vara None i root-asgi)
+            path_template = getattr(
+                getattr(request, "scope", {}),
+                "get",
+                lambda *_: None,
+            )("path")
+            # Försök att hämta route.path_params/template från
+            # request.scope["route"].path
+            route = request.scope.get("route")
+            if route is not None:
+                path_template = getattr(route, "path", path_template)
+            observe_latency(
+                path=path_template or request.url.path,
+                method=request.method,
+                status_code=getattr(response, "status_code", 0),
+                duration_ms=duration_ms,
+            )
+        except Exception:
+            pass
+        return response
+
+    except Exception as e:
+        duration_ms = int((time.perf_counter() - start) * 1000)
+        logger.error(
+            "❌ Request failed: %s %s - %dms - %s",
+            request.method,
+            request.url.path,
+            duration_ms,
+            str(e),
         )
-    except Exception:
-        pass
-    return response
+        raise
 
 
 # Wrappar alltid Socket.IO UI
@@ -345,7 +399,27 @@ app = _socketio.ASGIApp(
 logger.info("Socket.IO UI aktiverad")
 
 if __name__ == "__main__":
+    import asyncio
+    import signal
+    import sys
+
     from config.settings import Settings as _S
+
+    def signal_handler(signum, _frame):
+        """Hantera shutdown-signaler."""
+        logger.info(f"📡 Mottog signal {signum}, startar shutdown...")
+        # Stoppa event loop om den körs
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                loop.stop()
+        except Exception:
+            pass
+        sys.exit(0)
+
+    # Registrera signal handlers
+    signal.signal(signal.SIGINT, signal_handler)  # Ctrl+C
+    signal.signal(signal.SIGTERM, signal_handler)  # Terminate
 
     _s = _S()
     uvicorn.run(

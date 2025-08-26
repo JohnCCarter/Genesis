@@ -113,9 +113,7 @@ class CommentApiExtractor:
                     param_type = param_type.strip("{}") if param_type else ""
 
                     # Kontrollera om obligatorisk
-                    required = (
-                        "required" in param_desc.lower() and "optional" not in param_desc.lower()
-                    )
+                    required = "required" in param_desc.lower() and "optional" not in param_desc.lower()
 
                     current_endpoint["parameters"].append(
                         {
@@ -172,18 +170,14 @@ class CommentApiExtractor:
         # Bestäm underkategori baserat på sökväg och autentisering
         path = endpoint.get("path", "").lower()
 
-        if endpoint.get("authentication", False) or any(
-            word in path for word in ["auth", "key", "private"]
-        ):
+        if endpoint.get("authentication", False) or any(word in path for word in ["auth", "key", "private"]):
             subcategory = "authenticated"
         else:
             subcategory = "public"
 
         return category, subcategory
 
-    def save_endpoint(
-        self, endpoint: Dict[str, Any], category: str, subcategory: str, source: str
-    ) -> None:
+    def save_endpoint(self, endpoint: Dict[str, Any], category: str, subcategory: str, source: str) -> None:
         """
         Sparar en endpoint
 

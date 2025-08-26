@@ -127,8 +127,15 @@ async def place_order(order: dict) -> dict:
                 amount_str = f"-{amount_str}"
             if s == "buy" and amount_str.startswith("-"):
                 amount_str = amount_str.lstrip("-")
+        # Mappa order-typer till Bitfinex format
+        order_type = order.get("type", "EXCHANGE LIMIT")
+        if order_type == "MARKET":
+            order_type = "EXCHANGE MARKET"
+        elif order_type == "LIMIT":
+            order_type = "EXCHANGE LIMIT"
+
         bitfinex_order = {
-            "type": order.get("type", "EXCHANGE LIMIT"),
+            "type": order_type,
             "symbol": order.get("symbol"),
             "amount": amount_str,
             "price": order.get("price"),
@@ -209,6 +216,9 @@ async def place_order(order: dict) -> dict:
                             url, content=body_json.encode("utf-8"), headers=headers
                         )
                         if response.status_code in (429, 500, 502, 503, 504):
+                            logger.warning(
+                                f"⚠️ Server busy (status {response.status_code}) - försök {attempt + 1}/{retries + 1}"
+                            )
                             raise httpx.HTTPStatusError(
                                 "server busy",
                                 request=response.request,

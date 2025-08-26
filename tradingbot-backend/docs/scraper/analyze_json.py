@@ -107,9 +107,7 @@ def format_metadata(metadata: List[Dict[str, Any]]) -> str:
                     output.append(f"    - {key}")
             if item["structure"]["sample"]:
                 output.append("  - Exempel på element:")
-                output.append(
-                    f"    ```json\n    {json.dumps(item['structure']['sample'], indent=2)}\n    ```"
-                )
+                output.append(f"    ```json\n    {json.dumps(item['structure']['sample'], indent=2)}\n    ```")
 
     return "\n".join(output)
 

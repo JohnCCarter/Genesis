@@ -144,12 +144,7 @@ class WSWalletHandler:
             # Uppdatera intern plånbokslista
             updated = False
             for i, wallet in enumerate(self.wallets):
-                if (
-                    isinstance(wallet, list)
-                    and len(wallet) >= 2
-                    and wallet[0] == wallet_type
-                    and wallet[1] == currency
-                ):
+                if isinstance(wallet, list) and len(wallet) >= 2 and wallet[0] == wallet_type and wallet[1] == currency:
                     self.wallets[i] = wallet_data
                     updated = True
                     break

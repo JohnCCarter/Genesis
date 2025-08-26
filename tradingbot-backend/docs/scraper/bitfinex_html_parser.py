@@ -182,9 +182,7 @@ class BitfinexHtmlParser:
         parameters = []
 
         # Hitta parametertabell eller lista
-        param_section = element.find(
-            ["table", "div", "ul"], class_=["parameters", "params", "arguments"]
-        )
+        param_section = element.find(["table", "div", "ul"], class_=["parameters", "params", "arguments"])
         if not param_section:
             return parameters
 
@@ -211,9 +209,7 @@ class BitfinexHtmlParser:
 
                 # Kontrollera om obligatorisk
                 required_text = param.get_text().lower()
-                param_info["required"] = (
-                    "required" in required_text and "optional" not in required_text
-                )
+                param_info["required"] = "required" in required_text and "optional" not in required_text
 
                 # Hitta beskrivning
                 desc_elem = param.find(["td", "span", "p"], class_=["description", "param-desc"])
@@ -221,9 +217,7 @@ class BitfinexHtmlParser:
                     param_info["description"] = desc_elem.text.strip()
 
                 # Hitta standardvärde
-                default_elem = param.find(
-                    ["td", "span", "code"], class_=["default", "param-default"]
-                )
+                default_elem = param.find(["td", "span", "code"], class_=["default", "param-default"])
                 if default_elem:
                     param_info["default"] = default_elem.text.strip()
 
@@ -241,9 +235,7 @@ class BitfinexHtmlParser:
         response = {"type": "", "description": "", "schema": {}, "examples": []}
 
         # Hitta svarssektion
-        response_section = element.find(
-            ["div", "section"], class_=["response", "returns", "result"]
-        )
+        response_section = element.find(["div", "section"], class_=["response", "returns", "result"])
         if not response_section:
             return response
 
@@ -269,9 +261,7 @@ class BitfinexHtmlParser:
                     pass
 
             # Hitta exempel
-            for example in response_section.find_all(
-                ["pre", "code"], class_=["example", "json-example"]
-            ):
+            for example in response_section.find_all(["pre", "code"], class_=["example", "json-example"]):
                 try:
                     example_text = example.text.strip()
                     if example_text:

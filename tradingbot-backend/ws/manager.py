@@ -19,18 +19,14 @@ from ws.wallet_handler import WSWalletHandler
 logger = get_logger(__name__)
 
 # Skapa Socket.IO-server med autentisering
-socket_app = socketio.AsyncServer(
-    async_mode="asgi", cors_allowed_origins="*", logger=True, engineio_logger=True
-)
+socket_app = socketio.AsyncServer(async_mode="asgi", cors_allowed_origins="*", logger=True, engineio_logger=True)
 
 
 # Wrapper för Socket.IO applikation med autentisering
 # Använd auth middleware för att hantera autentisering
 async def socket_auth_middleware(environ, send):
     # Logga anslutningsförsök
-    logger.info(
-        f"Socket.IO anslutningsförsök via middleware: {environ.get('REMOTE_ADDR', 'okänd')}"
-    )
+    logger.info(f"Socket.IO anslutningsförsök via middleware: {environ.get('REMOTE_ADDR', 'okänd')}")
 
     # Använd autentiseringsfunktionen
     if authenticate_socket_io(environ):
@@ -38,9 +34,7 @@ async def socket_auth_middleware(environ, send):
         environ["socket.io_user"] = environ.get("user", {"sub": "unknown", "scope": "none"})
         return True
     else:
-        logger.warning(
-            f"❌ Socket.IO autentisering misslyckades från {environ.get('REMOTE_ADDR', 'okänd')}"
-        )
+        logger.warning(f"❌ Socket.IO autentisering misslyckades från {environ.get('REMOTE_ADDR', 'okänd')}")
         return False
 
 
@@ -64,9 +58,7 @@ async def connect(sid, environ):
             raise ConnectionRefusedError("unauthorized")
 
         user = environ.get("user", {"sub": "unknown"})
-        await socket_app.emit(
-            "authenticated", {"status": "success", "user": user.get("sub")}, room=sid
-        )
+        await socket_app.emit("authenticated", {"status": "success", "user": user.get("sub")}, room=sid)
         logger.info(f"✅ Socket.IO-klient autentiserad och ansluten: {sid}")
         return True
     except ConnectionRefusedError:

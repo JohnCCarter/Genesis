@@ -196,13 +196,9 @@ class ApiExtractor:
                 if success_response:
                     response.update(
                         {
-                            "type": success_response.get(
-                                "type", success_response.get("content_type", "")
-                            ),
+                            "type": success_response.get("type", success_response.get("content_type", "")),
                             "description": success_response.get("description", ""),
-                            "schema": success_response.get(
-                                "schema", success_response.get("content", {})
-                            ),
+                            "schema": success_response.get("schema", success_response.get("content", {})),
                         }
                     )
 
@@ -286,18 +282,14 @@ class ApiExtractor:
         # Bestäm underkategori baserat på sökväg och autentisering
         path = endpoint.get("path", "").lower()
 
-        if endpoint.get("authentication", False) or any(
-            word in path for word in ["auth", "key", "private"]
-        ):
+        if endpoint.get("authentication", False) or any(word in path for word in ["auth", "key", "private"]):
             subcategory = "authenticated"
         else:
             subcategory = "public"
 
         return category, subcategory
 
-    def save_endpoint(
-        self, endpoint: Dict[str, Any], category: str, subcategory: str, source: str
-    ) -> None:
+    def save_endpoint(self, endpoint: Dict[str, Any], category: str, subcategory: str, source: str) -> None:
         """
         Sparar en endpoint
 

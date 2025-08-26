@@ -90,7 +90,7 @@ class CandleCache:
         return count
 
     def load(
-        self, symbol: str, timeframe: str, limit: int = 100, max_age_minutes: int = 5
+        self, symbol: str, timeframe: str, limit: int = 100, max_age_minutes: int = 15
     ) -> list[list]:
         """
         Läs senaste N candles från cache.
@@ -100,7 +100,7 @@ class CandleCache:
             symbol: Trading symbol
             timeframe: Timeframe (1m, 5m, etc.)
             limit: Max antal candles att returnera
-            max_age_minutes: Max ålder för cached data i minuter
+            max_age_minutes: Max ålder för cached data i minuter (ökad från 5 till 15)
         """
         cutoff_time = int((datetime.now() - timedelta(minutes=max_age_minutes)).timestamp())
 
@@ -117,7 +117,7 @@ class CandleCache:
             ).fetchall()
         return [[r[0], r[1], r[2], r[3], r[4], r[5]] for r in rows]
 
-    def get_last(self, symbol: str, timeframe: str, max_age_minutes: int = 5) -> list | None:
+    def get_last(self, symbol: str, timeframe: str, max_age_minutes: int = 15) -> list | None:
         """
         Returnera senaste candle i Bitfinex-format.
         Format: [MTS, OPEN, CLOSE, HIGH, LOW, VOLUME].
@@ -125,7 +125,7 @@ class CandleCache:
         Args:
             symbol: Trading symbol
             timeframe: Timeframe (1m, 5m, etc.)
-            max_age_minutes: Max ålder för cached data i minuter
+            max_age_minutes: Max ålder för cached data i minuter (ökad från 5 till 15)
         """
         rows = self.load(symbol, timeframe, limit=1, max_age_minutes=max_age_minutes)
         if rows:

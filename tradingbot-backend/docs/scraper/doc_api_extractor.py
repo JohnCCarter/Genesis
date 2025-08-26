@@ -82,9 +82,7 @@ class DocApiExtractor:
 
         return api_info
 
-    def _extract_endpoint_from_code(
-        self, code: str, title: str, description: str
-    ) -> Optional[Dict[str, Any]]:
+    def _extract_endpoint_from_code(self, code: str, title: str, description: str) -> Optional[Dict[str, Any]]:
         """
         Extraherar endpoint från kodexempel
 
@@ -98,9 +96,7 @@ class DocApiExtractor:
         """
         try:
             # Hitta curl-kommando
-            curl_match = re.search(
-                r'curl\s+(?:-X\s+(\w+)\s+)?["\']?(https?://[^/]+)?(/[^"\'\s]+)', code
-            )
+            curl_match = re.search(r'curl\s+(?:-X\s+(\w+)\s+)?["\']?(https?://[^/]+)?(/[^"\'\s]+)', code)
             if curl_match:
                 method = curl_match.group(1) or "GET"
                 path = curl_match.group(3)
@@ -128,9 +124,7 @@ class DocApiExtractor:
             logger.error(f"Fel vid extrahering av endpoint från kod: {str(e)}")
             return None
 
-    def _extract_endpoint_from_text(
-        self, text: str, title: str, description: str
-    ) -> Optional[Dict[str, Any]]:
+    def _extract_endpoint_from_text(self, text: str, title: str, description: str) -> Optional[Dict[str, Any]]:
         """
         Extraherar endpoint från text
 
@@ -339,18 +333,14 @@ class DocApiExtractor:
         # Bestäm underkategori baserat på sökväg och autentisering
         path = endpoint.get("path", "").lower()
 
-        if endpoint.get("authentication", False) or any(
-            word in path for word in ["auth", "key", "private"]
-        ):
+        if endpoint.get("authentication", False) or any(word in path for word in ["auth", "key", "private"]):
             subcategory = "authenticated"
         else:
             subcategory = "public"
 
         return category, subcategory
 
-    def save_endpoint(
-        self, endpoint: Dict[str, Any], category: str, subcategory: str, source: str
-    ) -> None:
+    def save_endpoint(self, endpoint: Dict[str, Any], category: str, subcategory: str, source: str) -> None:
         """
         Sparar en endpoint
 

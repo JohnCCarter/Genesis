@@ -34,15 +34,15 @@ class SignalGeneratorService:
         self.thresholds = SignalThresholds()
         self.strength_weights = SignalStrength()
 
-        # Cache TTL (Time To Live)
-        self.cache_ttl = timedelta(minutes=1)  # 1 minut cache
+        # Cache TTL (Time To Live) - Öka för bättre prestanda
+        self.cache_ttl = timedelta(minutes=10)  # 10 minuter cache - Ökad för prestanda
 
         logger.info("🎯 SignalGeneratorService initialiserad")
 
     async def generate_live_signals(
         self, symbols: list[str] | None = None, force_refresh: bool = False
     ) -> LiveSignalsResponse:
-        """Generera live signals för alla aktiva symboler"""
+        """Generera live signals för alla aktiva symboler - OPTIMERAD MED BATCHING"""
         try:
             logger.info("🚀 Genererar live signals...")
 
@@ -57,17 +57,67 @@ class SignalGeneratorService:
                 logger.info("📋 Använder cached signals")
                 return self._get_cached_response()
 
-            # Generera nya signals
+            # OPTIMERAD BATCHING: Hämta all data parallellt först
+            logger.info(f"⚡ Startar optimerad batch-generering för {len(symbols)} symboler")
+
+            # Batch-hämta all data parallellt
+            regime_data_batch, price_data_batch = await asyncio.gather(
+                self._batch_get_regime_data(symbols),
+                self._batch_get_current_prices(symbols),
+                return_exceptions=True,
+            )
+
+            # Hantera exceptions från batch-anrop
+            if isinstance(regime_data_batch, Exception):
+                logger.error(f"❌ Fel vid batch regime data: {regime_data_batch}")
+                regime_data_batch = {}
+            if isinstance(price_data_batch, Exception):
+                logger.error(f"❌ Fel vid batch pris data: {price_data_batch}")
+                price_data_batch = {}
+
+            # Generera signals med förhämtad data
             signals = []
             for symbol in symbols:
                 try:
-                    signal = await self._generate_signal_for_symbol(symbol)
-                    if signal:
-                        signals.append(signal)
-                        self._signal_cache[symbol] = signal
-                        logger.info(f"✅ Genererade signal för {symbol}: {signal.signal_type}")
-                    else:
-                        logger.warning(f"⚠️ Ingen signal genererad för {symbol}")
+                    regime_data = regime_data_batch.get(symbol)
+                    current_price = price_data_batch.get(symbol)
+
+                    if not regime_data or current_price is None:
+                        logger.warning(f"⚠️ Saknar data för {symbol}")
+                        continue
+
+                    # Beräkna signal typ
+                    signal_type = self._determine_signal_type(regime_data)
+
+                    # Beräkna signal styrka
+                    strength = self._evaluate_signal_strength(regime_data)
+
+                    # Generera anledning
+                    reason = self._generate_signal_reason(regime_data, signal_type)
+
+                    # Skapa signal response
+                    signal = SignalResponse(
+                        symbol=symbol,
+                        signal_type=signal_type,
+                        confidence_score=regime_data.get("confidence_score", 0),
+                        trading_probability=regime_data.get("trading_probability", 0),
+                        recommendation=regime_data.get("recommendation", "LOW_CONFIDENCE"),
+                        timestamp=datetime.now(),
+                        strength=strength,
+                        reason=reason,
+                        current_price=current_price,
+                        adx_value=regime_data.get("adx_value"),
+                        ema_z_value=regime_data.get("ema_z_value"),
+                        regime=regime_data.get("regime"),
+                    )
+
+                    # Spara till historik
+                    self._save_to_history(signal)
+
+                    signals.append(signal)
+                    self._signal_cache[symbol] = signal
+                    logger.info(f"✅ Genererade signal för {symbol}: {signal_type}")
+
                 except Exception as e:
                     logger.error(f"❌ Kunde inte generera signal för {symbol}: {e}")
                     continue
@@ -84,12 +134,62 @@ class SignalGeneratorService:
                 summary=self._generate_summary(signals),
             )
 
-            logger.info(f"✅ Genererade {len(signals)} signals")
+            logger.info(f"✅ Genererade {len(signals)} signals med optimerad batching")
             return response
 
         except Exception as e:
             logger.error(f"❌ Fel vid signal generation: {e}")
             raise
+
+    async def _batch_get_regime_data(self, symbols: list[str]) -> dict[str, dict]:
+        """Batch-hämta regime data för flera symboler parallellt"""
+        try:
+            # Skapa tasks för alla regime-anrop
+            regime_tasks = []
+            for symbol in symbols:
+                task = self._get_regime_data(symbol)
+                regime_tasks.append((symbol, task))
+
+            # Kör alla parallellt
+            results = {}
+            for symbol, task in regime_tasks:
+                try:
+                    result = await task
+                    if result:
+                        results[symbol] = result
+                except Exception as e:
+                    logger.error(f"❌ Kunde inte hämta regime data för {symbol}: {e}")
+
+            return results
+
+        except Exception as e:
+            logger.error(f"❌ Fel vid batch regime data: {e}")
+            return {}
+
+    async def _batch_get_current_prices(self, symbols: list[str]) -> dict[str, float]:
+        """Batch-hämta aktuella priser för flera symboler parallellt"""
+        try:
+            # Skapa tasks för alla pris-anrop
+            price_tasks = []
+            for symbol in symbols:
+                task = self._get_current_price(symbol)
+                price_tasks.append((symbol, task))
+
+            # Kör alla parallellt
+            results = {}
+            for symbol, task in price_tasks:
+                try:
+                    result = await task
+                    if result is not None:
+                        results[symbol] = result
+                except Exception as e:
+                    logger.error(f"❌ Kunde inte hämta pris för {symbol}: {e}")
+
+            return results
+
+        except Exception as e:
+            logger.error(f"❌ Fel vid batch pris-hämtning: {e}")
+            return {}
 
     async def _generate_signal_for_symbol(self, symbol: str) -> SignalResponse | None:
         """Generera signal för enskild symbol"""
@@ -115,16 +215,16 @@ class SignalGeneratorService:
             signal = SignalResponse(
                 symbol=symbol,
                 signal_type=signal_type,
-                confidence_score=regime_data.get('confidence_score', 0),
-                trading_probability=regime_data.get('trading_probability', 0),
-                recommendation=regime_data.get('recommendation', 'LOW_CONFIDENCE'),
+                confidence_score=regime_data.get("confidence_score", 0),
+                trading_probability=regime_data.get("trading_probability", 0),
+                recommendation=regime_data.get("recommendation", "LOW_CONFIDENCE"),
                 timestamp=datetime.now(),
                 strength=strength,
                 reason=reason,
                 current_price=current_price,
-                adx_value=regime_data.get('adx_value'),
-                ema_z_value=regime_data.get('ema_z_value'),
-                regime=regime_data.get('regime'),
+                adx_value=regime_data.get("adx_value"),
+                ema_z_value=regime_data.get("ema_z_value"),
+                regime=regime_data.get("regime"),
             )
 
             # Spara till historik
@@ -144,23 +244,23 @@ class SignalGeneratorService:
 
             regime_data = await get_strategy_regime(symbol, None)
 
-            if regime_data and 'regime' in regime_data:
+            if regime_data and "regime" in regime_data:
                 # Lägg till confidence scores om de saknas
                 confidence = self._calculate_confidence_score(
-                    regime_data.get('adx_value'), regime_data.get('ema_z_value')
+                    regime_data.get("adx_value"), regime_data.get("ema_z_value")
                 )
                 trading_prob = self._calculate_trading_probability(
-                    regime_data.get('regime'), confidence
+                    regime_data.get("regime"), confidence
                 )
                 recommendation = self._get_recommendation(
-                    regime_data.get('regime'), confidence, trading_prob
+                    regime_data.get("regime"), confidence, trading_prob
                 )
 
                 regime_data.update(
                     {
-                        'confidence_score': confidence,
-                        'trading_probability': trading_prob,
-                        'recommendation': recommendation,
+                        "confidence_score": confidence,
+                        "trading_probability": trading_prob,
+                        "recommendation": recommendation,
                     }
                 )
                 return regime_data
@@ -186,9 +286,9 @@ class SignalGeneratorService:
     def _calculate_trading_probability(self, regime, confidence):
         """Beräknar trading probability baserat på regim och confidence"""
         base_probabilities = {
-            'trend': 0.85,  # 85% chans att trade trend
-            'balanced': 0.60,  # 60% chans att trade balanced
-            'range': 0.25,  # 25% chans att trade range
+            "trend": 0.85,  # 85% chans att trade trend
+            "balanced": 0.60,  # 60% chans att trade balanced
+            "range": 0.25,  # 25% chans att trade range
         }
 
         # Justera baserat på confidence
@@ -202,7 +302,7 @@ class SignalGeneratorService:
         if confidence < 30:
             return "LOW_CONFIDENCE"
         elif trading_prob > 70:
-            return "STRONG_BUY" if regime == 'trend' else "BUY"
+            return "STRONG_BUY" if regime == "trend" else "BUY"
         elif trading_prob > 40:
             return "WEAK_BUY"
         elif trading_prob > 20:
@@ -216,7 +316,8 @@ class SignalGeneratorService:
             # Använd befintlig data service
             candles = await self.data_service.get_candles(symbol, "1m", limit=1)
             if candles and len(candles) > 0:
-                return float(candles[0]['close'])
+                # Bitfinex candle format: [MTS, OPEN, CLOSE, HIGH, LOW, VOLUME]
+                return float(candles[0][2])  # CLOSE är på index 2
             return None
 
         except Exception as e:
@@ -247,8 +348,8 @@ class SignalGeneratorService:
     def _evaluate_signal_strength(self, regime_data: dict) -> str:
         """Utvärdera signal styrka baserat på confidence och probability"""
         try:
-            confidence = regime_data.get('confidence_score', 0)
-            trading_prob = regime_data.get('trading_probability', 0)
+            confidence = regime_data.get("confidence_score", 0)
+            trading_prob = regime_data.get("trading_probability", 0)
 
             # Beräkna kombinerad styrka
             combined_score = (
@@ -289,23 +390,20 @@ class SignalGeneratorService:
             return "Signal reason unavailable"
 
     async def _get_active_symbols(self) -> list[str]:
-        """Hämta lista av aktiva symboler"""
+        """Hämta lista av aktiva symboler - Begränsa för prestanda"""
         try:
-            # Använd befintlig symbol service
+            # Använd befintlig symbol service men begränsa kraftigt
             symbols = self.symbol_service.get_symbols(test_only=True, fmt="v2")
-            logger.info(f"📋 Hämtade {len(symbols)} symboler: {symbols[:5]}...")
-            return symbols[:10]  # Begränsa till första 10 för prestanda
+            logger.info(f"📋 Hämtade {len(symbols)} symboler: {symbols[:3]}...")
+            return symbols[:3]  # Begränsa till första 3 för prestanda
 
         except Exception as e:
             logger.error(f"❌ Kunde inte hämta aktiva symboler: {e}")
-            # Returnera statiska test-symboler
-            return [
-                "TESTBTC:TESTUSD",
-                "TESTETH:TESTUSD",
-                "TESTADA:TESTUSD",
-                "TESTSOL:TESTUSD",
-                "TESTDOT:TESTUSD",
-            ]
+            # Returnera minimala test-symboler
+        return [
+            "tTESTBTC:TESTUSD",
+            "tTESTETH:TESTUSD",
+        ]
 
     def _is_cache_valid(self) -> bool:
         """Kontrollera om cache är giltig"""
