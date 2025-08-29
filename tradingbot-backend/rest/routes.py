@@ -2429,20 +2429,53 @@ async def prob_retrain_run(req: ProbRetrainRunRequest, _: bool = Depends(require
                 symbols = [x.strip() for x in env_syms.split(",") if x.strip()] or [
                     f"t{getattr(s, 'DEFAULT_TRADING_PAIR', 'BTCUSD')}"
                 ]
-        tf = req.timeframe or str(getattr(s, "PROB_RETRAIN_TIMEFRAME", "1m") or "1m")
+        tf_raw = req.timeframe or str(getattr(s, "PROB_RETRAIN_TIMEFRAME", "1m") or "1m")
+        try:
+            import re as _re
+
+            # Allow only alphanumeric and underscores in tf
+            tf = _re.sub(r"[^A-Za-z0-9_]", "_", tf_raw)
+        except Exception:
+            tf = ''.join([c if c.isalnum() or c == '_' else '_' for c in tf_raw])
         limit = int(req.limit or getattr(s, "PROB_RETRAIN_LIMIT", 5000) or 5000)
+
+        def is_safe_subdir(parent_path: str, child_path: str) -> bool:
+            """Check if child_path is strictly within parent_path (robust against symlinks/traversal)."""
+            parent_real = _os.path.realpath(_os.path.abspath(parent_path))
+            child_real = _os.path.realpath(_os.path.abspath(child_path))
+
+            # Ensure paths end with separator for strict containment check
+            if not parent_real.endswith(_os.sep):
+                parent_real += _os.sep
+
+            # Child must start with parent path and not be equal to it
+            return child_real.startswith(parent_real) and child_real != parent_real.rstrip(_os.sep)
+
         safe_root = str(getattr(s, "PROB_RETRAIN_OUTPUT_DIR", "config/models"))
+        # Resolve safe_root to canonical absolute path
+        safe_root_real = _os.path.realpath(_os.path.abspath(safe_root))
         user_dir = req.output_dir
+
         # Validate output_dir: must be within safe_root and not absolute
         if user_dir:
+            # Only allow relative paths
             if _os.path.isabs(user_dir):
                 raise HTTPException(status_code=400, detail="Invalid output_dir: must be a relative path.")
-            out_dir = _os.path.realpath(_os.path.join(safe_root, user_dir))
-            safe_root_real = _os.path.realpath(safe_root)
-            if _os.path.commonpath([safe_root_real, out_dir]) != safe_root_real:
+
+            # Reject path traversal attempts (.. components)
+            if ".." in user_dir.split(_os.sep):
+                raise HTTPException(
+                    status_code=400, detail="Invalid output_dir: must be a simple relative sub-directory."
+                )
+
+            # Construct and resolve final path
+            out_dir = _os.path.realpath(_os.path.join(safe_root_real, user_dir))
+
+            # Strong containment check: out_dir must be a strict subdirectory of safe_root_real
+            if not is_safe_subdir(safe_root_real, out_dir):
                 raise HTTPException(status_code=400, detail="Invalid output_dir: must be within allowed directory.")
         else:
-            out_dir = _os.path.realpath(safe_root)
+            out_dir = safe_root_real
         _os.makedirs(out_dir, exist_ok=True)
 
         written: list[str] = []
@@ -2462,6 +2495,9 @@ async def prob_retrain_run(req: ProbRetrainRunRequest, _: bool = Depends(require
             except Exception:
                 pass
             fname = f"{clean}_{tf}.json"
+            # Defense: ensure fname does not contain slashes
+            if "/" in fname or "\\" in fname:
+                raise HTTPException(status_code=400, detail="Invalid filename generated")
             out_path = _os.path.join(out_dir, fname)
             train_and_export(candles, horizon=horizon, tp=tp, sl=sl, out_path=out_path)
             written.append(out_path)
