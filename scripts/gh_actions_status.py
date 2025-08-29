@@ -4,15 +4,14 @@ import argparse
 import io
 import json
 import os
+from pathlib import Path
 import sys
 import tempfile
 import textwrap
+from typing import Any, Dict, List, Optional
 import urllib.error
 import urllib.request
 import zipfile
-from pathlib import Path
-from typing import Any, Dict, List, Optional
-
 
 GITHUB_API = "https://api.github.com"
 

@@ -98,7 +98,7 @@ class WalletService:
                         method="POST",
                         status_code=int(response.status_code),
                         duration_ms=int((_t1 - _t0) * 1000),
-                        retry_after=response.headers.get("Retry-After"),
+                        _retry_after=response.headers.get("Retry-After"),
                     )
                     if response.status_code in (429, 500, 502, 503, 504):
                         ra = response.headers.get("Retry-After")

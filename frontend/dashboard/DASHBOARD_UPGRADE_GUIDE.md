@@ -1,17 +1,17 @@
 # 🎨 Dashboard Upgrade Guide
 
-## ✅ Dashboard Har Uppgraderats!
+## ✅ Dashboard Har Uppgraderats
 
 Din Genesis Trading Dashboard har uppdaterats med en modern, organiserad layout!
 
 ## 🔄 Backup & Återställning
 
-### Backup-filer skapade:
+### Backup-filer skapade
 
 - `src/pages/Dashboard_BACKUP.tsx` - Original dashboard-komponent
 - `src/index_BACKUP.css` - Original CSS-filer
 
-### Om du vill återgå till den gamla layouten:
+### Om du vill återgå till den gamla layouten
 
 ```bash
 # Återställ original dashboard
