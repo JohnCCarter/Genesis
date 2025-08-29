@@ -13,9 +13,9 @@ from datetime import datetime
 from typing import Optional
 
 from fastapi.security import HTTPBearer
+from utils.logger import get_logger
 
 from config.settings import Settings
-from utils.logger import get_logger
 
 security = HTTPBearer()
 logger = get_logger(__name__)
@@ -70,9 +70,7 @@ def build_auth_headers(
     if payload_str is not None:
         message += payload_str
 
-    signature = hmac.new(
-        key=api_secret.encode(), msg=message.encode(), digestmod=hashlib.sha384
-    ).hexdigest()
+    signature = hmac.new(key=api_secret.encode(), msg=message.encode(), digestmod=hashlib.sha384).hexdigest()
 
     return {
         "bfx-apikey": api_key,
@@ -212,9 +210,7 @@ async def place_order(order: dict) -> dict:
             for attempt in range(retries + 1):
                 try:
                     async with httpx.AsyncClient(timeout=timeout) as client:
-                        response = await client.post(
-                            url, content=body_json.encode("utf-8"), headers=headers
-                        )
+                        response = await client.post(url, content=body_json.encode("utf-8"), headers=headers)
                         if response.status_code in (429, 500, 502, 503, 504):
                             logger.warning(
                                 f"⚠️ Server busy (status {response.status_code}) - försök {attempt + 1}/{retries + 1}"
@@ -229,9 +225,7 @@ async def place_order(order: dict) -> dict:
                 except Exception as e:
                     last_exc = e
                     if attempt < retries:
-                        delay = min(backoff_max, backoff_base * (2**attempt)) + random.uniform(
-                            0, 0.1
-                        )
+                        delay = min(backoff_max, backoff_base * (2**attempt)) + random.uniform(0, 0.1)
                         await asyncio.sleep(delay)
                         continue
                     else:
@@ -259,9 +253,7 @@ async def place_order(order: dict) -> dict:
                 from services.metrics import metrics_store
 
                 elapsed_ms = int((t1 - t0) * 1000)
-                metrics_store["order_submit_ms"] = (
-                    metrics_store.get("order_submit_ms", 0) + elapsed_ms
-                )
+                metrics_store["order_submit_ms"] = metrics_store.get("order_submit_ms", 0) + elapsed_ms
             except Exception:
                 pass
             return result
@@ -318,13 +310,9 @@ async def cancel_order(order_id: int) -> dict:
         for attempt in range(retries + 1):
             try:
                 async with httpx.AsyncClient(timeout=timeout) as client:
-                    response = await client.post(
-                        url, content=body_json.encode("utf-8"), headers=headers
-                    )
+                    response = await client.post(url, content=body_json.encode("utf-8"), headers=headers)
                     if response.status_code in (429, 500, 502, 503, 504):
-                        raise httpx.HTTPStatusError(
-                            "server busy", request=response.request, response=response
-                        )
+                        raise httpx.HTTPStatusError("server busy", request=response.request, response=response)
                     response.raise_for_status()
                     break
             except Exception as e:

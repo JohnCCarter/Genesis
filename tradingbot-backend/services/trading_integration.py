@@ -14,12 +14,13 @@ from rest.auth import place_order
 from rest.margin import get_leverage, get_margin_info, get_margin_status
 from rest.positions import get_positions
 from rest.wallet import get_total_balance_usd, get_wallets
+from utils.logger import get_logger
+
 from services.bitfinex_data import bitfinex_data
 from services.metrics import inc
 from services.realtime_strategy import realtime_strategy
 from services.risk_manager import RiskManager
 from services.strategy import evaluate_strategy
-from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -113,9 +114,7 @@ class TradingIntegrationService:
                 "leverage": await get_leverage(),
             }
 
-            logger.info(
-                f"✅ Margin-information uppdaterad: {self.margin_info['leverage']}x hävstång"
-            )
+            logger.info(f"✅ Margin-information uppdaterad: {self.margin_info['leverage']}x hävstång")
 
         except Exception as e:
             logger.error(f"❌ Fel vid uppdatering av margin-information: {e}")
@@ -141,9 +140,7 @@ class TradingIntegrationService:
                     "timestamp": datetime.now().isoformat(),
                 }
 
-                logger.info(
-                    f"✅ Marknadsdata uppdaterad för {symbol}: ${ticker['last_price']:,.2f}"
-                )
+                logger.info(f"✅ Marknadsdata uppdaterad för {symbol}: ${ticker['last_price']:,.2f}")
 
         except Exception as e:
             logger.error(f"❌ Fel vid uppdatering av marknadsdata för {symbol}: {e}")
@@ -257,9 +254,7 @@ class TradingIntegrationService:
 
                 # Om vi redan har en position i samma riktning
                 elif has_position:
-                    if (signal == "BUY" and position_size > 0) or (
-                        signal == "SELL" and position_size < 0
-                    ):
+                    if (signal == "BUY" and position_size > 0) or (signal == "SELL" and position_size < 0):
                         risk_assessment["can_trade"] = False
                         risk_assessment["risk_level"] = "MEDIUM"
                         risk_assessment["reason"] = f"Har redan en {signal} position"
@@ -274,9 +269,7 @@ class TradingIntegrationService:
                 "reason": f"Fel vid riskbedömning: {e}",
             }
 
-    async def execute_trading_signal(
-        self, symbol: str, signal_data: dict[str, Any]
-    ) -> dict[str, Any]:
+    async def execute_trading_signal(self, symbol: str, signal_data: dict[str, Any]) -> dict[str, Any]:
         """
         Utför en tradingsignal för en symbol.
 
@@ -294,9 +287,7 @@ class TradingIntegrationService:
             can_trade = signal_data.get("can_trade", False)
 
             if not can_trade:
-                logger.warning(
-                    f"⚠️ Kan inte handla {symbol}: {signal_data.get('reason', 'Okänd anledning')}"
-                )
+                logger.warning(f"⚠️ Kan inte handla {symbol}: {signal_data.get('reason', 'Okänd anledning')}")
                 return {
                     "success": False,
                     "message": f"Kan inte handla: {signal_data.get('reason', 'Okänd anledning')}",
@@ -338,9 +329,7 @@ class TradingIntegrationService:
             }
 
             # Lägg order
-            logger.info(
-                f"🛒 Lägger {signal} order för {symbol}: {position_size} @ ${current_price:,.2f}"
-            )
+            logger.info(f"🛒 Lägger {signal} order för {symbol}: {position_size} @ ${current_price:,.2f}")
             result = await place_order(order_data)
 
             if "error" in result:
@@ -406,9 +395,9 @@ class TradingIntegrationService:
                         available_balance = self.wallet_info["exchange"]["BTC"].balance
                 # För andra symboler, använd USD
                 elif "USD" in self.wallet_info["exchange"]:
-                    available_balance = self.wallet_info["exchange"][
-                        "USD"
-                    ].balance / signal_data.get("current_price", 50000)
+                    available_balance = self.wallet_info["exchange"]["USD"].balance / signal_data.get(
+                        "current_price", 50000
+                    )
 
             # Begränsa positionsstorlek baserat på tillgängligt saldo
             # Använd max 20% av tillgängligt saldo
@@ -507,9 +496,7 @@ class TradingIntegrationService:
             self.strategy_results[symbol] = result
 
             # Logga signal
-            logger.info(
-                f"🎯 {symbol}: {signal} @ ${result.get('current_price', 0):,.2f} - {result.get('reason', '')}"
-            )
+            logger.info(f"🎯 {symbol}: {signal} @ ${result.get('current_price', 0):,.2f} - {result.get('reason', '')}")
 
             # Utför tradingsignal om det är BUY eller SELL
             if signal in ["BUY", "SELL"] and result.get("can_trade", False):
@@ -554,19 +541,11 @@ class TradingIntegrationService:
             # Sammanställ information
             summary = {
                 "total_balance_usd": self.wallet_info.get("total_usd", 0),
-                "margin_balance": (
-                    self.margin_info["info"].margin_balance if self.margin_info else 0
-                ),
-                "unrealized_pl": (
-                    self.margin_info["info"].unrealized_pl if self.margin_info else 0
-                ),
+                "margin_balance": (self.margin_info["info"].margin_balance if self.margin_info else 0),
+                "unrealized_pl": (self.margin_info["info"].unrealized_pl if self.margin_info else 0),
                 "leverage": self.margin_info["leverage"] if self.margin_info else 1.0,
-                "margin_level": (
-                    self.margin_info["status"]["margin_level"] if self.margin_info else 0
-                ),
-                "margin_status": (
-                    self.margin_info["status"]["status"] if self.margin_info else "unknown"
-                ),
+                "margin_level": (self.margin_info["status"]["margin_level"] if self.margin_info else 0),
+                "margin_status": (self.margin_info["status"]["status"] if self.margin_info else "unknown"),
                 "open_positions": len(self.position_info),
                 "total_position_value": total_position_value,
                 "active_symbols": list(self.active_symbols),

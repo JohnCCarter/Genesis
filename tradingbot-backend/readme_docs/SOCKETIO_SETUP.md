@@ -109,4 +109,4 @@ socket.on('active_signals', function(data) {
 
 1. Starta servern: `python main.py`
 2. Testa WebSocket: `python test_socketio_fix.py`
-3. Använd WebSocket events i din frontend 
+3. Använd WebSocket events i din frontend

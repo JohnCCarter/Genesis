@@ -365,5 +365,3 @@ export const TradingPanel = React.memo(function TradingPanel() {
         </div>
     );
 });
-
-

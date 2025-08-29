@@ -12,12 +12,12 @@ from collections.abc import Callable
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
+from utils.logger import get_logger
 from websockets.client import connect as ws_connect  # type: ignore[attr-defined]
 from websockets.exceptions import ConnectionClosed  # type: ignore[attr-defined]
+from ws.auth import build_ws_auth_payload
 
 from config.settings import Settings
-from utils.logger import get_logger
-from ws.auth import build_ws_auth_payload
 
 logger = get_logger(__name__)
 
@@ -28,9 +28,7 @@ class BitfinexWebSocketService:
     def __init__(self):
         self.settings = Settings()
         # Standard: använd auth-URI (api) som bas. Publika subar kan specialhanteras vid behov.
-        self.ws_url = (
-            getattr(self.settings, "BITFINEX_WS_AUTH_URI", None) or self.settings.BITFINEX_WS_URI
-        )
+        self.ws_url = getattr(self.settings, "BITFINEX_WS_AUTH_URI", None) or self.settings.BITFINEX_WS_URI
         self.websocket = None
         self.is_connected = False
         self.is_authenticated = False
@@ -83,6 +81,22 @@ class BitfinexWebSocketService:
         self._pool_max_sockets: int = int(getattr(self.settings, "WS_PUBLIC_SOCKETS_MAX", 3))
         self._pool_max_subs: int = int(getattr(self.settings, "WS_MAX_SUBS_PER_SOCKET", 200))
 
+        # Heartbeat/ping & reconnect state
+        self._last_msg_ts: float = 0.0
+        self._ping_task = None
+        self._hb_task = None
+        self._reconnecting: bool = False
+        # Konfig med default
+        try:
+            self._ping_interval = float(getattr(self.settings, "WS_PING_INTERVAL_SEC", 20.0) or 20.0)
+            self._hb_timeout = float(getattr(self.settings, "WS_HEARTBEAT_TIMEOUT_SEC", 60.0) or 60.0)
+        except Exception:
+            self._ping_interval = 20.0
+            self._hb_timeout = 60.0
+
+        # Spåra candles-subs för auto-resubscribe
+        self._requested_candles: dict[tuple[str, str], Callable] = {}
+
     async def _get_public_socket(self):
         """
         Hämta en lämplig public‑socket att sub:a på, skapa ny vid behov.
@@ -104,9 +118,7 @@ class BitfinexWebSocketService:
                     best = ws
                     best_cnt = cnt
             # Skapa ny om ingen finns eller om alla passerat gräns och vi kan skala ut
-            if best is None or (
-                best_cnt >= self._pool_max_subs and len(self._pool_public) < self._pool_max_sockets
-            ):
+            if best is None or (best_cnt >= self._pool_max_subs and len(self._pool_public) < self._pool_max_sockets):
                 # öppna ny public‑socket
                 ws = await self._open_public_socket()
                 if ws:
@@ -132,10 +144,7 @@ class BitfinexWebSocketService:
         try:
             import time as _t
 
-            uri = (
-                getattr(self.settings, "BITFINEX_WS_PUBLIC_URI", None)
-                or self.settings.BITFINEX_WS_URI
-            )
+            uri = getattr(self.settings, "BITFINEX_WS_PUBLIC_URI", None) or self.settings.BITFINEX_WS_URI
             _t0 = _t.perf_counter()
             ws = await ws_connect(uri)
             _t1 = _t.perf_counter()
@@ -385,6 +394,11 @@ class BitfinexWebSocketService:
             logger.info("✅ Ansluten till Bitfinex WebSocket")
             # Starta lyssnare i bakgrunden direkt för att fånga auth-ack
             self._asyncio.create_task(self.listen_for_messages(), name="ws-message-listener")
+            # Starta ping/heartbeat‑övervakning
+            try:
+                await self._start_heartbeat_tasks()
+            except Exception:
+                pass
             # Försök autentisera om nycklar finns
             await self.authenticate()
             # Starta symbol-refresh i bakgrunden (ej under pytest)
@@ -631,6 +645,106 @@ class BitfinexWebSocketService:
         self.margin_sym.clear()
 
         logger.info("✅ WebSocket disconnect komplett")
+
+    async def _start_heartbeat_tasks(self):
+        """Startar ping och heartbeat‑övervakning."""
+        # Avsluta tidigare tasks om de finns
+        try:
+            if self._ping_task and not self._ping_task.done():
+                self._ping_task.cancel()
+            if self._hb_task and not self._hb_task.done():
+                self._hb_task.cancel()
+        except Exception:
+            pass
+        # Starta nya
+        self._ping_task = self._asyncio.create_task(self._ping_loop(), name="ws-ping-loop")
+        self._hb_task = self._asyncio.create_task(self._heartbeat_watchdog(), name="ws-hb-watchdog")
+
+    async def _ping_loop(self):
+        """Skickar ping med jämna mellanrum för att hålla anslutningen vid liv."""
+        try:
+            while True:
+                await self._asyncio.sleep(self._ping_interval)
+                try:
+                    if not self.websocket or self.websocket.closed:
+                        continue
+                    # Bitfinex v2 WS stödjer text 'ping' → svarar 'pong'
+                    await self.websocket.send("ping")
+                except Exception:
+                    pass
+        except Exception:
+            return
+
+    async def _heartbeat_watchdog(self):
+        """Övervakar senaste meddelandetid och triggar reconnect vid timeout."""
+        try:
+            while True:
+                await self._asyncio.sleep(5.0)
+                try:
+                    import time as _t
+
+                    now = _t.time()
+                    last = float(self._last_msg_ts or 0.0)
+                    if last and (now - last) > self._hb_timeout:
+                        logger.warning("⏱️ WS heartbeat timeout – schemalägger reconnect")
+                        await self._schedule_reconnect()
+                except Exception:
+                    pass
+        except Exception:
+            return
+
+    async def _schedule_reconnect(self):
+        """Schemalägger reconnect med exp backoff + jitter och auto-resubscribe."""
+        if self._reconnecting:
+            return
+        self._reconnecting = True
+        try:
+            # Stäng befintliga sockets först
+            try:
+                await self.disconnect()
+            except Exception:
+                pass
+            # Exponentiell backoff med jitter
+            base = 0.5
+            max_delay = 15.0
+            delay = base
+            for attempt in range(1, 6):  # noqa: B007
+                try:
+                    ok = await self.connect()
+                    if ok:
+                        break
+                except Exception:
+                    pass
+                try:
+                    import random as _rand
+
+                    jitter = _rand.uniform(0.0, 0.4 * delay)
+                except Exception:
+                    jitter = 0.0
+                await self._asyncio.sleep(delay + jitter)
+                delay = min(max_delay, delay * 2)
+            # Auto-resubscribe tickers
+            try:
+                for raw in list(getattr(self, "_requested_symbols", [])):
+                    try:
+                        await self.subscribe_ticker(raw, self._handle_ticker_with_strategy)
+                        await self._asyncio.sleep(0.05)
+                    except Exception:
+                        pass
+            except Exception:
+                pass
+            # Auto-resubscribe candles
+            try:
+                for (sym, tf), cb in list(getattr(self, "_requested_candles", {}).items()):
+                    try:
+                        await self.subscribe_candles(sym, tf, cb)
+                        await self._asyncio.sleep(0.05)
+                    except Exception:
+                        pass
+            except Exception:
+                pass
+        finally:
+            self._reconnecting = False
 
     async def subscribe_ticker(self, symbol: str, callback: Callable):
         """
@@ -898,6 +1012,11 @@ class BitfinexWebSocketService:
                 self._sub_socket[sub_key] = target_ws
             except Exception:
                 pass
+            # Spåra för auto-resubscribe
+            try:
+                self._requested_candles[(symbol, timeframe)] = callback
+            except Exception:
+                pass
             logger.info("🕯️ Prenumererar på candles %s", ckey)
         except Exception as e:
             logger.error(f"❌ Candles-prenumeration misslyckades: {e}")
@@ -1085,9 +1204,7 @@ class BitfinexWebSocketService:
                 min_interval = 60.0
 
             if changed or (now_s - last_log) >= min_interval:
-                logger.info(
-                    f"🎯 Strategiutvärdering för {symbol}: {result['signal']} - {result['reason']}"
-                )
+                logger.info(f"🎯 Strategiutvärdering för {symbol}: {result['signal']} - {result['reason']}")
                 self._last_strategy_signal[symbol] = result.get("signal")
                 self._last_strategy_reason[symbol] = result.get("reason")
                 self._last_strategy_log_ts[symbol] = now_s
@@ -1104,6 +1221,13 @@ class BitfinexWebSocketService:
                 try:
                     data = json.loads(message)
                     self._current_incoming_ws = self.websocket
+                    # Heartbeat: uppdatera senaste meddelandetid
+                    try:
+                        import time as _t
+
+                        self._last_msg_ts = _t.time()
+                    except Exception:
+                        pass
 
                     # Hantera olika meddelandetyper
                     if isinstance(data, list) and len(data) > 1:
@@ -1124,8 +1248,10 @@ class BitfinexWebSocketService:
         except ConnectionClosed:
             logger.warning("⚠️ WebSocket-anslutning stängd")
             self.is_connected = False
+            await self._schedule_reconnect()
         except Exception as e:
             logger.error(f"❌ WebSocket-lyssnare fel: {e}")
+            await self._schedule_reconnect()
 
     async def _handle_channel_message(self, data: list):
         """Hanterar kanal-meddelanden (publika och privata)."""
@@ -1173,17 +1299,13 @@ class BitfinexWebSocketService:
             current_ws = getattr(self, "_current_incoming_ws", None)
             if current_ws is None:
                 current_ws = self.websocket
-            cb = self._chan_callbacks.get(
-                (current_ws, int(channel_id))
-            ) or self.channel_callbacks.get(int(channel_id))
+            cb = self._chan_callbacks.get((current_ws, int(channel_id))) or self.channel_callbacks.get(int(channel_id))
             if cb:
                 # Ignorera heartbeat
                 if message_data == "hb":
                     return
                 info = (
-                    self._chan_info.get((current_ws, int(channel_id)))
-                    or self.channel_info.get(int(channel_id))
-                    or {}
+                    self._chan_info.get((current_ws, int(channel_id))) or self.channel_info.get(int(channel_id)) or {}
                 )
                 chan = info.get("channel")
                 symbol = info.get("symbol") or "unknown"
@@ -1247,9 +1369,7 @@ class BitfinexWebSocketService:
                 chan_id = data.get("chanId") or data.get("chanid") or data.get("chan_id")
                 symbol = data.get("symbol")
                 key = data.get("key")
-                logger.info(
-                    f"✅ Prenumeration bekräftad: channel={chan} symbol={symbol or key} chanId={chan_id}"
-                )
+                logger.info(f"✅ Prenumeration bekräftad: channel={chan} symbol={symbol or key} chanId={chan_id}")
                 cb_key = None
                 if chan == "ticker" and symbol:
                     cb_key = f"ticker|{symbol}"
@@ -1458,12 +1578,7 @@ class BitfinexWebSocketService:
                 self._calc_cache = {}
 
             arr = (self.margin_sym or {}).get(eff)
-            need = not (
-                isinstance(arr, list)
-                and len(arr) >= 4
-                and arr[2] is not None
-                and arr[3] is not None
-            )
+            need = not (isinstance(arr, list) and len(arr) >= 4 and arr[2] is not None and arr[3] is not None)
             if not need:
                 return {"requested": False, "reason": "fields_present"}
             if not await self.ensure_authenticated():
@@ -1496,10 +1611,7 @@ class BitfinexWebSocketService:
         """
         try:
             if not await self.ensure_authenticated():
-                return {
-                    symbol: {"requested": False, "error": "ws_not_authenticated"}
-                    for symbol in symbols
-                }
+                return {symbol: {"requested": False, "error": "ws_not_authenticated"} for symbol in symbols}
 
             results = {}
             symbols_to_calc = []
@@ -1530,12 +1642,7 @@ class BitfinexWebSocketService:
 
                 # Kontrollera om data redan finns
                 arr = (self.margin_sym or {}).get(eff)
-                need = not (
-                    isinstance(arr, list)
-                    and len(arr) >= 4
-                    and arr[2] is not None
-                    and arr[3] is not None
-                )
+                need = not (isinstance(arr, list) and len(arr) >= 4 and arr[2] is not None and arr[3] is not None)
 
                 if not need:
                     results[symbol] = {"requested": False, "reason": "fields_present"}
@@ -1626,9 +1733,7 @@ class BitfinexWebSocketService:
             logger.error("WS position calc fel: %s", e)
             return {"requested": False, "error": str(e)}
 
-    async def wallet_calc_if_needed(
-        self, wallet_type: str = "exchange", currency: str = "USD"
-    ) -> dict:
+    async def wallet_calc_if_needed(self, wallet_type: str = "exchange", currency: str = "USD") -> dict:
         """
         Skicka WS calc för wallet balance info.
         OPTIMERAD: Calc caching för att respektera rate limits.

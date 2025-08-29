@@ -190,9 +190,7 @@ class OrderValidator:
         # Kontrollera om det är en paper trading symbol
         is_paper_symbol = symbol in self.paper_symbol_names
         if not is_paper_symbol and symbol.startswith("tTEST"):
-            logger.warning(
-                f"Symbol {symbol} börjar med 'tTEST' men är inte registrerad som paper trading symbol"
-            )
+            logger.warning(f"Symbol {symbol} börjar med 'tTEST' men är inte registrerad som paper trading symbol")
 
         # Validera krävda parametrar för ordertypen
         required_params = self.order_types[order_type].get("required_params", [])

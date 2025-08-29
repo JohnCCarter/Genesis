@@ -9,11 +9,11 @@ import json
 from typing import Any, Dict, List, Optional
 
 import httpx
+from models.api_models import OrderResponse, OrderSide, OrderType
+from utils.logger import get_logger
 
 from config.settings import Settings
-from models.api_models import OrderResponse, OrderSide, OrderType
 from rest.auth import build_auth_headers
-from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -23,9 +23,7 @@ class ActiveOrdersService:
 
     def __init__(self):
         self.settings = Settings()
-        self.base_url = (
-            getattr(self.settings, "BITFINEX_AUTH_API_URL", None) or self.settings.BITFINEX_API_URL
-        )
+        self.base_url = getattr(self.settings, "BITFINEX_AUTH_API_URL", None) or self.settings.BITFINEX_API_URL
 
     async def get_active_orders(self) -> list[OrderResponse]:
         """
@@ -37,9 +35,7 @@ class ActiveOrdersService:
         try:
             # Safeguard: om API‑nycklar saknas, returnera tom lista i stället för att krascha UI
             if not (self.settings.BITFINEX_API_KEY and self.settings.BITFINEX_API_SECRET):
-                logger.info(
-                    "BITFINEX_API_KEY/SECRET saknas – returnerar tom lista för aktiva ordrar"
-                )
+                logger.info("BITFINEX_API_KEY/SECRET saknas – returnerar tom lista för aktiva ordrar")
                 return []
             endpoint = "auth/r/orders"
             # För v2 auth/r endpoints ska body vara en tom JSON {} och signaturen inkludera '{}'
@@ -57,9 +53,7 @@ class ActiveOrdersService:
                     response.raise_for_status()
                 except httpx.HTTPStatusError as he:
                     status = he.response.status_code if he.response is not None else "?"
-                    logger.warning(
-                        f"Bitfinex svarade {status} vid hämtning av aktiva ordrar – returnerar tom lista"
-                    )
+                    logger.warning(f"Bitfinex svarade {status} vid hämtning av aktiva ordrar – returnerar tom lista")
                     return []
 
                 orders_data = response.json()
@@ -188,9 +182,7 @@ class ActiveOrdersService:
 
             async with httpx.AsyncClient() as client:
                 logger.info(f"🌐 REST API: Uppdaterar order {order_id}")
-                response = await client.post(
-                    f"{self.base_url}/{endpoint}", headers=headers, json=payload
-                )
+                response = await client.post(f"{self.base_url}/{endpoint}", headers=headers, json=payload)
                 response.raise_for_status()
 
                 result = response.json()
@@ -301,9 +293,7 @@ class ActiveOrdersService:
 
                     async with httpx.AsyncClient() as client:
                         logger.info(f"🌐 REST API: Avbryter order {order.id} för {symbol}")
-                        response = await client.post(
-                            f"{self.base_url}/{endpoint}", headers=headers, json=payload
-                        )
+                        response = await client.post(f"{self.base_url}/{endpoint}", headers=headers, json=payload)
                         response.raise_for_status()
 
                         result = response.json()
@@ -354,9 +344,7 @@ async def get_order_by_client_id(client_order_id: int) -> OrderResponse | None:
     return await active_orders_service.get_order_by_client_id(client_order_id)
 
 
-async def update_order(
-    order_id: int, price: float | None = None, amount: float | None = None
-) -> dict[str, Any]:
+async def update_order(order_id: int, price: float | None = None, amount: float | None = None) -> dict[str, Any]:
     return await active_orders_service.update_order(order_id, price, amount)
 
 

@@ -12,10 +12,11 @@ from datetime import datetime, timedelta
 from typing import Any, Callable, Dict, List, Optional
 
 from models.signal_models import LiveSignalsResponse, SignalResponse
+from utils.logger import get_logger
+
 from services.bitfinex_websocket import BitfinexWebSocketService
 from services.enhanced_auto_trader import EnhancedAutoTrader
 from services.signal_generator import SignalGeneratorService
-from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -47,9 +48,7 @@ class SignalService:
         self._ws_service = ws_service
         logger.info("🔗 WebSocket service kopplad till SignalService")
 
-    async def generate_signals(
-        self, symbols: list[str], mode: str = "standard"
-    ) -> LiveSignalsResponse:
+    async def generate_signals(self, symbols: list[str], mode: str = "standard") -> LiveSignalsResponse:
         """
         Enhetlig signal-generering för alla moduler.
 
@@ -88,9 +87,7 @@ class SignalService:
             except Exception as e:
                 logger.error(f"❌ Kunde inte generera enhanced signal för {symbol}: {e}")
 
-        return LiveSignalsResponse(
-            success=True, signals=signals, timestamp=datetime.now(), total_signals=len(signals)
-        )
+        return LiveSignalsResponse(success=True, signals=signals, timestamp=datetime.now(), total_signals=len(signals))
 
     async def _generate_realtime_signals(self, symbols: list[str]) -> LiveSignalsResponse:
         """Realtids-signaler via WebSocket (om tillgängligt)"""
@@ -113,13 +110,9 @@ class SignalService:
             except Exception as e:
                 logger.error(f"❌ Kunde inte generera realtids-signal för {symbol}: {e}")
 
-        return LiveSignalsResponse(
-            success=True, signals=signals, timestamp=datetime.now(), total_signals=len(signals)
-        )
+        return LiveSignalsResponse(success=True, signals=signals, timestamp=datetime.now(), total_signals=len(signals))
 
-    async def _generate_realtime_signal_for_symbol(
-        self, symbol: str, price_data: float
-    ) -> SignalResponse | None:
+    async def _generate_realtime_signal_for_symbol(self, symbol: str, price_data: float) -> SignalResponse | None:
         """Generera realtids-signal för en symbol baserat på WebSocket-data"""
         try:
             # Använd standard signal-generering men med realtids-pris

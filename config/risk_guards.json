@@ -1,0 +1,30 @@
+{
+  "max_daily_loss": {
+    "enabled": true,
+    "percentage": 5.0,
+    "triggered": false,
+    "triggered_at": null,
+    "daily_start_equity": null,
+    "cooldown_hours": 24
+  },
+  "kill_switch": {
+    "enabled": true,
+    "max_consecutive_losses": 3,
+    "max_drawdown_percentage": 10.0,
+    "triggered": false,
+    "triggered_at": null,
+    "reason": null,
+    "cooldown_hours": 48
+  },
+  "exposure_limits": {
+    "enabled": true,
+    "max_open_positions": 5,
+    "max_position_size_percentage": 20.0,
+    "max_total_exposure_percentage": 50.0
+  },
+  "volatility_guards": {
+    "enabled": true,
+    "max_daily_volatility": 15.0,
+    "pause_on_high_volatility": true
+  }
+}

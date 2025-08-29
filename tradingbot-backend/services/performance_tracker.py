@@ -52,9 +52,7 @@ class PerformanceTracker:
         except Exception as e:
             logger.error(f"❌ Fel vid sparande av performance data: {e}")
 
-    def record_trade(
-        self, symbol: str, signal: SignalResponse, trade_result: dict, execution_time: datetime
-    ):
+    def record_trade(self, symbol: str, signal: SignalResponse, trade_result: dict, execution_time: datetime):
         """Registrera en utförd trade"""
         try:
             trade_record = {
@@ -90,9 +88,7 @@ class PerformanceTracker:
             logger.error(f"❌ Fel vid registrering av trade: {e}")
             return None
 
-    def record_trade_close(
-        self, trade_id: str, exit_price: float, profit_loss: float, close_time: datetime
-    ):
+    def record_trade_close(self, trade_id: str, exit_price: float, profit_loss: float, close_time: datetime):
         """Registrera stängning av en trade"""
         try:
             # Hitta trade i historik
@@ -200,9 +196,7 @@ class PerformanceTracker:
         try:
             cutoff_date = datetime.now() - timedelta(days=days)
             recent_trades = [
-                trade
-                for trade in self.trades_history
-                if datetime.fromisoformat(trade["execution_time"]) >= cutoff_date
+                trade for trade in self.trades_history if datetime.fromisoformat(trade["execution_time"]) >= cutoff_date
             ]
 
             if not recent_trades:
@@ -225,9 +219,7 @@ class PerformanceTracker:
 
             total_profit_loss = sum(t.get("profit_loss", 0) for t in closed_trades)
             avg_confidence = sum(t["confidence_score"] for t in recent_trades) / len(recent_trades)
-            avg_probability = sum(t["trading_probability"] for t in recent_trades) / len(
-                recent_trades
-            )
+            avg_probability = sum(t["trading_probability"] for t in recent_trades) / len(recent_trades)
 
             signal_distribution = {
                 "STRONG": len([t for t in recent_trades if t["strength"] == "STRONG"]),
@@ -241,9 +233,7 @@ class PerformanceTracker:
                 "closed_trades": len(closed_trades),
                 "win_rate": len(winning_trades) / len(closed_trades) * 100 if closed_trades else 0,
                 "total_profit_loss": total_profit_loss,
-                "avg_profit_per_trade": (
-                    total_profit_loss / len(closed_trades) if closed_trades else 0
-                ),
+                "avg_profit_per_trade": (total_profit_loss / len(closed_trades) if closed_trades else 0),
                 "best_trade": max((t.get("profit_loss", 0) for t in closed_trades), default=0),
                 "worst_trade": min((t.get("profit_loss", 0) for t in closed_trades), default=0),
                 "avg_confidence": avg_confidence,
@@ -262,8 +252,7 @@ class PerformanceTracker:
             symbol_trades = [
                 trade
                 for trade in self.trades_history
-                if trade["symbol"] == symbol
-                and datetime.fromisoformat(trade["execution_time"]) >= cutoff_date
+                if trade["symbol"] == symbol and datetime.fromisoformat(trade["execution_time"]) >= cutoff_date
             ]
 
             if not symbol_trades:
@@ -282,9 +271,7 @@ class PerformanceTracker:
 
             total_profit_loss = sum(t.get("profit_loss", 0) for t in closed_trades)
             avg_confidence = sum(t["confidence_score"] for t in symbol_trades) / len(symbol_trades)
-            avg_probability = sum(t["trading_probability"] for t in symbol_trades) / len(
-                symbol_trades
-            )
+            avg_probability = sum(t["trading_probability"] for t in symbol_trades) / len(symbol_trades)
 
             return {
                 "symbol": symbol,
@@ -293,9 +280,7 @@ class PerformanceTracker:
                 "closed_trades": len(closed_trades),
                 "win_rate": len(winning_trades) / len(closed_trades) * 100 if closed_trades else 0,
                 "total_profit_loss": total_profit_loss,
-                "avg_profit_per_trade": (
-                    total_profit_loss / len(closed_trades) if closed_trades else 0
-                ),
+                "avg_profit_per_trade": (total_profit_loss / len(closed_trades) if closed_trades else 0),
                 "avg_confidence": avg_confidence,
                 "avg_probability": avg_probability,
             }
@@ -307,9 +292,7 @@ class PerformanceTracker:
     def get_recent_trades(self, limit: int = 20) -> list[dict]:
         """Hämta senaste trades"""
         try:
-            return sorted(self.trades_history, key=lambda x: x["execution_time"], reverse=True)[
-                :limit
-            ]
+            return sorted(self.trades_history, key=lambda x: x["execution_time"], reverse=True)[:limit]
         except Exception as e:
             logger.error(f"❌ Fel vid hämtning av recent trades: {e}")
             return []

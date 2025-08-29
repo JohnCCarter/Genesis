@@ -70,5 +70,3 @@ export function WalletsPanel() {
         </div>
     );
 }
-
-

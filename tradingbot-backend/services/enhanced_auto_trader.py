@@ -4,11 +4,12 @@ from datetime import datetime, timedelta
 from typing import Callable, Dict, List, Optional
 
 from models.signal_models import SignalResponse, SignalThresholds
+from utils.logger import get_logger
+
 from services.performance_tracker import get_performance_tracker
 from services.realtime_strategy import RealtimeStrategyService
 from services.signal_generator import SignalGeneratorService
 from services.trading_integration import TradingIntegrationService
-from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -122,9 +123,7 @@ class EnhancedAutoTrader:
         """Hämta enhanced signal med confidence scores"""
         try:
             # Generera live signal
-            signals_response = await self.signal_service.generate_live_signals(
-                [symbol], force_refresh=True
-            )
+            signals_response = await self.signal_service.generate_live_signals([symbol], force_refresh=True)
 
             if signals_response.signals:
                 signal = signals_response.signals[0]
@@ -163,9 +162,7 @@ class EnhancedAutoTrader:
             logger.error(f"❌ Fel vid trade beslut: {e}")
             return False
 
-    async def _execute_enhanced_trade(
-        self, symbol: str, signal: SignalResponse, realtime_result: dict
-    ):
+    async def _execute_enhanced_trade(self, symbol: str, signal: SignalResponse, realtime_result: dict):
         """Utför trade med enhanced signal men befintligt execution system"""
         try:
             # Beräkna position storlek baserat på confidence
@@ -187,9 +184,7 @@ class EnhancedAutoTrader:
             self._last_trade_time[symbol] = datetime.now()
 
             # Registrera trade i performance tracker
-            trade_id = self.performance_tracker.record_trade(
-                symbol, signal, trade_result, datetime.now()
-            )
+            trade_id = self.performance_tracker.record_trade(symbol, signal, trade_result, datetime.now())
 
             # Logga resultat
             logger.info(
@@ -216,17 +211,13 @@ class EnhancedAutoTrader:
             confidence_multiplier = signal.confidence_score / 100.0
 
             # Justera baserat på signal styrka
-            strength_multiplier = {"STRONG": 1.5, "MEDIUM": 1.0, "WEAK": 0.5}.get(
-                signal.strength, 1.0
-            )
+            strength_multiplier = {"STRONG": 1.5, "MEDIUM": 1.0, "WEAK": 0.5}.get(signal.strength, 1.0)
 
             # Justera baserat på trading probability
             probability_multiplier = signal.trading_probability / 100.0
 
             # Kombinera alla faktorer
-            final_size = (
-                base_size * confidence_multiplier * strength_multiplier * probability_multiplier
-            )
+            final_size = base_size * confidence_multiplier * strength_multiplier * probability_multiplier
 
             # Begränsa till rimliga gränser
             final_size = max(0.0001, min(0.01, final_size))

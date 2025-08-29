@@ -8,17 +8,16 @@ import math
 from datetime import UTC, datetime, timedelta, timezone
 from typing import Any, Dict, List
 
+from utils.logger import get_logger
+
 from services.bitfinex_data import BitfinexDataService
 from services.strategy import evaluate_strategy
-from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
 
 class BacktestService:
-    async def run(
-        self, symbol: str, timeframe: str, limit: int = 500, tz_offset_minutes: int = 0
-    ) -> dict[str, Any]:
+    async def run(self, symbol: str, timeframe: str, limit: int = 500, tz_offset_minutes: int = 0) -> dict[str, Any]:
         data = BitfinexDataService()
         candles = await data.get_candles(symbol, timeframe, limit)
         if not candles:

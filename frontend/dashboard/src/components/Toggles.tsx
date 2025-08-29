@@ -73,5 +73,3 @@ export function Toggles({ modes, onChanged }: { modes?: Modes | null; onChanged:
         </div>
     );
 }
-
-

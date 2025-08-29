@@ -24,4 +24,3 @@ exclude =
     ws/**,
     simple_ws_test_server.py,
     test_direct_bitfinex.py
-

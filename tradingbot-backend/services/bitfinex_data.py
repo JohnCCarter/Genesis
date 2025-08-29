@@ -11,11 +11,13 @@ import time
 from typing import Dict, List, Optional, Tuple
 
 import httpx
+from utils.advanced_rate_limiter import get_advanced_rate_limiter
+from utils.candle_cache import candle_cache
+from utils.logger import get_logger
 
 from config.settings import Settings
 from services.bitfinex_websocket import bitfinex_ws
-from utils.candle_cache import candle_cache
-from utils.logger import get_logger
+from services.metrics import record_http_result
 
 logger = get_logger(__name__)
 
@@ -40,16 +42,21 @@ class BitfinexDataService:
     def __init__(self):
         self.settings = Settings()
         # Använd publik bas-URL för public endpoints
-        self.base_url = (
-            getattr(self.settings, "BITFINEX_PUBLIC_API_URL", None)
-            or self.settings.BITFINEX_API_URL
-        )
+        self.base_url = getattr(self.settings, "BITFINEX_PUBLIC_API_URL", None) or self.settings.BITFINEX_API_URL
         # Delad HTTP-klient för bättre prestanda
         self._client: httpx.AsyncClient | None = None
+        # Global concurrency cap för publika REST-anrop
+        try:
+            conc = int(getattr(self.settings, "PUBLIC_REST_CONCURRENCY", 4) or 4)
+        except Exception:
+            conc = 4
+        import asyncio as _asyncio
 
-    async def get_candles(
-        self, symbol: str = "tBTCUSD", timeframe: str = "1m", limit: int = 100
-    ) -> list[list] | None:
+        self._public_sem = _asyncio.Semaphore(max(1, conc))
+        # Advanced limiter (token-bucket + circuit breaker)
+        self.rate_limiter = get_advanced_rate_limiter()
+
+    async def get_candles(self, symbol: str = "tBTCUSD", timeframe: str = "1m", limit: int = 100) -> list[list] | None:
         """
         Hämtar candlestick-data från Bitfinex.
 
@@ -104,13 +111,52 @@ class BitfinexDataService:
             for attempt in range(retries + 1):
                 try:
                     logger.info("🌐 REST API: Hämtar candles från %s", url)
-                    response = await self._client.get(url, params=params)
-                    if response.status_code in (429, 500, 502, 503, 504):
-                        raise httpx.HTTPStatusError(
-                            "server busy",
-                            request=response.request,
-                            response=response,
+                    # Circuit breaker + limiter
+                    try:
+                        endpoint_label = f"candles/{symbol}"
+                        if hasattr(self.rate_limiter, "can_request") and not self.rate_limiter.can_request(
+                            endpoint_label
+                        ):
+                            wait = float(self.rate_limiter.time_until_open(endpoint_label))
+                            await asyncio.sleep(max(0.0, wait))
+                        await self.rate_limiter.wait_if_needed("candles")
+                    except Exception:
+                        pass
+                    _t0 = time.perf_counter()
+                    async with self._public_sem:
+                        response = await self._client.get(url, params=params)
+                    _t1 = time.perf_counter()
+                    try:
+                        record_http_result(
+                            path=f"/{endpoint}",
+                            method="GET",
+                            status_code=int(response.status_code),
+                            duration_ms=int((_t1 - _t0) * 1000),
+                            retry_after=response.headers.get("Retry-After"),
                         )
+                        if response.status_code in (429, 500, 502, 503, 504):
+                            ra = response.headers.get("Retry-After")
+                            logger.warning(
+                                "HTTP %s %s Retry-After=%s",
+                                response.status_code,
+                                endpoint,
+                                ra if ra is not None else "-",
+                            )
+                    except Exception:
+                        pass
+                    if response.status_code in (429, 500, 502, 503, 504):
+                        # Circuit breaker + server busy pacing
+                        try:
+                            retry_after = response.headers.get("Retry-After")
+                            if hasattr(self.rate_limiter, "note_failure"):
+                                cooldown = self.rate_limiter.note_failure(
+                                    "candles", int(response.status_code), retry_after
+                                )
+                                logger.warning(f"CB öppnad för candles i {cooldown:.1f}s")
+                            await self.rate_limiter.handle_server_busy("candles")
+                        except Exception:
+                            pass
+                        raise httpx.HTTPError("server busy")
                     response.raise_for_status()
                     candles = response.json()
                     logger.info(
@@ -122,12 +168,29 @@ class BitfinexDataService:
                         candle_cache.store(symbol, timeframe, candles)
                     except Exception:
                         pass
+                    try:
+                        self.rate_limiter.reset_server_busy_count()
+                        if hasattr(self.rate_limiter, "note_success"):
+                            self.rate_limiter.note_success("candles")
+                    except Exception:
+                        pass
                     return candles
                 except Exception as e:
                     last_exc = e
                     if attempt < retries:
-                        delay = min(backoff_max, backoff_base * (2**attempt)) + random.uniform(
-                            0, 0.1
+                        # Respektera ev. Retry-After från föregående svar om tillgängligt
+                        try:
+                            ra = (
+                                response.headers.get("Retry-After")
+                                if "response" in locals() and response is not None
+                                else None
+                            )
+                            ra_sec = float(ra) if ra is not None else 0.0
+                        except Exception:
+                            ra_sec = 0.0
+                        delay = max(
+                            ra_sec,
+                            min(backoff_max, backoff_base * (2**attempt)) + random.uniform(0, 0.1),
                         )
                         await asyncio.sleep(delay)
                         continue
@@ -205,9 +268,7 @@ class BitfinexDataService:
                 # DEBUG: Logga WebSocket-status
                 ws_connected = getattr(bitfinex_ws, "is_connected", False)
                 ws_has_attr = hasattr(bitfinex_ws, "_last_tick_ts")
-                logger.debug(
-                    f"🔍 WS-status för {symbol}: connected={ws_connected}, has_attr={ws_has_attr}"
-                )
+                logger.debug(f"🔍 WS-status för {symbol}: connected={ws_connected}, has_attr={ws_has_attr}")
 
                 for s in cand_syms:
                     if hasattr(bitfinex_ws, "_last_tick_ts"):
@@ -219,17 +280,11 @@ class BitfinexDataService:
                 # DEBUG: Logga vad vi hittade
                 if last_ts:
                     age_secs = _t.time() - float(last_ts)
-                    logger.debug(
-                        f"📡 WS-data för {symbol}: age={age_secs:.1f}s, price={last_price}"
-                    )
+                    logger.debug(f"📡 WS-data för {symbol}: age={age_secs:.1f}s, price={last_price}")
                 else:
                     logger.debug(f"❌ Ingen WS-data för {symbol}")
 
-                if (
-                    last_ts
-                    and (_t.time() - float(last_ts)) <= ws_stale_secs
-                    and last_price is not None
-                ):
+                if last_ts and (_t.time() - float(last_ts)) <= ws_stale_secs and last_price is not None:
                     logger.info(f"✅ Använder färsk WS-data för {symbol}: {last_price}")
                     # Fyll från senaste fulla WS‑ticker-frame om tillgänglig
                     bid = None
@@ -262,20 +317,14 @@ class BitfinexDataService:
                 try:
                     sub_key = f"ticker|{eff_symbol}"
                     already_subscribed = sub_key in getattr(bitfinex_ws, "subscriptions", {})
-                    logger.debug(
-                        f"🔍 WS-subscription för {symbol}: already_subscribed={already_subscribed}"
-                    )
+                    logger.debug(f"🔍 WS-subscription för {symbol}: already_subscribed={already_subscribed}")
 
                     if not already_subscribed:
                         logger.info(f"📡 Auto-subscribing till WS ticker för {eff_symbol}")
                         # registrera strategi/ticker-callback om inte finns
                         if eff_symbol not in getattr(bitfinex_ws, "strategy_callbacks", {}):
-                            bitfinex_ws.strategy_callbacks[
-                                eff_symbol
-                            ] = bitfinex_ws._handle_ticker_with_strategy
-                        await bitfinex_ws.subscribe_ticker(
-                            eff_symbol, bitfinex_ws._handle_ticker_with_strategy
-                        )
+                            bitfinex_ws.strategy_callbacks[eff_symbol] = bitfinex_ws._handle_ticker_with_strategy
+                        await bitfinex_ws.subscribe_ticker(eff_symbol, bitfinex_ws._handle_ticker_with_strategy)
                         # Vänta kort på första tick innan REST-fallback
                         warmup_deadline = _t.time() + (ws_warmup_ms / 1000.0)
                         logger.debug(f"⏳ Väntar på WS-data för {symbol} i {ws_warmup_ms}ms")
@@ -287,14 +336,8 @@ class BitfinexDataService:
                                 if last_ts:
                                     last_price = bitfinex_ws.latest_prices.get(s)
                                     break
-                            if (
-                                last_ts
-                                and (_t.time() - float(last_ts)) <= ws_stale_secs
-                                and last_price is not None
-                            ):
-                                logger.info(
-                                    f"✅ Fick WS-data för {symbol} under warmup: {last_price}"
-                                )
+                            if last_ts and (_t.time() - float(last_ts)) <= ws_stale_secs and last_price is not None:
+                                logger.info(f"✅ Fick WS-data för {symbol} under warmup: {last_price}")
                                 frame = None
                                 bid = ask = high = low = volume = None
                                 for s in cand_syms:
@@ -357,16 +400,51 @@ class BitfinexDataService:
                 for attempt in range(retries + 1):
                     try:
                         async with httpx.AsyncClient(timeout=timeout) as client:
-                            logger.info(
-                                f"🌐 REST API: Hämtar ticker från {url} (WS-fallback för {symbol})"
-                            )
-                            response = await client.get(url)
-                            if response.status_code in (429, 500, 502, 503, 504):
-                                raise httpx.HTTPStatusError(
-                                    "server busy",
-                                    request=response.request,
-                                    response=response,
+                            logger.info(f"🌐 REST API: Hämtar ticker från {url} (WS-fallback för {symbol})")
+                            # Circuit breaker + limiter
+                            try:
+                                if hasattr(self.rate_limiter, "can_request") and not self.rate_limiter.can_request(
+                                    "ticker"
+                                ):
+                                    wait = float(self.rate_limiter.time_until_open("ticker"))
+                                    await asyncio.sleep(max(0.0, wait))
+                                await self.rate_limiter.wait_if_needed("ticker")
+                            except Exception:
+                                pass
+                            _t0 = time.perf_counter()
+                            async with self._public_sem:
+                                response = await client.get(url)
+                            _t1 = time.perf_counter()
+                            try:
+                                record_http_result(
+                                    path=f"/{endpoint}",
+                                    method="GET",
+                                    status_code=int(response.status_code),
+                                    duration_ms=int((_t1 - _t0) * 1000),
+                                    retry_after=response.headers.get("Retry-After"),
                                 )
+                                if response.status_code in (429, 500, 502, 503, 504):
+                                    ra = response.headers.get("Retry-After")
+                                    logger.warning(
+                                        "HTTP %s %s Retry-After=%s",
+                                        response.status_code,
+                                        endpoint,
+                                        ra if ra is not None else "-",
+                                    )
+                            except Exception:
+                                pass
+                            if response.status_code in (429, 500, 502, 503, 504):
+                                try:
+                                    retry_after = response.headers.get("Retry-After")
+                                    if hasattr(self.rate_limiter, "note_failure"):
+                                        cooldown = self.rate_limiter.note_failure(
+                                            "ticker", int(response.status_code), retry_after
+                                        )
+                                        logger.warning(f"CB öppnad för ticker i {cooldown:.1f}s")
+                                    await self.rate_limiter.handle_server_busy("ticker")
+                                except Exception:
+                                    pass
+                                raise httpx.HTTPError("server busy")
                             response.raise_for_status()
                             ticker = response.json()
                             logger.info(
@@ -399,12 +477,28 @@ class BitfinexDataService:
                                 }
                             except Exception:
                                 pass
+                            try:
+                                self.rate_limiter.reset_server_busy_count()
+                                if hasattr(self.rate_limiter, "note_success"):
+                                    self.rate_limiter.note_success("ticker")
+                            except Exception:
+                                pass
                             return out
                     except Exception as e:
                         last_exc = e
                         if attempt < retries:
-                            delay = min(backoff_max, backoff_base * (2**attempt)) + random.uniform(
-                                0, 0.1
+                            try:
+                                ra = (
+                                    response.headers.get("Retry-After")
+                                    if "response" in locals() and response is not None
+                                    else None
+                                )
+                                ra_sec = float(ra) if ra is not None else 0.0
+                            except Exception:
+                                ra_sec = 0.0
+                            delay = max(
+                                ra_sec,
+                                min(backoff_max, backoff_base * (2**attempt)) + random.uniform(0, 0.1),
                             )
                             await asyncio.sleep(delay)
                             continue
@@ -441,11 +535,29 @@ class BitfinexDataService:
                 try:
                     async with httpx.AsyncClient(timeout=timeout) as client:
                         logger.info("🌐 REST API: Hämtar tickers (batch)")
-                        resp = await client.get(url)
+                        try:
+                            if hasattr(self.rate_limiter, "can_request") and not self.rate_limiter.can_request(
+                                "tickers"
+                            ):
+                                wait = float(self.rate_limiter.time_until_open("tickers"))
+                                await asyncio.sleep(max(0.0, wait))
+                            await self.rate_limiter.wait_if_needed("tickers")
+                        except Exception:
+                            pass
+                        async with self._public_sem:
+                            resp = await client.get(url)
                         if resp.status_code in (429, 500, 502, 503, 504):
-                            raise httpx.HTTPStatusError(
-                                "server busy", request=resp.request, response=resp
-                            )
+                            try:
+                                retry_after = resp.headers.get("Retry-After")
+                                if hasattr(self.rate_limiter, "note_failure"):
+                                    cooldown = self.rate_limiter.note_failure(
+                                        "tickers", int(resp.status_code), retry_after
+                                    )
+                                    logger.warning(f"CB öppnad för tickers i {cooldown:.1f}s")
+                                await self.rate_limiter.handle_server_busy("tickers")
+                            except Exception:
+                                pass
+                            raise httpx.HTTPError("server busy")
                         resp.raise_for_status()
                         data = resp.json()
                         # Uppdatera cache och ev. latest_prices med snapshot
@@ -470,21 +582,30 @@ class BitfinexDataService:
                                 }
                                 # Om WS inte levererar ännu, fyll latest_prices som snapshot
                                 try:
-                                    if (
-                                        out["last_price"] is not None
-                                        and sy not in bitfinex_ws.latest_prices
-                                    ):
+                                    if out["last_price"] is not None and sy not in bitfinex_ws.latest_prices:
                                         bitfinex_ws.latest_prices[sy] = out["last_price"]
                                 except Exception:
                                     pass
+                        except Exception:
+                            pass
+                        try:
+                            self.rate_limiter.reset_server_busy_count()
+                            if hasattr(self.rate_limiter, "note_success"):
+                                self.rate_limiter.note_success("tickers")
                         except Exception:
                             pass
                         return data
                 except Exception as e:
                     last_exc = e
                     if attempt < retries:
-                        delay = min(backoff_max, backoff_base * (2**attempt)) + random.uniform(
-                            0, 0.1
+                        try:
+                            ra = resp.headers.get("Retry-After") if "resp" in locals() and resp is not None else None
+                            ra_sec = float(ra) if ra is not None else 0.0
+                        except Exception:
+                            ra_sec = 0.0
+                        delay = max(
+                            ra_sec,
+                            min(backoff_max, backoff_base * (2**attempt)) + random.uniform(0, 0.1),
                         )
                         await asyncio.sleep(delay)
                         continue
@@ -503,7 +624,8 @@ class BitfinexDataService:
         try:
             url = f"{self.base_url}/platform/status"
             async with httpx.AsyncClient(timeout=self.settings.DATA_HTTP_TIMEOUT) as client:
-                resp = await client.get(url)
+                async with self._public_sem:
+                    resp = await client.get(url)
                 resp.raise_for_status()
                 return resp.json()
         except Exception as e:
@@ -656,18 +778,14 @@ class BitfinexDataService:
                         async with httpx.AsyncClient(timeout=timeout) as client:
                             resp = await client.get(url, params=params)
                             if resp.status_code in (429, 500, 502, 503, 504):
-                                raise httpx.HTTPStatusError(
-                                    "server busy", request=resp.request, response=resp
-                                )
+                                raise httpx.HTTPStatusError("server busy", request=resp.request, response=resp)
                             resp.raise_for_status()
                             candles = resp.json() or []
                             break
                     except Exception as e:
                         last_exc = e
                         if attempt < retries:
-                            delay = min(backoff_max, backoff_base * (2**attempt)) + random.uniform(
-                                0, 0.1
-                            )
+                            delay = min(backoff_max, backoff_base * (2**attempt)) + random.uniform(0, 0.1)
                             await asyncio.sleep(delay)
                             continue
                         break
@@ -687,6 +805,12 @@ class BitfinexDataService:
                 if oldest_in_batch is None:
                     break
                 end_param = oldest_in_batch - 1
+                # Paus mellan batcher för att inte överlasta
+                try:
+                    sleep_ms = int(getattr(self.settings, "BACKFILL_BATCH_SLEEP_MS", 300) or 300)
+                except Exception:
+                    sleep_ms = 300
+                await asyncio.sleep(max(0.0, sleep_ms / 1000.0))
             return total_inserted
         except Exception as e:
             logger.warning("Backfill fel: %s", e)

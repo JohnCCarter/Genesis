@@ -11,9 +11,10 @@ from models.signal_models import (
     SignalStrength,
     SignalThresholds,
 )
+from utils.logger import get_logger
+
 from services.bitfinex_data import BitfinexDataService
 from services.symbols import SymbolService
-from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -249,12 +250,8 @@ class SignalGeneratorService:
                 confidence = self._calculate_confidence_score(
                     regime_data.get("adx_value"), regime_data.get("ema_z_value")
                 )
-                trading_prob = self._calculate_trading_probability(
-                    regime_data.get("regime"), confidence
-                )
-                recommendation = self._get_recommendation(
-                    regime_data.get("regime"), confidence, trading_prob
-                )
+                trading_prob = self._calculate_trading_probability(regime_data.get("regime"), confidence)
+                recommendation = self._get_recommendation(regime_data.get("regime"), confidence, trading_prob)
 
                 regime_data.update(
                     {
@@ -311,13 +308,36 @@ class SignalGeneratorService:
             return "AVOID"
 
     async def _get_current_price(self, symbol: str) -> float | None:
-        """Hämta aktuellt pris för symbol"""
+        """Hämta aktuellt pris för symbol (WS‑first, REST fallback)."""
         try:
-            # Använd befintlig data service
+            # WS‑first: försök hämta ticker från WS‑cache
+            try:
+                from services.ws_first_data_service import get_ws_first_data_service
+
+                ws = get_ws_first_data_service()
+                try:
+                    await ws.initialize()
+                except Exception:
+                    pass
+
+                ticker = await ws.get_ticker(symbol)
+                if isinstance(ticker, dict):
+                    last = ticker.get("last_price")
+                    if last is not None:
+                        return float(last)
+
+                # Fallback via WS‑first candles
+                candles = await ws.get_candles(symbol, "1m", limit=1)
+                if candles and len(candles) > 0:
+                    # Bitfinex candle format: [MTS, OPEN, CLOSE, HIGH, LOW, VOLUME]
+                    return float(candles[0][2])
+            except Exception:
+                pass
+
+            # Sista fallback: REST data service (kan vara långsammare)
             candles = await self.data_service.get_candles(symbol, "1m", limit=1)
             if candles and len(candles) > 0:
-                # Bitfinex candle format: [MTS, OPEN, CLOSE, HIGH, LOW, VOLUME]
-                return float(candles[0][2])  # CLOSE är på index 2
+                return float(candles[0][2])
             return None
 
         except Exception as e:
@@ -390,20 +410,32 @@ class SignalGeneratorService:
             return "Signal reason unavailable"
 
     async def _get_active_symbols(self) -> list[str]:
-        """Hämta lista av aktiva symboler - Begränsa för prestanda"""
-        try:
-            # Använd befintlig symbol service men begränsa kraftigt
-            symbols = self.symbol_service.get_symbols(test_only=True, fmt="v2")
-            logger.info(f"📋 Hämtade {len(symbols)} symboler: {symbols[:3]}...")
-            return symbols[:3]  # Begränsa till första 3 för prestanda
+        """Hämta lista av aktiva symboler – läs från WS_SUBSCRIBE_SYMBOLS i .env.
 
+        Fallback: tidigare test‑symboler om env saknas.
+        """
+        try:
+            from config.settings import Settings as _S
+
+            s = _S()
+            raw = (s.WS_SUBSCRIBE_SYMBOLS or "").strip()
+            symbols: list[str] = []
+            if raw:
+                symbols = [x.strip() for x in raw.split(",") if x.strip()]
+            else:
+                # Fallback till test‑symboler om env inte satt
+                symbols = self.symbol_service.get_symbols(test_only=True, fmt="v2")
+            # Deduplicera men behåll ordning
+            symbols = list(dict.fromkeys(symbols))
+            logger.info("LiveSignals aktiva symboler: %s", symbols)
+            return symbols
         except Exception as e:
             logger.error(f"❌ Kunde inte hämta aktiva symboler: {e}")
-            # Returnera minimala test-symboler
-        return [
-            "tTESTBTC:TESTUSD",
-            "tTESTETH:TESTUSD",
-        ]
+            # Sista fallback – minimala test‑symboler
+            return [
+                "tTESTBTC:TESTUSD",
+                "tTESTETH:TESTUSD",
+            ]
 
     def _is_cache_valid(self) -> bool:
         """Kontrollera om cache är giltig"""
@@ -434,12 +466,8 @@ class SignalGeneratorService:
             medium_signals = [s for s in signals if s.strength == "MEDIUM"]
             weak_signals = [s for s in signals if s.strength == "WEAK"]
 
-            avg_confidence = (
-                sum(s.confidence_score for s in signals) / len(signals) if signals else 0
-            )
-            avg_probability = (
-                sum(s.trading_probability for s in signals) / len(signals) if signals else 0
-            )
+            avg_confidence = sum(s.confidence_score for s in signals) / len(signals) if signals else 0
+            avg_probability = sum(s.trading_probability for s in signals) / len(signals) if signals else 0
 
             return {
                 "buy_signals": len(buy_signals),

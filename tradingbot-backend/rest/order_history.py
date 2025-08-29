@@ -5,16 +5,22 @@ Denna modul hanterar historiska orderdata från Bitfinex API.
 Inkluderar funktioner för att hämta orderhistorik, trades och ledger.
 """
 
+import asyncio
 import json
+import random
+import time
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 import httpx
 from pydantic import BaseModel
+from services.metrics import record_http_result
+from utils.advanced_rate_limiter import get_advanced_rate_limiter
+from utils.logger import get_logger
+from utils.private_concurrency import get_private_rest_semaphore
 
 from config.settings import Settings
 from rest.auth import build_auth_headers
-from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -50,8 +56,16 @@ class OrderHistoryItem(BaseModel):
             original_amount=float(data[5]),
             price=float(data[6]),
             avg_execution_price=float(data[7]) if data[7] is not None else None,
-            created_at=(datetime.fromtimestamp(data[8] / 1000) if data[8] else datetime.now()),
-            updated_at=datetime.fromtimestamp(data[9] / 1000) if data[9] else None,
+            created_at=(
+                datetime.fromtimestamp(float(data[8]) / 1000.0)
+                if (len(data) > 8 and data[8] is not None and str(data[8]).strip() != "")
+                else datetime.now()
+            ),
+            updated_at=(
+                datetime.fromtimestamp(float(data[9]) / 1000.0)
+                if (len(data) > 9 and data[9] is not None and str(data[9]).strip() != "")
+                else None
+            ),
             is_cancelled=bool(data[10]),
             is_hidden=bool(data[11]),
         )
@@ -112,11 +126,7 @@ class TradeItem(BaseModel):
                 fee = try_float(data[8])
                 fee_currency = str(data[9]) if len(data) > 9 else ""
             # Fall 2: tidsstämpel på index 2 (ms)
-            elif (
-                len(data) >= 9
-                and isinstance(data[2], (int, float))
-                and float(data[2]) > 10_000_000_000
-            ):
+            elif len(data) >= 9 and isinstance(data[2], (int, float)) and float(data[2]) > 10_000_000_000:
                 # [id, sym, mts, orderId, execId, amount, price, fee, feeCur]
                 mts_create = int(data[2])
                 order_id = int(data[3]) if len(data) > 3 and data[3] is not None else 0
@@ -237,22 +247,18 @@ class OrderHistoryService:
 
     def __init__(self):
         self.settings = Settings()
-        self.base_url = (
-            getattr(self.settings, "BITFINEX_AUTH_API_URL", None) or self.settings.BITFINEX_API_URL
-        )
+        self.base_url = getattr(self.settings, "BITFINEX_AUTH_API_URL", None) or self.settings.BITFINEX_API_URL
+        self.rate_limiter = get_advanced_rate_limiter()
+        # Global semafor för alla privata REST-klasser
+        self._sem = get_private_rest_semaphore()
 
-    async def _signed_post_with_retry(
-        self, endpoint: str, body: dict[str, Any] | None = None
-    ) -> httpx.Response:
+    async def _signed_post_with_retry(self, endpoint: str, body: dict[str, Any] | None = None) -> httpx.Response:
         """
         Skicka ett signerat POST-anrop med timeout och retry/backoff.
 
         Återanvänder DATA_* inställningar för timeout/retries.
         Signerar på exakt samma JSON-sträng som skickas.
         """
-        import asyncio
-        import random
-
         # Bygg deterministisk JSON och signera den exakta strängen
         body = body or {}
         body_json = json.dumps(body, separators=(",", ":"), ensure_ascii=False)
@@ -260,27 +266,97 @@ class OrderHistoryService:
 
         timeout = getattr(self.settings, "DATA_HTTP_TIMEOUT", 15.0)
         retries = max(int(getattr(self.settings, "DATA_MAX_RETRIES", 2) or 0), 0)
-        backoff_base = (
-            max(int(getattr(self.settings, "DATA_BACKOFF_BASE_MS", 250) or 0), 0) / 1000.0
-        )
+        backoff_base = max(int(getattr(self.settings, "DATA_BACKOFF_BASE_MS", 250) or 0), 0) / 1000.0
         backoff_max = max(int(getattr(self.settings, "DATA_BACKOFF_MAX_MS", 2000) or 0), 0) / 1000.0
 
         last_exc: Exception | None = None
         response: httpx.Response | None = None
         for attempt in range(retries + 1):
             try:
+                # Circuit breaker: respektera cooldown
+                if hasattr(self.rate_limiter, "can_request") and not self.rate_limiter.can_request(endpoint):
+                    wait = self.rate_limiter.time_until_open(endpoint)
+                    logger.warning(f"CB: {endpoint} stängd i {wait:.1f}s")
+                    await asyncio.sleep(wait)
+                # Använd rate limiter före varje request
+                await self.rate_limiter.wait_if_needed(endpoint)
+
                 async with httpx.AsyncClient(timeout=timeout) as client:
-                    response = await client.post(
-                        f"{self.base_url}/{endpoint}",
-                        content=body_json.encode("utf-8"),
-                        headers=headers,
-                    )
-                    # Retrybara statuskoder
+                    _t0 = time.perf_counter()
+                    async with self._sem:
+                        response = await client.post(
+                            f"{self.base_url}/{endpoint}",
+                            content=body_json.encode("utf-8"),
+                            headers=headers,
+                        )
+                    _t1 = time.perf_counter()
+                    try:
+                        record_http_result(
+                            path=f"/{endpoint}",
+                            method="POST",
+                            status_code=int(response.status_code),
+                            duration_ms=int((_t1 - _t0) * 1000),
+                            retry_after=response.headers.get("Retry-After"),
+                        )
+                    except Exception:
+                        pass
+
+                    # Kontrollera om det är nonce-fel - bumpa och gör en engångs‑retry
+                    if response.status_code == 500:
+                        try:
+                            error_data = response.json()
+                            if (
+                                isinstance(error_data, list)
+                                and len(error_data) >= 3
+                                and "nonce" in str(error_data[2]).lower()
+                            ):
+                                logger.error(f"🚨 Nonce-fel detekterat: {error_data}")
+                                try:
+                                    from utils.nonce_manager import bump_nonce
+
+                                    from config.settings import Settings as _S
+
+                                    api_key = _S().BITFINEX_API_KEY or "default_key"
+                                    bump_nonce(api_key)
+                                    # Bygg om headers med ny nonce
+                                    headers = build_auth_headers(endpoint, payload_str=body_json)
+                                    async with self._sem:
+                                        response = await client.post(
+                                            f"{self.base_url}/{endpoint}",
+                                            content=body_json.encode("utf-8"),
+                                            headers=headers,
+                                        )
+                                except Exception:
+                                    # Misslyckad bump – returnera originalsvaret
+                                    return response
+                        except (json.JSONDecodeError, ValueError):
+                            pass  # Inte JSON eller felformat, fortsätt med vanlig hantering
+
+                    # Retrybara statuskoder (ej nonce-fel)
                     if response.status_code in (429, 500, 502, 503, 504):
-                        # Lyft generiskt fel för att trigga retry utan att skapa HTTPStatusError med None-request
+                        # Hantera server busy med intelligenta backoffs
+                        if "server busy" in (response.text or "").lower() or response.status_code in (429, 503):
+                            # Circuit breaker + Retry-After
+                            retry_after = response.headers.get("Retry-After")
+                            if hasattr(self.rate_limiter, "note_failure"):
+                                cooldown = self.rate_limiter.note_failure(endpoint, response.status_code, retry_after)
+                                logger.warning(f"CB öppnad för {endpoint} i {cooldown:.1f}s")
+                            await self.rate_limiter.handle_server_busy(endpoint)
                         raise httpx.HTTPError("server busy")
+
                     response.raise_for_status()
+                    # Återställ räknare och CB vid framgång
+                    try:
+                        self.rate_limiter.reset_server_busy_count()
+                    except Exception:
+                        pass
+                    try:
+                        if hasattr(self.rate_limiter, "note_success"):
+                            self.rate_limiter.note_success(endpoint)
+                    except Exception:
+                        pass
                     return response
+
             except Exception as e:
                 last_exc = e
                 if attempt < retries:
@@ -373,9 +449,7 @@ class OrderHistoryService:
             logger.error(f"Fel vid hämtning av trades för order {order_id}: {e}")
             raise
 
-    async def get_trades_history(
-        self, symbol: str | None = None, limit: int = 25
-    ) -> list[TradeItem]:
+    async def get_trades_history(self, symbol: str | None = None, limit: int = 25) -> list[TradeItem]:
         """
         Hämtar handelshistorik från Bitfinex.
 
@@ -459,7 +533,6 @@ async def get_ledgers(currency: str | None = None, limit: int = 25) -> list[Ledg
 
 # Exempel på användning
 if __name__ == "__main__":
-    import asyncio
 
     async def main():
         try:
@@ -467,18 +540,14 @@ if __name__ == "__main__":
             orders = await get_orders_history(10)
             print(f"Senaste {len(orders)} ordrar:")
             for order in orders:
-                print(
-                    f"  {order.id}: {order.symbol} {order.type} {order.amount} @ {order.price} ({order.status})"
-                )
+                print(f"  {order.id}: {order.symbol} {order.type} {order.amount} @ {order.price} ({order.status})")
 
             # Om det finns ordrar, hämta trades för den första
             if orders:
                 trades = await get_order_trades(orders[0].id)
                 print(f"\nTrades för order {orders[0].id}:")
                 for trade in trades:
-                    print(
-                        f"  {trade.id}: {trade.amount} @ {trade.price} (Fee: {trade.fee} {trade.fee_currency})"
-                    )
+                    print(f"  {trade.id}: {trade.amount} @ {trade.price} (Fee: {trade.fee} {trade.fee_currency})")
 
             # Hämta senaste 5 ledger-poster för USD
             ledgers = await get_ledgers("USD", 5)

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>API Debug Test</title>
+  </head>
+  <body>
+    <h1>Genesis API Debug Test</h1>
+    <div id="results"></div>
+
+    <button onclick="testHealth()">Test /health</button>
+    <button onclick="testAuth()">Test /api/v2/auth/ws-token</button>
+    <button onclick="testStatus()">Test /api/v2/ws/pool/status</button>
+
+    <script>
+      const API_BASE = 'http://127.0.0.1:8000';
+
+      function log(message) {
+        const div = document.getElementById('results');
+        div.innerHTML +=
+          '<p>' + new Date().toLocaleTimeString() + ': ' + message + '</p>';
+        console.log(message);
+      }
+
+      async function testHealth() {
+        try {
+          log('🧪 Testing /health...');
+          const response = await fetch(API_BASE + '/health');
+          log('✅ Health status: ' + response.status);
+          const data = await response.text();
+          log('📄 Health response: ' + data);
+        } catch (error) {
+          log('❌ Health error: ' + error.message);
+        }
+      }
+
+      async function testAuth() {
+        try {
+          log('🧪 Testing /api/v2/auth/ws-token...');
+          const response = await fetch(API_BASE + '/api/v2/auth/ws-token', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              user_id: 'debug_test',
+              scope: 'read',
+              expiry_hours: 1,
+            }),
+          });
+          log('✅ Auth status: ' + response.status);
+          const data = await response.json();
+          log('📄 Auth response: ' + JSON.stringify(data));
+          if (data.token) {
+            localStorage.setItem('debug_token', data.token);
+            log('💾 Token saved to localStorage');
+          }
+        } catch (error) {
+          log('❌ Auth error: ' + error.message);
+        }
+      }
+
+      async function testStatus() {
+        try {
+          log('🧪 Testing /api/v2/ws/pool/status...');
+          const token = localStorage.getItem('debug_token');
+          const headers = {
+            'Content-Type': 'application/json',
+          };
+          if (token) {
+            headers['Authorization'] = 'Bearer ' + token;
+            log('🔑 Using token: ' + token.substring(0, 20) + '...');
+          }
+
+          const response = await fetch(API_BASE + '/api/v2/ws/pool/status', {
+            headers: headers,
+          });
+          log('✅ Status response: ' + response.status);
+          const data = await response.json();
+          log('📄 Status data: ' + JSON.stringify(data, null, 2));
+        } catch (error) {
+          log('❌ Status error: ' + error.message);
+        }
+      }
+
+      // Auto-test on load
+      window.onload = function () {
+        log('🚀 Starting automatic API tests...');
+        setTimeout(testHealth, 500);
+        setTimeout(testAuth, 1500);
+        setTimeout(testStatus, 3000);
+      };
+    </script>
+  </body>
+</html>

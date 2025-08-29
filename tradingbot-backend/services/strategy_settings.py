@@ -11,8 +11,9 @@ import os
 from dataclasses import asdict, dataclass
 from typing import Any, Dict, Optional
 
-from config.settings import Settings
 from utils.logger import get_logger
+
+from config.settings import Settings
 
 logger = get_logger(__name__)
 
@@ -115,9 +116,7 @@ class StrategySettingsService:
                 logger.warning(f"Kunde inte applicera symboloverride för {symbol}: {e}")
         return base.normalized()
 
-    def save_settings(
-        self, settings_obj: StrategySettings, symbol: str | None = None
-    ) -> StrategySettings:
+    def save_settings(self, settings_obj: StrategySettings, symbol: str | None = None) -> StrategySettings:
         try:
             normalized = settings_obj.normalized()
             if symbol:

@@ -13,13 +13,14 @@ repos:
     hooks:
       - id: black
         language_version: python3
+        files: ^tradingbot-backend/.*\.py$
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.1.6
     hooks:
       - id: ruff
-        args: [--fix]
-      - id: ruff-format
+        args: [--fix, --config, tradingbot-backend/pyproject.toml]
+        files: ^tradingbot-backend/.*\.py$
 
   # Temporarily disabled due to pbr dependency issues
   # - repo: https://github.com/PyCQA/bandit

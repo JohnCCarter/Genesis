@@ -6,6 +6,7 @@ import { MarketPanel } from '../components/MarketPanel';
 import { PositionsPanel } from '../components/PositionsPanel';
 import { QuickTrade } from '../components/QuickTrade';
 import { RiskPanel } from '../components/RiskPanel';
+import { RiskGuardsPanel } from '../components/RiskGuardsPanel';
 import { StatusCard } from '../components/StatusCard';
 import { SystemPanel } from '../components/SystemPanel';
 import { Toggles } from '../components/Toggles';
@@ -13,13 +14,20 @@ import { ValidationPanel } from '../components/ValidationPanel';
 import { WalletsPanel } from '../components/WalletsPanel';
 import { PerformancePanel } from '../components/PerformancePanel';
 import { ensureToken, get, getApiBase } from '../lib/api';
+import { useThrottledValue } from '../lib/useThrottledValue';
+import { AcceptanceBadge } from '../components/AcceptanceBadge';
+import { AuthStatus } from '../components/AuthStatus';
 
 export default function DashboardPage() {
     const [status, setStatus] = React.useState<any>(null);
     const [caps, setCaps] = React.useState<any>(null);
     const [modes, setModes] = React.useState<any>(null);
+    const statusT = useThrottledValue(status, 400);
+    const capsT = useThrottledValue(caps, 400);
+    const modesT = useThrottledValue(modes, 400);
     const [strategyAuto, setStrategyAuto] = React.useState<{ AUTO_REGIME_ENABLED?: boolean; AUTO_WEIGHTS_ENABLED?: boolean } | null>(null);
     const [log, setLog] = React.useState<string[]>([]);
+    const [acceptance, setAcceptance] = React.useState<any>(null);
 
     const refresh = React.useCallback(async () => {
         setLog(l => [
@@ -29,7 +37,7 @@ export default function DashboardPage() {
         await ensureToken();
         try {
             // Batcha API-anrop för bättre prestanda
-            const [s, c, dry, paused, pm, at, sch, wsst, warm, auto] = await Promise.all([
+            const [s, c, dry, paused, pm, at, sch, wsst, warm, auto, acc] = await Promise.all([
                 get('/api/v2/ws/pool/status'),
                 get('/api/v2/ui/capabilities').catch(() => null),
                 get('/api/v2/mode/dry-run').catch(() => null),
@@ -40,11 +48,13 @@ export default function DashboardPage() {
                 get('/api/v2/mode/ws-strategy').catch(() => null),
                 get('/api/v2/mode/validation-warmup').catch(() => null),
                 get('/api/v2/strategy/auto').catch(() => null),
+                get('/api/v2/metrics/acceptance').catch(() => null),
             ]);
 
             setStatus(s);
             if (c) setCaps(c);
             if (auto) setStrategyAuto(auto);
+            if (acc) setAcceptance(acc);
             setModes({
                 dry_run_enabled: dry ? !!dry.dry_run_enabled : undefined,
                 trading_paused: paused ? !!paused.trading_paused : undefined,
@@ -69,21 +79,25 @@ export default function DashboardPage() {
 
     React.useEffect(() => {
         refresh();
-        const id = setInterval(refresh, 300000); // Öka till 5 minuter för bättre prestanda
+        const id = setInterval(refresh, 60000); // 1 minut för stabilitet
         return () => clearInterval(id);
     }, [refresh]);
 
     return (
         <div style={{ fontFamily: 'system-ui, sans-serif', padding: 16 }}>
             <h2>Genesis Dashboard</h2>
+            <div style={{ marginBottom: 8, display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                <AcceptanceBadge acceptance={acceptance} />
+                <AuthStatus />
+            </div>
             <details style={{ marginBottom: 12 }}>
                 <summary>Diagnostik</summary>
                 <pre style={{ whiteSpace: 'pre-wrap', background: '#f6f8fa', padding: 8, borderRadius: 6, maxHeight: 180, overflow: 'auto' }}>
                     {log.join('\n')}
                 </pre>
             </details>
-            <StatusCard status={status} caps={caps} modes={modes} strategyAuto={strategyAuto} />
-            <Toggles modes={modes} onChanged={() => { void refresh(); }} />
+            <StatusCard status={statusT} caps={capsT} modes={modesT} strategyAuto={strategyAuto} />
+            <Toggles modes={modesT} onChanged={() => { void refresh(); }} />
             <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16 }}>
                 <div>
                     <h2 style={{ margin: '16px 0 8px' }}>Quick Trade</h2>
@@ -100,6 +114,10 @@ export default function DashboardPage() {
                 <div>
                     <h2 style={{ margin: '16px 0 8px' }}>Risk</h2>
                     <RiskPanel />
+                </div>
+                <div>
+                    <h2 style={{ margin: '16px 0 8px' }}>Risk Guards</h2>
+                    <RiskGuardsPanel />
                 </div>
                 <div>
                     <h2 style={{ margin: '16px 0 8px' }}>Market</h2>

@@ -10,10 +10,10 @@ from typing import Any, Dict, List, Optional
 
 import httpx
 from pydantic import BaseModel
+from utils.logger import get_logger
 
 from config.settings import Settings
 from rest.auth import build_auth_headers
-from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -82,9 +82,7 @@ class PositionsHistoryService:
 
     def __init__(self):
         self.settings = Settings()
-        self.base_url = (
-            getattr(self.settings, "BITFINEX_AUTH_API_URL", None) or self.settings.BITFINEX_API_URL
-        )
+        self.base_url = getattr(self.settings, "BITFINEX_AUTH_API_URL", None) or self.settings.BITFINEX_API_URL
 
     async def get_positions_history(
         self, start: int | None = None, end: int | None = None, limit: int = 50
@@ -115,20 +113,14 @@ class PositionsHistoryService:
             headers = build_auth_headers(endpoint, payload)
 
             async with httpx.AsyncClient() as client:
-                logger.info(
-                    f"🌐 REST API: Hämtar positionshistorik från {self.base_url}/{endpoint}"
-                )
-                response = await client.post(
-                    f"{self.base_url}/{endpoint}", headers=headers, json=payload
-                )
+                logger.info(f"🌐 REST API: Hämtar positionshistorik från {self.base_url}/{endpoint}")
+                response = await client.post(f"{self.base_url}/{endpoint}", headers=headers, json=payload)
                 response.raise_for_status()
 
                 positions_data = response.json()
                 logger.info(f"✅ REST API: Hämtade {len(positions_data)} historiska positioner")
 
-                positions = [
-                    PositionHistory.from_bitfinex_data(position) for position in positions_data
-                ]
+                positions = [PositionHistory.from_bitfinex_data(position) for position in positions_data]
                 return positions
 
         except Exception as e:
@@ -147,20 +139,14 @@ class PositionsHistoryService:
             headers = build_auth_headers(endpoint)
 
             async with httpx.AsyncClient() as client:
-                logger.info(
-                    f"🌐 REST API: Hämtar positionsögonblicksbild från {self.base_url}/{endpoint}"
-                )
+                logger.info(f"🌐 REST API: Hämtar positionsögonblicksbild från {self.base_url}/{endpoint}")
                 response = await client.post(f"{self.base_url}/{endpoint}", headers=headers)
                 response.raise_for_status()
 
                 positions_data = response.json()
-                logger.info(
-                    f"✅ REST API: Hämtade {len(positions_data)} positioner i ögonblicksbilden"
-                )
+                logger.info(f"✅ REST API: Hämtade {len(positions_data)} positioner i ögonblicksbilden")
 
-                positions = [
-                    PositionHistory.from_bitfinex_data(position) for position in positions_data
-                ]
+                positions = [PositionHistory.from_bitfinex_data(position) for position in positions_data]
                 return positions
 
         except Exception as e:
@@ -201,20 +187,14 @@ class PositionsHistoryService:
             headers = build_auth_headers(endpoint, payload)
 
             async with httpx.AsyncClient() as client:
-                logger.info(
-                    f"🌐 REST API: Hämtar positionsrevision för {symbol} från {self.base_url}/{endpoint}"
-                )
-                response = await client.post(
-                    f"{self.base_url}/{endpoint}", headers=headers, json=payload
-                )
+                logger.info(f"🌐 REST API: Hämtar positionsrevision för {symbol} från {self.base_url}/{endpoint}")
+                response = await client.post(f"{self.base_url}/{endpoint}", headers=headers, json=payload)
                 response.raise_for_status()
 
                 positions_data = response.json()
                 logger.info(f"✅ REST API: Hämtade {len(positions_data)} positionsrevisioner")
 
-                positions = [
-                    PositionHistory.from_bitfinex_data(position) for position in positions_data
-                ]
+                positions = [PositionHistory.from_bitfinex_data(position) for position in positions_data]
                 return positions
 
         except Exception as e:
@@ -238,9 +218,7 @@ class PositionsHistoryService:
 
             async with httpx.AsyncClient() as client:
                 logger.info(f"🌐 REST API: Gör anspråk på position {position_id}")
-                response = await client.post(
-                    f"{self.base_url}/{endpoint}", headers=headers, json=payload
-                )
+                response = await client.post(f"{self.base_url}/{endpoint}", headers=headers, json=payload)
                 response.raise_for_status()
 
                 result = response.json()
@@ -269,18 +247,12 @@ class PositionsHistoryService:
             headers = build_auth_headers(endpoint, payload)
 
             async with httpx.AsyncClient() as client:
-                logger.info(
-                    f"🌐 REST API: Uppdaterar finansieringstyp för position {symbol} till {funding_type}"
-                )
-                response = await client.post(
-                    f"{self.base_url}/{endpoint}", headers=headers, json=payload
-                )
+                logger.info(f"🌐 REST API: Uppdaterar finansieringstyp för position {symbol} till {funding_type}")
+                response = await client.post(f"{self.base_url}/{endpoint}", headers=headers, json=payload)
                 response.raise_for_status()
 
                 result = response.json()
-                logger.info(
-                    f"✅ REST API: Finansieringstyp för position {symbol} uppdaterad framgångsrikt"
-                )
+                logger.info(f"✅ REST API: Finansieringstyp för position {symbol} uppdaterad framgångsrikt")
 
                 return result
 

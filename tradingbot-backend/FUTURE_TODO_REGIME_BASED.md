@@ -230,6 +230,6 @@ class PortfolioManagerService:
 
 ---
 
-**Skapad:** 2025-08-20  
-**Status:** Framtida implementation  
+**Skapad:** 2025-08-20
+**Status:** Framtida implementation
 **Prioritet:** Medium (när procent-baserad är optimerad)

@@ -12,10 +12,11 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from models.signal_models import SignalResponse
+from utils.logger import get_logger
+
 from services.bitfinex_websocket import BitfinexWebSocketService
 from services.enhanced_auto_trader import EnhancedAutoTrader
 from services.trading_integration import TradingIntegrationService
-from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -46,9 +47,7 @@ class TradingService:
         self._ws_service = ws_service
         logger.info("🔗 WebSocket service kopplad till TradingService")
 
-    async def execute_signal(
-        self, symbol: str, signal: SignalResponse, mode: str = "standard"
-    ) -> dict[str, Any]:
+    async def execute_signal(self, symbol: str, signal: SignalResponse, mode: str = "standard") -> dict[str, Any]:
         """
         Enhetlig trade-execution för alla moduler.
 
@@ -110,9 +109,7 @@ class TradingService:
                 "timestamp": datetime.now(),
             }
 
-            result = await self._enhanced_trader._execute_enhanced_trade(
-                symbol, signal, realtime_result
-            )
+            result = await self._enhanced_trader._execute_enhanced_trade(symbol, signal, realtime_result)
 
             # Uppdatera trade-historik
             self._record_trade(symbol, "enhanced", result)
@@ -221,9 +218,7 @@ class TradingService:
     def clear_history(self, symbol: str | None = None):
         """Rensa trade-historik"""
         if symbol:
-            self._trade_history = [
-                trade for trade in self._trade_history if trade["symbol"] != symbol
-            ]
+            self._trade_history = [trade for trade in self._trade_history if trade["symbol"] != symbol]
             self._last_trade_time.pop(symbol, None)
             logger.info(f"🗑️ Trade-historik rensad för {symbol}")
         else:

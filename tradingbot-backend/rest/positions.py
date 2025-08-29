@@ -5,14 +5,19 @@ Denna modul hanterar positionsinformation från Bitfinex API.
 Inkluderar funktioner för att hämta aktiva positioner och hantera positioner.
 """
 
+import asyncio
+import time
 from typing import Any, Dict, List, Optional
 
 import httpx
 from pydantic import BaseModel
+from services.metrics import record_http_result
+from utils.advanced_rate_limiter import get_advanced_rate_limiter
+from utils.logger import get_logger
+from utils.private_concurrency import get_private_rest_semaphore
 
 from config.settings import Settings
 from rest.auth import build_auth_headers
-from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -64,9 +69,10 @@ class PositionsService:
 
     def __init__(self):
         self.settings = Settings()
-        self.base_url = (
-            getattr(self.settings, "BITFINEX_AUTH_API_URL", None) or self.settings.BITFINEX_API_URL
-        )
+        self.base_url = getattr(self.settings, "BITFINEX_AUTH_API_URL", None) or self.settings.BITFINEX_API_URL
+        self.rate_limiter = get_advanced_rate_limiter()
+        # Global semafor för alla privata REST-klasser
+        self._sem = get_private_rest_semaphore()
 
     async def get_positions(self) -> list[Position]:
         """
@@ -81,13 +87,99 @@ class PositionsService:
                 logger.info("BITFINEX_API_KEY/SECRET saknas – returnerar tom positionslista")
                 return []
             endpoint = "auth/r/positions"
+
+            # Circuit breaker + rate limiter
+            try:
+                if hasattr(self.rate_limiter, "can_request") and not self.rate_limiter.can_request(endpoint):
+                    wait = float(self.rate_limiter.time_until_open(endpoint))
+                    logger.warning(f"CB: {endpoint} stängd i {wait:.1f}s")
+                    await asyncio.sleep(max(0.0, wait))
+            except Exception:
+                pass
+            try:
+                await self.rate_limiter.wait_if_needed(endpoint)
+            except Exception:
+                pass
+
             headers = build_auth_headers(endpoint)
 
             async with httpx.AsyncClient(timeout=httpx.Timeout(15.0)) as client:
                 logger.info(f"🌐 REST API: Hämtar positioner från {self.base_url}/{endpoint}")
                 try:
-                    response = await client.post(f"{self.base_url}/{endpoint}", headers=headers)
+                    _t0 = time.perf_counter()
+                    async with self._sem:
+                        response = await client.post(f"{self.base_url}/{endpoint}", headers=headers)
+                    _t1 = time.perf_counter()
+                    try:
+                        record_http_result(
+                            path=f"/{endpoint}",
+                            method="POST",
+                            status_code=int(response.status_code),
+                            duration_ms=int((_t1 - _t0) * 1000),
+                            retry_after=response.headers.get("Retry-After"),
+                        )
+                        if response.status_code in (429, 500, 502, 503, 504):
+                            ra = response.headers.get("Retry-After")
+                            logger.warning(
+                                "HTTP %s %s Retry-After=%s",
+                                response.status_code,
+                                endpoint,
+                                ra if ra is not None else "-",
+                            )
+                    except Exception:
+                        pass
+
+                    # Kontrollera nonce-fel specifikt (10114) och bumpa + engångs‑retry
+                    if response.status_code == 500:
+                        try:
+                            error_data = response.json()
+                            if (
+                                isinstance(error_data, list)
+                                and len(error_data) >= 3
+                                and "nonce" in str(error_data[2]).lower()
+                            ):
+                                logger.error(f"🚨 Nonce-fel i positions: {error_data}")
+                                try:
+                                    from utils.nonce_manager import bump_nonce
+
+                                    bump_nonce(self.settings.BITFINEX_API_KEY or "default_key")
+                                    headers = build_auth_headers(endpoint)
+                                    async with self._sem:
+                                        response = await client.post(f"{self.base_url}/{endpoint}", headers=headers)
+                                except Exception:
+                                    pass
+                        except Exception:
+                            pass
+
+                    # Hantera server busy
+                    if response.status_code in (429, 500, 502, 503, 504):
+                        try:
+                            if (
+                                "server busy" in (response.text or "").lower() or response.status_code in (429, 503)
+                            ) and hasattr(self.rate_limiter, "note_failure"):
+                                cooldown = self.rate_limiter.note_failure(
+                                    endpoint,
+                                    int(response.status_code),
+                                    response.headers.get("Retry-After"),
+                                )
+                                logger.warning(f"CB öppnad för {endpoint} i {cooldown:.1f}s")
+                            await self.rate_limiter.handle_server_busy(endpoint)
+                        except Exception:
+                            pass
+                        logger.warning(f"Bitfinex server busy för positions (status {response.status_code})")
+                        return []
+
                     response.raise_for_status()
+                    # Återställ server busy count vid framgång
+                    try:
+                        self.rate_limiter.reset_server_busy_count()
+                    except Exception:
+                        pass
+                    try:
+                        if hasattr(self.rate_limiter, "note_success"):
+                            self.rate_limiter.note_success(endpoint)
+                    except Exception:
+                        pass
                     positions_data = response.json()
                 except httpx.HTTPStatusError as e:
                     # Vid temporära serverfel – returnera tom lista istället för att krascha flöden
@@ -186,9 +278,7 @@ class PositionsService:
                             json=order_payload,
                         )
                         if response.status_code in (429, 500, 502, 503, 504):
-                            raise httpx.HTTPStatusError(
-                                "server busy", request=None, response=response
-                            )
+                            raise httpx.HTTPStatusError("server busy", request=None, response=response)
                         response.raise_for_status()
                         result = response.json()
                         break
@@ -198,9 +288,7 @@ class PositionsService:
                         import asyncio
                         import random
 
-                        delay = min(backoff_max, backoff_base * (2**attempt)) + random.uniform(
-                            0, 0.1
-                        )
+                        delay = min(backoff_max, backoff_base * (2**attempt)) + random.uniform(0, 0.1)
                         await asyncio.sleep(delay)
                         continue
                     else:

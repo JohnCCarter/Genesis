@@ -11,10 +11,10 @@ import json
 from typing import Any, Dict, List, Optional
 
 import httpx
+from utils.logger import get_logger
 
 from config.settings import Settings
 from rest.auth import build_auth_headers
-from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -22,9 +22,7 @@ logger = get_logger(__name__)
 class FundingService:
     def __init__(self) -> None:
         self.settings = Settings()
-        self.base_url = (
-            getattr(self.settings, "BITFINEX_AUTH_API_URL", None) or self.settings.BITFINEX_API_URL
-        )
+        self.base_url = getattr(self.settings, "BITFINEX_AUTH_API_URL", None) or self.settings.BITFINEX_API_URL
 
     async def transfer(
         self,

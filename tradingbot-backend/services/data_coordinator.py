@@ -46,9 +46,7 @@ class DataCoordinatorService:
     def _cleanup_expired_cache(self) -> None:
         """Rensa utgångna cache-entries."""
         now = datetime.now()
-        if (
-            now - self._last_cleanup
-        ).total_seconds() < 120:  # Rensa max var 2:e minut (tidigare 60s)
+        if (now - self._last_cleanup).total_seconds() < 120:  # Rensa max var 2:e minut (tidigare 60s)
             return
 
         expired_keys = []
@@ -66,9 +64,7 @@ class DataCoordinatorService:
         if expired_keys:
             logger.debug(f"Rensade {len(expired_keys)} utgångna cache-entries")
 
-    async def get_cached_data(
-        self, data_type: str, symbol: str, fetch_func: Any, **kwargs: Any
-    ) -> Any | None:
+    async def get_cached_data(self, data_type: str, symbol: str, fetch_func: Any, **kwargs: Any) -> Any | None:
         """
         Hämta data från cache eller via fetch_func om cache är utgången.
 
@@ -81,9 +77,7 @@ class DataCoordinatorService:
         cache_key = self._get_cache_key(data_type, symbol, **kwargs)
 
         # Använd margin TTL för margin-data
-        ttl_seconds = (
-            self._margin_cache_ttl_seconds if "margin" in data_type else self._cache_ttl_seconds
-        )
+        ttl_seconds = self._margin_cache_ttl_seconds if "margin" in data_type else self._cache_ttl_seconds
 
         # Rensa utgångna cache-entries
         self._cleanup_expired_cache()
@@ -118,9 +112,7 @@ class DataCoordinatorService:
                 logger.error(f"Fel vid hämtning av {data_type} för {symbol}: {e}")
                 return None
 
-    async def get_candles(
-        self, symbol: str, timeframe: str = "1m", limit: int = 100
-    ) -> list[list] | None:
+    async def get_candles(self, symbol: str, timeframe: str = "1m", limit: int = 100) -> list[list] | None:
         """Hämta candles med caching."""
         from services.bitfinex_data import BitfinexDataService
 
@@ -129,9 +121,7 @@ class DataCoordinatorService:
         async def fetch_candles(sym: str, **kwargs: Any):
             return await data_service.get_candles(sym, timeframe, limit)
 
-        return await self.get_cached_data(
-            "candles", symbol, fetch_candles, timeframe=timeframe, limit=limit
-        )
+        return await self.get_cached_data("candles", symbol, fetch_candles, timeframe=timeframe, limit=limit)
 
     async def get_ticker(self, symbol: str) -> dict | None:
         """Hämta ticker med caching."""
@@ -166,9 +156,7 @@ class DataCoordinatorService:
         # Använd intern TTL-styrning (margin TTL aktiveras automatiskt via data_type)
         return await self.get_cached_data("margin_symbol", symbol, fetch_margin_symbol)
 
-    async def batch_get_candles(
-        self, symbols: list[str], timeframe: str = "15m", limit: int = 100
-    ) -> dict[str, list]:
+    async def batch_get_candles(self, symbols: list[str], timeframe: str = "15m", limit: int = 100) -> dict[str, list]:
         """
         Hämtar candles för flera symboler parallellt.
 

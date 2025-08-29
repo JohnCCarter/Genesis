@@ -73,5 +73,3 @@ export function StatusCard({ status, caps, modes, strategyAuto }: { status: any;
         </div>
     );
 }
-
-

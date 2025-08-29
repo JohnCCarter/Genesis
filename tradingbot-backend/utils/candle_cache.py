@@ -45,10 +45,7 @@ class CandleCache:
                     print(f"ℹ️ Migration noter: {e}")
 
             # Skapa index
-            conn.execute(
-                "CREATE INDEX IF NOT EXISTS ix_candles_symbol_tf_mts "
-                "ON candles(symbol, timeframe, mts)"
-            )
+            conn.execute("CREATE INDEX IF NOT EXISTS ix_candles_symbol_tf_mts " "ON candles(symbol, timeframe, mts)")
             conn.execute("CREATE INDEX IF NOT EXISTS ix_candles_cached_at " "ON candles(cached_at)")
             conn.commit()
 
@@ -89,9 +86,7 @@ class CandleCache:
             conn.commit()
         return count
 
-    def load(
-        self, symbol: str, timeframe: str, limit: int = 100, max_age_minutes: int = 15
-    ) -> list[list]:
+    def load(self, symbol: str, timeframe: str, limit: int = 100, max_age_minutes: int = 15) -> list[list]:
         """
         Läs senaste N candles från cache.
         Returnerar Bitfinex-format, nyast -> äldst, som i API.
@@ -148,9 +143,7 @@ class CandleCache:
         with closing(sqlite3.connect(self.db_path)) as conn:
             cur = conn.cursor()
             if timeframe:
-                cur.execute(
-                    "DELETE FROM candles WHERE symbol = ? AND timeframe = ?", (symbol, timeframe)
-                )
+                cur.execute("DELETE FROM candles WHERE symbol = ? AND timeframe = ?", (symbol, timeframe))
             else:
                 cur.execute("DELETE FROM candles WHERE symbol = ?", (symbol,))
             deleted_count = cur.rowcount

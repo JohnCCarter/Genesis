@@ -17,9 +17,7 @@ from services.prob_features import build_dataset
 
 
 def _to_Xy(samples: list[dict[str, Any]]):
-    feats = [
-        [s.get("ema_diff", 0.0), s.get("rsi_norm", 0.0), s.get("atr_pct", 0.0)] for s in samples
-    ]
+    feats = [[s.get("ema_diff", 0.0), s.get("rsi_norm", 0.0), s.get("atr_pct", 0.0)] for s in samples]
     labels = [s.get("label", "hold") for s in samples]
     # Binary one-vs-rest for buy vs not-buy and sell vs not-sell in simple baseline
     X = np.asarray(feats, dtype=float)
@@ -63,9 +61,7 @@ def _fit_platt(z_val: np.ndarray, y_val: np.ndarray, iters: int = 300, lr: float
     return float(a), float(b)
 
 
-def train_and_export(
-    candles: list[list[float]], horizon: int, tp: float, sl: float, out_path: str
-) -> dict[str, Any]:
+def train_and_export(candles: list[list[float]], horizon: int, tp: float, sl: float, out_path: str) -> dict[str, Any]:
     samples = build_dataset(candles, horizon=horizon, tp=tp, sl=sl)
     if not samples:
         raise ValueError("No samples built; increase history.")

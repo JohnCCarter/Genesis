@@ -24,7 +24,7 @@ class Settings(_BaseSettings):
     PORT: int = 8000
     DEBUG: bool = True
     # Kräv JWT för REST/WS. Sätt False i dev för att tillfälligt stänga av
-    AUTH_REQUIRED: bool = True
+    AUTH_REQUIRED: bool = False
 
     # CORS
     ALLOWED_ORIGINS: str = '["http://localhost:3000", "http://localhost:8080", "http://localhost:5173", "http://localhost:5174", "http://127.0.0.1:5173", "http://127.0.0.1:5174"]'
@@ -124,15 +124,19 @@ class Settings(_BaseSettings):
     BITFINEX_RATE_LIMIT_WINDOW_SECONDS: int = 60
     BITFINEX_RATE_LIMIT_ENABLED: bool = True
     BITFINEX_SERVER_BUSY_BACKOFF_MIN_SECONDS: float = 15.0  # Ökad från 10.0 (respektera 60s block)
-    BITFINEX_SERVER_BUSY_BACKOFF_MAX_SECONDS: float = (
-        60.0  # Ökad från 30.0 (full respekt för block)
-    )
+    BITFINEX_SERVER_BUSY_BACKOFF_MAX_SECONDS: float = 60.0  # Ökad från 30.0 (full respekt för block)
+
+    # Concurrency caps
+    PUBLIC_REST_CONCURRENCY: int = 4
+    PRIVATE_REST_CONCURRENCY: int = 2
 
     # WS ticker prioritet: anse WS-data färsk i X sekunder innan REST-fallback
     WS_TICKER_STALE_SECS: int = 10
     # Vänta kort på första WS‑tick efter auto‑subscribe innan
     # REST‑fallback (ms)
     WS_TICKER_WARMUP_MS: int = 400
+    # WS candles timeframes (komma-separerad lista)
+    WS_CANDLE_TIMEFRAMES: str = "1m,5m"
 
     # REST ticker cache TTL för att undvika överpollning
     TICKER_CACHE_TTL_SECS: int = 30  # Ökad från 10 (minska API-anrop)
@@ -141,12 +145,21 @@ class Settings(_BaseSettings):
     CANDLE_CACHE_RETENTION_DAYS: int = 7
     CANDLE_CACHE_MAX_ROWS_PER_PAIR: int = 10000
 
+    # Backfill pacing
+    BACKFILL_BATCH_SLEEP_MS: int = 300
+
     # Metrics security
     METRICS_ACCESS_TOKEN: str | None = None
     METRICS_BASIC_AUTH_USER: str | None = None
     METRICS_BASIC_AUTH_PASS: str | None = None
     # Kommaseparerad lista över tillåtna IP:n (ex: "127.0.0.1,10.0.0.5")
     METRICS_IP_ALLOWLIST: str | None = None
+
+    # Acceptance thresholds (målvärden för stabil drift)
+    ACCEPT_CANDLES_P95_MS_MAX: int = 500
+    ACCEPT_CANDLES_P99_MS_MAX: int = 1200
+    ACCEPT_MAX_429_PER_HOUR: int = 1
+    ACCEPT_MAX_503_PER_HOUR: int = 1
 
     # Probability Model (feature flags)
     PROB_MODEL_ENABLED: bool = False

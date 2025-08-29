@@ -22,12 +22,13 @@ try:
 except Exception:  # pragma: no cover
     ZoneInfo = None  # Fallback; använder naive tider
 
-from config.settings import Settings
 from rest.order_history import OrderHistoryService, TradeItem
 from rest.positions import PositionsService
 from rest.wallet import WalletService
-from services.bitfinex_data import BitfinexDataService
 from utils.logger import get_logger
+
+from config.settings import Settings
+from services.bitfinex_data import BitfinexDataService
 
 logger = get_logger(__name__)
 
@@ -166,13 +167,9 @@ class PerformanceService:
         """
         # Hämta trades – var robust mot tillfälliga Bitfinex-fel (t.ex. 5xx)
         try:
-            trades: list[TradeItem] = await self.order_history_service.get_trades_history(
-                symbol=None, limit=limit
-            )
+            trades: list[TradeItem] = await self.order_history_service.get_trades_history(symbol=None, limit=limit)
         except Exception as e:
-            logger.warning(
-                f"Kunde inte hämta trades för realized PnL (fortsätter med tom lista): {e}"
-            )
+            logger.warning(f"Kunde inte hämta trades för realized PnL (fortsätter med tom lista): {e}")
             trades = []
         # Sortera i tidsordning
         trades.sort(key=lambda t: t.executed_at)
@@ -187,9 +184,7 @@ class PerformanceService:
 
             # Summera fees
             try:
-                fees_by_currency[t.fee_currency] = fees_by_currency.get(
-                    t.fee_currency, 0.0
-                ) + float(t.fee)
+                fees_by_currency[t.fee_currency] = fees_by_currency.get(t.fee_currency, 0.0) + float(t.fee)
                 pos.fees += float(t.fee)
             except Exception:
                 pass
@@ -204,9 +199,7 @@ class PerformanceService:
             if (pos.net_amount > 0 and amount > 0) or (pos.net_amount < 0 and amount < 0):
                 total_qty = abs(pos.net_amount) + abs(amount)
                 if total_qty > 0:
-                    pos.avg_price = (
-                        (abs(pos.net_amount) * pos.avg_price) + (abs(amount) * price)
-                    ) / total_qty
+                    pos.avg_price = ((abs(pos.net_amount) * pos.avg_price) + (abs(amount) * price)) / total_qty
                 pos.net_amount += amount
                 continue
 
@@ -402,15 +395,9 @@ class PerformanceService:
                     "date": today,
                     **equity,
                     "realized_usd": round(realized_usd, 8),
-                    "day_change_usd": (
-                        round((equity["total_usd"] - prev_total), 8)
-                        if prev_total is not None
-                        else 0.0
-                    ),
+                    "day_change_usd": (round((equity["total_usd"] - prev_total), 8) if prev_total is not None else 0.0),
                     "realized_day_change_usd": (
-                        round((realized_usd - prev_realized_usd), 8)
-                        if prev_realized_usd is not None
-                        else 0.0
+                        round((realized_usd - prev_realized_usd), 8) if prev_realized_usd is not None else 0.0
                     ),
                 }
             )
@@ -421,9 +408,7 @@ class PerformanceService:
 
         # Beräkna dagliga diffar för retur-snapshot (även om historik var tom)
         day_change = 0.0 if prev_total is None else round(equity["total_usd"] - prev_total, 8)
-        realized_day_change = (
-            0.0 if prev_realized_usd is None else round(realized_usd - prev_realized_usd, 8)
-        )
+        realized_day_change = 0.0 if prev_realized_usd is None else round(realized_usd - prev_realized_usd, 8)
 
         return {
             "snapshot": {

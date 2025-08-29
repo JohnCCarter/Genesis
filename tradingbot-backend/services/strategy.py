@@ -74,9 +74,7 @@ def evaluate_weighted_strategy(data: dict[str, str]) -> dict[str, Any]:
     # ATR är riktningsneutral i weighted bedömning
     atr_score = 0
 
-    weighted_score = (
-        weights["ema"] * ema_score + weights["rsi"] * rsi_score + weights["atr"] * atr_score
-    )
+    weighted_score = weights["ema"] * ema_score + weights["rsi"] * rsi_score + weights["atr"] * atr_score
 
     if weighted_score > 0:
         final_signal = "buy"
@@ -134,20 +132,42 @@ def evaluate_strategy(data: dict[str, list[float]]) -> dict[str, Any]:
             "reason": "Ingen prisdata",
         }
 
-    # Beräkna indikatorer med per-symbol perioder
+    # Beräkna indikatorer med per-symbol perioder, men använd snapshots om tillgängliga
+    ema = None
+    rsi = None
+    atr = None
     try:
+        ema_snap = data.get("ema_snapshot") if isinstance(data, dict) else None
+        rsi_snap = data.get("rsi_snapshot") if isinstance(data, dict) else None
+        atr_snap = data.get("atr_snapshot") if isinstance(data, dict) else None
+
         from services.strategy_settings import StrategySettingsService
 
         sym = data.get("symbol") if isinstance(data, dict) else None
         ssvc = StrategySettingsService()
         s = ssvc.get_settings(symbol=sym)
-        ema = calculate_ema(prices, period=s.ema_period)
-        rsi = calculate_rsi(prices, period=s.rsi_period)
-        atr = calculate_atr(highs, lows, prices, period=s.atr_period)
+
+        if isinstance(ema_snap, (int, float)):
+            ema = float(ema_snap)
+        else:
+            ema = calculate_ema(prices, period=s.ema_period)
+
+        if isinstance(rsi_snap, (int, float)):
+            rsi = float(rsi_snap)
+        else:
+            rsi = calculate_rsi(prices, period=s.rsi_period)
+
+        if isinstance(atr_snap, (int, float)):
+            atr = float(atr_snap)
+        else:
+            atr = calculate_atr(highs, lows, prices, period=s.atr_period)
     except Exception:
-        ema = calculate_ema(prices)
-        rsi = calculate_rsi(prices)
-        atr = calculate_atr(highs, lows, prices)
+        if ema is None:
+            ema = calculate_ema(prices)
+        if rsi is None:
+            rsi = calculate_rsi(prices)
+        if atr is None:
+            atr = calculate_atr(highs, lows, prices)
 
     signal = "WAIT"
     reason = "Standardvärde"
@@ -177,9 +197,7 @@ def evaluate_strategy(data: dict[str, list[float]]) -> dict[str, Any]:
 
                 # Skala features: positivt när buy‑vänligt, negativt åt sell
                 f_ema = 1.0 if current_price > ema else (-1.0 if current_price < ema else 0.0)
-                f_rsi = (
-                    30.0 - min(max(rsi, 0.0), 100.0)
-                ) / 30.0  # <30 → positiv, >70 → negativ (klipps av modellen)
+                f_rsi = (30.0 - min(max(rsi, 0.0), 100.0)) / 30.0  # <30 → positiv, >70 → negativ (klipps av modellen)
                 probs = prob_model.predict_proba({"ema": f_ema, "rsi": f_rsi})
                 top = max(probs.items(), key=lambda kv: kv[1])[0]
                 weighted = {
@@ -188,9 +206,7 @@ def evaluate_strategy(data: dict[str, list[float]]) -> dict[str, Any]:
                 }
             except Exception:
                 # Heuristisk fallback om modell ej finns
-                ema_sig = (
-                    "buy" if current_price > ema else ("sell" if current_price < ema else "neutral")
-                )
+                ema_sig = "buy" if current_price > ema else ("sell" if current_price < ema else "neutral")
                 rsi_sig = "buy" if rsi < 30 else ("sell" if rsi > 70 else "neutral")
                 atr_vol = "high" if (atr / current_price) > 0.02 else "low"
                 # Auto-regime / auto-weights (preset) om aktiverat
@@ -199,9 +215,7 @@ def evaluate_strategy(data: dict[str, list[float]]) -> dict[str, Any]:
                     from strategy.weights import PRESETS, clamp_simplex
 
                     # Läs auto-flaggor/trösklar från strategy_settings.json (baseline)
-                    base = ssvc.get_settings(
-                        symbol=(data.get("symbol") if isinstance(data, dict) else None)
-                    )
+                    base = ssvc.get_settings(symbol=(data.get("symbol") if isinstance(data, dict) else None))
                     # Default thresholds
                     cfg = {
                         "ADX_PERIOD": 14,
@@ -246,16 +260,12 @@ def evaluate_strategy(data: dict[str, list[float]]) -> dict[str, Any]:
                     w_map = None
 
                 # Använd evaluate_weighted_strategy (har settings-hook). Om vi har w_map, räkna om lätt för UI‑prob.
-                weighted = evaluate_weighted_strategy(
-                    {"ema": ema_sig, "rsi": rsi_sig, "atr": atr_vol}
-                )
+                weighted = evaluate_weighted_strategy({"ema": ema_sig, "rsi": rsi_sig, "atr": atr_vol})
                 try:
                     if w_map:
                         ema_term = 1 if ema_sig == "buy" else (-1 if ema_sig == "sell" else 0)
                         rsi_term = 1 if rsi_sig == "buy" else (-1 if rsi_sig == "sell" else 0)
-                        score = float(w_map["ema"]) * float(ema_term) + float(w_map["rsi"]) * float(
-                            rsi_term
-                        )
+                        score = float(w_map["ema"]) * float(ema_term) + float(w_map["rsi"]) * float(rsi_term)
                         final = "buy" if score > 0 else ("sell" if score < 0 else "hold")
                         conf = float(abs(score))
                         ph = max(0.0, 1.0 - conf)
@@ -311,9 +321,10 @@ def update_settings_from_regime(symbol: str | None = None) -> dict[str, float]:
     """
     try:
         from indicators.regime import detect_regime
+        from strategy.weights import PRESETS, clamp_simplex
+
         from services.bitfinex_data import BitfinexDataService
         from services.strategy_settings import StrategySettingsService
-        from strategy.weights import PRESETS, clamp_simplex
 
         # Läs aktuella settings och auto-flaggor
         settings_service = StrategySettingsService()
@@ -359,9 +370,7 @@ def update_settings_from_regime(symbol: str | None = None) -> dict[str, float]:
                 import concurrent.futures
 
                 with concurrent.futures.ThreadPoolExecutor() as executor:
-                    future = executor.submit(
-                        asyncio.run, data_service.get_candles(symbol, "1m", limit=50)
-                    )
+                    future = executor.submit(asyncio.run, data_service.get_candles(symbol, "1m", limit=50))
                     candles = future.result()
             else:
                 candles = loop.run_until_complete(data_service.get_candles(symbol, "1m", limit=50))
@@ -413,9 +422,7 @@ def update_settings_from_regime(symbol: str | None = None) -> dict[str, float]:
         }
 
         logger.info(f"Nya vikter: {new_weights}")
-        logger.info(
-            f"Preset w_ema: {preset.get('w_ema')}, w_rsi: {preset.get('w_rsi')}, w_atr: {preset.get('w_atr')}"
-        )
+        logger.info(f"Preset w_ema: {preset.get('w_ema')}, w_rsi: {preset.get('w_rsi')}, w_atr: {preset.get('w_atr')}")
 
         # Uppdatera settings
         from services.strategy_settings import StrategySettings
@@ -485,9 +492,10 @@ def update_settings_from_regime_batch(symbols: list[str]) -> dict[str, dict[str,
         import asyncio
 
         from indicators.regime import detect_regime
+        from strategy.weights import PRESETS, clamp_simplex
+
         from services.bitfinex_data import BitfinexDataService
         from services.strategy_settings import StrategySettingsService
-        from strategy.weights import PRESETS, clamp_simplex
 
         # Läs aktuella settings och auto-flaggor
         settings_service = StrategySettingsService()

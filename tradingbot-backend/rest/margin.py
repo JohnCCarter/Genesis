@@ -9,10 +9,11 @@ from typing import Any, Dict, List, Optional
 
 import httpx
 from pydantic import BaseModel
+from utils.bitfinex_rate_limiter import get_bitfinex_rate_limiter
+from utils.logger import get_logger
 
 from config.settings import Settings
 from rest.auth import build_auth_headers
-from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -74,9 +75,8 @@ class MarginService:
 
     def __init__(self):
         self.settings = Settings()
-        self.base_url = (
-            getattr(self.settings, "BITFINEX_AUTH_API_URL", None) or self.settings.BITFINEX_API_URL
-        )
+        self.base_url = getattr(self.settings, "BITFINEX_AUTH_API_URL", None) or self.settings.BITFINEX_API_URL
+        self.rate_limiter = get_bitfinex_rate_limiter()
         # OPTIMERING: In-memory cache för margin-status per symbol
         self._margin_status_cache = {}
         self._margin_status_cache_ttl = 60  # 1 minut TTL
@@ -135,9 +135,7 @@ class MarginService:
 
             async with httpx.AsyncClient() as client:
                 try:
-                    logger.info(
-                        f"🌐 REST API: Försöker hämta margin-info från {self.base_url}/{endpoint}"
-                    )
+                    logger.info(f"🌐 REST API: Försöker hämta margin-info från {self.base_url}/{endpoint}")
                     response = await client.post(
                         f"{self.base_url}/{endpoint}",
                         headers=headers,
@@ -163,9 +161,7 @@ class MarginService:
                             v1_endpoint = "margin_infos"
                             v1_base_url = "https://api.bitfinex.com/v1"
                             v1_headers = build_auth_headers(v1_endpoint, v1=True)
-                            v1_response = await client.post(
-                                f"{v1_base_url}/{v1_endpoint}", headers=v1_headers
-                            )
+                            v1_response = await client.post(f"{v1_base_url}/{v1_endpoint}", headers=v1_headers)
                             v1_response.raise_for_status()
                             v1_data = v1_response.json()
                             margin_data = self._convert_v1_to_v2_format(v1_data)
@@ -237,9 +233,7 @@ class MarginService:
             body_json = "{}"
             headers = build_auth_headers(endpoint, payload_str=body_json)
             async with httpx.AsyncClient() as client:
-                logger.info(
-                    f"🌐 REST API: Hämta margin-info (symbol) från {self.base_url}/{endpoint}"
-                )
+                logger.info(f"🌐 REST API: Hämta margin-info (symbol) från {self.base_url}/{endpoint}")
                 resp = await client.post(
                     f"{self.base_url}/{endpoint}",
                     headers=headers,
@@ -313,9 +307,7 @@ class MarginService:
             "margin_usage_percent": margin_usage,
             "margin_level": margin_level,
             "leverage": await self.get_leverage(),
-            "status": (
-                "healthy" if margin_level >= 2.0 else "warning" if margin_level >= 1.5 else "danger"
-            ),
+            "status": ("healthy" if margin_level >= 2.0 else "warning" if margin_level >= 1.5 else "danger"),
         }
 
     async def get_symbol_margin_status(self, symbol: str) -> dict[str, Any]:
@@ -453,9 +445,7 @@ class MarginService:
             # 3. REST fallback för symboler som inte fick WS-data
             rest_symbols = [(s, eff) for s, eff in symbols_to_fetch if s not in ws_results]
             if rest_symbols:
-                logger.info(
-                    f"🔄 Batch-hämtar margin-status för {len(rest_symbols)} symboler via REST"
-                )
+                logger.info(f"🔄 Batch-hämtar margin-status för {len(rest_symbols)} symboler via REST")
 
                 # Batch-hämta margin limits
                 try:

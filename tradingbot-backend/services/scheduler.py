@@ -15,9 +15,10 @@ import re
 from datetime import UTC, datetime, timedelta, timezone
 from typing import List, Optional
 
-from config.settings import Settings
 from utils.candle_cache import candle_cache
 from utils.logger import get_logger
+
+from config.settings import Settings
 
 logger = get_logger(__name__)
 
@@ -102,9 +103,7 @@ class SchedulerService:
                 now = datetime.now(UTC)
                 if now >= next_run_at:
                     await self._safe_run_equity_snapshot(reason="interval")
-                    next_run_at = now.replace(microsecond=0) + timedelta(
-                        seconds=self.snapshot_interval_seconds
-                    )
+                    next_run_at = now.replace(microsecond=0) + timedelta(seconds=self.snapshot_interval_seconds)
                 # Kör cache-retention högst en gång per 12 timmar (minska frekvensen)
                 await self._maybe_enforce_cache_retention(now)
                 # Kör probabilistisk validering enligt intervall
@@ -257,13 +256,13 @@ class SchedulerService:
                     logger.debug(f"prob validation misslyckades för {sym}: {ie}")
             # aggregat (medel över symboler)
             if agg_brier_vals:
-                metrics_store.setdefault("prob_validation", {})["brier"] = sum(
-                    agg_brier_vals
-                ) / max(1, len(agg_brier_vals))
+                metrics_store.setdefault("prob_validation", {})["brier"] = sum(agg_brier_vals) / max(
+                    1, len(agg_brier_vals)
+                )
             if agg_logloss_vals:
-                metrics_store.setdefault("prob_validation", {})["logloss"] = sum(
-                    agg_logloss_vals
-                ) / max(1, len(agg_logloss_vals))
+                metrics_store.setdefault("prob_validation", {})["logloss"] = sum(agg_logloss_vals) / max(
+                    1, len(agg_logloss_vals)
+                )
             # rolling windows
             try:
                 windows_raw = getattr(s, "PROB_VALIDATE_WINDOWS_MINUTES", None) or ""
@@ -367,9 +366,7 @@ class SchedulerService:
             # försök reload om PROB_MODEL_FILE pekar på en fil vi just skrev
             try:
                 if prob_model.reload():
-                    metrics_store.setdefault("prob_retrain", {})["last_success"] = int(
-                        now.timestamp()
-                    )
+                    metrics_store.setdefault("prob_retrain", {})["last_success"] = int(now.timestamp())
             except Exception:
                 pass
             self._last_prob_retrain_at = now
@@ -400,9 +397,7 @@ class SchedulerService:
                 import json
                 import os
 
-                cfg_path = os.path.join(
-                    os.path.dirname(os.path.dirname(__file__)), "config", "strategy_settings.json"
-                )
+                cfg_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config", "strategy_settings.json")
                 with open(cfg_path, encoding="utf-8") as f:
                     data = json.load(f)
                 auto_regime = bool(data.get("AUTO_REGIME_ENABLED", True))

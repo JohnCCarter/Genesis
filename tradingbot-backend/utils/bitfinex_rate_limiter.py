@@ -76,14 +76,10 @@ class BitfinexRateLimiter:
 
             # Öka backoff om vi får flera server busy i rad
             if now - self._last_server_busy_time < 60:  # Inom 1 minut
-                self._adaptive_backoff_multiplier = min(
-                    4.0, self._adaptive_backoff_multiplier * 1.5
-                )
+                self._adaptive_backoff_multiplier = min(4.0, self._adaptive_backoff_multiplier * 1.5)
             else:
                 # Återställ om det varit länge sedan
-                self._adaptive_backoff_multiplier = max(
-                    1.0, self._adaptive_backoff_multiplier * 0.8
-                )
+                self._adaptive_backoff_multiplier = max(1.0, self._adaptive_backoff_multiplier * 0.8)
 
             self._last_server_busy_time = now
 
