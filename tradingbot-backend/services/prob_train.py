@@ -62,6 +62,19 @@ def _fit_platt(z_val: np.ndarray, y_val: np.ndarray, iters: int = 300, lr: float
 
 
 def train_and_export(candles: list[list[float]], horizon: int, tp: float, sl: float, out_path: str) -> dict[str, Any]:
+    # Security: Validate out_path to prevent path traversal
+    import os
+
+    # Ensure out_path is safe (no directory traversal)
+    safe_path = os.path.normpath(out_path)
+    if os.path.isabs(safe_path) or ".." in safe_path.split(os.sep):
+        raise ValueError(f"Invalid out_path: {out_path}")
+
+    # Ensure the directory exists and is within expected bounds
+    out_dir = os.path.dirname(safe_path)
+    if out_dir and not os.path.exists(out_dir):
+        os.makedirs(out_dir, exist_ok=True)
+
     samples = build_dataset(candles, horizon=horizon, tp=tp, sl=sl)
     if not samples:
         raise ValueError("No samples built; increase history.")
@@ -81,6 +94,6 @@ def train_and_export(candles: list[list[float]], horizon: int, tp: float, sl: fl
         # heuristic combiner for hold: normalize at inference
         "version": 1,
     }
-    with open(out_path, "w", encoding="utf-8") as f:
+    with open(safe_path, "w", encoding="utf-8") as f:
         json.dump(model, f)
     return model
