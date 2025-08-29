@@ -13,7 +13,7 @@ import { Toggles } from '../components/Toggles';
 import { ValidationPanel } from '../components/ValidationPanel';
 import { WalletsPanel } from '../components/WalletsPanel';
 import { PerformancePanel } from '../components/PerformancePanel';
-import { ensureToken, get, getApiBase } from '../lib/api';
+import { ensureToken, get, getApiBase } from '@lib/api';
 
 export default function DashboardPage() {
     const [status, setStatus] = React.useState<any>(null);

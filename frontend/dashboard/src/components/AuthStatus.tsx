@@ -1,5 +1,5 @@
 import React from 'react';
-import { ensureToken } from '../lib/api';
+import { ensureToken } from '@lib/api';
 
 type Status = {
   state: 'none' | 'valid' | 'expired' | 'soon';

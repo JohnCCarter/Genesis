@@ -1,5 +1,5 @@
 import React from 'react';
-import { get, post, ensureToken } from '../lib/api';
+import { get, post, ensureToken } from '@lib/api';
 
 type OrderRow = any;
 

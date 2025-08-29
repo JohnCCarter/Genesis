@@ -24,7 +24,7 @@ Write-Host '=== Pytest ==='
 python -m pytest -q
 
 Write-Host '=== Bandit (exclude tests via bandit.yaml) ==='
-python -m bandit -c bandit.yaml -r services rest utils models indicators -q
+python -m bandit -c bandit.yaml -r services rest utils models indicators -q -f json
 
 Write-Host '=== Pylint (report only) ==='
 python -m pylint services rest utils models indicators --exit-zero -j 0

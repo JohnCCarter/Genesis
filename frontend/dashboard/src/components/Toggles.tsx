@@ -1,5 +1,5 @@
 import React from 'react';
-import { post } from '../lib/api';
+import { post } from '@lib/api';
 
 type Modes = {
     dry_run_enabled?: boolean;
@@ -22,7 +22,7 @@ export function Toggles({ modes, onChanged }: { modes?: Modes | null; onChanged:
         } finally {
             setBusyKey(null);
             // Kör refresh utan att blockera nästa klick
-            try { void onChanged?.(path, enabled); } catch {}
+            try { void onChanged?.(path, enabled); } catch { }
         }
     }
 
@@ -37,38 +37,38 @@ export function Toggles({ modes, onChanged }: { modes?: Modes | null; onChanged:
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: 8, marginBottom: 16 }}>
             <div>
                 <div style={{ marginBottom: 4 }}>WS Strategy {chip(!!modes?.ws_strategy_enabled)}</div>
-            <button disabled={busyKey === '/api/v2/mode/ws-strategy:1'} onClick={() => call('/api/v2/mode/ws-strategy', true)}>WS Strategy On</button>
-            <button disabled={busyKey === '/api/v2/mode/ws-strategy:0'} onClick={() => call('/api/v2/mode/ws-strategy', false)}>WS Strategy Off</button>
+                <button disabled={busyKey === '/api/v2/mode/ws-strategy:1'} onClick={() => call('/api/v2/mode/ws-strategy', true)}>WS Strategy On</button>
+                <button disabled={busyKey === '/api/v2/mode/ws-strategy:0'} onClick={() => call('/api/v2/mode/ws-strategy', false)}>WS Strategy Off</button>
             </div>
             <div>
                 <div style={{ marginBottom: 4 }}>Validation Warmup {chip(!!modes?.validation_on_start)}</div>
-            <button disabled={busyKey === '/api/v2/mode/validation-warmup:1'} onClick={() => call('/api/v2/mode/validation-warmup', true)}>Validation On</button>
-            <button disabled={busyKey === '/api/v2/mode/validation-warmup:0'} onClick={() => call('/api/v2/mode/validation-warmup', false)}>Validation Off</button>
+                <button disabled={busyKey === '/api/v2/mode/validation-warmup:1'} onClick={() => call('/api/v2/mode/validation-warmup', true)}>Validation On</button>
+                <button disabled={busyKey === '/api/v2/mode/validation-warmup:0'} onClick={() => call('/api/v2/mode/validation-warmup', false)}>Validation Off</button>
             </div>
             <div>
                 <div style={{ marginBottom: 4 }}>Dry Run {chip(!!modes?.dry_run_enabled)}</div>
-            <button disabled={busyKey === '/api/v2/mode/dry-run:1'} onClick={() => call('/api/v2/mode/dry-run', true)}>Dry Run On</button>
-            <button disabled={busyKey === '/api/v2/mode/dry-run:0'} onClick={() => call('/api/v2/mode/dry-run', false)}>Dry Run Off</button>
+                <button disabled={busyKey === '/api/v2/mode/dry-run:1'} onClick={() => call('/api/v2/mode/dry-run', true)}>Dry Run On</button>
+                <button disabled={busyKey === '/api/v2/mode/dry-run:0'} onClick={() => call('/api/v2/mode/dry-run', false)}>Dry Run Off</button>
             </div>
             <div>
                 <div style={{ marginBottom: 4 }}>Trading Paused {chip(!!modes?.trading_paused)}</div>
-            <button disabled={busyKey === '/api/v2/mode/trading-paused:1'} onClick={() => call('/api/v2/mode/trading-paused', true)}>Pause Trading</button>
-            <button disabled={busyKey === '/api/v2/mode/trading-paused:0'} onClick={() => call('/api/v2/mode/trading-paused', false)}>Resume Trading</button>
+                <button disabled={busyKey === '/api/v2/mode/trading-paused:1'} onClick={() => call('/api/v2/mode/trading-paused', true)}>Pause Trading</button>
+                <button disabled={busyKey === '/api/v2/mode/trading-paused:0'} onClick={() => call('/api/v2/mode/trading-paused', false)}>Resume Trading</button>
             </div>
             <div>
                 <div style={{ marginBottom: 4 }}>Prob Model {chip(!!modes?.prob_model_enabled)}</div>
-            <button disabled={busyKey === '/api/v2/mode/prob-model:1'} onClick={() => call('/api/v2/mode/prob-model', true)}>Prob Model On</button>
-            <button disabled={busyKey === '/api/v2/mode/prob-model:0'} onClick={() => call('/api/v2/mode/prob-model', false)}>Prob Model Off</button>
+                <button disabled={busyKey === '/api/v2/mode/prob-model:1'} onClick={() => call('/api/v2/mode/prob-model', true)}>Prob Model On</button>
+                <button disabled={busyKey === '/api/v2/mode/prob-model:0'} onClick={() => call('/api/v2/mode/prob-model', false)}>Prob Model Off</button>
             </div>
             <div>
                 <div style={{ marginBottom: 4 }}>Autotrade {chip(!!modes?.autotrade_enabled)}</div>
-            <button disabled={busyKey === '/api/v2/mode/autotrade:1'} onClick={() => call('/api/v2/mode/autotrade', true)}>Autotrade On</button>
-            <button disabled={busyKey === '/api/v2/mode/autotrade:0'} onClick={() => call('/api/v2/mode/autotrade', false)}>Autotrade Off</button>
+                <button disabled={busyKey === '/api/v2/mode/autotrade:1'} onClick={() => call('/api/v2/mode/autotrade', true)}>Autotrade On</button>
+                <button disabled={busyKey === '/api/v2/mode/autotrade:0'} onClick={() => call('/api/v2/mode/autotrade', false)}>Autotrade Off</button>
             </div>
             <div>
                 <div style={{ marginBottom: 4 }}>Scheduler {chip(!!modes?.scheduler_running)}</div>
-            <button disabled={busyKey === '/api/v2/mode/scheduler:1'} onClick={() => call('/api/v2/mode/scheduler', true)}>Start Scheduler</button>
-            <button disabled={busyKey === '/api/v2/mode/scheduler:0'} onClick={() => call('/api/v2/mode/scheduler', false)}>Stop Scheduler</button>
+                <button disabled={busyKey === '/api/v2/mode/scheduler:1'} onClick={() => call('/api/v2/mode/scheduler', true)}>Start Scheduler</button>
+                <button disabled={busyKey === '/api/v2/mode/scheduler:0'} onClick={() => call('/api/v2/mode/scheduler', false)}>Stop Scheduler</button>
             </div>
         </div>
     );

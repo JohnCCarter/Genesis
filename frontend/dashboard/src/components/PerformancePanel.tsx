@@ -1,5 +1,5 @@
 import React from 'react';
-import { get } from '../lib/api';
+import { get } from '@lib/api';
 
 interface PerformanceStats {
     system: {
@@ -159,7 +159,7 @@ export function PerformancePanel() {
                             <div style={{ marginTop: 8, fontSize: '0.9em' }}>
                                 <div style={{ fontWeight: 'bold', marginBottom: 4 }}>Task-typer:</div>
                                 {Object.entries(stats.process.task_types)
-                                    .sort(([,a], [,b]) => b - a)
+                                    .sort(([, a], [, b]) => b - a)
                                     .slice(0, 5)
                                     .map(([type, count]) => (
                                         <div key={type} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8em' }}>

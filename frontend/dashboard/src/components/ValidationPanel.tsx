@@ -1,5 +1,5 @@
 import React from 'react';
-import { post } from '../lib/api';
+import { post } from '@lib/api';
 import { Sparkline } from './Sparkline';
 import { JsonTree } from './JsonTree';
 

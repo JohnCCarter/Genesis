@@ -13,8 +13,8 @@ import { Toggles } from '../components/Toggles';
 import { ValidationPanel } from '../components/ValidationPanel';
 import { WalletsPanel } from '../components/WalletsPanel';
 import { PerformancePanel } from '../components/PerformancePanel';
-import { ensureToken, get, getApiBase } from '../lib/api';
-import { useThrottledValue } from '../lib/useThrottledValue';
+import { ensureToken, get, getApiBase } from '@lib/api';
+import { useThrottledValue } from '@lib/useThrottledValue';
 import { AcceptanceBadge } from '../components/AcceptanceBadge';
 import { AuthStatus } from '../components/AuthStatus';
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { io } from 'socket.io-client';
-import { ensureToken, get, getText, post } from '../lib/api';
+import { ensureToken, get, getText, post } from '@lib/api';
 
 export function SystemPanel() {
     const [health, setHealth] = React.useState<any>(null);

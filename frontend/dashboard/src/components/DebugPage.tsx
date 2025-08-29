@@ -1,5 +1,5 @@
 import React from 'react';
-import { get, post } from '../lib/api';
+import { get, post } from '@lib/api';
 
 export function DebugPage() {
     const [subs, setSubs] = React.useState<any>(null);

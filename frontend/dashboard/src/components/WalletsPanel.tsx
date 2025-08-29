@@ -1,5 +1,5 @@
 import React from 'react';
-import { get } from '../lib/api';
+import { get } from '@lib/api';
 
 type Wallet = any;
 

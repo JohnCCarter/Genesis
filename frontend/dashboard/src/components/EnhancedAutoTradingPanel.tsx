@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { get, post } from '../lib/api';
-import { TEST_SYMBOLS } from '../lib/testSymbols';
+import { get, post } from '@lib/api';
+import { TEST_SYMBOLS } from '@lib/testSymbols';
 
 interface EnhancedAutoStatus {
     active_symbols: string[];
