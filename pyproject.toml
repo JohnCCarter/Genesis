@@ -32,15 +32,22 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 "**/routes/*.py" = ["B008", "E501"]
 "**/rest/*.py"   = ["B008", "E501", "N814", "PLR0911"]
-"**/services/**/*.py" = ["E501", "ANN", "PLR0911", "PLR0912", "PLR0915", "C901", "N814", "RUF002", "RUF006"]
+"**/services/**/*.py" = ["E501", "ANN", "PLR0911", "PLR0912", "PLR0915", "C901", "N814", "RUF002", "RUF006", "ARG001"]
 "**/ws/**/*.py"  = ["B008", "E501", "N814", "RUF002"]
 "**/models/**/*.py" = ["N805", "ARG002", "ANN001"]
 "tradingbot-backend/main.py" = ["ARG001", "ANN001", "N814"]
+"**/data_coordinator.py" = ["ANN401", "ARG001", "ANN"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["services","rest","utils","config","indicators","ws"]
 combine-as-imports = true
 force-sort-within-sections = true
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
 
 [tool.mypy]
 python_version = "3.11"

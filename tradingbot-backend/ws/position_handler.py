@@ -246,11 +246,7 @@ class WSPositionHandler:
             symbol = position_data[0]
 
             # Ta bort från intern positionslista
-            self.positions = [
-                p
-                for p in self.positions
-                if not (isinstance(p, list) and len(p) >= 1 and p[0] == symbol)
-            ]
+            self.positions = [p for p in self.positions if not (isinstance(p, list) and len(p) >= 1 and p[0] == symbol)]
 
             # Formatera position för callbacks
             formatted_position = {"symbol": symbol, "status": "CLOSED", "closed": True}

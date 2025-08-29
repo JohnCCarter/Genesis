@@ -70,4 +70,4 @@ curl -X POST "https://api.bitfinex.com/v2/auth/r/info/user" \
   -H "bfx-nonce: $(date +%s%6N)" \
   -H "bfx-signature: YOUR_SIGNATURE" \
   -H "Content-Type: application/json"
-``` 
+```

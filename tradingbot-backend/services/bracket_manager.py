@@ -10,11 +10,12 @@ from __future__ import annotations
 import json
 import os
 from dataclasses import dataclass
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
-from config.settings import Settings
 from rest.auth import cancel_order
 from utils.logger import get_logger
+
+from config.settings import Settings
 
 logger = get_logger(__name__)
 
@@ -99,9 +100,7 @@ class BracketManager:
                                     # Ackumulera fylld mängd (absolut)
                                     g = self.groups.get(gid)
                                     if g and g.active:
-                                        g.entry_filled = float(
-                                            max(0.0, (g.entry_filled or 0.0))
-                                        ) + abs(exec_amount)
+                                        g.entry_filled = float(max(0.0, (g.entry_filled or 0.0))) + abs(exec_amount)
                                         # Justera skyddsordrar (SL/TP) till ny fylld mängd
                                         await self._sync_protectives_to_entry_filled(gid)
                                         self._save_state_safe()
@@ -113,9 +112,7 @@ class BracketManager:
                                 # men OCO-semantiken: cancella syskon vid första fill.
                                 if self.settings.BRACKET_PARTIAL_ADJUST:
                                     try:
-                                        await self._adjust_sibling_on_partial(
-                                            gid, role, exec_amount
-                                        )
+                                        await self._adjust_sibling_on_partial(gid, role, exec_amount)
                                     except Exception:
                                         pass
                                 await self._cancel_sibling(order_id)
@@ -153,9 +150,7 @@ class BracketManager:
         except Exception as e:
             logger.error(f"Fel i BracketManager.handle_private_event: {e}")
 
-    async def _adjust_sibling_on_partial(
-        self, gid: str, filled_role: str, exec_amount: float
-    ) -> None:
+    async def _adjust_sibling_on_partial(self, gid: str, filled_role: str, exec_amount: float) -> None:
         """Justera syskonorder vid partial fill om aktiverat.
 
         Enkel heuristik: minska syskonets amount med samma belopp som fylld del.

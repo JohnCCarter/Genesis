@@ -9,7 +9,6 @@ from __future__ import annotations
 import threading
 import time
 from collections import deque
-from typing import Deque, Dict
 
 
 class _RateLimiter:

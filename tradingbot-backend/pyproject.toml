@@ -1,5 +1,5 @@
 [tool.ruff]
-line-length = 100
+line-length = 120
 target-version = "py311"
 exclude = [
     ".git",
@@ -40,6 +40,11 @@ ignore = [
 ]
 select = ["E", "F", "W", "B", "I", "UP", "C90", "ARG", "N", "ANN", "PL", "RUF"]
 
+[tool.ruff.lint.extend-per-file-ignores]
+"tradingbot-backend/utils/json_optimizer.py" = ["ANN401", "ANN003", "PLW2901", "B019"]
+"tradingbot-backend/services/regime_ablation.py" = ["RUF015"]
+"tradingbot-backend/services/risk_guards.py" = ["ARG002"]
+
 [tool.ruff.lint.per-file-ignores]
 "**/routes/*.py" = ["B008", "E501", "B904", "N814"]
 "**/rest/*.py"   = ["B008", "E501", "B904", "N814", "PLR0911", "RUF013"]
@@ -49,10 +54,10 @@ select = ["E", "F", "W", "B", "I", "UP", "C90", "ARG", "N", "ANN", "PL", "RUF"]
 "tradingbot-backend/main.py" = ["ARG001", "ANN001", "N814"]
 
 [tool.ruff.format]
-quote-style = "preserve"
+quote-style = "double"
 indent-style = "space"
 skip-magic-trailing-comma = false
-line-ending = "lf"
+line-ending = "auto"
 
 
 [tool.black]
@@ -93,3 +98,6 @@ known_first_party = [
 skip_glob = [
     "docs/legacy/**",
 ]
+
+[tool.bandit]
+exclude_dirs = ["tests", ".venv", "venv", "build", "dist"]

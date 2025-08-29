@@ -19,3 +19,5 @@
 *.zip binary
 *.gz binary
 
+# Force UTF-8 for text files
+*.txt text eol=lf

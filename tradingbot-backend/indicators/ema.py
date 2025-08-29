@@ -5,10 +5,8 @@ Denna modul implementerar EMA-beräkningar för teknisk analys.
 Inkluderar EMA-formel och olika perioder.
 """
 
-from typing import List, Optional
 
 import pandas as pd
-
 from utils.logger import get_logger
 
 logger = get_logger(__name__)

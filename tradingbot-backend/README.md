@@ -74,6 +74,7 @@ cd .\tradingbot-backend
 $env:AUTH_REQUIRED = "True"
 $env:PYTHONPATH   = (Resolve-Path ".").Path
 python -m uvicorn main:app --reload
+python -m uvicorn main:app --reload --host 127.0.0.1 --port 8000
 ```
 
 Alternativ B – kör från repo-roten med skript (rekommenderas för enkelhet):
@@ -192,9 +193,9 @@ Notiser skickas även via Socket.IO som `notification`-event.
 - **bitfinex_client.py**: Hjälpklass för Bitfinex API-anrop
 - **logger.py**: Konfigurering av loggning
 
-### (Legacy) Scraper
+### Scraper
 
-Scraper-relaterade filer och dokumentation har arkiverats och flyttats till `docs/legacy/` och behövs inte i runtime. För att hålla Docker‑images små är `docs/legacy/` exkluderat i `.dockerignore`. Vid behov av full dokumentationsdata, hantera det i en separat artefakt/repo.
+Scraper-verktyg för att extrahera Bitfinex API-dokumentation finns i `docs/scraper/`. Dessa verktyg används för att hålla API-dokumentationen uppdaterad och kan behövas för framtida API-versioner.
 
 ### Models
 
@@ -206,7 +207,7 @@ Detaljerad API-dokumentation nås via OpenAPI-specen:
 
 - `GET /openapi.json` (kan importeras i Lovable/verktyg)
 - `GET /docs` (interaktiv Swagger UI)
-- Legacy-dokumentation och exempel finns i `docs/legacy/`
+- Scraper-verktyg för API-dokumentation finns i `docs/scraper/`
 
 ## Snabbstart
 

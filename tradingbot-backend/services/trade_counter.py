@@ -8,11 +8,11 @@ import json
 import os
 from dataclasses import dataclass
 from datetime import date, datetime
-from typing import Dict, Optional
+
+from utils.logger import get_logger
 
 from config.settings import Settings
 from services.trading_window import TradingWindowService
-from utils.logger import get_logger
 
 try:
     from zoneinfo import ZoneInfo  # type: ignore
@@ -85,10 +85,7 @@ class TradeCounterService:
             "cooldown_seconds": self._cooldown_seconds_current(),
             "cooldown_active": (
                 self.state.last_trade_ts is not None
-                and (
-                    (self._now() - self.state.last_trade_ts).total_seconds()
-                    < self._cooldown_seconds_current()
-                )
+                and ((self._now() - self.state.last_trade_ts).total_seconds() < self._cooldown_seconds_current())
             ),
             "per_symbol": self.symbol_counts.copy(),
         }
@@ -116,9 +113,7 @@ class TradeCounterService:
                 except Exception:
                     self.state.day = self._today()
             self.state.count = int(data.get("count", 0))
-            self.symbol_counts = {
-                str(k).upper(): int(v) for k, v in (data.get("per_symbol", {}) or {}).items()
-            }
+            self.symbol_counts = {str(k).upper(): int(v) for k, v in (data.get("per_symbol", {}) or {}).items()}
         except Exception:
             # korrupt fil – börja om
             self.state = TradeCounterState(day=self._today())

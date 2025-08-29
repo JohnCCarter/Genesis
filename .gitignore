@@ -14,7 +14,10 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
+# Python lib directories (but NOT frontend src/lib)
+tradingbot-backend/lib/
+**/lib/
+!frontend/**/lib/
 lib64/
 parts/
 sdist/
@@ -136,18 +139,22 @@ celerybeat.pid
 
 # Environments
 .env
+.env.*
+!.env.example
 .envrc
 .venv
+.venv_clean
 env/
 venv/
 ENV/
 env.bak/
 venv.bak/
+# Config files - exclude actual configs but include templates
 tradingbot-backend/config/*.json
-!tradingbot-backend/config/trading_rules.json
-!tradingbot-backend/config/strategy_settings.json
+!tradingbot-backend/config/*.json.template
 !tradingbot-backend/config/order_templates.json
-!tradingbot-backend/config/performance_history.json
+# tillåt exempel-miljöfil
+!tradingbot-backend/env.example
 
 # Spyder project settings
 .spyderproject
@@ -187,9 +194,9 @@ cython_debug/
 .abstra/
 
 # Visual Studio Code
-#  Visual Studio Code specific template is maintained in a separate VisualStudioCode.gitignore 
+#  Visual Studio Code specific template is maintained in a separate VisualStudioCode.gitignore
 #  that can be found at https://github.com/github/gitignore/blob/main/Global/VisualStudioCode.gitignore
-#  and can be added to the global gitignore or merged into this file. However, if you prefer, 
+#  and can be added to the global gitignore or merged into this file. However, if you prefer,
 #  you could uncomment the following to ignore the entire vscode folder
 # .vscode/
 
@@ -213,6 +220,7 @@ __marimo__/
 
 # Bitfinex nonce-tracking
 .nonce_tracker.json
+bandit-report*.json
 
 # Trading Bot specific exclusions
 # Temporary token files (may contain test data)
@@ -225,8 +233,7 @@ test_direct_bitfinex.py
 simple_socketio_server.py
 simple_ws_test_server.py
 ws_test.html
-# Ignore legacy example sources locally, but keep them in CI formatting
-# (Allow commit by overriding here)
+# Legacy files removed - no longer needed
 # tradingbot-backend/docs/legacy/**
 
 # Debug and development files
@@ -251,6 +258,11 @@ frontend/_backup/
 frontend/dashboard/node_modules/
 frontend/dashboard/dist/
 frontend/dashboard/.vite/
+frontend/dashboard/.env
+frontend/dashboard/.env.*
+!frontend/dashboard/.env.example
+frontend/dashboard/.eslintcache
+frontend/dashboard/coverage/
 
 # OS generated files
 .DS_Store

@@ -2,7 +2,13 @@
 alwaysApply: true
 ---
 
-Som din AI-assistent för ditt personliga Genesis Trading Bot-projekt förbinder jag mig att:
+Du ska agera som min AI-Partner för vårat personliga Genesis Trading Bot-projekt förbinder jag mig att:
+
+Planning mode: Lägg till steg, planera dina steg innan du agerar på prompten.
+
+Tools: Använd dina verktyg när osäkerhet råder för att undvika hallucinationer och skaffa korrekt information.
+
+Persistence: Fortsätt tills arbetet är klart.
 
 1. Kommunikation & Arbetssätt
    Svara alltid på svenska om inte annat anges

@@ -13,7 +13,6 @@ from __future__ import annotations
 import asyncio
 import json
 import os
-from typing import Dict, List, Optional, Tuple
 
 from utils.logger import get_logger
 
@@ -26,7 +25,7 @@ _CACHE: dict = {
     "alias_fwd": {},
     "alias_rev": {},
     "ts": 0.0,
-    "ttl": 3600.0,
+    "ttl": 14400.0,  # Öka från 2 timmar till 4 timmar för bättre prestanda
 }
 _REFRESH_LOCK: asyncio.Lock = asyncio.Lock()
 
@@ -35,9 +34,7 @@ class SymbolService:
     def __init__(self) -> None:
         # Legacy fil-stöd (fallback)
         base_dir = os.path.dirname(os.path.dirname(__file__))  # tradingbot-backend/
-        self.file_path = os.path.join(
-            base_dir, "docs", "legacy", "bitfinex_docs", "extracted", "symbols.json"
-        )
+        self.file_path = os.path.join(base_dir, "docs", "scraper", "symbols.json")
         self._legacy_cache: list[str] = []
         # Delad cache används; behåll instansfält för bakåtkompatibilitet
         self._pairs: list[str] = _CACHE["pairs"]

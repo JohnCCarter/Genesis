@@ -40,7 +40,7 @@ Sub-accounts för simulerad trading har ofta begränsade permissions för säker
    - Klicka **Create New API Key**
    - Aktivera:
      - ✅ **Read**
-     - ✅ **Write** 
+     - ✅ **Write**
      - ✅ **Trading**
 
 3. **Uppdatera .env-filen:**
@@ -75,4 +75,4 @@ python test_bitfinex_direct.py
 - [ ] Kontrollera sub-account API permissions
 - [ ] Aktivera Write permissions om nödvändigt
 - [ ] Testa med nya API-nycklar
-- [ ] Verifiera att orderläggning fungerar 
+- [ ] Verifiera att orderläggning fungerar

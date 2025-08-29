@@ -1,0 +1,15 @@
+exclude_dirs:
+  - tests
+  - .venv
+  - venv
+  - build
+  - dist
+
+# Rapportera endast medel och hög allvarlighet
+severity: MEDIUM
+
+# Kräv minst MEDIUM confidence (reducerar brus)
+confidence: MEDIUM
+
+# Inga globala skips här; justera vid behov per regel
+skips: []

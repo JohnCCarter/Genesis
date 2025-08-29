@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import asyncio
 import os
-from typing import List
 
 from services.bitfinex_data import BitfinexDataService
 from services.prob_train import train_and_export

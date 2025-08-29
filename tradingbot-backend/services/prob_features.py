@@ -8,7 +8,7 @@ Bitfinex candle frame v2: [MTS, OPEN, CLOSE, HIGH, LOW, VOLUME]
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 from indicators.atr import calculate_atr
 from indicators.ema import calculate_ema
@@ -92,9 +92,7 @@ def label_sequence(candles: list[list[float]], horizon: int, tp: float, sl: floa
     return labels
 
 
-def build_dataset(
-    candles: list[list[float]], horizon: int, tp: float, sl: float
-) -> list[dict[str, Any]]:
+def build_dataset(candles: list[list[float]], horizon: int, tp: float, sl: float) -> list[dict[str, Any]]:
     """
     Build a small dataset of features + label aligned by dropping last horizon samples.
     Returns list of dicts: {ema_diff, rsi_norm, atr_pct, price, label}

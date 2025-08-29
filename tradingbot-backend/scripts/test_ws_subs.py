@@ -1,8 +1,8 @@
 import asyncio
-from typing import Dict, List
+
+from services.bitfinex_websocket import bitfinex_ws
 
 from config.settings import Settings
-from services.bitfinex_websocket import bitfinex_ws
 
 
 async def run_test() -> dict[str, dict[str, str]]:

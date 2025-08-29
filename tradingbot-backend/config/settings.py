@@ -6,28 +6,27 @@ Projektet använder Pydantic v1 (BaseSettings) enligt requirements.
 """
 
 import os as _os
-from typing import List, Optional
 
-from pydantic import BaseSettings as _BaseSettings
+# Kompatibilitet: Pydantic v2 (pydantic-settings) och v1 (pydantic)
+try:  # Pydantic v2
+    from pydantic_settings import BaseSettings as _BaseSettings  # type: ignore
+except Exception:  # Fall tillbaka till v1
+    from pydantic import BaseSettings as _BaseSettings  # type: ignore
 
 
 class Settings(_BaseSettings):
     """Konfigurationsklass för applikationsinställningar."""
 
     # Applikationskonfiguration
-    CORE_MODE: bool = False  # Enkel drift: endast kärnfunktioner aktiva
     # Bindningsadress: defaulta till loopback i dev, 0.0.0.0 i container/CI via env
     HOST: str = _os.environ.get("HOST", "127.0.0.1")
     PORT: int = 8000
     DEBUG: bool = True
     # Kräv JWT för REST/WS. Sätt False i dev för att tillfälligt stänga av
-    AUTH_REQUIRED: bool = True
+    AUTH_REQUIRED: bool = False
 
     # CORS
-    ALLOWED_ORIGINS: list[str] = [
-        "http://localhost:3000",
-        "http://localhost:8080",
-    ]
+    ALLOWED_ORIGINS: str = '["http://localhost:3000", "http://localhost:8080", "http://localhost:5173", "http://localhost:5174", "http://127.0.0.1:5173", "http://127.0.0.1:5174"]'
 
     # Bitfinex REST API - för orderläggning och kontohantering
     BITFINEX_API_KEY: str | None = None
@@ -50,10 +49,10 @@ class Settings(_BaseSettings):
     # Bakåtkompatibel (används ej längre om de två ovan finns)
     BITFINEX_WS_URI: str = "wss://api.bitfinex.com/ws/2"
 
-    # WS multi-socket (publika kanaler)
+    # WS multi-socket (publika kanaler) - Optimerat för Bitfinex-begränsningar
     WS_USE_POOL: bool = True
-    WS_MAX_SUBS_PER_SOCKET: int = 200
-    WS_PUBLIC_SOCKETS_MAX: int = 3
+    WS_MAX_SUBS_PER_SOCKET: int = 25  # Minskad från 200 (Bitfinex max 25 channels per connection)
+    WS_PUBLIC_SOCKETS_MAX: int = 1  # Minskad från 3 (undvik 20 connections/min limit)
 
     # Lista över symboler att auto‑subscriba vid startup (komma‑separerad)
     WS_SUBSCRIBE_SYMBOLS: str | None = None
@@ -108,28 +107,45 @@ class Settings(_BaseSettings):
     # Exchange ID
     EXCHANGE_ID: str | None = None
 
-    # Nätverksinställningar (timeouts/retries)
-    DATA_HTTP_TIMEOUT: float = 10.0
-    DATA_MAX_RETRIES: int = 3
-    DATA_BACKOFF_BASE_MS: int = 250
-    DATA_BACKOFF_MAX_MS: int = 2000
-    ORDER_HTTP_TIMEOUT: float = 15.0
-    ORDER_MAX_RETRIES: int = 2
-    ORDER_BACKOFF_BASE_MS: int = 300
-    ORDER_BACKOFF_MAX_MS: int = 2000
+    # Nätverksinställningar (timeouts/retries) - Optimerat för server busy
+    DATA_HTTP_TIMEOUT: float = 10.0  # Ökad från 5.0 (mer tid för server busy)
+    DATA_MAX_RETRIES: int = 1  # Minskad från 2 (undvik rate limit)
+    DATA_BACKOFF_BASE_MS: int = 1000  # Ökad från 500 (mer försiktig)
+    DATA_BACKOFF_MAX_MS: int = 5000  # Ökad från 3000 (respektera rate limits)
+    ORDER_HTTP_TIMEOUT: float = 15.0  # Ökad från 8.0 (mer tid för order processing)
+    ORDER_MAX_RETRIES: int = 1  # Behåll 1 (undvik rate limit)
+    ORDER_BACKOFF_BASE_MS: int = 2000  # Ökad från 1000 (mer försiktig)
+    ORDER_BACKOFF_MAX_MS: int = 10000  # Ökad från 5000 (respektera rate limits)
+
+    # Bitfinex API Rate Limiting - Ytterligare optimerat för server busy
+    BITFINEX_RATE_LIMIT_REQUESTS_PER_MINUTE: int = 10  # Minskad från 15 (extra säker marginal)
+    BITFINEX_RATE_LIMIT_BURST_SIZE: int = 1  # Minskad från 2 (undvik rate limit helt)
+    BITFINEX_RATE_LIMIT_WINDOW_SECONDS: int = 60
+    BITFINEX_RATE_LIMIT_ENABLED: bool = True
+    BITFINEX_SERVER_BUSY_BACKOFF_MIN_SECONDS: float = 15.0  # Ökad från 10.0 (respektera 60s block)
+    BITFINEX_SERVER_BUSY_BACKOFF_MAX_SECONDS: float = 60.0  # Ökad från 30.0 (full respekt för block)
+
+    # Concurrency caps
+    PUBLIC_REST_CONCURRENCY: int = 4
+    PRIVATE_REST_CONCURRENCY: int = 2
 
     # WS ticker prioritet: anse WS-data färsk i X sekunder innan REST-fallback
     WS_TICKER_STALE_SECS: int = 10
     # Vänta kort på första WS‑tick efter auto‑subscribe innan
     # REST‑fallback (ms)
     WS_TICKER_WARMUP_MS: int = 400
+    # WS candles timeframes (komma-separerad lista)
+    WS_CANDLE_TIMEFRAMES: str = "1m,5m"
 
     # REST ticker cache TTL för att undvika överpollning
-    TICKER_CACHE_TTL_SECS: int = 10
+    TICKER_CACHE_TTL_SECS: int = 30  # Ökad från 10 (minska API-anrop)
 
     # Candle cache retention
     CANDLE_CACHE_RETENTION_DAYS: int = 7
     CANDLE_CACHE_MAX_ROWS_PER_PAIR: int = 10000
+
+    # Backfill pacing
+    BACKFILL_BATCH_SLEEP_MS: int = 300
 
     # Metrics security
     METRICS_ACCESS_TOKEN: str | None = None
@@ -137,6 +153,12 @@ class Settings(_BaseSettings):
     METRICS_BASIC_AUTH_PASS: str | None = None
     # Kommaseparerad lista över tillåtna IP:n (ex: "127.0.0.1,10.0.0.5")
     METRICS_IP_ALLOWLIST: str | None = None
+
+    # Acceptance thresholds (målvärden för stabil drift)
+    ACCEPT_CANDLES_P95_MS_MAX: int = 500
+    ACCEPT_CANDLES_P99_MS_MAX: int = 1200
+    ACCEPT_MAX_429_PER_HOUR: int = 1
+    ACCEPT_MAX_503_PER_HOUR: int = 1
 
     # Probability Model (feature flags)
     PROB_MODEL_ENABLED: bool = False

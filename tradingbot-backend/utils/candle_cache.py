@@ -3,7 +3,6 @@ import sqlite3
 from collections.abc import Iterable
 from contextlib import closing
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional
 
 _DB_DEFAULT = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config", "candles.sqlite3")
 
@@ -16,6 +15,7 @@ class CandleCache:
 
     def _init_db(self) -> None:
         with closing(sqlite3.connect(self.db_path)) as conn:
+            # Skapa tabellen om den inte finns
             conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS candles (
@@ -27,19 +27,31 @@ class CandleCache:
                     high REAL NOT NULL,
                     low REAL NOT NULL,
                     volume REAL NOT NULL,
+                    cached_at INTEGER NOT NULL DEFAULT 0,
                     PRIMARY KEY (symbol, timeframe, mts)
                 ) WITHOUT ROWID
                 """
             )
-            conn.execute(
-                "CREATE INDEX IF NOT EXISTS ix_candles_symbol_tf_mts "
-                "ON candles(symbol, timeframe, mts)"
-            )
+
+            # Migration: Lägg till cached_at kolumn om den inte finns
+            try:
+                conn.execute("ALTER TABLE candles ADD COLUMN cached_at INTEGER NOT NULL DEFAULT 0")
+                print("✅ Migrerade candle cache databas: lade till cached_at kolumn")
+            except sqlite3.OperationalError as e:
+                if "duplicate column name" in str(e):
+                    print("ℹ️ cached_at kolumn finns redan")
+                else:
+                    print(f"ℹ️ Migration noter: {e}")
+
+            # Skapa index
+            conn.execute("CREATE INDEX IF NOT EXISTS ix_candles_symbol_tf_mts " "ON candles(symbol, timeframe, mts)")
+            conn.execute("CREATE INDEX IF NOT EXISTS ix_candles_cached_at " "ON candles(cached_at)")
             conn.commit()
 
     def store(self, symbol: str, timeframe: str, candles: Iterable[list]) -> int:
         """Spara candles i cache. Returnerar antal upserts."""
         count = 0
+        cached_at = int(datetime.now().timestamp())
         with closing(sqlite3.connect(self.db_path)) as conn:
             cur = conn.cursor()
             for c in candles:
@@ -57,48 +69,85 @@ class CandleCache:
                     continue
                 cur.execute(
                     """
-                    INSERT INTO candles(symbol, timeframe, mts, open, close, high, low, volume)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    INSERT INTO candles(symbol, timeframe, mts, open, close, high, low, volume, cached_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ON CONFLICT(symbol, timeframe, mts) DO UPDATE SET
                         open=excluded.open,
                         close=excluded.close,
                         high=excluded.high,
                         low=excluded.low,
-                        volume=excluded.volume
+                        volume=excluded.volume,
+                        cached_at=excluded.cached_at
                     """,
-                    (symbol, timeframe, mts, o, cl, hi, lo, vol),
+                    (symbol, timeframe, mts, o, cl, hi, lo, vol, cached_at),
                 )
                 count += 1
             conn.commit()
         return count
 
-    def load(self, symbol: str, timeframe: str, limit: int = 100) -> list[list]:
+    def load(self, symbol: str, timeframe: str, limit: int = 100, max_age_minutes: int = 15) -> list[list]:
         """
         Läs senaste N candles från cache.
         Returnerar Bitfinex-format, nyast -> äldst, som i API.
+
+        Args:
+            symbol: Trading symbol
+            timeframe: Timeframe (1m, 5m, etc.)
+            limit: Max antal candles att returnera
+            max_age_minutes: Max ålder för cached data i minuter (ökad från 5 till 15)
         """
+        cutoff_time = int((datetime.now() - timedelta(minutes=max_age_minutes)).timestamp())
+
         with closing(sqlite3.connect(self.db_path)) as conn:
             rows = conn.execute(
                 """
                 SELECT mts, open, close, high, low, volume
                 FROM candles
-                WHERE symbol=? AND timeframe=?
+                WHERE symbol=? AND timeframe=? AND cached_at >= ?
                 ORDER BY mts DESC
                 LIMIT ?
                 """,
-                (symbol, timeframe, int(limit)),
+                (symbol, timeframe, cutoff_time, int(limit)),
             ).fetchall()
         return [[r[0], r[1], r[2], r[3], r[4], r[5]] for r in rows]
 
-    def get_last(self, symbol: str, timeframe: str) -> list | None:
+    def get_last(self, symbol: str, timeframe: str, max_age_minutes: int = 15) -> list | None:
         """
         Returnera senaste candle i Bitfinex-format.
         Format: [MTS, OPEN, CLOSE, HIGH, LOW, VOLUME].
+
+        Args:
+            symbol: Trading symbol
+            timeframe: Timeframe (1m, 5m, etc.)
+            max_age_minutes: Max ålder för cached data i minuter (ökad från 5 till 15)
         """
-        rows = self.load(symbol, timeframe, limit=1)
+        rows = self.load(symbol, timeframe, limit=1, max_age_minutes=max_age_minutes)
         if rows:
             return rows[0]
         return None
+
+    def clear_old_data(self, max_age_hours: int = 24) -> int:
+        """Rensa gammal cached data. Returnerar antal rader som togs bort."""
+        cutoff_time = int((datetime.now() - timedelta(hours=max_age_hours)).timestamp())
+
+        with closing(sqlite3.connect(self.db_path)) as conn:
+            cur = conn.cursor()
+            cur.execute("DELETE FROM candles WHERE cached_at < ?", (cutoff_time,))
+            deleted_count = cur.rowcount
+            conn.commit()
+        return deleted_count
+
+    def clear_symbol(self, symbol: str, timeframe: str | None = None) -> int:
+        """Rensa cached data för en specifik symbol. Returnerar antal rader som togs bort."""
+        with closing(sqlite3.connect(self.db_path)) as conn:
+            cur = conn.cursor()
+            if timeframe:
+                cur.execute("DELETE FROM candles WHERE symbol = ? AND timeframe = ?", (symbol, timeframe))
+            else:
+                cur.execute("DELETE FROM candles WHERE symbol = ?", (symbol,))
+            deleted_count = cur.rowcount
+            conn.commit()
+        return deleted_count
 
     def stats(self, limit_symbols: int = 20) -> dict:
         """Returnera enkel statistik över cacheinnehållet."""
@@ -125,25 +174,17 @@ class CandleCache:
         return {"total_rows": int(total_rows), "top": items}
 
     def clear_all(self) -> int:
+        """Rensa all cached data. Returnerar antal rader som togs bort."""
         with closing(sqlite3.connect(self.db_path)) as conn:
-            cur = conn.execute("DELETE FROM candles")
+            cur = conn.cursor()
+            cur.execute("DELETE FROM candles")
+            deleted_count = cur.rowcount
             conn.commit()
-            return cur.rowcount if cur.rowcount is not None else 0
+        return deleted_count
 
     def clear(self, symbol: str, timeframe: str | None = None) -> int:
-        with closing(sqlite3.connect(self.db_path)) as conn:
-            if timeframe:
-                cur = conn.execute(
-                    "DELETE FROM candles WHERE symbol=? AND timeframe=?",
-                    (symbol, timeframe),
-                )
-            else:
-                cur = conn.execute(
-                    "DELETE FROM candles WHERE symbol=?",
-                    (symbol,),
-                )
-            conn.commit()
-            return cur.rowcount if cur.rowcount is not None else 0
+        """Rensa cached data för en specifik symbol. Returnerar antal rader som togs bort."""
+        return self.clear_symbol(symbol, timeframe)
 
     def enforce_retention(self, max_days: int, max_rows_per_pair: int) -> int:
         """Ta bort gamla rader och begränsa per symbol/timeframe."""
@@ -189,4 +230,5 @@ class CandleCache:
         return removed
 
 
+# Global instans
 candle_cache = CandleCache()

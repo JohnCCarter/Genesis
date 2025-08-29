@@ -5,13 +5,13 @@ Denna modul demonstrerar hur Bitfinex-autentisering används
 för REST och WebSocket-anrop.
 """
 
-from typing import Any, Dict
+from typing import Any
 
 import httpx
-
 from rest.auth import build_auth_headers
-from utils.logger import get_logger
 from ws.auth import build_ws_auth_payload
+
+from utils.logger import get_logger
 
 logger = get_logger(__name__)
 

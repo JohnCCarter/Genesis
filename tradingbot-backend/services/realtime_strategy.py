@@ -6,10 +6,10 @@ Inkluderar automatisk signalgenerering och WebSocket-integration.
 """
 
 from collections.abc import Callable
-from typing import Dict, List, Optional
+
+from utils.logger import get_logger
 
 from services.bitfinex_websocket import bitfinex_ws
-from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -41,9 +41,7 @@ class RealtimeStrategyService:
                 self.signal_callbacks[symbol] = callback
 
             # Starta WebSocket-övervakning
-            await bitfinex_ws.subscribe_with_strategy_evaluation(
-                symbol, self._handle_strategy_result
-            )
+            await bitfinex_ws.subscribe_with_strategy_evaluation(symbol, self._handle_strategy_result)
 
             self.active_symbols.add(symbol)
             self.is_running = True

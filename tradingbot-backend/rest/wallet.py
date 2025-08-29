@@ -5,14 +5,18 @@ Denna modul hanterar plånboksinformation från Bitfinex API.
 Inkluderar funktioner för att hämta plånbokssaldon och hantera plånbokstransaktioner.
 """
 
-from typing import List, Optional
+import asyncio
+import time
 
 import httpx
 from pydantic import BaseModel
+from services.metrics import record_http_result
+from utils.advanced_rate_limiter import get_advanced_rate_limiter
+from utils.logger import get_logger
+from utils.private_concurrency import get_private_rest_semaphore
 
 from config.settings import Settings
 from rest.auth import build_auth_headers
-from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -46,9 +50,11 @@ class WalletService:
 
     def __init__(self):
         self.settings = Settings()
-        self.base_url = (
-            getattr(self.settings, "BITFINEX_AUTH_API_URL", None) or self.settings.BITFINEX_API_URL
-        )
+        self.base_url = getattr(self.settings, "BITFINEX_AUTH_API_URL", None) or self.settings.BITFINEX_API_URL
+        self.rate_limiter = get_advanced_rate_limiter()
+        # Concurrency cap för privata REST
+        # Global semafor för alla privata REST-klasser
+        self._sem = get_private_rest_semaphore()
 
     async def get_wallets(self) -> list[WalletBalance]:
         """
@@ -58,13 +64,110 @@ class WalletService:
             Lista med WalletBalance-objekt
         """
         try:
+            # Safeguard: saknade nycklar → tom lista istället för 500
+            if not (self.settings.BITFINEX_API_KEY and self.settings.BITFINEX_API_SECRET):
+                logger.info("BITFINEX_API_KEY/SECRET saknas – returnerar tom wallet-lista")
+                return []
             endpoint = "auth/r/wallets"
+
+            # Circuit breaker: respektera ev. cooldown + rate limiter
+            try:
+                if hasattr(self.rate_limiter, "can_request") and not self.rate_limiter.can_request(endpoint):
+                    wait = float(self.rate_limiter.time_until_open(endpoint))
+                    logger.warning(f"CB: {endpoint} stängd i {wait:.1f}s")
+                    await asyncio.sleep(max(0.0, wait))
+            except Exception:
+                pass
+            try:
+                await self.rate_limiter.wait_if_needed(endpoint)
+            except Exception:
+                pass
+
             headers = build_auth_headers(endpoint)
 
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient(timeout=httpx.Timeout(15.0)) as client:
                 logger.info(f"🌐 REST API: Hämtar plånböcker från {self.base_url}/{endpoint}")
-                response = await client.post(f"{self.base_url}/{endpoint}", headers=headers)
-                response.raise_for_status()
+                _t0 = time.perf_counter()
+                async with self._sem:
+                    response = await client.post(f"{self.base_url}/{endpoint}", headers=headers)
+                _t1 = time.perf_counter()
+                try:
+                    record_http_result(
+                        path=f"/{endpoint}",
+                        method="POST",
+                        status_code=int(response.status_code),
+                        duration_ms=int((_t1 - _t0) * 1000),
+                        _retry_after=response.headers.get("Retry-After"),
+                    )
+                    if response.status_code in (429, 500, 502, 503, 504):
+                        ra = response.headers.get("Retry-After")
+                        logger.warning(
+                            "HTTP %s %s Retry-After=%s",
+                            response.status_code,
+                            endpoint,
+                            ra if ra is not None else "-",
+                        )
+                except Exception:
+                    pass
+
+                # Kontrollera nonce-fel specifikt (10114: "nonce: small") och bumpa + engångs‑retry
+                if response.status_code == 500:
+                    try:
+                        error_data = response.json()
+                        if (
+                            isinstance(error_data, list)
+                            and len(error_data) >= 3
+                            and "nonce" in str(error_data[2]).lower()
+                        ):
+                            logger.error(f"🚨 Nonce-fel i wallets: {error_data}")
+                            try:
+                                # Bumpa nonce för REST‑nyckeln och försök en gång till
+                                from utils.nonce_manager import bump_nonce
+
+                                bump_nonce(self.settings.BITFINEX_API_KEY or "default_key")
+                                headers = build_auth_headers(endpoint)
+                                async with self._sem:
+                                    response = await client.post(f"{self.base_url}/{endpoint}", headers=headers)
+                                # Om fortfarande fel – fortsätt ned till generisk hantering
+                            except Exception:
+                                pass
+                    except Exception:
+                        pass
+
+                # Hantera server busy
+                if response.status_code in (429, 500, 502, 503, 504):
+                    try:
+                        if (
+                            "server busy" in (response.text or "").lower() or response.status_code in (429, 503)
+                        ) and hasattr(self.rate_limiter, "note_failure"):
+                            cooldown = self.rate_limiter.note_failure(
+                                endpoint,
+                                int(response.status_code),
+                                response.headers.get("Retry-After"),
+                            )
+                            logger.warning(f"CB öppnad för {endpoint} i {cooldown:.1f}s")
+                        await self.rate_limiter.handle_server_busy(endpoint)
+                    except Exception:
+                        pass
+                    logger.warning(f"Bitfinex server busy för wallets (status {response.status_code})")
+                    return []
+
+                try:
+                    response.raise_for_status()
+                    # Återställ räknare och CB vid framgång
+                    try:
+                        self.rate_limiter.reset_server_busy_count()
+                    except Exception:
+                        pass
+                    try:
+                        if hasattr(self.rate_limiter, "note_success"):
+                            self.rate_limiter.note_success(endpoint)
+                    except Exception:
+                        pass
+                except httpx.HTTPStatusError as he:
+                    status = he.response.status_code if he.response is not None else "?"
+                    logger.warning(f"Bitfinex svarade {status} vid hämtning av wallets – returnerar tom lista")
+                    return []
 
                 wallets_data = response.json()
                 logger.info(f"✅ REST API: Hämtade {len(wallets_data)} plånböcker")
@@ -74,11 +177,9 @@ class WalletService:
 
         except Exception as e:
             logger.error(f"Fel vid hämtning av plånböcker: {e}")
-            raise
+            return []
 
-    async def get_wallet_by_type_and_currency(
-        self, wallet_type: str, currency: str
-    ) -> WalletBalance | None:
+    async def get_wallet_by_type_and_currency(self, wallet_type: str, currency: str) -> WalletBalance | None:
         """
         Hämtar en specifik plånbok baserat på typ och valuta.
 
@@ -92,10 +193,7 @@ class WalletService:
         wallets = await self.get_wallets()
 
         for wallet in wallets:
-            if (
-                wallet.wallet_type.lower() == wallet_type.lower()
-                and wallet.currency.lower() == currency.lower()
-            ):
+            if wallet.wallet_type.lower() == wallet_type.lower() and wallet.currency.lower() == currency.lower():
                 return wallet
 
         return None

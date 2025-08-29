@@ -7,9 +7,7 @@ följer Bitfinex API-krav om strikt ökande värden.
 """
 
 import json
-import time
 from datetime import datetime
-from typing import Dict, List, Optional, Tuple
 
 from utils.logger import get_logger
 from utils.nonce_manager import NONCE_FILE, get_nonce
@@ -55,7 +53,7 @@ def test_nonce_generation(key_id: str, count: int = 10) -> list[tuple[str, int]]
         diff = nonce_int - prev_nonce if prev_nonce > 0 else 0
         results.append((nonce, diff))
         prev_nonce = nonce_int
-        time.sleep(0.001)  # Liten paus mellan genereringar
+        # time.sleep(0.001)  # Liten paus mellan genereringar - REMOVED för prestanda
 
     return results
 

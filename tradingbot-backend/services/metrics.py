@@ -7,7 +7,8 @@ med labels för path, method och status.
 
 from __future__ import annotations
 
-from typing import Any, Dict
+import bisect
+from typing import Any
 
 # Global but in-memory store (process-lokalt). Enkel och snabb.
 metrics_store: dict[str, Any] = {
@@ -18,6 +19,12 @@ metrics_store: dict[str, Any] = {
     "order_submit_ms": 0,
     # histogramliknande struktur: key -> {"count": int, "sum_ms": int}
     "request_latency": {},
+    # begränsad provtagning per endpoint för kvantiler
+    "request_latency_samples": {},  # key -> List[int] (ms), kapad till 200
+    # HTTP-felräknare
+    "http_errors": {},  # key -> count (key == method|path|status)
+    # HTTP-fel events per status (för fönster-beräkningar)
+    "http_error_events": {},  # status(str) -> list[int(epoch_sec)]
     # generiska counters med labels: name -> { label_key -> count }
     "counters": {},
     # ws pool metrics
@@ -85,6 +92,54 @@ def observe_latency(path: str, method: str, status_code: int, duration_ms: int) 
         pass
 
 
+def _samples_key(path: str, method: str, status_code: int) -> str:
+    path_sanitized = str(path or "").split("?", 1)[0]
+    return f"{method.upper()}|{path_sanitized}|{int(status_code)}"
+
+
+def record_http_result(
+    path: str, method: str, status_code: int, duration_ms: int, _retry_after: str | None = None
+) -> None:
+    """Registrera latens och felstatistik för ett HTTP-anrop.
+
+    - Lagrar count/sum
+    - Lagrar begränsad provmängd för kvantilestimat
+    - Ökar felräknare för 429/503/5xx
+    """
+    try:
+        observe_latency(path, method, status_code, duration_ms)
+        key = _samples_key(path, method, status_code)
+        samples = metrics_store["request_latency_samples"].get(key) or []
+        # håll listan sorterad (insätt sorterat) och kapa längden
+        val = max(int(duration_ms), 0)
+        bisect.insort(samples, val)
+        if len(samples) > 200:
+            # ta bort äldsta/lägsta för att hålla storleken i schack
+            samples.pop(0)
+        metrics_store["request_latency_samples"][key] = samples
+
+        # felräknare
+        if int(status_code) >= 400:
+            err_bucket = metrics_store["http_errors"].get(key, 0)
+            metrics_store["http_errors"][key] = int(err_bucket) + 1
+            # registrera enkel timestamp per status
+            try:
+                import time as _t
+
+                ts = int(_t.time())
+                st_key = str(int(status_code))
+                lst = metrics_store["http_error_events"].get(st_key) or []
+                lst.append(ts)
+                if len(lst) > 2000:
+                    # trimma äldsta
+                    lst = lst[-2000:]
+                metrics_store["http_error_events"][st_key] = lst
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+
 def inc_labeled(name: str, labels: dict[str, str], by: int = 1) -> None:
     """Öka en etiketterad counter med 1 (eller 'by')."""
     try:
@@ -122,6 +177,20 @@ def render_prometheus_text() -> str:
                 sum_ms = int(bucket.get("sum_ms", 0))
                 metric = "tradingbot_request_latency_ms_sum"
                 lines.append(f"{metric}{labels} {sum_ms}")
+                # kvantiler p50/p95/p99 från samples om tillgängligt
+                samples_map = metrics_store.get("request_latency_samples", {})
+                samples = samples_map.get(key) or []
+                if samples:
+
+                    def q(p: float, arr: list[int] = samples) -> int:
+                        if not arr:
+                            return 0
+                        idx = int(max(0, min(len(arr) - 1, round((p / 100.0) * (len(arr) - 1)))))
+                        return int(arr[idx])
+
+                    lines.append(f"tradingbot_request_latency_ms_p50{labels} {q(50)}")
+                    lines.append(f"tradingbot_request_latency_ms_p95{labels} {q(95)}")
+                    lines.append(f"tradingbot_request_latency_ms_p99{labels} {q(99)}")
             except Exception:
                 continue
     except Exception:
@@ -134,6 +203,19 @@ def render_prometheus_text() -> str:
             for label_str, value in label_map.items():
                 val_int = int(value)
                 lines.append(f"tradingbot_{metric_name}{label_str} {val_int}")
+    except Exception:
+        pass
+
+    # HTTP error totals (labeled)
+    try:
+        errs: dict[str, int] = metrics_store.get("http_errors", {})
+        for key, val in errs.items():
+            try:
+                method, path, status = key.split("|", 2)
+                labels = _labels_to_str({"path": path, "method": method, "status": status})
+                lines.append(f"tradingbot_http_errors_total{labels} {int(val)}")
+            except Exception:
+                continue
     except Exception:
         pass
 
@@ -214,18 +296,12 @@ def render_prometheus_text() -> str:
                         continue
                     # Enkelt medel av senaste N (redan trimmas i scheduler)
                     b_vals = [float(x.get("brier")) for x in series if x.get("brier") is not None]
-                    l_vals = [
-                        float(x.get("logloss")) for x in series if x.get("logloss") is not None
-                    ]
+                    l_vals = [float(x.get("logloss")) for x in series if x.get("logloss") is not None]
                     labels = _labels_to_str({"window": str(window_key)})
                     if b_vals:
-                        lines.append(
-                            f"tradingbot_prob_brier_window{labels} {sum(b_vals) / max(1, len(b_vals))}"
-                        )
+                        lines.append(f"tradingbot_prob_brier_window{labels} {sum(b_vals) / max(1, len(b_vals))}")
                     if l_vals:
-                        lines.append(
-                            f"tradingbot_prob_logloss_window{labels} {sum(l_vals) / max(1, len(l_vals))}"
-                        )
+                        lines.append(f"tradingbot_prob_logloss_window{labels} {sum(l_vals) / max(1, len(l_vals))}")
                     lines.append(f"tradingbot_prob_validate_samples_window{labels} {len(series)}")
                 except Exception:
                     continue
@@ -235,3 +311,89 @@ def render_prometheus_text() -> str:
         pass
 
     return "\n".join(lines) + "\n"
+
+
+# ---- Helpers för JSON-sammanfattning ----
+def _flatten_samples_for_path_contains(substr: str) -> list[int]:
+    try:
+        subs = str(substr or "")
+        samples_map = metrics_store.get("request_latency_samples", {})
+        out: list[int] = []
+        for key, vals in samples_map.items():
+            try:
+                method, path, status = key.split("|", 2)
+            except Exception:
+                continue
+            if subs and subs not in path:
+                continue
+            out.extend(int(v) for v in vals or [])
+        out.sort()
+        return out
+    except Exception:
+        return []
+
+
+def _quantiles(arr: list[int], ps: list[float]) -> dict[str, int]:
+    if not arr:
+        return {f"p{int(p)}": 0 for p in ps}
+    out: dict[str, int] = {}
+    n = len(arr)
+    for p in ps:
+        idx = int(max(0, min(n - 1, round((p / 100.0) * (n - 1)))))
+        out[f"p{int(p)}"] = int(arr[idx])
+    return out
+
+
+def get_recent_error_counts(window_seconds: int = 3600, statuses: list[int] | None = None) -> dict[str, int]:
+    try:
+        import time as _t
+
+        now = int(_t.time())
+        if statuses is None:
+            statuses = [429, 503]
+        res: dict[str, int] = {}
+        events: dict[str, list[int]] = metrics_store.get("http_error_events", {}) or {}
+        for st in statuses:
+            key = str(int(st))
+            lst = events.get(key) or []
+            cnt = 0
+            if lst:
+                cutoff = now - int(window_seconds)
+                # listan är redan trimmas; enkel linjär filtrering duger
+                for ts in lst:
+                    if int(ts) >= cutoff:
+                        cnt += 1
+            res[key] = cnt
+        return res
+    except Exception:
+        return {"429": 0, "503": 0}
+
+
+def get_metrics_summary() -> dict[str, Any]:
+    try:
+        candles_samples = _flatten_samples_for_path_contains("/candles")
+        q = _quantiles(candles_samples, [50, 95, 99])
+        err_total = {}
+        # summera totals per status från http_errors
+        try:
+            errs: dict[str, int] = metrics_store.get("http_errors", {}) or {}
+            agg: dict[str, int] = {}
+            for key, val in errs.items():
+                try:
+                    _, _, status = key.split("|", 2)
+                    agg[status] = int(agg.get(status, 0)) + int(val)
+                except Exception:
+                    continue
+            err_total = {k: int(v) for k, v in agg.items() if k in ("429", "503")}
+        except Exception:
+            err_total = {}
+        err_recent = get_recent_error_counts(3600, [429, 503])
+        return {
+            "latency": {"candles_ms": q, "samples": len(candles_samples)},
+            "errors": {"last_hour": err_recent, "total": err_total},
+        }
+    except Exception:
+        return {
+            "latency": {"candles_ms": {"p50": 0, "p95": 0, "p99": 0}, "samples": 0},
+            "errors": {"last_hour": {}, "total": {}},
+        }

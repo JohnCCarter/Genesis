@@ -6,7 +6,7 @@ Använder information från scraper-modulen för att validera ordertyper,
 symboler och parametrar.
 """
 
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 try:
     from scraper.bitfinex_docs import BitfinexDocsScraper  # pylint: disable=E0401
@@ -105,6 +105,7 @@ class OrderValidator:
 
         # Grundläggande symboler (inkl. de testsymboler du använder)
         test_syms = [
+            # Med t prefix (för API-anrop)
             "tTESTADA:TESTUSD",
             "tTESTALGO:TESTUSD",
             "tTESTAPT:TESTUSD",
@@ -121,16 +122,30 @@ class OrderValidator:
             "tTESTSOL:TESTUSD",
             "tTESTXAUT:TESTUSD",
             "tTESTXTZ:TESTUSD",
+            # Utan t prefix (för frontend)
+            "TESTADA:TESTUSD",
+            "TESTALGO:TESTUSD",
+            "TESTAPT:TESTUSD",
+            "TESTAVAX:TESTUSD",
+            "TESTBTC:TESTUSD",
+            "TESTBTC:TESTUSDT",
+            "TESTDOGE:TESTUSD",
+            "TESTDOT:TESTUSD",
+            "TESTEOS:TESTUSD",
+            "TESTETH:TESTUSD",
+            "TESTFIL:TESTUSD",
+            "TESTLTC:TESTUSD",
+            "TESTNEAR:TESTUSD",
+            "TESTSOL:TESTUSD",
+            "TESTXAUT:TESTUSD",
+            "TESTXTZ:TESTUSD",
         ]
         # Bygg live-lista via SymbolService om möjligt
         try:
-            import asyncio as _asyncio
-
             from services.symbols import SymbolService
 
             svc = SymbolService()
-            # Kör refresh synkront i denna tråd (validation anropas sällan och tidig init är ok)
-            _asyncio.get_event_loop().run_until_complete(svc.refresh())
+            # Använd befintlig cache istället för att köra refresh synkront
             live_pairs = getattr(svc, "_pairs", [])  # ex. ["BTCUSD","ETHUSD",...]
             live = [{"symbol": f"t{p}"} for p in live_pairs]
         except Exception:
@@ -173,9 +188,7 @@ class OrderValidator:
         # Kontrollera om det är en paper trading symbol
         is_paper_symbol = symbol in self.paper_symbol_names
         if not is_paper_symbol and symbol.startswith("tTEST"):
-            logger.warning(
-                f"Symbol {symbol} börjar med 'tTEST' men är inte registrerad som paper trading symbol"
-            )
+            logger.warning(f"Symbol {symbol} börjar med 'tTEST' men är inte registrerad som paper trading symbol")
 
         # Validera krävda parametrar för ordertypen
         required_params = self.order_types[order_type].get("required_params", [])

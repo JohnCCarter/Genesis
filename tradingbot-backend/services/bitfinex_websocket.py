@@ -7,16 +7,17 @@ Inkluderar automatisk återanslutning och tickdata-hantering.
 
 import asyncio
 import json
+import time
 from collections.abc import Callable
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
+from utils.logger import get_logger
 from websockets.client import connect as ws_connect  # type: ignore[attr-defined]
 from websockets.exceptions import ConnectionClosed  # type: ignore[attr-defined]
+from ws.auth import build_ws_auth_payload
 
 from config.settings import Settings
-from utils.logger import get_logger
-from ws.auth import build_ws_auth_payload
 
 logger = get_logger(__name__)
 
@@ -27,9 +28,7 @@ class BitfinexWebSocketService:
     def __init__(self):
         self.settings = Settings()
         # Standard: använd auth-URI (api) som bas. Publika subar kan specialhanteras vid behov.
-        self.ws_url = (
-            getattr(self.settings, "BITFINEX_WS_AUTH_URI", None) or self.settings.BITFINEX_WS_URI
-        )
+        self.ws_url = getattr(self.settings, "BITFINEX_WS_AUTH_URI", None) or self.settings.BITFINEX_WS_URI
         self.websocket = None
         self.is_connected = False
         self.is_authenticated = False
@@ -82,6 +81,22 @@ class BitfinexWebSocketService:
         self._pool_max_sockets: int = int(getattr(self.settings, "WS_PUBLIC_SOCKETS_MAX", 3))
         self._pool_max_subs: int = int(getattr(self.settings, "WS_MAX_SUBS_PER_SOCKET", 200))
 
+        # Heartbeat/ping & reconnect state
+        self._last_msg_ts: float = 0.0
+        self._ping_task = None
+        self._hb_task = None
+        self._reconnecting: bool = False
+        # Konfig med default
+        try:
+            self._ping_interval = float(getattr(self.settings, "WS_PING_INTERVAL_SEC", 20.0) or 20.0)
+            self._hb_timeout = float(getattr(self.settings, "WS_HEARTBEAT_TIMEOUT_SEC", 60.0) or 60.0)
+        except Exception:
+            self._ping_interval = 20.0
+            self._hb_timeout = 60.0
+
+        # Spåra candles-subs för auto-resubscribe
+        self._requested_candles: dict[tuple[str, str], Callable] = {}
+
     async def _get_public_socket(self):
         """
         Hämta en lämplig public‑socket att sub:a på, skapa ny vid behov.
@@ -103,9 +118,7 @@ class BitfinexWebSocketService:
                     best = ws
                     best_cnt = cnt
             # Skapa ny om ingen finns eller om alla passerat gräns och vi kan skala ut
-            if best is None or (
-                best_cnt >= self._pool_max_subs and len(self._pool_public) < self._pool_max_sockets
-            ):
+            if best is None or (best_cnt >= self._pool_max_subs and len(self._pool_public) < self._pool_max_sockets):
                 # öppna ny public‑socket
                 ws = await self._open_public_socket()
                 if ws:
@@ -131,10 +144,7 @@ class BitfinexWebSocketService:
         try:
             import time as _t
 
-            uri = (
-                getattr(self.settings, "BITFINEX_WS_PUBLIC_URI", None)
-                or self.settings.BITFINEX_WS_URI
-            )
+            uri = getattr(self.settings, "BITFINEX_WS_PUBLIC_URI", None) or self.settings.BITFINEX_WS_URI
             _t0 = _t.perf_counter()
             ws = await ws_connect(uri)
             _t1 = _t.perf_counter()
@@ -383,7 +393,12 @@ class BitfinexWebSocketService:
             self.is_connected = True
             logger.info("✅ Ansluten till Bitfinex WebSocket")
             # Starta lyssnare i bakgrunden direkt för att fånga auth-ack
-            self._asyncio.create_task(self.listen_for_messages())
+            self._asyncio.create_task(self.listen_for_messages(), name="ws-message-listener")
+            # Starta ping/heartbeat‑övervakning
+            try:
+                await self._start_heartbeat_tasks()
+            except Exception:
+                pass
             # Försök autentisera om nycklar finns
             await self.authenticate()
             # Starta symbol-refresh i bakgrunden (ej under pytest)
@@ -392,7 +407,7 @@ class BitfinexWebSocketService:
 
                 if not _os.environ.get("PYTEST_CURRENT_TEST") and not self._symbol_refresh_task:
                     self._symbol_refresh_task = self._asyncio.create_task(
-                        self._symbol_refresh_loop()
+                        self._symbol_refresh_loop(), name="ws-symbol-refresh"
                     )
             except Exception:
                 pass
@@ -579,38 +594,157 @@ class BitfinexWebSocketService:
 
     async def disconnect(self):
         """Kopplar från WebSocket."""
-        if self.websocket:
-            await self.websocket.close()
-            self.is_connected = False
-            logger.info("🔌 Frånkopplad från Bitfinex WebSocket")
-        # Rensa aktivitetsstatus
-        self.active_tickers.clear()
-        self._live_notified.clear()
-        self.margin_base = None
-        self.margin_sym.clear()
-        # Stoppa symbol-refresh loop
+        logger.info("🔄 Startar WebSocket disconnect...")
+
+        # Stoppa symbol-refresh loop först
         try:
-            if self._symbol_refresh_task:
+            if self._symbol_refresh_task and not self._symbol_refresh_task.done():
                 self._symbol_refresh_task.cancel()
-        except Exception:
-            pass
+                logger.info("✅ Symbol refresh task avbruten")
+        except Exception as e:
+            logger.warning(f"⚠️ Fel vid avbrytning av symbol refresh: {e}")
         finally:
             self._symbol_refresh_task = None
+
+        # Stäng huvudsocket
+        try:
+            if self.websocket and not self.websocket.closed:
+                await self.websocket.close()
+                logger.info("✅ Huvudsocket stängd")
+        except Exception as e:
+            logger.warning(f"⚠️ Fel vid stängning av huvudsocket: {e}")
+        finally:
+            self.is_connected = False
+
         # Stäng poolsockets
         try:
+            closed_count = 0
             for ws in list(self._pool_public):
                 try:
-                    await ws.close()
+                    if ws and not ws.closed:
+                        await ws.close()
+                        closed_count += 1
                 except Exception:
                     pass
+            if closed_count > 0:
+                logger.info(f"✅ {closed_count} pool-sockets stängda")
+        except Exception as e:
+            logger.warning(f"⚠️ Fel vid stängning av pool-sockets: {e}")
+        finally:
             self._pool_public.clear()
             self._pool_sub_counts.clear()
             self._sub_socket.clear()
             self._chan_callbacks.clear()
             self._chan_info.clear()
             self._chanid_by_subkey.clear()
+
+        # Rensa aktivitetsstatus
+        self.active_tickers.clear()
+        self._live_notified.clear()
+        self.margin_base = None
+        self.margin_sym.clear()
+
+        logger.info("✅ WebSocket disconnect komplett")
+
+    async def _start_heartbeat_tasks(self):
+        """Startar ping och heartbeat‑övervakning."""
+        # Avsluta tidigare tasks om de finns
+        try:
+            if self._ping_task and not self._ping_task.done():
+                self._ping_task.cancel()
+            if self._hb_task and not self._hb_task.done():
+                self._hb_task.cancel()
         except Exception:
             pass
+        # Starta nya
+        self._ping_task = self._asyncio.create_task(self._ping_loop(), name="ws-ping-loop")
+        self._hb_task = self._asyncio.create_task(self._heartbeat_watchdog(), name="ws-hb-watchdog")
+
+    async def _ping_loop(self):
+        """Skickar ping med jämna mellanrum för att hålla anslutningen vid liv."""
+        try:
+            while True:
+                await self._asyncio.sleep(self._ping_interval)
+                try:
+                    if not self.websocket or self.websocket.closed:
+                        continue
+                    # Bitfinex v2 WS stödjer text 'ping' → svarar 'pong'
+                    await self.websocket.send("ping")
+                except Exception:
+                    pass
+        except Exception:
+            return
+
+    async def _heartbeat_watchdog(self):
+        """Övervakar senaste meddelandetid och triggar reconnect vid timeout."""
+        try:
+            while True:
+                await self._asyncio.sleep(5.0)
+                try:
+                    import time as _t
+
+                    now = _t.time()
+                    last = float(self._last_msg_ts or 0.0)
+                    if last and (now - last) > self._hb_timeout:
+                        logger.warning("⏱️ WS heartbeat timeout – schemalägger reconnect")
+                        await self._schedule_reconnect()
+                except Exception:
+                    pass
+        except Exception:
+            return
+
+    async def _schedule_reconnect(self):
+        """Schemalägger reconnect med exp backoff + jitter och auto-resubscribe."""
+        if self._reconnecting:
+            return
+        self._reconnecting = True
+        try:
+            # Stäng befintliga sockets först
+            try:
+                await self.disconnect()
+            except Exception:
+                pass
+            # Exponentiell backoff med jitter
+            base = 0.5
+            max_delay = 15.0
+            delay = base
+            for attempt in range(1, 6):  # noqa: B007
+                try:
+                    ok = await self.connect()
+                    if ok:
+                        break
+                except Exception:
+                    pass
+                try:
+                    import random as _rand
+
+                    jitter = _rand.uniform(0.0, 0.4 * delay)
+                except Exception:
+                    jitter = 0.0
+                await self._asyncio.sleep(delay + jitter)
+                delay = min(max_delay, delay * 2)
+            # Auto-resubscribe tickers
+            try:
+                for raw in list(getattr(self, "_requested_symbols", [])):
+                    try:
+                        await self.subscribe_ticker(raw, self._handle_ticker_with_strategy)
+                        await self._asyncio.sleep(0.05)
+                    except Exception:
+                        pass
+            except Exception:
+                pass
+            # Auto-resubscribe candles
+            try:
+                for (sym, tf), cb in list(getattr(self, "_requested_candles", {}).items()):
+                    try:
+                        await self.subscribe_candles(sym, tf, cb)
+                        await self._asyncio.sleep(0.05)
+                    except Exception:
+                        pass
+            except Exception:
+                pass
+        finally:
+            self._reconnecting = False
 
     async def subscribe_ticker(self, symbol: str, callback: Callable):
         """
@@ -878,6 +1012,11 @@ class BitfinexWebSocketService:
                 self._sub_socket[sub_key] = target_ws
             except Exception:
                 pass
+            # Spåra för auto-resubscribe
+            try:
+                self._requested_candles[(symbol, timeframe)] = callback
+            except Exception:
+                pass
             logger.info("🕯️ Prenumererar på candles %s", ckey)
         except Exception as e:
             logger.error(f"❌ Candles-prenumeration misslyckades: {e}")
@@ -1065,9 +1204,7 @@ class BitfinexWebSocketService:
                 min_interval = 60.0
 
             if changed or (now_s - last_log) >= min_interval:
-                logger.info(
-                    f"🎯 Strategiutvärdering för {symbol}: {result['signal']} - {result['reason']}"
-                )
+                logger.info(f"🎯 Strategiutvärdering för {symbol}: {result['signal']} - {result['reason']}")
                 self._last_strategy_signal[symbol] = result.get("signal")
                 self._last_strategy_reason[symbol] = result.get("reason")
                 self._last_strategy_log_ts[symbol] = now_s
@@ -1084,6 +1221,13 @@ class BitfinexWebSocketService:
                 try:
                     data = json.loads(message)
                     self._current_incoming_ws = self.websocket
+                    # Heartbeat: uppdatera senaste meddelandetid
+                    try:
+                        import time as _t
+
+                        self._last_msg_ts = _t.time()
+                    except Exception:
+                        pass
 
                     # Hantera olika meddelandetyper
                     if isinstance(data, list) and len(data) > 1:
@@ -1104,8 +1248,10 @@ class BitfinexWebSocketService:
         except ConnectionClosed:
             logger.warning("⚠️ WebSocket-anslutning stängd")
             self.is_connected = False
+            await self._schedule_reconnect()
         except Exception as e:
             logger.error(f"❌ WebSocket-lyssnare fel: {e}")
+            await self._schedule_reconnect()
 
     async def _handle_channel_message(self, data: list):
         """Hanterar kanal-meddelanden (publika och privata)."""
@@ -1118,6 +1264,21 @@ class BitfinexWebSocketService:
                 # Format: [0, 'EVENT_CODE', payload]
                 if isinstance(message_data, str):
                     event_code = message_data
+
+                    # OPTIMERING: Hantera calc responses direkt
+                    if event_code == "miu":
+                        await self._handle_miu(data)
+                        return
+                    elif event_code == "pu":
+                        await self._handle_pu(data)
+                        return
+                    elif event_code == "wu":
+                        await self._handle_wu(data)
+                        return
+                    elif event_code == "fiu":
+                        await self._handle_fiu(data)
+                        return
+
                     cb = self.private_event_callbacks.get(event_code)
                     if cb:
                         # Skicka hela ursprungsmeddelandet så handlers kan läsa msg[1] och msg[2]
@@ -1138,17 +1299,13 @@ class BitfinexWebSocketService:
             current_ws = getattr(self, "_current_incoming_ws", None)
             if current_ws is None:
                 current_ws = self.websocket
-            cb = self._chan_callbacks.get(
-                (current_ws, int(channel_id))
-            ) or self.channel_callbacks.get(int(channel_id))
+            cb = self._chan_callbacks.get((current_ws, int(channel_id))) or self.channel_callbacks.get(int(channel_id))
             if cb:
                 # Ignorera heartbeat
                 if message_data == "hb":
                     return
                 info = (
-                    self._chan_info.get((current_ws, int(channel_id)))
-                    or self.channel_info.get(int(channel_id))
-                    or {}
+                    self._chan_info.get((current_ws, int(channel_id))) or self.channel_info.get(int(channel_id)) or {}
                 )
                 chan = info.get("channel")
                 symbol = info.get("symbol") or "unknown"
@@ -1212,9 +1369,7 @@ class BitfinexWebSocketService:
                 chan_id = data.get("chanId") or data.get("chanid") or data.get("chan_id")
                 symbol = data.get("symbol")
                 key = data.get("key")
-                logger.info(
-                    f"✅ Prenumeration bekräftad: channel={chan} symbol={symbol or key} chanId={chan_id}"
-                )
+                logger.info(f"✅ Prenumeration bekräftad: channel={chan} symbol={symbol or key} chanId={chan_id}")
                 cb_key = None
                 if chan == "ticker" and symbol:
                     cb_key = f"ticker|{symbol}"
@@ -1308,10 +1463,95 @@ class BitfinexWebSocketService:
         except Exception as e:
             logger.warning(f"⚠️ Kunde inte hantera miu: {e}")
 
+    async def _handle_pu(self, msg: list):
+        """Hantera Position Updates (pu)."""
+        try:
+            if len(msg) < 3 or not isinstance(msg[2], list):
+                return
+            pos_data = msg[2]
+            if len(pos_data) < 10:
+                return
+
+            symbol = pos_data[0]
+            status = pos_data[1]
+            amount = float(pos_data[2]) if pos_data[2] is not None else 0.0
+            base_price = float(pos_data[3]) if pos_data[3] is not None else 0.0
+            pl = float(pos_data[6]) if pos_data[6] is not None else 0.0
+            pl_perc = float(pos_data[7]) if pos_data[7] is not None else 0.0
+
+            if not hasattr(self, "positions"):
+                self.positions = {}
+
+            self.positions[symbol] = {
+                "status": status,
+                "amount": amount,
+                "base_price": base_price,
+                "pl": pl,
+                "pl_perc": pl_perc,
+                "timestamp": time.time(),
+            }
+
+            logger.debug("📊 Position uppdaterad: %s = %s", symbol, self.positions[symbol])
+        except Exception as e:
+            logger.warning(f"⚠️ Kunde inte hantera pu: {e}")
+
+    async def _handle_wu(self, msg: list):
+        """Hantera Wallet Updates (wu)."""
+        try:
+            if len(msg) < 3 or not isinstance(msg[2], list):
+                return
+            wallet_data = msg[2]
+            if len(wallet_data) < 4:
+                return
+
+            wallet_type = wallet_data[0]
+            currency = wallet_data[1]
+            balance = float(wallet_data[2]) if wallet_data[2] is not None else 0.0
+            available = float(wallet_data[4]) if wallet_data[4] is not None else 0.0
+
+            if not hasattr(self, "wallets"):
+                self.wallets = {}
+
+            wallet_key = f"{wallet_type}_{currency}"
+            self.wallets[wallet_key] = {
+                "type": wallet_type,
+                "currency": currency,
+                "balance": balance,
+                "available": available,
+                "timestamp": time.time(),
+            }
+
+            logger.debug("💰 Wallet uppdaterad: %s = %s", wallet_key, self.wallets[wallet_key])
+        except Exception as e:
+            logger.warning(f"⚠️ Kunde inte hantera wu: {e}")
+
+    async def _handle_fiu(self, msg: list):
+        """Hantera Funding Info Updates (fiu)."""
+        try:
+            if len(msg) < 3 or not isinstance(msg[2], list):
+                return
+            funding_data = msg[2]
+            if len(funding_data) < 3:
+                return
+
+            type_info = funding_data[0]
+            if type_info == "sym":
+                symbol = funding_data[1]
+                rates_data = funding_data[2] if len(funding_data) > 2 else []
+
+                if not hasattr(self, "funding_rates"):
+                    self.funding_rates = {}
+
+                self.funding_rates[symbol] = {"rates": rates_data, "timestamp": time.time()}
+
+                logger.debug("📈 Funding rates uppdaterad: %s = %s", symbol, rates_data)
+        except Exception as e:
+            logger.warning(f"⚠️ Kunde inte hantera fiu: {e}")
+
     async def margin_calc_if_needed(self, symbol: str) -> dict:
         """
         Skicka WS calc (miu: sym) om buy/sell saknas (None) i margin_sym.
-        Returnerar enkel status om calc skickades.
+        OPTIMERAD: Calc caching för att respektera rate limits.
         """
         try:
             # Resolve symbol så vi använder eff_symbol i WS
@@ -1324,25 +1564,243 @@ class BitfinexWebSocketService:
                 eff = svc.resolve(symbol)
             except Exception:
                 pass
+
+            # OPTIMERING: Calc cache (5 minuter TTL)
+            cache_key = f"calc_margin_{eff}"
+            cache_ttl = 300  # 5 minuter
+
+            if hasattr(self, "_calc_cache"):
+                cached = self._calc_cache.get(cache_key)
+                if cached and (time.time() - cached["timestamp"]) < cache_ttl:
+                    logger.debug(f"📋 Använder cached calc för {eff}")
+                    return {"requested": False, "reason": "cached"}
+            else:
+                self._calc_cache = {}
+
             arr = (self.margin_sym or {}).get(eff)
-            need = not (
-                isinstance(arr, list)
-                and len(arr) >= 4
-                and arr[2] is not None
-                and arr[3] is not None
-            )
+            need = not (isinstance(arr, list) and len(arr) >= 4 and arr[2] is not None and arr[3] is not None)
             if not need:
                 return {"requested": False, "reason": "fields_present"}
             if not await self.ensure_authenticated():
                 return {"requested": False, "error": "ws_not_authenticated"}
-            # Bitfinex CALC input för margin kräver lista av nycklar, t.ex. [["margin_base"],["margin_sym_tBTCUSD"]]
+
+            # OPTIMERING: Batch calc requests
             keys = [["margin_base"], [f"margin_sym_{eff}"]]
             msg = [0, "calc", None, keys]
             await self.send(msg)
+
+            # Spara i cache
+            self._calc_cache[cache_key] = {"timestamp": time.time(), "requested": True}
+
             logger.info("🧮 WS margin calc begärd för %s", eff)
             return {"requested": True}
         except Exception as e:
             logger.error("WS margin calc fel: %s", e)
+            return {"requested": False, "error": str(e)}
+
+    async def margin_calc_batch_if_needed(self, symbols: list[str]) -> dict[str, dict]:
+        """
+        OPTIMERAD: Batch-version av margin_calc_if_needed.
+        Skickar calc-requests för flera symboler samtidigt.
+
+        Args:
+            symbols: Lista med symboler att begära calc för
+
+        Returns:
+            Dict med symbol -> result mapping
+        """
+        try:
+            if not await self.ensure_authenticated():
+                return {symbol: {"requested": False, "error": "ws_not_authenticated"} for symbol in symbols}
+
+            results = {}
+            symbols_to_calc = []
+
+            # Kontrollera cache och behov för varje symbol
+            for symbol in symbols:
+                eff = symbol
+                try:
+                    from services.symbols import SymbolService
+
+                    svc = SymbolService()
+                    await svc.refresh()
+                    eff = svc.resolve(symbol)
+                except Exception:
+                    pass
+
+                # Kontrollera cache
+                cache_key = f"calc_margin_{eff}"
+                cache_ttl = 300  # 5 minuter
+
+                if hasattr(self, "_calc_cache"):
+                    cached = self._calc_cache.get(cache_key)
+                    if cached and (time.time() - cached["timestamp"]) < cache_ttl:
+                        results[symbol] = {"requested": False, "reason": "cached"}
+                        continue
+                else:
+                    self._calc_cache = {}
+
+                # Kontrollera om data redan finns
+                arr = (self.margin_sym or {}).get(eff)
+                need = not (isinstance(arr, list) and len(arr) >= 4 and arr[2] is not None and arr[3] is not None)
+
+                if not need:
+                    results[symbol] = {"requested": False, "reason": "fields_present"}
+                else:
+                    symbols_to_calc.append((symbol, eff))
+
+            if not symbols_to_calc:
+                return results
+
+            # Skicka batch calc-request
+            try:
+                keys = [["margin_base"]]  # Lägg till base först
+                for _symbol, eff in symbols_to_calc:
+                    keys.append([f"margin_sym_{eff}"])
+
+                msg = [0, "calc", None, keys]
+                await self.send(msg)
+
+                # Spara i cache för alla symboler
+                now = time.time()
+                for symbol, eff in symbols_to_calc:
+                    cache_key = f"calc_margin_{eff}"
+                    self._calc_cache[cache_key] = {"timestamp": now, "requested": True}
+                    results[symbol] = {"requested": True}
+
+                logger.info(f"🧮 Batch WS margin calc begärd för {len(symbols_to_calc)} symboler")
+
+            except Exception as e:
+                logger.error(f"❌ Batch WS margin calc fel: {e}")
+                for symbol, _eff in symbols_to_calc:
+                    results[symbol] = {"requested": False, "error": str(e)}
+
+            return results
+
+        except Exception as e:
+            logger.error(f"❌ Batch margin calc fel: {e}")
+            return {symbol: {"requested": False, "error": str(e)} for symbol in symbols}
+
+    async def position_calc_if_needed(self, symbol: str) -> dict:
+        """
+        Skicka WS calc för position info om den saknas.
+        OPTIMERAD: Calc caching för att respektera rate limits.
+        """
+        try:
+            # Resolve symbol så vi använder eff_symbol i WS
+            eff = symbol
+            try:
+                from services.symbols import SymbolService
+
+                svc = SymbolService()
+                await svc.refresh()
+                eff = svc.resolve(symbol)
+            except Exception:
+                pass
+
+            # OPTIMERING: Calc cache (5 minuter TTL)
+            cache_key = f"calc_position_{eff}"
+            cache_ttl = 300  # 5 minuter
+
+            if hasattr(self, "_calc_cache"):
+                cached = self._calc_cache.get(cache_key)
+                if cached and (time.time() - cached["timestamp"]) < cache_ttl:
+                    logger.debug(f"📋 Använder cached position calc för {eff}")
+                    return {"requested": False, "reason": "cached"}
+            else:
+                self._calc_cache = {}
+
+            # Kontrollera om position data redan finns
+            if hasattr(self, "positions") and eff in self.positions:
+                pos_data = self.positions[eff]
+                if pos_data and pos_data.get("status") == "ACTIVE":
+                    return {"requested": False, "reason": "position_exists"}
+
+            if not await self.ensure_authenticated():
+                return {"requested": False, "error": "ws_not_authenticated"}
+
+            # Skicka position calc request
+            keys = [[f"position_{eff}"]]
+            msg = [0, "calc", None, keys]
+            await self.send(msg)
+
+            # Spara i cache
+            self._calc_cache[cache_key] = {"timestamp": time.time(), "requested": True}
+
+            logger.info("📊 WS position calc begärd för %s", eff)
+            return {"requested": True}
+        except Exception as e:
+            logger.error("WS position calc fel: %s", e)
+            return {"requested": False, "error": str(e)}
+
+    async def wallet_calc_if_needed(self, wallet_type: str = "exchange", currency: str = "USD") -> dict:
+        """
+        Skicka WS calc för wallet balance info.
+        OPTIMERAD: Calc caching för att respektera rate limits.
+        """
+        try:
+            # OPTIMERING: Calc cache (5 minuter TTL)
+            cache_key = f"calc_wallet_{wallet_type}_{currency}"
+            cache_ttl = 300  # 5 minuter
+
+            if hasattr(self, "_calc_cache"):
+                cached = self._calc_cache.get(cache_key)
+                if cached and (time.time() - cached["timestamp"]) < cache_ttl:
+                    logger.debug(f"📋 Använder cached wallet calc för {wallet_type}:{currency}")
+                    return {"requested": False, "reason": "cached"}
+            else:
+                self._calc_cache = {}
+
+            if not await self.ensure_authenticated():
+                return {"requested": False, "error": "ws_not_authenticated"}
+
+            # Skicka wallet calc request
+            keys = [[f"wallet_{wallet_type}_{currency}"]]
+            msg = [0, "calc", None, keys]
+            await self.send(msg)
+
+            # Spara i cache
+            self._calc_cache[cache_key] = {"timestamp": time.time(), "requested": True}
+
+            logger.info("💰 WS wallet calc begärd för %s:%s", wallet_type, currency)
+            return {"requested": True}
+        except Exception as e:
+            logger.error("WS wallet calc fel: %s", e)
+            return {"requested": False, "error": str(e)}
+
+    async def funding_calc_if_needed(self, currency: str = "USD") -> dict:
+        """
+        Skicka WS calc för funding info.
+        OPTIMERAD: Calc caching för att respektera rate limits.
+        """
+        try:
+            # OPTIMERING: Calc cache (5 minuter TTL)
+            cache_key = f"calc_funding_{currency}"
+            cache_ttl = 300  # 5 minuter
+
+            if hasattr(self, "_calc_cache"):
+                cached = self._calc_cache.get(cache_key)
+                if cached and (time.time() - cached["timestamp"]) < cache_ttl:
+                    logger.debug(f"📋 Använder cached funding calc för {currency}")
+                    return {"requested": False, "reason": "cached"}
+            else:
+                self._calc_cache = {}
+
+            if not await self.ensure_authenticated():
+                return {"requested": False, "error": "ws_not_authenticated"}
+
+            # Skicka funding calc request
+            keys = [[f"funding_sym_f{currency}"]]
+            msg = [0, "calc", None, keys]
+            await self.send(msg)
+
+            # Spara i cache
+            self._calc_cache[cache_key] = {"timestamp": time.time(), "requested": True}
+
+            logger.info("📈 WS funding calc begärd för %s", currency)
+            return {"requested": True}
+        except Exception as e:
+            logger.error("WS funding calc fel: %s", e)
             return {"requested": False, "error": str(e)}
 
     async def start_listening(self):

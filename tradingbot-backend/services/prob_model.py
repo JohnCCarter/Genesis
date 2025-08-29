@@ -7,7 +7,7 @@ Feature-flagged, safe fallback till heuristik om modell saknas.
 from __future__ import annotations
 
 import json
-from typing import Any, Dict, Optional
+from typing import Any
 
 from config.settings import Settings
 
