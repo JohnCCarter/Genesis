@@ -44,12 +44,19 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
           cache: "npm"
           cache-dependency-path: frontend/dashboard/package-lock.json
 
       - name: Install
         run: npm ci
+
+      - name: Debug - Check file structure
+        run: |
+          pwd
+          ls -la src/lib/
+          ls -la tsconfig.json
+          cat tsconfig.json
 
       - name: Typecheck
         run: npm run typecheck --silent
