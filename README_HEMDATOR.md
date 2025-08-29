@@ -4,47 +4,95 @@
 
 ## 🏠 Din Hemdator-konfiguration
 
-- **OS:** Windows 10 (22631)
+- **OS:** Windows 10/11
 - **Terminal:** PowerShell
-- **Projekt-sökväg:** `[DIN_HEMDATOR_SÖKVÄG]` (ändra till din faktiska sökväg)
-- **Python:** 3.11
-- **Poetry:** INTE installerat än (kommer installeras)
+- **Projekt-sökväg:** `[DIN_HEMDATOR_SÖKVÄG]` ⚠️ **ÄNDRA DETTA till din riktiga hemdator-sökväg!**
+- **Python:** 3.11+ (installera från python.org om du inte har det)
+- **Node.js:** v18+ (installera från nodejs.org om du inte har det)
+- **Poetry:** ❌ INTE nödvändigt! Vi använder enkel venv istället
 
-## ✅ Rekommenderad snabbstart (Windows venv, utan Poetry)
+## ✅ Rekommenderad snabbstart (Lokal venv, utan Poetry)
 
-Detta är den enklaste och mest stabila vägen, identisk med din nuvarande fungerande miljö.
+**LOKAL miljö rekommenderas** - isolerar dependencies från andra projekt och globala Python.
+Detta är den säkraste och mest stabila vägen.
 
 ```powershell
-# 1) Navigera till projektet
-cd "C:\Users\fa06662\HCP\Hämtade filer\Genesis"
+# 1) Navigera till projektet (ÄNDRA SÖKVÄGEN!)
+cd "[DIN_HEMDATOR_SÖKVÄG]"
 
-# 2) Skapa och aktivera ren venv
-python -m venv .venv_clean
-& ".\.venv_clean\Scripts\Activate.ps1"
+# 2) Hämta senaste koden från jobbet
+git pull origin main
+
+# 3) Skapa och aktivera lokal venv för hemdatorn
+python -m venv .venv_hem
+& ".\.venv_hem\Scripts\Activate.ps1"
 python -m pip install -U pip setuptools wheel
 
-# 3) Installera beroenden (uppdaterade med säkerhetsfixar)
+# 4) Installera Python dependencies
 python -m pip install -r tradingbot-backend\requirements.txt
 
-# 4) .env
-copy tradingbot-backend\env.example tradingbot-backend\.env
-# Fyll BITFINEX_API_KEY/SECRET m.m. i tradingbot-backend\.env
+# 5) Skapa/uppdatera config-filer
+python setup_config.py
 
-# 5) Starta backend
+# 6) Kopiera och redigera .env (ENDAST första gången)
+copy tradingbot-backend\env.example tradingbot-backend\.env
+# Öppna .env och lägg till dina Bitfinex API-nycklar
+
+# 7) Installera frontend dependencies
+cd frontend\dashboard
+npm install
+cd ..\..
+
+# 8) Starta backend
 cd tradingbot-backend
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
-# 6) Starta frontend (nytt PowerShell-fönster)
-cd "C:\Users\fa06662\HCP\Hämtade filer\Genesis\frontend\dashboard"
-npm install
+# 9) Starta frontend (nytt PowerShell-fönster)
+cd "[DIN_HEMDATOR_SÖKVÄG]\frontend\dashboard"
 npm run dev
 
-# 7) Verifiera
-# Backend: http://127.0.0.1:8000/docs
+# 10) Öppna i webbläsaren
+# Backend API: http://127.0.0.1:8000/docs
 # Frontend: http://127.0.0.1:5173
 ```
 
 Tips: `scripts/start.ps1` prioriterar `.venv_clean` och faller tillbaka till `.venv` om den inte finns.
+
+## 🚀 Daglig startup (efter första setup)
+
+När du sitter hemma och vill starta projektet snabbt:
+
+### **Backend startup:**
+```powershell
+# 1. Navigera till projektet
+cd "[DIN_HEMDATOR_SÖKVÄG]"
+
+# 2. Hämta eventuella uppdateringar från jobbet
+git pull origin main
+
+# 3. Aktivera lokal miljö
+& ".\.venv_hem\Scripts\Activate.ps1"
+
+# 4. Starta backend
+cd tradingbot-backend
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
+```
+
+### **Frontend startup (nytt PowerShell-fönster):**
+```powershell
+cd "[DIN_HEMDATOR_SÖKVÄG]\frontend\dashboard"
+npm run dev
+```
+
+### **Snabbkommandon:**
+```powershell
+# Öppna webbläsare direkt till rätt sidor
+start http://127.0.0.1:8000/docs    # Backend API
+start http://127.0.0.1:5173         # Frontend Dashboard
+
+# Kontrollera att allt fungerar
+curl http://127.0.0.1:8000/health   # Backend health check
+```
 
 ### **🔒 Nya säkerhetsförbättringar (2025-08-29):**
 
@@ -57,24 +105,74 @@ Tips: `scripts/start.ps1` prioriterar `.venv_clean` och faller tillbaka till `.v
 
 ## 🚨 Vanliga Problem & Lösningar
 
-### Problem − Null‑byte‑skript korruptar venv
+### **Problem 1: "python command not found" på hemdatorn**
 
-Om du kör ett skript som tar bort null‑bytes, se till att EXKLUDERA `/.venv*`, `/node_modules`, `/frontend/dist`, `/tradingbot-backend/__pycache__`.
-
-Symtom: paketfel som `cannot import FastAPI`, `ModuleNotFoundError: httptools`, h11‑API fel.
-
-Lösning (snabb):
-
-```powershell
-# Skapa ny venv och använd den
-python -m venv .venv_clean
-& ".\.venv_clean\Scripts\Activate.ps1"
-python -m pip install -U pip setuptools wheel
-python -m pip install -r tradingbot-backend\requirements.txt
-python -m pip install "uvicorn[standard]==0.24.0" "click==8.1.7" "h11==0.14.0" pydantic-settings
+**Felmeddelande:**
+```
+'python' is not recognized as an internal or external command
 ```
 
-Starta om med `.\scripts\start.ps1 start`.
+**Lösning:**
+```powershell
+# Installera Python från python.org
+# ELLER använd Microsoft Store version
+# ELLER kolla om du har py istället:
+py --version
+py -m venv .venv_hem  # Använd py istället för python
+```
+
+### **Problem 2: "Access denied" när du skapar venv**
+
+**Lösning:**
+```powershell
+# Öppna PowerShell som Administrator
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+
+# ELLER använd annan mapp:
+cd C:\temp\Genesis  # Istället för Program Files eller skyddade mappar
+```
+
+### **Problem 3: Git pull kräver autentisering**
+
+**Lösning:**
+```powershell
+# Första gången, konfigurera git:
+git config --global user.name "Ditt Namn"
+git config --global user.email "din.email@exempel.com"
+
+# Om du får autentiseringsfel:
+git remote -v  # Kolla remote URL
+# Använd GitHub personal access token istället för lösenord
+```
+
+### **Problem 4: Port 8000 eller 5173 är upptagen på hemdatorn**
+
+**Lösning:**
+```powershell
+# Hitta vad som använder porten:
+netstat -ano | findstr :8000
+netstat -ano | findstr :5173
+
+# Använd andra portar:
+uvicorn main:app --reload --port 8001  # Backend
+npm run dev -- --port 5174            # Frontend
+```
+
+### **Problem 5: npm install misslyckas**
+
+**Lösning:**
+```powershell
+# Rensa npm cache:
+npm cache clean --force
+
+# Installera med verbose output:
+npm install --verbose
+
+# Om det fortfarande misslyckas, ta bort node_modules:
+Remove-Item node_modules -Recurse -Force
+Remove-Item package-lock.json
+npm install
+```
 
 ### **Problem 0: Poetry inte installerat**
 
@@ -191,33 +289,75 @@ taskkill /PID [PID_NUMMER] /F
 
 ## 🚀 Snabbstart för Hemdator
 
-### **Första gången setup:**
+### **Första gången setup på hemdatorn:**
 
+#### **Steg 1: Förutsättningar**
 ```powershell
-# 1. Projektet finns redan på din hemdator
-cd "C:\Users\fa06662\HCP\Hämtade filer\Genesis"
+# Kontrollera att du har rätt verktyg installerade
+python --version    # Bör vara 3.11+
+node --version      # Bör vara v18+
+git --version       # För att hämta kod från jobbet
 
-# 2. Kontrollera att du är på main branch
-git branch
-git status
+# Om något saknas:
+# Python: https://python.org/downloads
+# Node.js: https://nodejs.org
+# Git: https://git-scm.com/downloads
+```
 
-# 3. Installera Python dependencies (INGA Poetry-problem!)
-python -m venv .venv_clean
-& ".\.venv_clean\Scripts\Activate.ps1"
+#### **Steg 2: Hämta projektet från jobbet**
+```powershell
+# Klona projektet till din hemdator (ÄNDRA SÖKVÄGEN!)
+cd "[DIN_FÖRÄLDER_MAPP]"
+git clone https://github.com/JohnCCarter/Genesis.git
+cd Genesis
+
+# ELLER om projektet redan finns hemma:
+cd "[DIN_HEMDATOR_SÖKVÄG]"
+git pull origin main
+git status  # Kontrollera att du är på main branch
+```
+
+#### **Steg 3: Setup Python-miljö**
+```powershell
+# Skapa LOKAL Python-miljö (isolerad från andra projekt)
+python -m venv .venv_hem
+& ".\.venv_hem\Scripts\Activate.ps1"
 python -m pip install -U pip setuptools wheel
 python -m pip install -r tradingbot-backend\requirements.txt
+```
 
-# 4. Skapa config-filer
+#### **Steg 4: Setup konfiguration**
+```powershell
+# Skapa config-filer
 python setup_config.py
 
-# 5. Skapa .env-fil med dina API-nycklar
+# Kopiera .env-template och lägg till dina API-nycklar
 copy tradingbot-backend\env.example tradingbot-backend\.env
-# Redigera .env med dina Bitfinex-nycklar
+# VIKTIGT: Öppna .env i textredigerare och lägg till:
+# BITFINEX_API_KEY=din_api_nyckel
+# BITFINEX_API_SECRET=din_api_secret
+```
 
-# 6. Installera frontend dependencies
+#### **Steg 5: Setup frontend**
+```powershell
 cd frontend\dashboard
 npm install
 cd ..\..
+```
+
+#### **Steg 6: Testa att allt fungerar**
+```powershell
+# Starta backend
+cd tradingbot-backend
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
+
+# I nytt PowerShell-fönster, starta frontend:
+cd "[DIN_HEMDATOR_SÖKVÄG]\frontend\dashboard"
+npm run dev
+
+# Testa i webbläsare:
+# http://127.0.0.1:8000/docs (Backend API)
+# http://127.0.0.1:5173 (Frontend)
 ```
 
 ### **Steg 1: Öppna PowerShell som Administrator**
