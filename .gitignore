@@ -298,3 +298,5 @@ genesis-python-*/
 genesis-python-new*/
 *.sarif
 *.csv
+Genesis-CodeQL.code-workspace
+codeql-custom-queries-python/
