@@ -180,7 +180,14 @@ class JsonExtractor:
             json_obj: JSON-objektet eller arrayen att spara
             filename: Filnamn att spara som
         """
-        output_path = os.path.join(self.output_dir, filename)
+        # Security: Validate filename to prevent path traversal
+        import os
+
+        safe_filename = os.path.basename(filename)  # Remove any path components
+        if ".." in safe_filename or "/" in safe_filename or "\\" in safe_filename:
+            raise ValueError(f"Invalid filename: {filename}")
+
+        output_path = os.path.join(self.output_dir, safe_filename)
         with open(output_path, "w", encoding="utf-8") as f:
             json.dump(json_obj, f, indent=2, ensure_ascii=False)
         logger.info(f"Saved JSON to {output_path}")
