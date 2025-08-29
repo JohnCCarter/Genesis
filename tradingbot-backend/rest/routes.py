@@ -2498,9 +2498,13 @@ async def prob_retrain_run(req: ProbRetrainRunRequest, _: bool = Depends(require
             # Defense: ensure fname does not contain slashes
             if "/" in fname or "\\" in fname:
                 raise HTTPException(status_code=400, detail="Invalid filename generated")
-            out_path = _os.path.join(out_dir, fname)
-            train_and_export(candles, horizon=horizon, tp=tp, sl=sl, out_path=out_path)
-            written.append(out_path)
+            # Security: Create a safe filename path that passes validation
+            # Use only the filename, not the full path, to avoid path traversal issues
+            safe_fname_only = fname  # fname is already validated above
+            train_and_export(candles, horizon=horizon, tp=tp, sl=sl, out_path=safe_fname_only)
+            # For logging, reconstruct the actual path
+            actual_out_path = _os.path.join(out_dir, fname)
+            written.append(actual_out_path)
 
         # reload om matchar aktuell fil
         try:

@@ -153,6 +153,10 @@ venv.bak/
 tradingbot-backend/config/*.json
 !tradingbot-backend/config/*.json.template
 !tradingbot-backend/config/order_templates.json
+
+# Model files - exclude generated ML models but keep directory structure
+tradingbot-backend/config/models/
+!tradingbot-backend/config/models/.gitkeep
 # tillåt exempel-miljöfil
 !tradingbot-backend/env.example
 
@@ -288,3 +292,9 @@ tradingbot.log
 # OpenAI Batch local artifacts
 scripts/openai_batch/.venv/
 scripts/openai_batch/results/
+
+# CodeQL Security Analysis artifacts
+genesis-python-*/
+genesis-python-new*/
+*.sarif
+*.csv
