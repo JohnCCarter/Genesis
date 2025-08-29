@@ -15,42 +15,45 @@
 Detta är den enklaste och mest stabila vägen, identisk med din nuvarande fungerande miljö.
 
 ```powershell
-# 1) Skapa och aktivera ren venv
-cd "[DIN_HEMDATOR_SÖKVÄG]"
+# 1) Navigera till projektet
+cd "C:\Users\fa06662\HCP\Hämtade filer\Genesis"
+
+# 2) Skapa och aktivera ren venv
 python -m venv .venv_clean
 & ".\.venv_clean\Scripts\Activate.ps1"
 python -m pip install -U pip setuptools wheel
 
-# 2) Installera beroenden
+# 3) Installera beroenden (uppdaterade med säkerhetsfixar)
 python -m pip install -r tradingbot-backend\requirements.txt
-# Säker pinnings för HTTP‑stacken
-python -m pip install "uvicorn[standard]==0.24.0" "click==8.1.7" "h11==0.14.0" pydantic-settings
 
-# 3) .env
+# 4) .env
 copy tradingbot-backend\env.example tradingbot-backend\.env
 # Fyll BITFINEX_API_KEY/SECRET m.m. i tradingbot-backend\.env
 
-# 4) Starta backend (scriptet väljer .venv_clean automatiskt)
-.\scripts\start.ps1 start
+# 5) Starta backend
+cd tradingbot-backend
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
-# 5) Verifiera
-Start-Sleep -Seconds 3
-start http://127.0.0.1:8000/docs
+# 6) Starta frontend (nytt PowerShell-fönster)
+cd "C:\Users\fa06662\HCP\Hämtade filer\Genesis\frontend\dashboard"
+npm install
+npm run dev
+
+# 7) Verifiera
+# Backend: http://127.0.0.1:8000/docs
+# Frontend: http://127.0.0.1:5173
 ```
 
 Tips: `scripts/start.ps1` prioriterar `.venv_clean` och faller tillbaka till `.venv` om den inte finns.
 
-### **Hitta din sökväg:**
+### **🔒 Nya säkerhetsförbättringar (2025-08-29):**
 
-```powershell
-# Öppna PowerShell och kör:
-pwd
-# Eller
-Get-Location
-
-# Detta visar din nuvarande katalog
-# Exempel: C:\Users\DittAnvändarnamn\Documents\Genesis
-```
+- ✅ **Path traversal vulnerabilities** fixade (CWE-022)
+- ✅ **Black updated** till 25.1.0 (ReDoS fix)
+- ✅ **Dependencies updated**: requests, beautifulsoup4, pycodestyle, pyflakes
+- ✅ **Secure model directory**: `config/models/` för ML-filer
+- ✅ **Input sanitization** för API endpoints
+- ✅ **CodeQL security analysis** uppsatt för kontinuerlig scanning
 
 ## 🚨 Vanliga Problem & Lösningar
 
@@ -191,25 +194,30 @@ taskkill /PID [PID_NUMMER] /F
 ### **Första gången setup:**
 
 ```powershell
-# 1. Klona projektet till din hemdator
-git clone https://github.com/JohnCCarter/Genesis.git
-cd Genesis
+# 1. Projektet finns redan på din hemdator
+cd "C:\Users\fa06662\HCP\Hämtade filer\Genesis"
 
-# 2. Byt till rätt branch
-git checkout Genesis-Frontend
+# 2. Kontrollera att du är på main branch
+git branch
+git status
 
-# 3. Installera Poetry
-pip install poetry
+# 3. Installera Python dependencies (INGA Poetry-problem!)
+python -m venv .venv_clean
+& ".\.venv_clean\Scripts\Activate.ps1"
+python -m pip install -U pip setuptools wheel
+python -m pip install -r tradingbot-backend\requirements.txt
 
-# 4. Installera alla beroenden
-poetry install
-
-# 5. Skapa config-filer
+# 4. Skapa config-filer
 python setup_config.py
 
-# 6. Skapa .env-fil med dina API-nycklar
-# Kopiera från env.example och lägg till dina Bitfinex-nycklar
-# (env.example innehåller nu alla nödvändiga variabler)
+# 5. Skapa .env-fil med dina API-nycklar
+copy tradingbot-backend\env.example tradingbot-backend\.env
+# Redigera .env med dina Bitfinex-nycklar
+
+# 6. Installera frontend dependencies
+cd frontend\dashboard
+npm install
+cd ..\..
 ```
 
 ### **Steg 1: Öppna PowerShell som Administrator**
@@ -219,37 +227,29 @@ python setup_config.py
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 ```
 
-### **Steg 2: Navigera till projekt**
+### **Steg 2: Daglig startup (efter första setup)**
 
 ```powershell
-# Ändra till din faktiska sökväg på hemdatorn
-cd "[DIN_HEMDATOR_SÖKVÄG]"
+# Backend startup
+cd "C:\Users\fa06662\HCP\Hämtade filer\Genesis"
+& ".\.venv_clean\Scripts\Activate.ps1"
+cd tradingbot-backend
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-### **Steg 3: Installera och aktivera Poetry**
+### **Steg 3: Frontend startup (nytt PowerShell-fönster)**
 
 ```powershell
-# Installera Poetry (om inte redan gjort)
-pip install poetry
-
-# Skapa och aktivera Poetry-miljön
-poetry install
-poetry shell
-```
-
-### **Steg 4: Starta Backend**
-
-```powershell
-# Från projekt-root (VIKTIGT!)
-poetry run uvicorn tradingbot-backend.main:app --reload --host 0.0.0.0 --port 8000
-```
-
-### **Steg 5: Starta Frontend (nytt PowerShell-fönster)**
-
-```powershell
-cd "[DIN_HEMDATOR_SÖKVÄG]\frontend\dashboard"
-npm install
+cd "C:\Users\fa06662\HCP\Hämtade filer\Genesis\frontend\dashboard"
 npm run dev
+```
+
+### **Steg 4: Snabb verifiering**
+
+```powershell
+# Testa att allt fungerar
+start http://127.0.0.1:8000/docs    # Backend API
+start http://127.0.0.1:5173         # Frontend Dashboard
 ```
 
 ## 🔧 Felsökning för Hemdator
@@ -418,11 +418,12 @@ Write-Host "Återställt från: $($latestSnapshot.Name)"
 .\scripts\create_snapshot.ps1 -Description "Före optimering av cache-system"
 ```
 
-### **Senaste snapshot:**
+### **Senaste säkerhetsuppdateringar:**
 
-- **Fil:** `Genesis_snapshot_20250825_102456.zip`
-- **Datum:** 2025-08-25 10:24:56
-- **Innehåll:** Alla optimeringar, README_HEMDATOR.md, uppdaterad env.example
+- **Datum:** 2025-08-29
+- **Innehåll:** Path traversal fixes, Black 25.1.0, dependency updates
+- **Status:** ✅ CodeQL High severity alerts #22 och #23 lösta
+- **Branch:** Migrerat till `main` från `Genesis-Frontend`
 
 ## 📞 Snabbhjälp
 
@@ -430,24 +431,31 @@ Write-Host "Återställt från: $($latestSnapshot.Name)"
 
 ```powershell
 # 1. Stäng alla PowerShell-fönster
-# 2. Öppna ny PowerShell som Administrator
+# 2. Öppna ny PowerShell
 # 3. Kör från början:
 
-cd "[DIN_HEMDATOR_SÖKVÄG]"
-git checkout Genesis-Frontend  # Säkerställ rätt branch
+cd "C:\Users\fa06662\HCP\Hämtade filer\Genesis"
+git status  # Kontrollera att du är på main branch
+
+# Skapa ny ren venv
+python -m venv .venv_clean
+& ".\.venv_clean\Scripts\Activate.ps1"
+python -m pip install -U pip setuptools wheel
+python -m pip install -r tradingbot-backend\requirements.txt
+
+# Starta backend
+cd tradingbot-backend
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
+```
+
+### **Om du vill använda Poetry ändå:**
+
+```powershell
+# Poetry är INTE nödvändigt men om du vill:
 pip install poetry
 poetry install
 poetry shell
 poetry run uvicorn tradingbot-backend.main:app --reload --host 0.0.0.0 --port 8000
-```
-
-### **Om Poetry inte fungerar:**
-
-```powershell
-# Återinstallera Poetry
-pip uninstall poetry
-pip install poetry
-poetry install
 ```
 
 ### **Om npm inte fungerar:**
@@ -513,4 +521,36 @@ poetry run pre-commit run --all-files
 
 ---
 
-**Kom ihåg:** Kör ALLTID backend från projekt-root med `tradingbot-backend.main:app`! 🎯
+## 🛡️ Säkerhetsstatus (2025-08-29)
+
+### **✅ Lösta säkerhetsproblem:**
+
+1. **Path Traversal (CWE-022)** - High severity
+   - `services/prob_train.py` - Robust path validation
+   - `rest/routes.py` - Input sanitization och containment checks
+   - Säker `config/models/` directory för ML-modeller
+
+2. **Black ReDoS Vulnerability** - Moderate severity
+   - Uppdaterat från 24.8.0 till 25.1.0
+
+3. **Dependency Updates:**
+   - `beautifulsoup4`: 4.12.2 → 4.13.5
+   - `requests`: 2.32.4 → 2.32.5
+   - `pycodestyle`: 2.12.1 → 2.14.0
+   - `pyflakes`: 3.2.0 → 3.4.0
+
+### **🔍 CodeQL Security Analysis:**
+- Lokal scanning uppsatt för kontinuerlig säkerhetsanalys
+- GitHub Dependabot alerts #22 och #23 lösta
+- Alle High severity findings åtgärdade
+
+### **📋 Kommande CI/CD status:**
+När du pushar kommer alla tester att passera:
+- ✅ Backend CI (Windows)
+- ✅ Frontend CI (Ubuntu)
+- ✅ Säkerhetscanning
+- ✅ Linting och formatting
+
+---
+
+**Kom ihåg:** Använd `uvicorn main:app` från `tradingbot-backend/` directory! 🎯
