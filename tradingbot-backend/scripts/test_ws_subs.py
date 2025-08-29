@@ -1,5 +1,4 @@
 import asyncio
-from typing import Dict, List
 
 from services.bitfinex_websocket import bitfinex_ws
 

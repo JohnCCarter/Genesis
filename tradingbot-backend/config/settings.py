@@ -6,7 +6,6 @@ Projektet använder Pydantic v1 (BaseSettings) enligt requirements.
 """
 
 import os as _os
-from typing import List, Optional
 
 # Kompatibilitet: Pydantic v2 (pydantic-settings) och v1 (pydantic)
 try:  # Pydantic v2

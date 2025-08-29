@@ -11,7 +11,7 @@ Implementerar:
 import json
 import os
 from datetime import datetime, timedelta
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 from utils.logger import get_logger
 

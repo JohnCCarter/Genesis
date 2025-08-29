@@ -5,8 +5,8 @@ Backtest Service - enkel sandbox-backtest mot historiska candles via Bitfinex RE
 from __future__ import annotations
 
 import math
-from datetime import UTC, datetime, timedelta, timezone
-from typing import Any, Dict, List
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
 from utils.logger import get_logger
 

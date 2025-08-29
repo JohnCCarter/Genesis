@@ -6,7 +6,7 @@ Inkluderar funktioner för att hämta positionshistorik och hantera positionsdat
 """
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import httpx
 from pydantic import BaseModel

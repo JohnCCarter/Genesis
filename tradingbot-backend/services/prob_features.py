@@ -8,7 +8,7 @@ Bitfinex candle frame v2: [MTS, OPEN, CLOSE, HIGH, LOW, VOLUME]
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 from indicators.atr import calculate_atr
 from indicators.ema import calculate_ema

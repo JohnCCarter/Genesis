@@ -7,7 +7,6 @@ Optimized O(1) updates for live candles. Designed for use with WS-first data flo
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
 
 @dataclass

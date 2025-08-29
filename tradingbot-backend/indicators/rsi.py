@@ -5,7 +5,6 @@ Denna modul implementerar RSI-beräkningar för teknisk analys.
 Inkluderar RSI-formel och signalgenerering.
 """
 
-from typing import List, Optional
 
 import pandas as pd
 from utils.logger import get_logger

@@ -9,7 +9,6 @@ Användning:
 """
 
 import asyncio
-from typing import Optional
 
 from config.settings import Settings
 

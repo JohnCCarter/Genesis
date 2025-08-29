@@ -3,7 +3,6 @@ import sqlite3
 from collections.abc import Iterable
 from contextlib import closing
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional
 
 _DB_DEFAULT = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config", "candles.sqlite3")
 

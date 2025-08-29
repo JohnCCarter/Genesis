@@ -7,7 +7,7 @@ Inkluderar endpoints för orderhantering, marknadsdata, plånboksinformation och
 
 import asyncio
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import jwt
 from fastapi import APIRouter, Depends, HTTPException, Response
@@ -389,7 +389,6 @@ async def prob_trade(req: ProbTradeRequest, _bypass_auth: bool = Depends(securit
         # Normalisera svar för metrics/utfall
         try:
             from typing import Any
-            from typing import Dict as _Dict
 
             res_dict: dict[str, Any]
             if isinstance(res, dict):
@@ -4809,7 +4808,6 @@ async def get_strategy_regime(symbol: str, _: bool = Depends(require_auth)):
 
         from indicators.regime import detect_regime
         from services.bitfinex_data import BitfinexDataService
-        from services.strategy import evaluate_weighted_strategy
 
         # OPTIMERING: Cache regime-data för 5 minuter
         cache_key = f"regime_{symbol}"
@@ -4852,7 +4850,6 @@ async def get_strategy_regime(symbol: str, _: bool = Depends(require_auth)):
         regime = detect_regime(highs, lows, closes, cfg)
 
         # OPTIMERING: Beräkna ADX och EMA Z parallellt
-        import asyncio
 
         from indicators.adx import adx as adx_series
         from indicators.regime import ema_z

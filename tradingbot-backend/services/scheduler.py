@@ -12,8 +12,7 @@ from __future__ import annotations
 
 import asyncio
 import re
-from datetime import UTC, datetime, timedelta, timezone
-from typing import List, Optional
+from datetime import UTC, datetime, timedelta
 
 from utils.candle_cache import candle_cache
 from utils.logger import get_logger
@@ -382,7 +381,6 @@ class SchedulerService:
         OPTIMERAD: Ökad från 1 minut till 15 minuter för att minska API-anrop.
         """
         try:
-            from services.strategy import update_settings_from_regime
             from services.symbols import SymbolService
 
             # OPTIMERING: Ökad från 1 minut till 15 minuter

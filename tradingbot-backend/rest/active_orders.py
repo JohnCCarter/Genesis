@@ -6,7 +6,7 @@ Inkluderar funktioner för att hämta aktiva ordrar och hantera dem.
 """
 
 import json
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import httpx
 from models.api_models import OrderResponse, OrderSide, OrderType

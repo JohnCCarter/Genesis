@@ -10,7 +10,6 @@ import hmac
 import json
 import os
 from datetime import datetime
-from typing import Optional
 
 from fastapi.security import HTTPBearer
 from utils.logger import get_logger

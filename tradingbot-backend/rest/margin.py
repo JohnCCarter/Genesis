@@ -5,7 +5,7 @@ Denna modul hanterar margin-information från Bitfinex API.
 Inkluderar funktioner för att hämta margin-status och marginhandelsinformation.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import httpx
 from pydantic import BaseModel

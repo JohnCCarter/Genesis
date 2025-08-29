@@ -10,6 +10,9 @@ jobs:
   backend:
     name: Backend CI
     runs-on: windows-latest
+    env:
+      PYTHONIOENCODING: utf-8
+      PYTHONLEGACYWINDOWSSTDIO: utf-8
     steps:
       - name: Checkout
         uses: actions/checkout@v4

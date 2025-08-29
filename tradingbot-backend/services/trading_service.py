@@ -7,9 +7,8 @@ Konsoliderar alla trading-operationer från olika moduler:
 - WebSocket trading (BitfinexWebSocketService)
 """
 
-import asyncio
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from models.signal_models import SignalResponse
 from utils.logger import get_logger

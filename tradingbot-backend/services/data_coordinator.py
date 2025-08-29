@@ -8,8 +8,8 @@ duplicerade API-anrop och förbättra prestanda.
 # ruff: noqa: ANN401, ARG001
 
 import asyncio
-from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
+from datetime import datetime
+from typing import Any
 
 from utils.logger import get_logger
 

@@ -1,8 +1,6 @@
-import asyncio
 import json
 import os
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
 
 from models.signal_models import SignalResponse
 from utils.logger import get_logger

@@ -7,10 +7,8 @@ Token-bucket baserad rate limiting med separata limits för olika endpoint-typer
 import asyncio
 import random
 import time
-from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, Optional
 
 from config.settings import Settings
 from utils.logger import get_logger

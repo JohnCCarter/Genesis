@@ -11,13 +11,12 @@ Implementerar:
 import json
 import os
 from dataclasses import dataclass
-from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Tuple
+from datetime import datetime
+from typing import Any
 
 from utils.logger import get_logger
 
 from config.settings import Settings
-from services.metrics import metrics_store
 from services.performance import PerformanceService
 
 logger = get_logger(__name__)

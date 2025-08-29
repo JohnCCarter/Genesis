@@ -6,7 +6,6 @@ Inkluderar automatisk signalgenerering och WebSocket-integration.
 """
 
 from collections.abc import Callable
-from typing import Dict, List, Optional
 
 from utils.logger import get_logger
 

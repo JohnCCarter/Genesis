@@ -7,9 +7,8 @@ Konsoliderar alla signal-genereringar från olika moduler:
 - Enhanced signaler (EnhancedAutoTrader)
 """
 
-import asyncio
 from datetime import datetime, timedelta
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
 
 from models.signal_models import LiveSignalsResponse, SignalResponse
 from utils.logger import get_logger

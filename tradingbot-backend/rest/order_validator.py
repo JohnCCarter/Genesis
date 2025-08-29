@@ -6,7 +6,7 @@ Använder information från scraper-modulen för att validera ordertyper,
 symboler och parametrar.
 """
 
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 try:
     from scraper.bitfinex_docs import BitfinexDocsScraper  # pylint: disable=E0401
@@ -142,8 +142,6 @@ class OrderValidator:
         ]
         # Bygg live-lista via SymbolService om möjligt
         try:
-            import asyncio as _asyncio
-
             from services.symbols import SymbolService
 
             svc = SymbolService()

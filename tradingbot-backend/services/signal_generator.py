@@ -1,8 +1,6 @@
 import asyncio
-import logging
 import uuid
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional
 
 from models.signal_models import (
     LiveSignalsResponse,

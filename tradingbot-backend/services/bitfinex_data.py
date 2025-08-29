@@ -8,7 +8,6 @@ Inkluderar candlestick-data, ticker-information och orderbook-data.
 import asyncio
 import random
 import time
-from typing import Dict, List, Optional, Tuple
 
 import httpx
 from utils.advanced_rate_limiter import get_advanced_rate_limiter

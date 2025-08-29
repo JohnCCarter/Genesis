@@ -5,7 +5,7 @@ Denna modul demonstrerar hur Bitfinex-autentisering används
 för REST och WebSocket-anrop.
 """
 
-from typing import Any, Dict
+from typing import Any
 
 import httpx
 from rest.auth import build_auth_headers

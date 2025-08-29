@@ -7,7 +7,7 @@ Inkluderar funktioner för att hämta aktiva positioner och hantera positioner.
 
 import asyncio
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import httpx
 from pydantic import BaseModel

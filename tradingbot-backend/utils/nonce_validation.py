@@ -7,9 +7,7 @@ följer Bitfinex API-krav om strikt ökande värden.
 """
 
 import json
-import time
 from datetime import datetime
-from typing import Dict, List, Optional, Tuple
 
 from utils.logger import get_logger
 from utils.nonce_manager import NONCE_FILE, get_nonce

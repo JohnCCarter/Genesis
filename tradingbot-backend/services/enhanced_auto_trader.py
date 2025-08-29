@@ -1,7 +1,5 @@
-import asyncio
-import logging
 from datetime import datetime, timedelta
-from typing import Callable, Dict, List, Optional
+from typing import Callable
 
 from models.signal_models import SignalResponse, SignalThresholds
 from utils.logger import get_logger

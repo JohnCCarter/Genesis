@@ -7,7 +7,6 @@ Inkluderar funktioner för att hämta plånbokssaldon och hantera plånbokstrans
 
 import asyncio
 import time
-from typing import List, Optional
 
 import httpx
 from pydantic import BaseModel

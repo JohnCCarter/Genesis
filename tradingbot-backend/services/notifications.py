@@ -4,7 +4,7 @@ Notifications Service - Telegram (optional) + Socket.IO helpers
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 import httpx
 from utils.logger import get_logger

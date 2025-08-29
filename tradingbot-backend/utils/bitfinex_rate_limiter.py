@@ -9,7 +9,6 @@ import asyncio
 import random
 import time
 from collections import deque
-from typing import Dict
 
 from config.settings import Settings
 from utils.logger import get_logger

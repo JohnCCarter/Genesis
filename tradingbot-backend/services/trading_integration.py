@@ -8,7 +8,7 @@ Inkluderar integration mellan marknadsdata, strategier, orderhantering och posit
 import asyncio
 from collections.abc import Callable
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any
 
 from rest.auth import place_order
 from rest.margin import get_leverage, get_margin_info, get_margin_status

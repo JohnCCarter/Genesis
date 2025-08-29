@@ -9,7 +9,7 @@ Exports weights JSON compatible with prob_model.py.
 from __future__ import annotations
 
 import json
-from typing import Any, Dict, List
+from typing import Any
 
 import numpy as np
 

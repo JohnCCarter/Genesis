@@ -9,8 +9,7 @@ import asyncio
 import time
 from collections import defaultdict, deque
 from dataclasses import dataclass
-from datetime import datetime, timedelta
-from typing import Any, Callable, Optional
+from typing import Any
 
 from utils.advanced_rate_limiter import get_advanced_rate_limiter
 from utils.logger import get_logger

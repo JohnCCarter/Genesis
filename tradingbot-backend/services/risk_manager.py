@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from collections import deque
 from datetime import datetime, timedelta
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 from utils.logger import get_logger
 

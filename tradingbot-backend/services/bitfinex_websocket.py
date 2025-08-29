@@ -10,7 +10,7 @@ import json
 import time
 from collections.abc import Callable
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from utils.logger import get_logger
 from websockets.client import connect as ws_connect  # type: ignore[attr-defined]

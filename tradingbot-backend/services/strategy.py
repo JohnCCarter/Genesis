@@ -321,7 +321,7 @@ def update_settings_from_regime(symbol: str | None = None) -> dict[str, float]:
     """
     try:
         from indicators.regime import detect_regime
-        from strategy.weights import PRESETS, clamp_simplex
+        from strategy.weights import PRESETS
 
         from services.bitfinex_data import BitfinexDataService
         from services.strategy_settings import StrategySettingsService

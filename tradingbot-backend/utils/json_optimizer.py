@@ -12,7 +12,7 @@ Implementerar:
 import json
 import time
 from functools import lru_cache
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 import orjson
 from pydantic import BaseModel, ValidationError
@@ -34,7 +34,7 @@ class JSONOptimizer:
         # Testa orjson tillgänglighet
         if use_orjson:
             try:
-                orjson.loads('{"test": "data"}')
+                orjson.loads(b'{"test": "data"}')  # pylint: disable=no-member
                 logger.info("✅ orjson tillgänglig för snabb JSON parsing")
             except ImportError:
                 logger.warning("⚠️ orjson inte tillgänglig, använder standard json")
@@ -52,7 +52,7 @@ class JSONOptimizer:
         """
         try:
             if self.use_orjson:
-                return orjson.loads(data)
+                return orjson.loads(data)  # pylint: disable=no-member
             else:
                 return json.loads(data)
         except Exception as e:
@@ -73,7 +73,7 @@ class JSONOptimizer:
         try:
             if self.use_orjson:
                 # orjson returnerar bytes, konvertera till string
-                return orjson.dumps(obj, **kwargs).decode("utf-8")
+                return orjson.dumps(obj, **kwargs).decode("utf-8")  # pylint: disable=no-member
             else:
                 return json.dumps(obj, **kwargs)
         except Exception as e:
@@ -369,7 +369,7 @@ def benchmark_json_parsing(data: str, iterations: int = 1000) -> dict[str, float
     try:
         start_time = time.time()
         for _ in range(iterations):
-            orjson.loads(data)
+            orjson.loads(data)  # pylint: disable=no-member
         orjson_time = time.time() - start_time
         results["orjson"] = orjson_time
         results["speedup"] = standard_time / orjson_time

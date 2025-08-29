@@ -8,7 +8,6 @@ import json
 import os
 from dataclasses import dataclass
 from datetime import date, datetime
-from typing import Dict, Optional
 
 from utils.logger import get_logger
 
