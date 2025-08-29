@@ -21,7 +21,7 @@ if ($Fix) {
 }
 
 Write-Host '=== Pytest ==='
-pytest -q
+python -m pytest -q
 
 Write-Host '=== Bandit (exclude tests via bandit.yaml) ==='
 python -m bandit -c bandit.yaml -r services rest utils models indicators -q
