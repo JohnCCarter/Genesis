@@ -104,7 +104,9 @@ class AdvancedRateLimiter:
         }
 
         for endpoint_type, config in bucket_configs.items():
-            self._buckets[endpoint_type] = TokenBucket(**config)
+            self._buckets[endpoint_type] = TokenBucket(
+                capacity=int(config["capacity"]), refill_rate=config["refill_rate"]
+            )
 
     def _setup_endpoint_mapping(self) -> None:
         """Mappa API endpoints till endpoint-typer"""

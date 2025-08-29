@@ -81,7 +81,7 @@ class BitfinexRateLimiter:
                 # Återställ om det varit länge sedan
                 self._adaptive_backoff_multiplier = max(1.0, self._adaptive_backoff_multiplier * 0.8)
 
-            self._last_server_busy_time = now
+            self._last_server_busy_time = int(now)
 
             # Beräkna väntetid med exponential backoff
             base_min = self.settings.BITFINEX_SERVER_BUSY_BACKOFF_MIN_SECONDS

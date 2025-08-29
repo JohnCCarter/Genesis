@@ -75,7 +75,7 @@ export function QuickTrade() {
                 <div>
                     <label>Symbol</label>
                     <select value={symbol} onChange={(e) => setSymbol(e.target.value)} style={{ width: '100%' }}>
-                        {TEST_SYMBOLS.map(s => (
+                        {TEST_SYMBOLS.map((s: { symbol: string; name: string }) => (
                             <option key={s.symbol} value={s.symbol}>{s.symbol}</option>
                         ))}
                     </select>

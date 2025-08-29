@@ -116,9 +116,9 @@ class JSONOptimizer:
         """
         try:
             if isinstance(data, dict):
-                return schema(**data)
+                return schema.model_validate(data)
             else:
-                return schema(data)
+                return schema.model_validate(data)
         except ValidationError as e:
             logger.error(f"❌ Schema validering fel: {e}")
             raise
@@ -374,7 +374,7 @@ def benchmark_json_parsing(data: str, iterations: int = 1000) -> dict[str, float
         results["orjson"] = orjson_time
         results["speedup"] = standard_time / orjson_time
     except ImportError:
-        results["orjson"] = None
-        results["speedup"] = None
+        results["orjson"] = float("inf")
+        results["speedup"] = float("inf")
 
     return results

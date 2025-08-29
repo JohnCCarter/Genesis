@@ -149,7 +149,7 @@ const EnhancedAutoTradingPanel: React.FC = () => {
                             className="form-select"
                         >
                             <option value="">Välj symbol...</option>
-                            {TEST_SYMBOLS.map(symbol => (
+                            {TEST_SYMBOLS.map((symbol: { symbol: string; name: string }) => (
                                 <option key={symbol.symbol} value={symbol.symbol}>{symbol.symbol}</option>
                             ))}
                         </select>
@@ -170,7 +170,7 @@ const EnhancedAutoTradingPanel: React.FC = () => {
                     <div className="active-symbols">
                         <h4>Aktiva Symboler</h4>
                         <div className="symbol-grid">
-                            {status.active_symbols.map(symbol => {
+                            {status.active_symbols.map((symbol: string) => {
                                 const signalInfo = getSignalInfo(symbol);
                                 const lastTrade = getLastTrade(symbol);
 
