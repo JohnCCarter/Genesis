@@ -9,7 +9,7 @@ En avancerad trading bot för Bitfinex med live signals, regime detection och en
 ```bash
 git clone https://github.com/JohnCCarter/Genesis.git
 cd Genesis
-git checkout Genesis-Frontend
+git checkout Genesis
 ```
 
 ### 2. Konfigurera environment
