@@ -300,3 +300,17 @@ genesis-python-new*/
 *.csv
 Genesis-CodeQL.code-workspace
 codeql-custom-queries-python/
+
+# Supabase/Edge Functions local artifacts
+supabase/.temp/
+supabase/.output/
+
+# Node
+**/node_modules/
+**/dist/
+
+# Local env for scripts
+scripts/**/.venv/
+
+# SQLite backups
+tradingbot-backend/config/*.sqlite3.backup*

@@ -5,7 +5,6 @@ Denna modul implementerar ATR-beräkningar för volatilitetsanalys.
 Inkluderar ATR-formel och volatilitetsbaserade strategier.
 """
 
-
 import pandas as pd
 from utils.logger import get_logger
 

@@ -22,12 +22,12 @@ try:
 except Exception:  # pragma: no cover
     ZoneInfo = None  # Fallback; använder naive tider
 
-from rest.order_history import OrderHistoryService, TradeItem
-from rest.positions import PositionsService
-from rest.wallet import WalletService
 from utils.logger import get_logger
 
 from config.settings import Settings
+from rest.order_history import OrderHistoryService, TradeItem
+from rest.positions import PositionsService
+from rest.wallet import WalletService
 from services.bitfinex_data import BitfinexDataService
 
 logger = get_logger(__name__)

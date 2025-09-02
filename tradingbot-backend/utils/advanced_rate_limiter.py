@@ -171,7 +171,7 @@ class AdvancedRateLimiter:
             wait_time = bucket.time_to_tokens(tokens)
 
             if wait_time > 0:
-                logger.warning(f"Rate limit nått för {endpoint_type.value} ({endpoint}), " f"väntar {wait_time:.1f}s")
+                logger.warning(f"Rate limit nått för {endpoint_type.value} ({endpoint}), väntar {wait_time:.1f}s")
                 await asyncio.sleep(wait_time)
 
                 # Konsumera tokens efter väntan
@@ -245,7 +245,7 @@ class AdvancedRateLimiter:
             st["last_failure"] = 0.0
             self._cb_state[key] = st
 
-    def note_failure(self, endpoint: str, status_code: int, retry_after: str | None = None) -> float:  # noqa: ARG002
+    def note_failure(self, endpoint: str, status_code: int, retry_after: str | None = None) -> float:
         key = self._cb_key(endpoint)
         st = self._cb_state.get(key) or {"fail_count": 0, "open_until": 0.0, "last_failure": 0.0}
         st["fail_count"] = int(st.get("fail_count", 0)) + 1

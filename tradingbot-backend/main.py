@@ -15,16 +15,17 @@ from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from utils.logger import get_logger
+from ws.manager import socket_app
+
+from config.settings import Settings
+from rest.mcp_routes import router as mcp_router
 from rest.routes import router as rest_router
 from services.bitfinex_websocket import bitfinex_ws
 from services.metrics import observe_latency, render_prometheus_text
 from services.runtime_mode import get_validation_on_start, get_ws_connect_on_start
 from services.signal_service import signal_service
 from services.trading_service import trading_service
-from utils.logger import get_logger
-from ws.manager import socket_app
-
-from config.settings import Settings
 
 # Kommenterar ut för att undvika cirkulära imports
 # from tests.test_backend_order import test_backend_limit_order
@@ -171,6 +172,7 @@ app.add_middleware(
 
 # Inkludera REST endpoints
 app.include_router(rest_router)
+app.include_router(mcp_router)
 
 # OBS: Socket.IO hanteras via toppnivå-wrapper längre ned
 

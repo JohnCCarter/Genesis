@@ -5,10 +5,7 @@ import io
 import json
 import os
 from pathlib import Path
-import sys
-import tempfile
-import textwrap
-from typing import Any, Dict, List, Optional
+from typing import Any
 import urllib.error
 import urllib.request
 import zipfile
@@ -16,7 +13,7 @@ import zipfile
 GITHUB_API = "https://api.github.com"
 
 
-def load_token() -> Optional[str]:
+def load_token() -> str | None:
     for key in ("GITHUB_TOKEN", "GH_TOKEN", "GITHUB_PAT"):
         val = os.environ.get(key)
         if val:
@@ -37,7 +34,7 @@ def load_token() -> Optional[str]:
     return None
 
 
-def http_get(url: str, token: Optional[str], accept: Optional[str] = None) -> bytes:
+def http_get(url: str, token: str | None, accept: str | None = None) -> bytes:
     req = urllib.request.Request(url)
     if accept:
         req.add_header("Accept", accept)
@@ -58,14 +55,14 @@ def http_get(url: str, token: Optional[str], accept: Optional[str] = None) -> by
         raise SystemExit(f"URLError for {url}: {e}")
 
 
-def http_get_json(url: str, token: Optional[str]) -> Dict[str, Any]:
+def http_get_json(url: str, token: str | None) -> dict[str, Any]:
     data = http_get(url, token, accept=None)
     return json.loads(data.decode("utf-8"))
 
 
 def list_runs(
-    owner: str, repo: str, branch: Optional[str], per_page: int, token: Optional[str]
-) -> Dict[str, Any]:
+    owner: str, repo: str, branch: str | None, per_page: int, token: str | None
+) -> dict[str, Any]:
     q = f"?per_page={per_page}"
     if branch:
         q += f"&branch={branch}"
@@ -73,12 +70,12 @@ def list_runs(
     return http_get_json(url, token)
 
 
-def list_jobs(owner: str, repo: str, run_id: int, token: Optional[str]) -> Dict[str, Any]:
+def list_jobs(owner: str, repo: str, run_id: int, token: str | None) -> dict[str, Any]:
     url = f"{GITHUB_API}/repos/{owner}/{repo}/actions/runs/{run_id}/jobs"
     return http_get_json(url, token)
 
 
-def download_logs(owner: str, repo: str, run_id: int, out_dir: Path, token: Optional[str]) -> Path:
+def download_logs(owner: str, repo: str, run_id: int, out_dir: Path, token: str | None) -> Path:
     out_dir.mkdir(parents=True, exist_ok=True)
     url = f"{GITHUB_API}/repos/{owner}/{repo}/actions/runs/{run_id}/logs"
     # Accept */* to avoid 415 for binary stream
@@ -90,10 +87,10 @@ def download_logs(owner: str, repo: str, run_id: int, out_dir: Path, token: Opti
     return zip_path
 
 
-def download_job_logs(owner: str, repo: str, job_id: int, token: Optional[str]) -> List[str]:
+def download_job_logs(owner: str, repo: str, job_id: int, token: str | None) -> list[str]:
     url = f"{GITHUB_API}/repos/{owner}/{repo}/actions/jobs/{job_id}/logs"
     blob = http_get(url, token, accept="*/*")
-    out_lines: List[str] = []
+    out_lines: list[str] = []
     try:
         with zipfile.ZipFile(io.BytesIO(blob)) as zf:
             # Concatenate tails of all .txt entries
@@ -129,7 +126,7 @@ def main() -> None:
     token = load_token()
 
     runs = list_runs(args.owner, args.repo, args.branch, args.per_page, token)
-    items: List[Dict[str, Any]] = runs.get("workflow_runs", [])
+    items: list[dict[str, Any]] = runs.get("workflow_runs", [])
 
     if not items:
         print("No runs found.")
@@ -144,7 +141,7 @@ def main() -> None:
 
     latest = items[0]
     run_id = int(latest.get("id"))
-    failed_jobs: List[Dict[str, Any]] = []
+    failed_jobs: list[dict[str, Any]] = []
 
     if args.show_jobs and run_id:
         print("\nJobs for latest run:")

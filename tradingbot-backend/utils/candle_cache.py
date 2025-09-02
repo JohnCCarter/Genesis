@@ -44,8 +44,8 @@ class CandleCache:
                     print(f"ℹ️ Migration noter: {e}")
 
             # Skapa index
-            conn.execute("CREATE INDEX IF NOT EXISTS ix_candles_symbol_tf_mts " "ON candles(symbol, timeframe, mts)")
-            conn.execute("CREATE INDEX IF NOT EXISTS ix_candles_cached_at " "ON candles(cached_at)")
+            conn.execute("CREATE INDEX IF NOT EXISTS ix_candles_symbol_tf_mts ON candles(symbol, timeframe, mts)")
+            conn.execute("CREATE INDEX IF NOT EXISTS ix_candles_cached_at ON candles(cached_at)")
             conn.commit()
 
     def store(self, symbol: str, timeframe: str, candles: Iterable[list]) -> int:

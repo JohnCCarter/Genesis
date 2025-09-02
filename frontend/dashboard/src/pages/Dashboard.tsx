@@ -13,6 +13,7 @@ import { Toggles } from '../components/Toggles';
 import { ValidationPanel } from '../components/ValidationPanel';
 import { WalletsPanel } from '../components/WalletsPanel';
 import { PerformancePanel } from '../components/PerformancePanel';
+import { MCPDashboard } from '../components/MCPDashboard';
 import { ensureToken, get, getApiBase } from '@lib/api';
 import { useThrottledValue } from '@lib/useThrottledValue';
 import { AcceptanceBadge } from '../components/AcceptanceBadge';
@@ -146,6 +147,10 @@ export default function DashboardPage() {
                 <div>
                     <h2 style={{ margin: '16px 0 8px' }}>Performance Monitor</h2>
                     <PerformancePanel />
+                </div>
+                <div>
+                    <h2 style={{ margin: '16px 0 8px' }}>MCP Integration</h2>
+                    <MCPDashboard />
                 </div>
             </div>
         </div>

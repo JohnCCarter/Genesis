@@ -618,7 +618,7 @@ class HealthWatchdogService:
                 "healthy_checks": healthy_checks,
                 "warning_checks": warning_checks,
                 "critical_checks": critical_checks,
-                "health_percentage": (healthy_checks / total_checks * 100) if total_checks > 0 else 0,
+                "health_percentage": ((healthy_checks / total_checks * 100) if total_checks > 0 else 0),
                 "last_updated": datetime.now().isoformat(),
                 "checks": {name: status.__dict__ for name, status in self.health_status.items()},
             }

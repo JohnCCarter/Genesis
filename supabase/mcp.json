@@ -1,0 +1,193 @@
+{
+    "project": "Genesis Trading Bot MCP Server",
+    "schema": "public",
+    "tables": [
+      {
+        "name": "trading_status",
+        "description": "Current status for each bot user",
+        "columns": [
+          { "name": "id",               "type": "uuid",        "default": "gen_random_uuid()", "primaryKey": true },
+          { "name": "user_id",          "type": "text",        "notNull": true,  "unique": true },
+          { "name": "status",           "type": "text",        "default": "'idle'",      "notNull": true },
+          { "name": "last_updated",     "type": "timestamptz", "default": "now()" },
+          { "name": "active_positions", "type": "integer",     "default": "0" },
+          { "name": "total_pnl",        "type": "numeric(20,8)","default": "0" },
+          { "name": "daily_pnl",        "type": "numeric(20,8)","default": "0" },
+          { "name": "risk_level",       "type": "text",        "default": "'medium'" },
+          { "name": "created_at",       "type": "timestamptz", "default": "now()" }
+        ],
+        "indexes": [
+          { "name": "idx_trading_status_user_id",       "columns": ["user_id"] },
+          { "name": "idx_trading_status_last_updated",  "columns": ["last_updated"] }
+        ],
+        "policies": [
+          {
+            "name": "Users can view own trading status",
+            "action": "SELECT",
+            "to": "authenticated",
+            "using": "(SELECT auth.uid())::text = user_id"
+          },
+          {
+            "name": "Users can insert own trading status",
+            "action": "INSERT",
+            "to": "authenticated",
+            "withCheck": "(SELECT auth.uid())::text = user_id"
+          },
+          {
+            "name": "Users can update own trading status",
+            "action": "UPDATE",
+            "to": "authenticated",
+            "using": "(SELECT auth.uid())::text = user_id",
+            "withCheck": "(SELECT auth.uid())::text = user_id"
+          }
+        ]
+      },
+      {
+        "name": "trades",
+        "description": "Executed trades per user",
+        "columns": [
+          { "name": "id",          "type": "uuid",        "default": "gen_random_uuid()", "primaryKey": true },
+          { "name": "user_id",     "type": "text",        "notNull": true },
+          { "name": "symbol",      "type": "text",        "notNull": true },
+          { "name": "side",        "type": "text",        "notNull": true, "check": "side IN ('buy','sell')" },
+          { "name": "quantity",    "type": "numeric(20,8)","notNull": true },
+          { "name": "price",       "type": "numeric(20,8)","notNull": true },
+          { "name": "executed_at", "type": "timestamptz", "default": "now()" },
+          { "name": "status",      "type": "text",        "default": "'executed'" },
+          { "name": "pnl",         "type": "numeric(20,8)","default": "0" },
+          { "name": "fees",        "type": "numeric(20,8)","default": "0" },
+          { "name": "strategy",    "type": "text" },
+          { "name": "created_at",  "type": "timestamptz", "default": "now()" }
+        ],
+        "indexes": [
+          { "name": "idx_trades_user_id",      "columns": ["user_id"] },
+          { "name": "idx_trades_symbol",       "columns": ["symbol"] },
+          { "name": "idx_trades_executed_at", "columns": ["executed_at"] },
+          { "name": "idx_trades_side",        "columns": ["side"] }
+        ],
+        "policies": [
+          {
+            "name": "Users can view own trades",
+            "action": "SELECT",
+            "to": "authenticated",
+            "using": "(SELECT auth.uid())::text = user_id"
+          },
+          {
+            "name": "Users can insert own trades",
+            "action": "INSERT",
+            "to": "authenticated",
+            "withCheck": "(SELECT auth.uid())::text = user_id"
+          }
+        ]
+      },
+      {
+        "name": "mcp_sessions",
+        "description": "Session metadata for each bot user",
+        "columns": [
+          { "name": "id",            "type": "uuid",        "default": "gen_random_uuid()", "primaryKey": true },
+          { "name": "session_id",    "type": "text",        "notNull": true, "unique": true },
+          { "name": "user_id",       "type": "text",        "notNull": true },
+          { "name": "created_at",    "type": "timestamptz", "default": "now()" },
+          { "name": "last_activity", "type": "timestamptz", "default": "now()" },
+          { "name": "status",        "type": "text",        "default": "'active'" }
+        ],
+        "indexes": [
+          { "name": "idx_mcp_sessions_user_id",    "columns": ["user_id"] },
+          { "name": "idx_mcp_sessions_session_id", "columns": ["session_id"] }
+        ],
+        "policies": [
+          {
+            "name": "Users can view own sessions",
+            "action": "SELECT",
+            "to": "authenticated",
+            "using": "(SELECT auth.uid())::text = user_id"
+          },
+          {
+            "name": "Users can insert own sessions",
+            "action": "INSERT",
+            "to": "authenticated",
+            "withCheck": "(SELECT auth.uid())::text = user_id"
+          },
+          {
+            "name": "Users can update own sessions",
+            "action": "UPDATE",
+            "to": "authenticated",
+            "using": "(SELECT auth.uid())::text = user_id"
+          }
+        ]
+      },
+      {
+        "name": "performance_metrics",
+        "description": "Aggregated performance per user / timeframe",
+        "columns": [
+          { "name": "id",            "type": "uuid",        "default": "gen_random_uuid()", "primaryKey": true },
+          { "name": "user_id",       "type": "text",        "notNull": true },
+          { "name": "timeframe",     "type": "text",        "notNull": true },
+          { "name": "total_trades",  "type": "integer",     "default": "0" },
+          { "name": "winning_trades","type": "integer",     "default": "0" },
+          { "name": "losing_trades", "type": "integer",     "default": "0" },
+          { "name": "win_rate",      "type": "numeric(5,2)","default": "0" },
+          { "name": "total_pnl",     "type": "numeric(20,8)","default": "0" },
+          { "name": "max_drawdown",  "type": "numeric(20,8)","default": "0" },
+          { "name": "sharpe_ratio",  "type": "numeric(10,4)","default": "0" },
+          { "name": "calculated_at", "type": "timestamptz", "default": "now()" }
+        ],
+        "indexes": [
+          { "name": "idx_performance_metrics_user_id",      "columns": ["user_id"] },
+          { "name": "idx_performance_metrics_timeframe",    "columns": ["timeframe"] }
+        ],
+        "policies": [
+          {
+            "name": "Users can view own performance",
+            "action": "SELECT",
+            "to": "authenticated",
+            "using": "(SELECT auth.uid())::text = user_id"
+          },
+          {
+            "name": "Users can insert own performance",
+            "action": "INSERT",
+            "to": "authenticated",
+            "withCheck": "(SELECT auth.uid())::text = user_id"
+          }
+        ]
+      },
+      {
+        "name": "strategy_parameters",
+        "description": "Saved strategy configuration per user",
+        "columns": [
+          { "name": "id",           "type": "uuid",        "default": "gen_random_uuid()", "primaryKey": true },
+          { "name": "user_id",      "type": "text",        "notNull": true },
+          { "name": "strategy_name","type": "text",        "notNull": true },
+          { "name": "parameters",   "type": "jsonb",       "default": "'{}'::jsonb", "notNull": true },
+          { "name": "is_active",    "type": "boolean",     "default": "true" },
+          { "name": "created_at",   "type": "timestamptz", "default": "now()" },
+          { "name": "updated_at",   "type": "timestamptz", "default": "now()" }
+        ],
+        "indexes": [
+          { "name": "idx_strategy_parameters_user_id",       "columns": ["user_id"] },
+          { "name": "idx_strategy_parameters_strategy_name", "columns": ["strategy_name"] }
+        ],
+        "policies": [
+          {
+            "name": "Users can view own strategies",
+            "action": "SELECT",
+            "to": "authenticated",
+            "using": "(SELECT auth.uid())::text = user_id"
+          },
+          {
+            "name": "Users can insert own strategies",
+            "action": "INSERT",
+            "to": "authenticated",
+            "withCheck": "(SELECT auth.uid())::text = user_id"
+          },
+          {
+            "name": "Users can update own strategies",
+            "action": "UPDATE",
+            "to": "authenticated",
+            "using": "(SELECT auth.uid())::text = user_id",
+            "withCheck": "(SELECT auth.uid())::text = user_id"
+          }
+        ]
+      }
+    ]
+  }

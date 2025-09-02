@@ -11,8 +11,10 @@ type Status = {
 function readToken(): string | null {
   try {
     const t = localStorage.getItem('jwt');
+    console.log('📖 readToken called, localStorage result:', t ? `Length: ${t.length}` : 'null');
     return t && t.length > 0 ? t : null;
-  } catch {
+  } catch (error) {
+    console.error('❌ readToken error:', error);
     return null;
   }
 }
@@ -32,14 +34,38 @@ function decodeJwt(token: string): { exp?: number; iat?: number; sub?: string } 
 
 function computeStatus(): Status {
   const tok = readToken();
-  if (!tok) return { state: 'none' };
+  console.log('🔍 computeStatus called, token exists:', !!tok);
+
+  if (!tok) {
+    console.log('🔍 No token found, returning none state');
+    return { state: 'none' };
+  }
+
   const payload = decodeJwt(tok);
-  if (!payload?.exp) return { state: 'none' };
+  console.log('🔍 JWT decoded payload:', payload);
+
+  if (!payload?.exp) {
+    console.log('🔍 No expiration in payload, returning none state');
+    return { state: 'none' };
+  }
+
   const now = Math.floor(Date.now() / 1000);
   const secondsLeft = payload.exp - now;
-  if (secondsLeft <= 0) return { state: 'expired', exp: payload.exp, iat: payload.iat };
   const minutesLeft = Math.floor(secondsLeft / 60);
-  if (secondsLeft <= 180) return { state: 'soon', minutesLeft, exp: payload.exp, iat: payload.iat };
+
+  console.log('🔍 Token expires in:', minutesLeft, 'minutes');
+
+  if (secondsLeft <= 0) {
+    console.log('🔍 Token expired, returning expired state');
+    return { state: 'expired', exp: payload.exp, iat: payload.iat };
+  }
+
+  if (secondsLeft <= 180) {
+    console.log('🔍 Token expires soon, returning soon state');
+    return { state: 'soon', minutesLeft, exp: payload.exp, iat: payload.iat };
+  }
+
+  console.log('🔍 Token valid, returning valid state');
   return { state: 'valid', minutesLeft, exp: payload.exp, iat: payload.iat };
 }
 
@@ -55,10 +81,22 @@ export function AuthStatus() {
   const renew = React.useCallback(async () => {
     try {
       setBusy(true);
-      await ensureToken();
-      setStatus(computeStatus());
-    } catch {
-      // ignore
+      console.log('🔄 Renewing token...');
+      console.log('🔑 Current token before renewal:', readToken() ? 'Exists' : 'None');
+
+      const newToken = await ensureToken();
+      console.log('✅ Token renewed:', newToken ? 'Success' : 'Failed');
+      console.log('🔑 New token length:', newToken ? newToken.length : 0);
+
+      // Force status update
+      const newStatus = computeStatus();
+      console.log('📊 New status:', newStatus);
+      setStatus(newStatus);
+
+    } catch (error) {
+      console.error('❌ Token renewal failed:', error);
+      // Show error to user
+      alert(`Token renewal failed: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setBusy(false);
     }

@@ -3,8 +3,6 @@
 Script för att automatiskt prenumerera på alla test-symboler
 """
 
-# ruff: noqa: ANN201, ANN001
-
 import time
 
 import requests

@@ -205,6 +205,15 @@ class Settings(_BaseSettings):
     # Dry-run (simulera ordrar; lägg inte riktiga ordrar)
     DRY_RUN_ENABLED: bool = False
 
+    # Supabase MCP Server
+    SUPABASE_URL: str | None = None
+    SUPABASE_ANON_KEY: str | None = None
+    SUPABASE_SERVICE_ROLE_KEY: str | None = None
+    MCP_SERVER_URL: str = "https://kxibqgvpdfmklvwhmcry.supabase.co/functions/v1/mcp_server"
+
+    # JWT Authentication
+    JWT_SECRET: str | None = None
+
     # Säkerställ absolut sökväg till .env oavsett var processen startas
     class Config:
         env_file = _os.path.join(

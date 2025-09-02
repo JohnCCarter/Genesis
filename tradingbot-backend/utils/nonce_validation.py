@@ -130,7 +130,7 @@ def print_nonce_statistics(key_id: str, count: int = 5):
         is_valid_rest, rest_error = validate_nonce_format(nonce, "rest")
         is_valid_ws, ws_error = validate_nonce_format(nonce, "ws")
 
-        print(f"  {i+1}. Nonce: {nonce}")
+        print(f"  {i + 1}. Nonce: {nonce}")
         print(f"     Differens: +{diff}")
         print(f"     Giltig för REST API: {'✅' if is_valid_rest else '❌'} {rest_error or ''}")
         print(f"     Giltig för WebSocket API: {'✅' if is_valid_ws else '❌'} {ws_error or ''}")

@@ -11,13 +11,13 @@ from typing import Any
 
 import httpx
 from pydantic import BaseModel
-from services.metrics import record_http_result
 from utils.advanced_rate_limiter import get_advanced_rate_limiter
 from utils.logger import get_logger
 from utils.private_concurrency import get_private_rest_semaphore
 
 from config.settings import Settings
 from rest.auth import build_auth_headers
+from services.metrics import record_http_result
 
 logger = get_logger(__name__)
 

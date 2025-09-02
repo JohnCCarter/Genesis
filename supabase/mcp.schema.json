@@ -1,0 +1,62 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "MCP schema",
+  "type": "object",
+  "properties": {
+    "project": { "type": "string" },
+    "schema": { "type": "string" },
+    "tables": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "columns"],
+        "properties": {
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "columns": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["name", "type"],
+              "properties": {
+                "name": { "type": "string" },
+                "type": { "type": "string" },
+                "default": { "type": "string" },
+                "notNull": { "type": "boolean" },
+                "unique": { "type": "boolean" },
+                "primaryKey": { "type": "boolean" }
+              }
+            }
+          },
+          "indexes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string" },
+                "columns": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                }
+              }
+            }
+          },
+          "policies": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string" },
+                "action": { "type": "string" },
+                "to": { "type": "string" },
+                "using": { "type": "string" },
+                "withCheck": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "required": ["project", "schema", "tables"]
+}

@@ -10,12 +10,12 @@ from collections.abc import Callable
 from datetime import datetime
 from typing import Any
 
+from utils.logger import get_logger
+
 from rest.auth import place_order
 from rest.margin import get_leverage, get_margin_info, get_margin_status
 from rest.positions import get_positions
 from rest.wallet import get_total_balance_usd, get_wallets
-from utils.logger import get_logger
-
 from services.bitfinex_data import bitfinex_data
 from services.metrics import inc
 from services.realtime_strategy import realtime_strategy

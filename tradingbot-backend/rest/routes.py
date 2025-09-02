@@ -14,6 +14,28 @@ from fastapi import APIRouter, Depends, HTTPException, Response
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from indicators.atr import calculate_atr
 from pydantic import BaseModel
+from utils.candle_cache import candle_cache
+from utils.logger import get_logger
+from utils.rate_limiter import get_rate_limiter
+
+# WebSocket Autentisering endpoints
+from ws.auth import generate_token
+
+from config.settings import Settings
+from rest import auth as rest_auth
+from rest.active_orders import ActiveOrdersService
+from rest.funding import FundingService
+from rest.margin import MarginService
+from rest.mcp_routes import router as mcp_router
+from rest.order_history import (
+    LedgerEntry,
+    OrderHistoryItem,
+    OrderHistoryService,
+    TradeItem,
+)
+from rest.order_validator import order_validator
+from rest.positions import Position, PositionsService
+from rest.wallet import WalletBalance, WalletService
 from services.backtest import BacktestService
 from services.bitfinex_data import BitfinexDataService
 from services.bitfinex_websocket import bitfinex_ws
@@ -39,27 +61,6 @@ from services.symbols import SymbolService
 from services.templates import OrderTemplatesService
 from services.trading_integration import trading_integration
 from services.trading_window import TradingWindowService
-from utils.candle_cache import candle_cache
-from utils.logger import get_logger
-from utils.rate_limiter import get_rate_limiter
-
-# WebSocket Autentisering endpoints
-from ws.auth import generate_token
-
-from config.settings import Settings
-from rest import auth as rest_auth
-from rest.active_orders import ActiveOrdersService
-from rest.funding import FundingService
-from rest.margin import MarginService
-from rest.order_history import (
-    LedgerEntry,
-    OrderHistoryItem,
-    OrderHistoryService,
-    TradeItem,
-)
-from rest.order_validator import order_validator
-from rest.positions import Position, PositionsService
-from rest.wallet import WalletBalance, WalletService
 
 logger = get_logger(__name__)
 
@@ -2211,9 +2212,8 @@ async def prob_predict(req: ProbPredictRequest, _: bool = Depends(require_auth))
         }
         # Feature/decision‑loggning (ringbuffer)
         try:
-            from services.metrics import metrics_store as _ms
-
             from config.settings import Settings as _S2
+            from services.metrics import metrics_store as _ms
 
             s2 = _S2()
             if bool(getattr(s2, "PROB_FEATURE_LOG_ENABLED", False)):
@@ -2436,7 +2436,7 @@ async def prob_retrain_run(req: ProbRetrainRunRequest, _: bool = Depends(require
             # Allow only alphanumeric and underscores in tf
             tf = _re.sub(r"[^A-Za-z0-9_]", "_", tf_raw)
         except Exception:
-            tf = ''.join([c if c.isalnum() or c == '_' else '_' for c in tf_raw])
+            tf = "".join([c if c.isalnum() or c == "_" else "_" for c in tf_raw])
         limit = int(req.limit or getattr(s, "PROB_RETRAIN_LIMIT", 5000) or 5000)
 
         def is_safe_subdir(parent_path: str, child_path: str) -> bool:
@@ -2465,7 +2465,8 @@ async def prob_retrain_run(req: ProbRetrainRunRequest, _: bool = Depends(require
             # Reject path traversal attempts (.. components)
             if ".." in user_dir.split(_os.sep):
                 raise HTTPException(
-                    status_code=400, detail="Invalid output_dir: must be a simple relative sub-directory."
+                    status_code=400,
+                    detail="Invalid output_dir: must be a simple relative sub-directory.",
                 )
 
             # Construct and resolve final path
@@ -3930,9 +3931,8 @@ async def metrics_summary(_: bool = Depends(require_auth)):
 @router.get("/metrics/acceptance")
 async def metrics_acceptance(_: bool = Depends(require_auth)):
     try:
-        from services.metrics import get_metrics_summary as _get
-
         from config.settings import Settings as _S
+        from services.metrics import get_metrics_summary as _get
 
         s = _S()
         m = _get()
@@ -4858,6 +4858,7 @@ async def get_strategy_regime(symbol: str, _: bool = Depends(require_auth)):
         from datetime import datetime, timedelta
 
         from indicators.regime import detect_regime
+
         from services.bitfinex_data import BitfinexDataService
 
         # OPTIMERING: Cache regime-data för 5 minuter
@@ -5261,6 +5262,7 @@ async def get_performance_stats():
         import asyncio
 
         import psutil
+
         from services.data_coordinator import data_coordinator
 
         # System-resurser
