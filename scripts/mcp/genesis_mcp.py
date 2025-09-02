@@ -7,6 +7,9 @@ from mcp.server.fastmcp import FastMCP
 BASE_URL = os.getenv("GENESIS_BASE_URL", "http://127.0.0.1:8000")
 USER_ID = os.getenv("GENESIS_USER_ID", "frontend_user")
 SCOPE = os.getenv("GENESIS_SCOPE", "read")
+MCP_SERVER_URL = os.getenv("MCP_SERVER_URL")
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY")
 
 
 def _headers(token: str | None) -> dict[str, str]:
@@ -32,6 +35,30 @@ app = FastMCP("genesis-mcp")
 @app.tool()
 async def get_token() -> dict[str, Any]:
     return {"token": await _get_token()}
+
+
+@app.tool()
+async def supabase_mcp_status() -> dict[str, Any]:
+    """Ping Supabase Edge Function (MCP server) to verify availability."""
+    if not MCP_SERVER_URL:
+        return {"ok": False, "error": "MCP_SERVER_URL not configured"}
+    headers = {"Content-Type": "application/json"}
+    if SUPABASE_ANON_KEY:
+        headers["Authorization"] = f"Bearer {SUPABASE_ANON_KEY}"
+        headers["apikey"] = SUPABASE_ANON_KEY
+    async with httpx.AsyncClient(timeout=8.0, headers=headers) as client:
+        try:
+            # Support simple GET/ping if implemented, else POST with minimal payload
+            try:
+                r = await client.get(MCP_SERVER_URL)
+            except httpx.HTTPError:
+                r = await client.post(MCP_SERVER_URL, json={"action": "status"})
+            r.raise_for_status()
+            is_json = r.headers.get("content-type", "").startswith("application/json")
+            data = r.json() if is_json else {"text": r.text}
+            return {"ok": True, "status_code": r.status_code, "data": data}
+        except Exception as exc:
+            return {"ok": False, "error": str(exc)}
 
 
 @app.tool()
