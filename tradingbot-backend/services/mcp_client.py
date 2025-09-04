@@ -24,7 +24,7 @@ class MCPTool:
 
     name: str
     description: str
-    inputSchema: dict[str, Any]
+    inputSchema: dict[str, Any]  # noqa: N815
 
 
 class MCPResponse(BaseModel):
@@ -191,7 +191,7 @@ class MCPClient:
                 return None
 
             # Skapa en enkel JWT-token för testing
-            from datetime import datetime, timedelta
+            from datetime import datetime, timedelta  # noqa: F811
 
             import jwt
 

@@ -3,6 +3,7 @@
 ## 📋 **Vad du behöver göra:**
 
 ### **1. Skapa .env-fil**
+
 Skapa en `.env`-fil i `tradingbot-backend/` med följande innehåll:
 
 ```bash
@@ -14,6 +15,7 @@ MCP_SERVER_URL=https://kxibqgvpdfmklvwhmcry.supabase.co/functions/v1/mcp_server
 ```
 
 ### **2. Hämta Supabase-nycklar**
+
 1. Gå till [Supabase Dashboard](https://supabase.com/dashboard)
 2. Välj ditt projekt
 3. Gå till **Settings** → **API**
@@ -23,6 +25,7 @@ MCP_SERVER_URL=https://kxibqgvpdfmklvwhmcry.supabase.co/functions/v1/mcp_server
    - **service_role secret** → `SUPABASE_SERVICE_ROLE_KEY`
 
 ### **3. Skapa nödvändiga tabeller**
+
 Kör följande SQL i Supabase SQL Editor:
 
 ```sql
@@ -73,6 +76,7 @@ ON CONFLICT (user_id) DO NOTHING;
 ```
 
 ### **4. Testa integrationen**
+
 ```bash
 # Från projektroten
 cd tradingbot-backend
@@ -89,11 +93,13 @@ python test_mcp_integration_simple.py
 3. **Alla data** sparas i Supabase för persistent lagring
 
 ## 🚨 **Viktigt:**
+
 - **Lägg aldrig till .env i Git** (redan i .gitignore)
 - **Service Role Key** har full åtkomst - håll den säker
 - **Anon Key** kan delas offentligt (begränsad åtkomst)
 
 ## ✅ **När du är klar:**
+
 - MCP-servern är integrerad med Genesis
 - Du kan använda `/api/v2/mcp/*` endpoints
 - Trading-data sparas i Supabase

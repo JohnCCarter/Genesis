@@ -1,12 +1,21 @@
 36s
-##[debug]Evaluating condition for step: 'Run CI script'
-##[debug]Evaluating: success()
-##[debug]Evaluating success:
-##[debug]=> true
-##[debug]Result: true
-##[debug]Starting: Run CI script
-##[debug]Loading inputs
-##[debug]Loading env
+
+## [debug]Evaluating condition for step: 'Run CI script'
+
+## [debug]Evaluating: success()
+
+## [debug]Evaluating success
+
+## [debug]=> true
+
+## [debug]Result: true
+
+## [debug]Starting: Run CI script
+
+## [debug]Loading inputs
+
+## [debug]Loading env
+
 Run ./tradingbot-backend/scripts/ci.ps1
   ./tradingbot-backend/scripts/ci.ps1
   shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
@@ -16,7 +25,9 @@ Run ./tradingbot-backend/scripts/ci.ps1
     Python_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
     Python2_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
     Python3_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
-##[debug]C:\Program Files\PowerShell\7\pwsh.EXE -command ". 'D:\a\_temp\cdb24282-49a7-4a24-9977-1d94d0b94c43.ps1'"
+
+## [debug]C:\Program Files\PowerShell\7\pwsh.EXE -command ". 'D:\a\_temp\cdb24282-49a7-4a24-9977-1d94d0b94c43.ps1'"
+
 === Black check ===
 would reformat D:\a\Genesis\Genesis\tradingbot-backend\config\settings.py
 
@@ -220,7 +231,7 @@ rest\order_history.py:315:1: I001 [*] Import block is un-sorted or un-formatted
 317 | |                                     from config.settings import Settings as _S
 318 | |
     | |_^ I001
-319 |                                       api_key = _S().BITFINEX_API_KEY or "default_key"
+319 |                                       api_key =_S().BITFINEX_API_KEY or "default_key"
 320 |                                       bump_nonce(api_key)
     |
     = help: Organize imports
@@ -338,7 +349,7 @@ rest\routes.py:2215:1: I001 [*] Import block is un-sorted or un-formatted
      |
 2213 |           # Feature/decision‑loggning (ringbuffer)
 2214 |           try:
-2215 | /             from services.metrics import metrics_store as _ms
+2215 | /             from services.metrics import metrics_store as_ms
 2216 | |
 2217 | |             from config.settings import Settings as _S2
 2218 | |
@@ -352,13 +363,13 @@ rest\routes.py:3883:1: I001 [*] Import block is un-sorted or un-formatted
      |
 3881 |   async def metrics_acceptance(_: bool = Depends(require_auth)):
 3882 |       try:
-3883 | /         from services.metrics import get_metrics_summary as _get
+3883 | /         from services.metrics import get_metrics_summary as_get
 3884 | |
 3885 | |         from config.settings import Settings as _S
 3886 | |
      | |_^ I001
 3887 |           s = _S()
-3888 |           m = _get()
+3888 |           m =_get()
      |
      = help: Organize imports
 
@@ -1137,10 +1148,10 @@ services\bitfinex_websocket.py:16
     from websockets.client import connect as ws_connect  # type: ignore[attr-defined]
 
 C:\hostedtoolcache\windows\Python\3.11.9\x64\Lib\site-packages\websockets\legacy\__init__.py:6
-  C:\hostedtoolcache\windows\Python\3.11.9\x64\Lib\site-packages\websockets\legacy\__init__.py:6: DeprecationWarning: websockets.legacy is deprecated; see https://websockets.readthedocs.io/en/stable/howto/upgrade.html for upgrade instructions
+  C:\hostedtoolcache\windows\Python\3.11.9\x64\Lib\site-packages\websockets\legacy\__init__.py:6: DeprecationWarning: websockets.legacy is deprecated; see <https://websockets.readthedocs.io/en/stable/howto/upgrade.html> for upgrade instructions
     warnings.warn(  # deprecated in 14.0 - 2024-11-09
 
--- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+-- Docs: <https://docs.pytest.org/en/stable/how-to/capture-warnings.html>
 =========================== short test summary info ===========================
 FAILED tests/test_risk_guards.py::TestRiskGuardsService::test_check_max_daily_loss_triggered - assert False is True
 FAILED tests/test_risk_guards.py::TestRiskGuardsService::test_check_max_daily_loss_cooldown - assert False is True
@@ -1151,7 +1162,7 @@ Traceback (most recent call last):
   File "C:\hostedtoolcache\windows\Python\3.11.9\x64\Lib\site-packages\bandit\formatters\text.py", line 195, in report
     wrapped_file.write(result)
   File "C:\hostedtoolcache\windows\Python\3.11.9\x64\Lib\encodings\cp1252.py", line 19, in encode
-    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+    return codecs.charmap_encode[input,self.errors,encoding_table](0)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 UnicodeEncodeError: 'charmap' codec can't encode character '\U0001f501' in position 67876: character maps to <undefined>
 
@@ -1201,10 +1212,10 @@ services\bitfinex_data.py:224:12: C0415: Import outside toplevel (services.symbo
 services\bitfinex_data.py:366:19: W0718: Catching too general exception Exception (broad-exception-caught)
 services\bitfinex_data.py:262:16: W0404: Reimport 'time' (imported line 10) (reimported)
 services\bitfinex_data.py:262:16: C0415: Import outside toplevel (time) (import-outside-toplevel)
-services\bitfinex_data.py:275:34: W0212: Access to a protected member _last_tick_ts of a client class (protected-access)
+services\bitfinex_data.py:275:34: W0212: Access to a protected member_last_tick_ts of a client class (protected-access)
 services\bitfinex_data.py:364:23: W0718: Catching too general exception Exception (broad-exception-caught)
 services\bitfinex_data.py:326:73: W0212: Access to a protected member _handle_ticker_with_strategy of a client class (protected-access)
-services\bitfinex_data.py:327:71: W0212: Access to a protected member _handle_ticker_with_strategy of a client class (protected-access)
+services\bitfinex_data.py:327:71: W0212: Access to a protected member_handle_ticker_with_strategy of a client class (protected-access)
 services\bitfinex_data.py:221:8: R1702: Too many nested blocks (7/5) (too-many-nested-blocks)
 services\bitfinex_data.py:221:8: R1702: Too many nested blocks (8/5) (too-many-nested-blocks)
 services\bitfinex_data.py:221:8: R1702: Too many nested blocks (7/5) (too-many-nested-blocks)
@@ -1923,7 +1934,7 @@ services\trading_integration.py:11:0: W0611: Unused Optional imported from typin
 services\trading_service.py:73:8: R1705: Unnecessary "elif" after "return", remove the leading "el" from "elif" (no-else-return)
 services\trading_service.py:98:15: W0718: Catching too general exception Exception (broad-exception-caught)
 services\trading_service.py:118:15: W0718: Catching too general exception Exception (broad-exception-caught)
-services\trading_service.py:112:27: W0212: Access to a protected member _execute_enhanced_trade of a client class (protected-access)
+services\trading_service.py:112:27: W0212: Access to a protected member_execute_enhanced_trade of a client class (protected-access)
 services\trading_service.py:138:15: W0718: Catching too general exception Exception (broad-exception-caught)
 services\trading_service.py:130:27: W0212: Access to a protected member _handle_ticker_with_strategy of a client class (protected-access)
 services\trading_service.py:10:0: W0611: Unused import asyncio (unused-import)
@@ -2209,11 +2220,11 @@ rest\routes.py:1349:11: W0718: Catching too general exception Exception (broad-e
 rest\routes.py:1365:11: W0718: Catching too general exception Exception (broad-exception-caught)
 rest\routes.py:1404:11: W0718: Catching too general exception Exception (broad-exception-caught)
 rest\routes.py:1399:8: R1705: Unnecessary "else" after "return", remove the "else" and de-indent the code inside it (no-else-return)
-rest\routes.py:1440:26: W0212: Access to a protected member _cache of a client class (protected-access)
+rest\routes.py:1440:26: W0212: Access to a protected member_cache of a client class (protected-access)
 rest\routes.py:1445:12: W0212: Access to a protected member _cache of a client class (protected-access)
-rest\routes.py:1457:8: W0212: Access to a protected member _cache of a client class (protected-access)
+rest\routes.py:1457:8: W0212: Access to a protected member_cache of a client class (protected-access)
 rest\routes.py:1491:26: W0212: Access to a protected member _cache of a client class (protected-access)
-rest\routes.py:1496:12: W0212: Access to a protected member _cache of a client class (protected-access)
+rest\routes.py:1496:12: W0212: Access to a protected member_cache of a client class (protected-access)
 rest\routes.py:1502:8: W0212: Access to a protected member _cache of a client class (protected-access)
 rest\routes.py:1507:8: W0707: Consider explicitly re-raising using 'raise HTTPException(status_code=500, detail=str(e)) from e' (raise-missing-from)
 rest\routes.py:1532:12: W0212: Access to a protected member _cache of a client class (protected-access)
@@ -2256,7 +2267,7 @@ rest\routes.py:1917:8: W0707: Consider explicitly re-raising using 'raise HTTPEx
 rest\routes.py:1921:31: W0622: Redefining built-in 'format' (redefined-builtin)
 rest\routes.py:1964:8: C0415: Import outside toplevel (services.strategy.evaluate_strategy) (import-outside-toplevel)
 rest\routes.py:1978:8: W0707: Consider explicitly re-raising using 'raise HTTPException(status_code=500, detail=str(e)) from e' (raise-missing-from)
-rest\routes.py:1986:51: W0212: Access to a protected member _handle_ticker_with_strategy of a client class (protected-access)
+rest\routes.py:1986:51: W0212: Access to a protected member_handle_ticker_with_strategy of a client class (protected-access)
 rest\routes.py:1993:8: W0707: Consider explicitly re-raising using 'raise HTTPException(status_code=500, detail=str(e)) from e' (raise-missing-from)
 rest\routes.py:2000:8: W0404: Reimport 'bitfinex_ws' (imported line 19) (reimported)
 rest\routes.py:2000:8: C0415: Import outside toplevel (services.bitfinex_websocket.bitfinex_ws) (import-outside-toplevel)
@@ -2266,9 +2277,9 @@ rest\routes.py:2017:8: C0415: Import outside toplevel (services.bitfinex_websock
 rest\routes.py:2022:8: W0707: Consider explicitly re-raising using 'raise HTTPException(status_code=500, detail=str(e)) from e' (raise-missing-from)
 rest\routes.py:2030:8: W0404: Reimport 'bitfinex_ws' (imported line 19) (reimported)
 rest\routes.py:2030:8: C0415: Import outside toplevel (services.bitfinex_websocket.bitfinex_ws) (import-outside-toplevel)
-rest\routes.py:2033:52: W0212: Access to a protected member _handle_ticker_with_strategy of a client class (protected-access)
-rest\routes.py:2036:52: W0212: Access to a protected member _handle_ticker_with_strategy of a client class (protected-access)
-rest\routes.py:2040:57: W0212: Access to a protected member _handle_ticker_with_strategy of a client class (protected-access)
+rest\routes.py:2033:52: W0212: Access to a protected member_handle_ticker_with_strategy of a client class (protected-access)
+rest\routes.py:2036:52: W0212: Access to a protected member_handle_ticker_with_strategy of a client class (protected-access)
+rest\routes.py:2040:57: W0212: Access to a protected member_handle_ticker_with_strategy of a client class (protected-access)
 rest\routes.py:2049:8: W0707: Consider explicitly re-raising using 'raise HTTPException(status_code=500, detail=str(e)) from e' (raise-missing-from)
 rest\routes.py:2055:8: W0404: Reimport 'bitfinex_ws' (imported line 19) (reimported)
 rest\routes.py:2055:8: C0415: Import outside toplevel (services.bitfinex_websocket.bitfinex_ws) (import-outside-toplevel)
@@ -2309,7 +2320,7 @@ rest\routes.py:2612:19: W0718: Catching too general exception Exception (broad-e
 rest\routes.py:2622:50: W0622: Redefining built-in 'format' (redefined-builtin)
 rest\routes.py:2628:15: W0718: Catching too general exception Exception (broad-exception-caught)
 rest\routes.py:2638:19: W0718: Catching too general exception Exception (broad-exception-caught)
-rest\routes.py:2660:26: W0212: Access to a protected member _cache of a client class (protected-access)
+rest\routes.py:2660:26: W0212: Access to a protected member_cache of a client class (protected-access)
 rest\routes.py:2662:29: W1309: Using an f-string that does not have any interpolated variables (f-string-without-interpolation)
 rest\routes.py:2665:12: W0212: Access to a protected member _cache of a client class (protected-access)
 rest\routes.py:2672:15: W0718: Catching too general exception Exception (broad-exception-caught)

@@ -245,7 +245,7 @@ class AdvancedRateLimiter:
             st["last_failure"] = 0.0
             self._cb_state[key] = st
 
-    def note_failure(self, endpoint: str, status_code: int, retry_after: str | None = None) -> float:
+    def note_failure(self, endpoint: str, status_code: int, retry_after: str | None = None) -> float:  # noqa: ARG002
         key = self._cb_key(endpoint)
         st = self._cb_state.get(key) or {"fail_count": 0, "open_until": 0.0, "last_failure": 0.0}
         st["fail_count"] = int(st.get("fail_count", 0)) + 1

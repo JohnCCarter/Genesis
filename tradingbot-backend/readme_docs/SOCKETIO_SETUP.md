@@ -3,12 +3,14 @@
 ## ✅ **Vad som fungerar:**
 
 ### **Socket.IO Installation:**
+
 - ✅ Socket.IO är installerat korrekt
 - ✅ Socket.IO server kan skapas framgångsrikt
 - ✅ Event handlers kan registreras korrekt
 - ✅ Socket.IO client kan skapas framgångsrikt
 
 ### **WebSocket Events:**
+
 - ✅ `connect` - Hanterar anslutning
 - ✅ `disconnect` - Hanterar frånkoppling
 - ✅ `evaluate_strategy_ws` - Strategiutvärdering
@@ -19,12 +21,14 @@
 ## 🚀 **Starta Socket.IO Server:**
 
 ### **Alternativ 1: Använd huvudservern**
+
 ```bash
 cd tradingbot-backend
 python main.py
 ```
 
 ### **Alternativ 2: Använd enkel test-server**
+
 ```bash
 cd tradingbot-backend
 python simple_socketio_server.py
@@ -33,16 +37,19 @@ python simple_socketio_server.py
 ## 🔧 **Testa Socket.IO:**
 
 ### **Test 1: Kontrollera server status**
+
 ```bash
 curl http://localhost:8000/
 ```
 
 ### **Test 2: Testa Socket.IO handshake**
+
 ```bash
 curl http://localhost:8000/ws/socket.io/?EIO=4&transport=polling
 ```
 
 ### **Test 3: Använd Socket.IO client**
+
 ```bash
 python test_socketio_fix.py
 ```
@@ -50,6 +57,7 @@ python test_socketio_fix.py
 ## 📋 **WebSocket Events som är tillgängliga:**
 
 ### **Strategiutvärdering:**
+
 ```javascript
 // Skicka data för strategiutvärdering
 socket.emit('evaluate_strategy_ws', {
@@ -65,6 +73,7 @@ socket.on('strategy_result', function(data) {
 ```
 
 ### **Realtids övervakning:**
+
 ```javascript
 // Starta övervakning
 socket.emit('start_realtime_monitoring', {
@@ -88,6 +97,7 @@ socket.on('monitoring_stopped', function(data) {
 ```
 
 ### **Aktiva signaler:**
+
 ```javascript
 // Hämta aktiva signaler
 socket.emit('get_active_signals');

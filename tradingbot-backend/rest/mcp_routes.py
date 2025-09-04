@@ -30,7 +30,7 @@ class MCPToolInfo(BaseModel):
 
     name: str
     description: str
-    inputSchema: dict[str, Any]
+    inputSchema: dict[str, Any]  # noqa: N815
 
 
 class MCPToolCall(BaseModel):
