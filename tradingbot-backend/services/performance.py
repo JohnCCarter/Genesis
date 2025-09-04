@@ -28,7 +28,7 @@ from config.settings import Settings
 from rest.order_history import OrderHistoryService, TradeItem
 from rest.positions import PositionsService
 from rest.wallet import WalletService
-from services.bitfinex_data import BitfinexDataService
+from services.market_data_facade import get_market_data
 
 logger = get_logger(__name__)
 
@@ -47,7 +47,7 @@ class PerformanceService:
         self.wallet_service = WalletService()
         self.positions_service = PositionsService()
         self.order_history_service = OrderHistoryService()
-        self.data_service = BitfinexDataService()
+        self.data_service = get_market_data()
         self._fx_cache: dict[str, float] = {}
 
         # Persistensfil för equity-historik

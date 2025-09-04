@@ -1,14 +1,99 @@
 """
-Enhetlig Signal Service för Genesis Trading Bot
+Signal Service - enhetlig sannolikhet/konfidens och rekommendation.
+"""
 
-Konsoliderar alla signal-genereringar från olika moduler:
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Any, Literal
+
+from services.prob_model import prob_model
+
+
+@dataclass
+class SignalScore:
+    recommendation: Literal["buy", "sell", "hold"]
+    confidence: float  # 0..100
+    probability: float  # 0..100 (modell eller heuristik)
+    features: dict[str, Any]
+    source: Literal["deterministic", "probabilistic", "hybrid"]
+
+
+class SignalService:
+    @staticmethod
+    def calc_confidence(adx_value: float | None, ema_z_value: float | None) -> float:
+        if not adx_value or not ema_z_value:
+            return 50.0
+        adx_conf = min(adx_value / 50.0, 1.0) * 50
+        ema_conf = min(abs(ema_z_value) / 2.0, 1.0) * 50
+        return round(adx_conf + ema_conf, 1)
+
+    @staticmethod
+    def calc_probability(regime: str | None, confidence: float) -> float:
+        bases = {"trend": 0.85, "balanced": 0.60, "range": 0.25}
+        base = bases.get((regime or "").lower(), 0.5)
+        return round(base * (confidence / 100.0) * 100.0, 1)
+
+    @staticmethod
+    def recommend(regime: str | None, confidence: float, probability: float) -> str:
+        if confidence < 30:
+            return "hold"
+        if probability > 70:
+            return "buy" if (regime or "").lower() == "trend" else "buy"
+        if probability > 40:
+            return "buy"
+        if probability > 20:
+            return "hold"
+        return "hold"
+
+    def score(
+        self,
+        *,
+        regime: str | None,
+        adx_value: float | None,
+        ema_z_value: float | None,
+        features: dict[str, Any] | None = None,
+    ) -> SignalScore:
+        conf = self.calc_confidence(adx_value, ema_z_value)
+        prob_h = self.calc_probability(regime, conf)
+
+        # Modellprob om aktiv
+        model_prob_pct: float | None = None
+        if prob_model.enabled:
+            feats = {"ema": float(ema_z_value or 0.0), "rsi": float(adx_value or 0.0)}
+            p = prob_model.predict_proba(feats)
+            # Ta 100 * max(buy, sell) som probability
+            model_prob_pct = max(float(p.get("buy", 0.0)), float(p.get("sell", 0.0))) * 100.0
+
+        # Kombinera
+        if model_prob_pct is not None:
+            probability = round(0.6 * model_prob_pct + 0.4 * prob_h, 1)
+            source: Literal["deterministic", "probabilistic", "hybrid"] = "hybrid"
+        else:
+            probability = prob_h
+            source = "deterministic"
+
+        rec = self.recommend(regime, conf, probability)
+        return SignalScore(
+            recommendation=rec,
+            confidence=conf,
+            probability=probability,
+            features=features or {"adx_value": adx_value, "ema_z_value": ema_z_value, "regime": regime},
+            source=source,
+        )
+
+
+"""
+Enhetlig (orkestrerande) Signal-tjänst för Genesis Trading Bot
+
+Konsoliderar signal-generering från olika moduler:
 - Standard signal-generering (SignalGeneratorService)
 - Realtids-signaler (WebSocket)
 - Enhanced signaler (EnhancedAutoTrader)
 """
 
 from datetime import datetime, timedelta
-from typing import Any
+from typing import Any as _Any
 
 from models.signal_models import LiveSignalsResponse, SignalResponse
 from utils.logger import get_logger
@@ -20,7 +105,7 @@ from services.signal_generator import SignalGeneratorService
 logger = get_logger(__name__)
 
 
-class SignalService:
+class UnifiedSignalService:
     """
     Enhetlig service för all signal-generering i systemet.
 
@@ -152,7 +237,7 @@ class SignalService:
             self._last_update.clear()
             logger.info("🗑️ All cache rensad")
 
-    def get_cache_stats(self) -> dict[str, Any]:
+    def get_cache_stats(self) -> dict[str, _Any]:
         """Hämta cache-statistik"""
         return {
             "total_cached": len(self._signal_cache),
@@ -163,4 +248,6 @@ class SignalService:
 
 
 # Global instans för enhetlig åtkomst
-signal_service = SignalService()
+unified_signal_service = UnifiedSignalService()
+# Backwards compatibility alias for existing imports
+signal_service = unified_signal_service

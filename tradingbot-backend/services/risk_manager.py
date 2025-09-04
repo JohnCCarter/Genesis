@@ -13,8 +13,7 @@ from utils.logger import get_logger
 from config.settings import Settings
 from services.metrics import metrics_store
 from services.risk_guards import risk_guards
-from services.trade_counter import TradeCounterService
-from services.trading_window import TradingWindowService
+from services.risk_policy_engine import RiskPolicyEngine
 
 logger = get_logger(__name__)
 
@@ -26,8 +25,10 @@ _CB_OPENED_AT: datetime | None = None
 class RiskManager:
     def __init__(self, settings: Settings | None = None):
         self.settings = settings or Settings()
-        self.trading_window = TradingWindowService(self.settings)
-        self.trade_counter = TradeCounterService(self.settings)
+        self.policy = RiskPolicyEngine(self.settings)
+        # Backwards-compat: exponera underliggande services så gamla tester fungerar
+        self.trading_window = self.policy.constraints.trading_window
+        self.trade_counter = self.policy.constraints.trade_counter
         # Circuit breaker state (global per process)
         self._error_events = _CB_ERROR_EVENTS
         self._circuit_opened_at_ref = lambda: _CB_OPENED_AT
@@ -40,41 +41,13 @@ class RiskManager:
         if blocked:
             return False, f"risk_guard_blocked:{reason}"
 
-        if self.trading_window.is_paused():
-            return False, "trading_paused"
-        if not self.trading_window.is_open():
-            return False, "outside_trading_window"
-        # Per-symbol daglig gräns (pröva först för tydligare orsak)
-        try:
-            limits = self.trading_window.get_limits()
-            # Föredra alltid reglernas värde även om det är 0 (0 = inaktiverad)
-            limit_from_rules = int(limits.get("max_trades_per_symbol_per_day", 0) or 0)
-            limit_from_settings = int(getattr(self.settings, "MAX_TRADES_PER_SYMBOL_PER_DAY", 0) or 0)
-            active_limit = limit_from_rules if limit_from_rules >= 0 else limit_from_settings
-            if symbol and active_limit > 0:
-                per_symbol = self.trade_counter.stats().get("per_symbol", {})
-                if per_symbol.get(symbol.upper(), 0) >= active_limit:
-                    return False, "symbol_daily_trade_limit_reached"
-        except Exception:
-            pass
-        # Generella kontroller (daglig limit, cooldown)
-        if not self.trade_counter.can_execute():
-            stats = self.trade_counter.stats()
-            if stats.get("count", 0) >= stats.get("max_per_day", 0):
-                return False, "daily_trade_limit_reached"
-            if stats.get("cooldown_active", False):
-                return False, "trade_cooldown_active"
-            return False, "trade_blocked"
+        decision = self.policy.evaluate(symbol=symbol, amount=amount, price=price)
+        if not decision.allowed:
+            return False, decision.reason
         return True, None
 
     def record_trade(self, *, symbol: str | None = None) -> None:
-        if symbol:
-            try:
-                self.trade_counter.record_trade_for_symbol(symbol)
-                return
-            except Exception:
-                pass
-        self.trade_counter.record_trade()
+        self.policy.record_trade(symbol=symbol)
 
     # --- Circuit Breaker ---
     def record_error(self) -> None:
@@ -135,12 +108,13 @@ class RiskManager:
         now = datetime.utcnow()
         self._prune_errors(now)
         opened_at = _CB_OPENED_AT.isoformat() if _CB_OPENED_AT else None
+        ps = self.policy.status()
         return {
-            "open": self.trading_window.is_open(),
-            "paused": self.trading_window.is_paused(),
-            "limits": self.trading_window.get_limits(),
-            "next_open": (self.trading_window.next_open().isoformat() if self.trading_window.next_open() else None),
-            "trades": self.trade_counter.stats(),
+            "open": ps.get("open"),
+            "paused": ps.get("paused"),
+            "limits": ps.get("limits"),
+            "next_open": ps.get("next_open"),
+            "trades": ps.get("trades"),
             "circuit": {
                 "enabled": bool(self.settings.CB_ENABLED),
                 "errors_in_window": len(self._error_events),

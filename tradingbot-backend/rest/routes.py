@@ -16,6 +16,7 @@ from indicators.atr import calculate_atr
 from pydantic import BaseModel
 from utils.advanced_rate_limiter import get_advanced_rate_limiter
 from utils.candle_cache import candle_cache
+from utils.candles import parse_candles_to_strategy_data
 from utils.logger import get_logger
 from utils.rate_limiter import get_rate_limiter
 
@@ -41,6 +42,7 @@ from services.backtest import BacktestService
 from services.bitfinex_data import BitfinexDataService
 from services.bitfinex_websocket import bitfinex_ws
 from services.bracket_manager import bracket_manager
+from services.market_data_facade import get_market_data
 from services.metrics import get_metrics_summary, inc_labeled, render_prometheus_text
 from services.metrics import inc as metrics_inc
 from services.notifications import notification_service
@@ -4052,7 +4054,7 @@ async def mcp_execute(req: MCPExecuteRequest, _: bool = Depends(require_auth)):
         # market_ticker
         if name == "market_ticker":
             sym = str(p.get("symbol") or "tBTCUSD")
-            data = await BitfinexDataService().get_ticker(sym)
+            data = await get_market_data().get_ticker(sym)
             return data or {"error": "no_data"}
 
         # run_validation
@@ -4123,7 +4125,7 @@ async def mcp_get_token(
 @router.get("/mcp/market_ticker")
 async def mcp_market_ticker(symbol: str = "tBTCUSD", _: bool = Depends(require_auth)):
     try:
-        data = await BitfinexDataService().get_ticker(symbol)
+        data = await get_market_data().get_ticker(symbol)
         return data or {"error": "no_data"}
     except Exception as e:
         logger.exception(f"MCP market_ticker error: {e}")

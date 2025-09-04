@@ -11,7 +11,8 @@ from models.signal_models import (
 )
 from utils.logger import get_logger
 
-from services.bitfinex_data import BitfinexDataService
+from services.market_data_facade import get_market_data
+from services.signal_service import SignalService
 from services.symbols import SymbolService
 
 logger = get_logger(__name__)
@@ -21,8 +22,9 @@ class SignalGeneratorService:
     """Service för att generera live trading signals"""
 
     def __init__(self):
-        self.data_service = BitfinexDataService()
+        self.data_service = get_market_data()
         self.symbol_service = SymbolService()
+        self.signal_service = SignalService()
 
         # Signal cache och historik
         self._signal_cache: dict[str, SignalResponse] = {}
@@ -85,14 +87,24 @@ class SignalGeneratorService:
                         logger.warning(f"⚠️ Saknar data för {symbol}")
                         continue
 
-                    # Beräkna signal typ
-                    signal_type = self._determine_signal_type(regime_data)
-
-                    # Beräkna signal styrka
-                    strength = self._evaluate_signal_strength(regime_data)
-
-                    # Generera anledning
-                    reason = self._generate_signal_reason(regime_data, signal_type)
+                    sc = self.signal_service.score(
+                        regime=regime_data.get("regime"),
+                        adx_value=regime_data.get("adx_value"),
+                        ema_z_value=regime_data.get("ema_z_value"),
+                        features={"symbol": symbol},
+                    )
+                    signal_type = (
+                        "BUY" if sc.recommendation == "buy" else ("SELL" if sc.recommendation == "sell" else "HOLD")
+                    )
+                    strength = self._evaluate_signal_strength(
+                        {
+                            "confidence_score": sc.confidence,
+                            "trading_probability": sc.probability,
+                        }
+                    )
+                    reason = (
+                        f"Confidence: {sc.confidence:.1f}%, Probability: {sc.probability:.1f}%, Source: {sc.source}"
+                    )
 
                     # Skapa signal response
                     signal = SignalResponse(
@@ -201,14 +213,20 @@ class SignalGeneratorService:
             # Hämta aktuellt pris
             current_price = await self._get_current_price(symbol)
 
-            # Beräkna signal typ
-            signal_type = self._determine_signal_type(regime_data)
-
-            # Beräkna signal styrka
-            strength = self._evaluate_signal_strength(regime_data)
-
-            # Generera anledning
-            reason = self._generate_signal_reason(regime_data, signal_type)
+            sc = self.signal_service.score(
+                regime=regime_data.get("regime"),
+                adx_value=regime_data.get("adx_value"),
+                ema_z_value=regime_data.get("ema_z_value"),
+                features={"symbol": symbol},
+            )
+            signal_type = "BUY" if sc.recommendation == "buy" else ("SELL" if sc.recommendation == "sell" else "HOLD")
+            strength = self._evaluate_signal_strength(
+                {
+                    "confidence_score": sc.confidence,
+                    "trading_probability": sc.probability,
+                }
+            )
+            reason = f"Confidence: {sc.confidence:.1f}%, Probability: {sc.probability:.1f}%, Source: {sc.source}"
 
             # Skapa signal response
             signal = SignalResponse(

@@ -16,7 +16,7 @@ from rest.auth import place_order
 from rest.margin import get_leverage, get_margin_info, get_margin_status
 from rest.positions import get_positions
 from rest.wallet import get_total_balance_usd, get_wallets
-from services.bitfinex_data import bitfinex_data
+from services.market_data_facade import get_market_data
 from services.metrics import inc
 from services.realtime_strategy import realtime_strategy
 from services.risk_manager import RiskManager
@@ -127,11 +127,12 @@ class TradingIntegrationService:
             symbol: Trading pair (t.ex. 'tBTCUSD')
         """
         try:
+            data = get_market_data()
             # Hämta ticker
-            ticker = await bitfinex_data.get_ticker(symbol)
+            ticker = await data.get_ticker(symbol)
 
             # Hämta candles
-            candles = await bitfinex_data.get_candles(symbol, timeframe="1h", limit=100)
+            candles = await data.get_candles(symbol, timeframe="1h", limit=100)
 
             if ticker and candles:
                 self.market_data[symbol] = {
@@ -168,7 +169,15 @@ class TradingIntegrationService:
 
             # Hämta candles och konvertera till strategidata
             candles = self.market_data[symbol]["candles"]
-            strategy_data = bitfinex_data.parse_candles_to_strategy_data(candles)
+
+            # Tillfällig: enkel konvertering här, behåll bitfinex_data util om behövs
+            def _parse(candles_in):
+                highs = [float(c[3]) for c in candles_in if len(c) >= 4]
+                lows = [float(c[4]) for c in candles_in if len(c) >= 5]
+                closes = [float(c[2]) for c in candles_in if len(c) >= 3]
+                return {"high": highs, "low": lows, "close": closes}
+
+            strategy_data = _parse(candles)
             # bädda in symbol för per-symbol viktning
             strategy_data["symbol"] = symbol
 

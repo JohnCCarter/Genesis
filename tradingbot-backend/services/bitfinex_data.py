@@ -825,28 +825,28 @@ class BitfinexDataService:
         Returns:
             Dict med closes, highs, lows för strategiutvärdering
         """
-        if not candles:
-            return {"closes": [], "highs": [], "lows": []}
+        try:
+            from utils.candles import parse_candles_to_strategy_data as _parse
 
-        # Bitfinex candle format: [MTS, OPEN, CLOSE, HIGH, LOW, VOLUME]
-        closes = []
-        highs = []
-        lows = []
-
-        for candle in candles:
-            # Säkerställ att candle är en lista med minst 5 element
-            if isinstance(candle, list) and len(candle) >= 5:
-                try:
-                    closes.append(float(candle[2]))  # CLOSE
-                    highs.append(float(candle[3]))  # HIGH
-                    lows.append(float(candle[4]))  # LOW
-                except (ValueError, TypeError, IndexError):
-                    # Hoppa över ogiltiga candles
-                    continue
-
-        logger.debug("Parsade %s datapunkter för strategiutvärdering", len(closes))
-
-        return {"closes": closes, "highs": highs, "lows": lows}
+            data = _parse(candles)
+            logger.debug("Parsade %s datapunkter för strategiutvärdering", len(data.get("closes", [])))
+            return data
+        except Exception:
+            # Fallback (bör inte inträffa)
+            if not candles:
+                return {"closes": [], "highs": [], "lows": []}
+            closes = []
+            highs = []
+            lows = []
+            for candle in candles:
+                if isinstance(candle, list) and len(candle) >= 5:
+                    try:
+                        closes.append(float(candle[2]))
+                        highs.append(float(candle[3]))
+                        lows.append(float(candle[4]))
+                    except (ValueError, TypeError, IndexError):
+                        continue
+            return {"closes": closes, "highs": highs, "lows": lows}
 
 
 # Global instans för enkel åtkomst
