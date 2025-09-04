@@ -4,8 +4,9 @@
     "percentage": 5.0,
     "triggered": false,
     "triggered_at": null,
-    "daily_start_equity": null,
-    "cooldown_hours": 24
+    "daily_start_equity": 10000.0,
+    "cooldown_hours": 24,
+    "daily_start_date": "2025-09-04"
   },
   "kill_switch": {
     "enabled": true,

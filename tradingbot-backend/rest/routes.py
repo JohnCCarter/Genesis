@@ -14,6 +14,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from indicators.atr import calculate_atr
 from pydantic import BaseModel
+from utils.advanced_rate_limiter import get_advanced_rate_limiter
 from utils.candle_cache import candle_cache
 from utils.logger import get_logger
 from utils.rate_limiter import get_rate_limiter
@@ -69,6 +70,7 @@ security = HTTPBearer(auto_error=False)
 settings = Settings()
 # Harmonisera verifierings-hemlighet med generatorn (ws.auth) och tillåt fallback
 JWT_SECRET = settings.SOCKETIO_JWT_SECRET or getattr(settings, "JWT_SECRET_KEY", None) or "socket-io-secret"
+_rl_adv = get_advanced_rate_limiter()
 _rl = get_rate_limiter()
 
 

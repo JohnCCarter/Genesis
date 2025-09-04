@@ -57,6 +57,29 @@ class PerformanceService:
         self.history_path = os.path.join(self.config_dir, "performance_history.json")
         os.makedirs(self.config_dir, exist_ok=True)
 
+    async def get_recent_trades(self, hours: int = 24, limit: int = 500) -> list[TradeItem]:
+        """Hämta trades från senaste N timmarna.
+
+        Hämtar upp till `limit` trades via REST och filtrerar klient-side på timestamp.
+        Returnerar en lista av TradeItem.
+        """
+        try:
+            # Hämta senaste trades (utan symbolfilter)
+            trades: list[TradeItem] = await self.order_history_service.get_trades_history(symbol=None, limit=limit)
+        except Exception as e:
+            logger.warning(f"Kunde inte hämta senaste trades: {e}")
+            return []
+
+        try:
+            cutoff_ms = int(datetime.now().timestamp() * 1000) - int(hours * 3600 * 1000)
+            recent = [
+                t for t in trades if hasattr(t, "executed_at") and int(t.executed_at.timestamp() * 1000) >= cutoff_ms
+            ]
+            return recent
+        except Exception:
+            # Om filtreringen misslyckas, returnera ofiltrerat (bättre än tom lista)
+            return trades
+
     # ---- Helpers ----
     @staticmethod
     def _parse_base_quote(symbol: str) -> tuple[str, str]:

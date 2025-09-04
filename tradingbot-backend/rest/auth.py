@@ -91,6 +91,18 @@ def redact_headers(headers: dict) -> dict:
     return redacted
 
 
+def get_auth_headers() -> dict:
+    """Publik helper för health checks m.fl. att generera signerade headers för ett no-op endpoint.
+
+    Använder v2 och ett harmlöst endpointvärde för att validera signeringskedjan utan att göra nätverksanrop.
+    """
+    try:
+        # Använd ett fiktivt endpoint för signeringstest
+        return build_auth_headers(endpoint="auth/r/ping", payload_str="{}")
+    except Exception:
+        return {}
+
+
 async def place_order(order: dict) -> dict:
     """
     Lägger en order via Bitfinex REST API.

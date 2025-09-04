@@ -5,10 +5,12 @@ Token-bucket baserad rate limiting med separata limits för olika endpoint-typer
 """
 
 import asyncio
+import contextlib
 import random
 import time
 from dataclasses import dataclass
 from enum import Enum
+from typing import Any, Awaitable, Callable, ParamSpec, TypeVar
 
 from config.settings import Settings
 from utils.logger import get_logger
@@ -70,6 +72,8 @@ class AdvancedRateLimiter:
         self._buckets: dict[EndpointType, TokenBucket] = {}
         self._endpoint_mapping: dict[str, EndpointType] = {}
         self._lock = asyncio.Lock()
+        # Concurrency caps per endpoint-typ
+        self._semaphores: dict[EndpointType, asyncio.Semaphore] = {}
         # Server busy tracking (för kompatibilitet med äldre anrop)
         self._server_busy_count: int = 0
         self._last_server_busy_time: float = 0.0
@@ -78,6 +82,7 @@ class AdvancedRateLimiter:
         self._cb_state: dict[str, dict] = {}
         self._setup_buckets()
         self._setup_endpoint_mapping()
+        self._setup_semaphores()
 
     def _setup_buckets(self) -> None:
         """Sätt upp token buckets för olika endpoint-typer"""
@@ -105,6 +110,17 @@ class AdvancedRateLimiter:
             self._buckets[endpoint_type] = TokenBucket(
                 capacity=int(config["capacity"]), refill_rate=config["refill_rate"]
             )
+
+    def _setup_semaphores(self) -> None:
+        """Sätt upp concurrency-semaforer för endpoint-typer."""
+        pub = max(1, int(getattr(self.settings, "PUBLIC_REST_CONCURRENCY", 2) or 1))
+        prv = max(1, int(getattr(self.settings, "PRIVATE_REST_CONCURRENCY", 1) or 1))
+        self._semaphores = {
+            EndpointType.PUBLIC_MARKET: asyncio.Semaphore(pub),
+            EndpointType.PRIVATE_ACCOUNT: asyncio.Semaphore(prv),
+            EndpointType.PRIVATE_TRADING: asyncio.Semaphore(prv),
+            EndpointType.PRIVATE_MARGIN: asyncio.Semaphore(prv),
+        }
 
     def _setup_endpoint_mapping(self) -> None:
         """Mappa API endpoints till endpoint-typer"""
@@ -145,6 +161,14 @@ class AdvancedRateLimiter:
         else:
             return EndpointType.PUBLIC_MARKET
 
+    def _get_bucket(self, endpoint: str) -> TokenBucket:
+        et = self._classify_endpoint(endpoint)
+        return self._buckets[et]
+
+    def _get_semaphore(self, endpoint: str) -> asyncio.Semaphore:
+        et = self._classify_endpoint(endpoint)
+        return self._semaphores[et]
+
     async def wait_if_needed(self, endpoint: str, tokens: int = 1) -> float:
         """
         Vänta om rate limit är nått.
@@ -178,6 +202,22 @@ class AdvancedRateLimiter:
                 bucket.consume(tokens)
 
             return wait_time
+
+    def has_capacity(self, endpoint: str, tokens: int = 1) -> bool:
+        """True om token-bucket just nu har utrymme utan väntan."""
+        bucket = self._get_bucket(endpoint)
+        bucket.refill()
+        return bucket.tokens >= tokens
+
+    @contextlib.asynccontextmanager
+    async def limit(self, endpoint: str):
+        """Concurrency-guard som begränsar samtidiga REST-anrop per endpoint-typ."""
+        sem = self._get_semaphore(endpoint)
+        await sem.acquire()
+        try:
+            yield
+        finally:
+            sem.release()
 
     def get_stats(self) -> dict[str, dict]:
         """Returnerar statistik för alla buckets"""
@@ -274,3 +314,24 @@ def get_advanced_rate_limiter() -> AdvancedRateLimiter:
     if _advanced_rate_limiter is None:
         _advanced_rate_limiter = AdvancedRateLimiter()
     return _advanced_rate_limiter
+
+
+P = ParamSpec("P")
+R = TypeVar("R")
+
+
+# Hjälp-dekoratorer/context managers för enkel användning
+def limit_endpoint(endpoint: str) -> Callable[[Callable[P, Awaitable[R]]], Callable[P, Awaitable[R]]]:
+    """Async-dekorator som begränsar concurrency och respekterar token bucket för endpoint."""
+
+    def _decorator(func: Callable[P, Awaitable[R]]) -> Callable[P, Awaitable[R]]:
+        async def _wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+            limiter = get_advanced_rate_limiter()
+            # Vänta om rate limit kräver
+            await limiter.wait_if_needed(endpoint)
+            async with limiter.limit(endpoint):
+                return await func(*args, **kwargs)
+
+        return _wrapper
+
+    return _decorator

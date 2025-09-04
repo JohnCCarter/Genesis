@@ -2,6 +2,8 @@
 Enkel in-process rate limiter (per nyckel) för att skydda känsliga endpoints.
 
 Implementerar en sliding window med tidsstämplar i minne. Inte distribuerad.
+Används av testerna (ORDER_RATE_LIMIT_MAX/WINDOW) för att validera att andra
+anrop blockeras inom fönstret.
 """
 
 from __future__ import annotations
@@ -24,7 +26,7 @@ class _RateLimiter:
         cutoff = now - float(window_seconds)
         with self._lock:
             q = self._events_by_key.setdefault(key, deque())
-            # Prune
+            # Ta bort föråldrade händelser
             while q and q[0] < cutoff:
                 q.popleft()
             if len(q) >= max_requests:

@@ -90,12 +90,27 @@ class RiskGuardsService:
             logger.error(f"❌ Kunde inte spara riskvakter: {e}")
 
     def _get_current_equity(self) -> float:
-        """Hämta aktuell equity från performance service."""
+        """Hämta live equity (USD) via PerformanceService.compute_current_equity()."""
         try:
-            # Använd performance service för att beräkna aktuell equity
-            # Detta är en förenklad implementation - i verkligheten skulle vi
-            # använda PerformanceService för att beräkna total equity
-            return 10000.0  # Placeholder - ersätt med riktig equity-beräkning
+            import asyncio
+
+            async def _run() -> float:
+                try:
+                    eq = await self.performance_service.compute_current_equity()
+                    return float(eq.get("total_usd", 0.0) or 0.0)
+                except Exception:
+                    return 0.0
+
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                # Kör asynkront arbete i separat tråd när vi redan är i en loop
+                import concurrent.futures
+
+                with concurrent.futures.ThreadPoolExecutor() as executor:
+                    future = executor.submit(asyncio.run, _run())
+                    return float(future.result())
+            else:
+                return float(loop.run_until_complete(_run()))
         except Exception as e:
             logger.error(f"❌ Kunde inte hämta aktuell equity: {e}")
             return 0.0
