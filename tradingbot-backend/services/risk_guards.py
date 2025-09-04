@@ -103,13 +103,17 @@ class RiskGuardsService:
     def _initialize_daily_tracking(self) -> None:
         """Initiera daglig spårning om det är ny dag."""
         today = datetime.now().date()
-        daily_start = self.guards["max_daily_loss"].get("daily_start_date")
+        guard = self.guards.get("max_daily_loss", {})
+        daily_start_date = guard.get("daily_start_date")
 
-        if daily_start != today.isoformat():
-            self.guards["max_daily_loss"]["daily_start_date"] = today.isoformat()
-            self.guards["max_daily_loss"]["daily_start_equity"] = self._get_current_equity()
-            self.guards["max_daily_loss"]["triggered"] = False
-            self.guards["max_daily_loss"]["triggered_at"] = None
+        if daily_start_date != today.isoformat():
+            # Stämpla dagens datum, men behåll redan satt start_equity om den finns
+            guard["daily_start_date"] = today.isoformat()
+            if not guard.get("daily_start_equity"):
+                guard["daily_start_equity"] = self._get_current_equity()
+
+            # Återställ INTE triggered/cooldown här – låt cooldown-logiken hantera blockering
+            self.guards["max_daily_loss"] = guard
             self._save_guards(self.guards)
             logger.info(f"📅 Ny dag initialiserad: {today}")
 
