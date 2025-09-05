@@ -10,8 +10,6 @@ from collections.abc import Callable
 from datetime import datetime
 from typing import Any
 
-from utils.logger import get_logger
-
 from rest.auth import place_order
 from rest.margin import get_leverage, get_margin_info, get_margin_status
 from rest.positions import get_positions
@@ -21,6 +19,7 @@ from services.metrics import inc
 from services.realtime_strategy import realtime_strategy
 from services.risk_manager import RiskManager
 from services.strategy import evaluate_strategy
+from utils.logger import get_logger
 
 logger = get_logger(__name__)
 

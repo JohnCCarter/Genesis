@@ -10,13 +10,13 @@ import random
 import time
 
 import httpx
-from utils.advanced_rate_limiter import get_advanced_rate_limiter
-from utils.candle_cache import candle_cache
-from utils.logger import get_logger
 
 from config.settings import Settings
 from services.bitfinex_websocket import bitfinex_ws
 from services.metrics import record_http_result
+from utils.advanced_rate_limiter import get_advanced_rate_limiter
+from utils.candle_cache import candle_cache
+from utils.logger import get_logger
 
 logger = get_logger(__name__)
 

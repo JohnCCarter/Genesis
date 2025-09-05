@@ -9,11 +9,11 @@ import json
 from typing import Any
 
 import httpx
-from models.api_models import OrderResponse, OrderSide, OrderType
-from utils.logger import get_logger
 
 from config.settings import Settings
+from models.api_models import OrderResponse, OrderSide, OrderType
 from rest.auth import build_auth_headers
+from utils.logger import get_logger
 
 logger = get_logger(__name__)
 

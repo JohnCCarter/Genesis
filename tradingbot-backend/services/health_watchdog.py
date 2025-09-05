@@ -16,10 +16,9 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
-from utils.logger import get_logger
-
 from config.settings import Settings
 from services.bitfinex_websocket import bitfinex_ws
+from utils.logger import get_logger
 
 logger = get_logger(__name__)
 

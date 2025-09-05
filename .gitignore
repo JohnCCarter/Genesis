@@ -238,7 +238,6 @@ simple_socketio_server.py
 simple_ws_test_server.py
 ws_test.html
 # Legacy files removed - no longer needed
-# tradingbot-backend/docs/legacy/**
 
 # Debug and development files
 debug_settings.py
@@ -289,9 +288,7 @@ logs/
 *.log.*
 tradingbot.log
 
-# OpenAI Batch local artifacts
-scripts/openai_batch/.venv/
-scripts/openai_batch/results/
+# OpenAI Batch local artifacts (removed)
 
 # CodeQL Security Analysis artifacts
 genesis-python-*/

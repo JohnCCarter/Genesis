@@ -14,10 +14,9 @@ import asyncio
 import re
 from datetime import UTC, datetime, timedelta
 
+from config.settings import Settings
 from utils.candle_cache import candle_cache
 from utils.logger import get_logger
-
-from config.settings import Settings
 
 logger = get_logger(__name__)
 

@@ -14,13 +14,14 @@ from typing import Any
 
 import httpx
 from pydantic import BaseModel
-from utils.advanced_rate_limiter import get_advanced_rate_limiter
-from utils.logger import get_logger
-from utils.private_concurrency import get_private_rest_semaphore
 
 from config.settings import Settings
 from rest.auth import build_auth_headers
 from services.metrics import record_http_result
+from services.transport_circuit_breaker import get_transport_circuit_breaker
+from utils.advanced_rate_limiter import get_advanced_rate_limiter
+from utils.logger import get_logger
+from utils.private_concurrency import get_private_rest_semaphore
 
 logger = get_logger(__name__)
 
@@ -312,9 +313,8 @@ class OrderHistoryService:
                             ):
                                 logger.error(f"🚨 Nonce-fel detekterat: {error_data}")
                                 try:
-                                    from utils.nonce_manager import bump_nonce
-
                                     from config.settings import Settings as _S
+                                    from utils.nonce_manager import bump_nonce
 
                                     api_key = _S().BITFINEX_API_KEY or "default_key"
                                     bump_nonce(api_key)
@@ -343,11 +343,15 @@ class OrderHistoryService:
                                 logger.warning(f"CB öppnad för {endpoint} i {cooldown:.1f}s")
                                 try:
                                     # Toggle transport CB metric on failure
-                                    from services.metrics import metrics_store
-
                                     metrics_store["transport_circuit_breaker_active"] = 1
                                 except Exception:
                                     pass
+                            # Ny: namngiven TransportCircuitBreaker wrapper (parallell markering)
+                            try:
+                                tcb = get_transport_circuit_breaker()
+                                tcb.note_failure(endpoint, response.status_code, retry_after)
+                            except Exception:
+                                pass
                             await self.rate_limiter.handle_server_busy(endpoint)
                         raise httpx.HTTPError("server busy")
 
@@ -356,8 +360,6 @@ class OrderHistoryService:
                     try:
                         self.rate_limiter.reset_server_busy_count()
                         try:
-                            from services.metrics import metrics_store
-
                             metrics_store["transport_circuit_breaker_active"] = 0
                         except Exception:
                             pass
@@ -366,6 +368,12 @@ class OrderHistoryService:
                     try:
                         if hasattr(self.rate_limiter, "note_success"):
                             self.rate_limiter.note_success(endpoint)
+                    except Exception:
+                        pass
+                    # Ny: parallell success till TransportCircuitBreaker
+                    try:
+                        tcb = get_transport_circuit_breaker()
+                        tcb.note_success(endpoint)
                     except Exception:
                         pass
                     return response

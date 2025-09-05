@@ -11,11 +11,10 @@ from datetime import datetime
 from typing import Any
 
 from models.signal_models import SignalResponse
-from utils.logger import get_logger
-
 from services.bitfinex_websocket import BitfinexWebSocketService
 from services.enhanced_auto_trader import EnhancedAutoTrader
 from services.trading_integration import TradingIntegrationService
+from utils.logger import get_logger
 
 logger = get_logger(__name__)
 

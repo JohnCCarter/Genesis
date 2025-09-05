@@ -1,43 +1,3 @@
-# Genesis Frontend (Dashboard)
-
-## Start
-
-1. Installera beroenden:
-
-```
-npm install
-```
-
-2. Starta dev-server (port 5173):
-
-```
-VITE_API_BASE=http://127.0.0.1:8000 npm run dev
-```
-
-Alternativt via skript i repo-roten:
-
-```
-pwsh -File ../../scripts/start_frontend.ps1
-# eller
-bash ../../scripts/start_frontend.sh
-```
-
-## Konfiguration
-
-- API-bas konfigureras via `VITE_API_BASE` (default `http://127.0.0.1:8000`).
-- Frontend hämtar JWT via `POST /api/v2/auth/ws-token` och skickar som `Authorization: Bearer <token>`.
-
-## Sidor
-
-- `/` Dashboard: status, toggles, QuickTrade, paneler (Risk, Market, Wallets, Positions), Validation, Enhanced Auto.
-- `/debug` DebugPage: WS subscribe/unsubscribe och vy av aktiva subs.
-
-## Bygg
-
-```
-npm run build
-```
-
 # Genesis Trading Bot - Frontend Dashboard
 
 Detta är frontend-delen av Genesis Trading Bot, en React-baserad dashboard för att övervaka och styra trading-boten.
@@ -77,34 +37,34 @@ Dashboarden består av flera paneler:
 ### Förutsättningar
 
 - Node.js 18+
-- npm eller yarn
-- Backend-servern igång (se backend README)
+- npm
+- Backend-servern måste vara igång (se `README_HEMDATOR.md` i rotmappen för instruktioner).
 
 ### Steg för installation
 
-1. Navigera till dashboard-mappen:
+1.  Navigera till dashboard-mappen:
 
-```bash
-cd frontend/dashboard
-```
+    ```powershell
+    cd frontend/dashboard
+    ```
 
-2. Installera beroenden:
+2.  Installera beroenden:
 
-```bash
-npm install
-```
+    ```powershell
+    npm install
+    ```
 
-3. Kopiera exempelfilen för miljövariabler:
+3.  Skapa en `.env`-fil i denna mapp (`frontend/dashboard/.env`) och lägg till följande rad. Detta är kritiskt för att frontend ska kunna hitta din backend.
 
-```bash
-cp .env.example .env
-```
+    ```env
+    VITE_API_BASE=http://127.0.0.1:8000
+    ```
 
-4. Starta utvecklingsservern:
+4.  Starta utvecklingsservern:
 
-```bash
-npm run dev
-```
+    ```powershell
+    npm run dev
+    ```
 
 Dashboarden startar på `http://localhost:5173`.
 

@@ -12,10 +12,9 @@ import os
 from dataclasses import dataclass
 from typing import Any
 
-from utils.logger import get_logger
-
 from config.settings import Settings
 from rest.auth import cancel_order
+from utils.logger import get_logger
 
 logger = get_logger(__name__)
 

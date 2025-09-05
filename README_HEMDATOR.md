@@ -1,33 +1,103 @@
 # Genesis Trading Bot – Hemdator Snabbstart
 
-Endast det som behövs för att starta lokalt på hemdatorn.
+Enkel guide för att starta boten lokalt på en hemdator.
 
-- Miljöer
+---
 
-  - Windows 10/11, PowerShell
-  - Python 3.11+ (använd virtuell miljö `.venv_clean`)
-  - Node.js v18+
+### 1. Förberedelser (engångsinstallation)
 
-- Backend (start)
+#### a. Miljö
+
+-   Windows 10/11 med PowerShell
+-   Python 3.11+
+-   Node.js v18+
+
+#### b. Skapa virtuell miljö och installera paket
 
 ```powershell
+# Navigera till din projektmapp
 cd "[DIN_HEMDATOR_SÖKVÄG]"
-python -m venv .venv_clean                 # första gången
+
+# Skapa och aktivera virtuell miljö
+python -m venv .venv_clean
 & ".\.venv_clean\Scripts\Activate.ps1"
-python -m pip install -U pip setuptools wheel   # första gången
-python -m pip install -r tradingbot-backend\requirements.txt    # första gången
-cd tradingbot-backend
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
+
+# Uppdatera pip och installera Python-paket
+python -m pip install -U pip
+python -m pip install -r tradingbot-backend\requirements.txt
 ```
 
-- Frontend (start)
+#### c. Konfigurera Backend (`.env`-fil)
+
+Skapa en fil med namnet `.env` i mappen `tradingbot-backend/` och klistra in följande. **Byt ut dina Bitfinex API-nycklar.**
+
+```
+# tradingbot-backend/.env
+
+# --- Autentisering (för utveckling) ---
+AUTH_REQUIRED=True
+JWT_SECRET_KEY=dev-jwt-secret
+SOCKETIO_JWT_SECRET=dev-jwt-secret
+
+# --- Dina Bitfinex API-nycklar ---
+BITFINEX_API_KEY=your_bitfinex_api_key_here
+BITFINEX_API_SECRET=your_api_secret_here
+
+# --- Funktioner att stänga av för lokal körning ---
+WS_CONNECT_ON_START=False
+SCHEDULER_ENABLED=False
+MCP_ENABLED=False
+```
+
+#### d. Konfigurera Frontend (`.env`-fil)
+
+Skapa en fil med namnet `.env` i mappen `frontend/dashboard/` och klistra in följande:
+
+```
+# frontend/dashboard/.env
+
+VITE_API_BASE=http://127.0.0.1:8000
+```
+
+#### e. Installera Frontend-paket
 
 ```powershell
-cd "[DIN_HEMDATOR_SÖKVÄG]\\frontend\\dashboard"
-npm install    # första gången
+# Navigera till frontend-mappen
+cd "[DIN_HEMDATOR_SÖKVÄG]\frontend\dashboard"
+
+# Installera Node.js-paket
+npm install
+```
+
+---
+
+### 2. Starta programmet
+
+Du behöver två separata terminalfönster.
+
+#### a. Starta Backend
+
+I det **första** terminalfönstret:
+```powershell
+cd "[DIN_HEMDATOR_SÖKVÄG]"
+& ".\.venv_clean\Scripts\Activate.ps1"
+cd tradingbot-backend
+uvicorn main:app --reload --host 127.0.0.1 --port 8000
+```
+
+#### b. Starta Frontend
+
+I det **andra** terminalfönstret:
+```powershell
+cd "[DIN_HEMDATOR_SÖKVÄG]\frontend\dashboard"
 npm run dev
 ```
 
-API: <http://127.0.0.1:8000/docs> • Dashboard: <http://127.0.0.1:5173>
+---
 
-Ersätt `[DIN_HEMDATOR_SÖKVÄG]` med din faktiska sökväg hemma.
+### 3. Öppna i webbläsaren
+
+-   **Dashboard:** [http://localhost:5173](http://localhost:5173)
+-   **API-dokumentation:** [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+
+*Ersätt `[DIN_HEMDATOR_SÖKVÄG]` med din faktiska sökväg.*

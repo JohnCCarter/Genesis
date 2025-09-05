@@ -16,9 +16,6 @@ import asyncio
 from datetime import datetime, timedelta
 from typing import Any
 
-from utils.candles import parse_candles_to_strategy_data
-from utils.logger import get_logger
-
 from config.settings import Settings
 from rest.margin import MarginService as _MS
 from services.bitfinex_websocket import bitfinex_ws
@@ -27,6 +24,8 @@ from services.signal_service import SignalService
 from services.strategy import evaluate_strategy
 from services.symbols import SymbolService
 from services.ws_first_data_service import get_ws_first_data_service
+from utils.candles import parse_candles_to_strategy_data
+from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -213,9 +212,11 @@ class WatchlistService:
                                     "buy": round(sc.probability / 100.0, 6),
                                     "sell": round(1.0 - (sc.probability / 100.0), 6),
                                 },
-                                "decision": "buy"
-                                if sc.recommendation == "buy"
-                                else ("abstain" if sc.recommendation == "hold" else "sell"),
+                                "decision": (
+                                    "buy"
+                                    if sc.recommendation == "buy"
+                                    else ("abstain" if sc.recommendation == "hold" else "sell")
+                                ),
                                 "ev": round(sc.probability / 100.0, 6),
                             }
                 except Exception as pe:

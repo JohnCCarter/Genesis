@@ -57,5 +57,19 @@ _facade_singleton: MarketDataFacade | None = None
 def get_market_data() -> MarketDataFacade:
     global _facade_singleton
     if _facade_singleton is None:
-        _facade_singleton = MarketDataFacade()
+        # Lazy-load WSFirstDataService för att undvika WebSocket-anslutning vid startup
+        from config.settings import Settings
+
+        settings = Settings()
+        ws_connect_on_start = getattr(settings, 'WS_CONNECT_ON_START', True)
+
+        if not ws_connect_on_start:
+            # Skapa en mock WSFirstDataService som inte ansluter till WebSocket
+            from services.ws_first_data_service import WSFirstDataService
+
+            mock_ws_service = WSFirstDataService()
+            mock_ws_service._initialized = True  # Markera som initialiserad utan WebSocket
+            _facade_singleton = MarketDataFacade(ws_first=mock_ws_service)
+        else:
+            _facade_singleton = MarketDataFacade()
     return _facade_singleton

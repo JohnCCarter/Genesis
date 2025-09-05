@@ -6,25 +6,19 @@ RUN apt-get update && apt-get install -y \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-# Installera Poetry
-RUN pip install poetry
+# Kopiera requirements-fil
+COPY tradingbot-backend/requirements.txt /app/requirements.txt
 
-# Konfigurera Poetry
-ENV POETRY_NO_INTERACTION=1
-ENV POETRY_VENV_IN_PROJECT=1
-ENV POETRY_CACHE_DIR=/tmp/poetry_cache
-
-# Kopiera Poetry-filer
-COPY pyproject.toml poetry.lock* ./
-
-# Installera beroenden
-RUN poetry install --only=main,dev
+# Installera Python-beroenden
+RUN pip install --upgrade pip \
+    && pip install -r /app/requirements.txt
 
 # Kopiera projektfiler
-COPY . .
+COPY . /app
+WORKDIR /app
 
 # Exponera portar
 EXPOSE 8000 3000
 
 # Standardkommando
-CMD ["poetry", "run", "uvicorn", "tradingbot-backend.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["uvicorn", "tradingbot-backend.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

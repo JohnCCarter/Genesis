@@ -2,7 +2,7 @@
   "ema_weight": 0.5,
   "rsi_weight": 0.1,
   "atr_weight": 0.4,
-  "ema_period": 2,
-  "rsi_period": 4,
-  "atr_period": 1
+  "ema_period": 20,
+  "rsi_period": 14,
+  "atr_period": 2
 }

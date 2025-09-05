@@ -9,11 +9,11 @@ from typing import Any
 
 import httpx
 from pydantic import BaseModel
-from utils.bitfinex_rate_limiter import get_bitfinex_rate_limiter
-from utils.logger import get_logger
 
 from config.settings import Settings
 from rest.auth import build_auth_headers
+from utils.bitfinex_rate_limiter import get_bitfinex_rate_limiter
+from utils.logger import get_logger
 
 logger = get_logger(__name__)
 

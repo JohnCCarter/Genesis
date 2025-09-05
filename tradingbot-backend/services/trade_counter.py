@@ -9,10 +9,9 @@ import os
 from dataclasses import dataclass
 from datetime import date, datetime
 
-from utils.logger import get_logger
-
 from config.settings import Settings
 from services.trading_window import TradingWindowService
+from utils.logger import get_logger
 
 try:
     from zoneinfo import ZoneInfo  # type: ignore

@@ -2,12 +2,11 @@ from datetime import datetime, timedelta
 from typing import Callable
 
 from models.signal_models import SignalResponse, SignalThresholds
-from utils.logger import get_logger
-
 from services.performance_tracker import get_performance_tracker
 from services.realtime_strategy import RealtimeStrategyService
 from services.signal_generator import SignalGeneratorService
 from services.trading_integration import TradingIntegrationService
+from utils.logger import get_logger
 
 logger = get_logger(__name__)
 

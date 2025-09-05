@@ -14,9 +14,8 @@ from typing import Any
 from indicators.atr import calculate_atr
 from indicators.ema import calculate_ema
 from indicators.rsi import calculate_rsi
-from utils.logger import get_logger
-
 from services.market_data_facade import get_market_data
+from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -325,10 +324,9 @@ def update_settings_from_regime(symbol: str | None = None) -> dict[str, float]:
     """
     try:
         from indicators.regime import detect_regime
-        from strategy.weights import PRESETS
-
         from services.market_data_facade import get_market_data
         from services.strategy_settings import StrategySettingsService
+        from strategy.weights import PRESETS
 
         # Läs aktuella settings och auto-flaggor
         settings_service = StrategySettingsService()
@@ -496,10 +494,9 @@ def update_settings_from_regime_batch(symbols: list[str]) -> dict[str, dict[str,
         import asyncio
 
         from indicators.regime import detect_regime
-        from strategy.weights import PRESETS, clamp_simplex
-
         from services.bitfinex_data import BitfinexDataService
         from services.strategy_settings import StrategySettingsService
+        from strategy.weights import PRESETS, clamp_simplex
 
         # Läs aktuella settings och auto-flaggor
         settings_service = StrategySettingsService()

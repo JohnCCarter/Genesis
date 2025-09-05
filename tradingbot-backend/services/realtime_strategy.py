@@ -7,9 +7,8 @@ Inkluderar automatisk signalgenerering och WebSocket-integration.
 
 from collections.abc import Callable
 
-from utils.logger import get_logger
-
 from services.bitfinex_websocket import bitfinex_ws
+from utils.logger import get_logger
 
 logger = get_logger(__name__)
 

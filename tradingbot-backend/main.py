@@ -10,17 +10,26 @@ import os
 from contextlib import asynccontextmanager
 from datetime import datetime
 
+import fastapi as _fastapi
 import uvicorn
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.openapi.docs import get_swagger_ui_html, get_swagger_ui_oauth2_redirect_html
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+
+from config.settings import Settings
 from utils.logger import get_logger
 from ws.manager import socket_app
 
-from config.settings import Settings
-from rest.mcp_routes import router as mcp_router
+try:
+    # MCP routes removed - MCP functionality disabled
+    # from rest.mcp_routes import router as mcp_router  # type: ignore
+    mcp_router = None  # type: ignore
+except Exception:
+    mcp_router = None  # type: ignore
+
 from rest.routes import router as rest_router
 from services.bitfinex_websocket import bitfinex_ws
 from services.metrics import observe_latency, render_prometheus_text
@@ -68,22 +77,8 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"⚠️ WebSocket-anslutning misslyckades: {e}")
 
-    # Starta scheduler
-    try:
-        from services.scheduler import scheduler
-
-        scheduler.start()
-        # Valfri warm-up av probabilistisk validering vid start baserat på runtime-flagga
-        try:
-            if bool(get_validation_on_start()):
-                import asyncio as _asyncio
-
-                _asyncio.create_task(scheduler.run_prob_validation_once(), name="validation-warmup")
-                logger.info("🟡 Validation warm-up schemalagd vid startup")
-        except Exception as _e:
-            logger.debug("%s", f"Warm-up init fel: {_e}")
-    except Exception as e:
-        logger.warning(f"⚠️ Kunde inte starta scheduler: {e}")
+    # Scheduler avstängd för att undvika rate limiting och event loop problem
+    logger.info("🚫 Scheduler avstängd för att undvika rate limiting")
 
     yield
 
@@ -199,7 +194,42 @@ async def request_guard(request: Request, call_next):
 
 # Inkludera REST endpoints
 app.include_router(rest_router)
-app.include_router(mcp_router)
+
+# MCP kan stängas av via settings
+try:
+    # MCP functionality disabled
+    # if getattr(settings, "MCP_ENABLED", False) and mcp_router is not None:
+    #     app.include_router(mcp_router)
+    #     logger.info("MCP routes aktiverade")
+    # else:
+    logger.info("MCP routes avstängda")
+except Exception:
+    logger.info("MCP routes avstängda")
+
+# --- Lokala Swagger‑assets för /docs (undvik CDN‑beroende) ---
+try:
+    import os as _os
+
+    _FASTAPI_STATIC = _os.path.join(_os.path.dirname(_fastapi.__file__), "static")
+    # Montera under egen path för att inte krocka
+    app.mount("/_docs_static", StaticFiles(directory=_FASTAPI_STATIC), name="_docs_static")
+
+    @app.get("/docs", include_in_schema=False)
+    async def custom_swagger_ui_html():
+        return get_swagger_ui_html(
+            openapi_url="/openapi.json",
+            title="TradingBot API Docs",
+            swagger_js_url="/_docs_static/swagger-ui-bundle.js",
+            swagger_css_url="/_docs_static/swagger-ui.css",
+            swagger_favicon_url="/_docs_static/favicon.png",
+        )
+
+    @app.get("/docs/oauth2-redirect", include_in_schema=False)
+    async def swagger_ui_redirect():
+        return get_swagger_ui_oauth2_redirect_html()
+
+except Exception as _e:
+    logger.warning(f"Kunde inte konfigurera lokala Swagger-assets: {_e}")
 
 # OBS: Socket.IO hanteras via toppnivå-wrapper längre ned
 
@@ -237,12 +267,15 @@ async def server_time():
 # Montera statiska sidor från ../frontend
 _BASE_DIR = os.path.dirname(__file__)
 _FRONTEND_DIR = os.path.abspath(os.path.join(_BASE_DIR, "..", "frontend"))
-_WS_TEST_DIR = os.path.join(_FRONTEND_DIR, "ws-test")
-_RISK_PANEL_DIR = os.path.join(_FRONTEND_DIR, "risk-panel")
-_SHARED_DIR = os.path.join(_FRONTEND_DIR, "shared")
-app.mount("/ws-test", StaticFiles(directory=_WS_TEST_DIR, html=True), name="ws-test")
-app.mount("/risk-panel", StaticFiles(directory=_RISK_PANEL_DIR, html=True), name="risk-panel")
-app.mount("/shared", StaticFiles(directory=_SHARED_DIR, html=False), name="shared")
+# ws-test directory removed
+# _WS_TEST_DIR = os.path.join(_FRONTEND_DIR, "ws-test")
+# risk-panel and shared directories removed
+# _RISK_PANEL_DIR = os.path.join(_FRONTEND_DIR, "risk-panel")
+# _SHARED_DIR = os.path.join(_FRONTEND_DIR, "shared")
+# ws-test directory removed
+# app.mount("/ws-test", StaticFiles(directory=_WS_TEST_DIR, html=True), name="ws-test")
+# app.mount("/risk-panel", StaticFiles(directory=_RISK_PANEL_DIR, html=True), name="risk-panel")
+# app.mount("/shared", StaticFiles(directory=_SHARED_DIR, html=False), name="shared")
 
 
 @app.get("/prob-test")

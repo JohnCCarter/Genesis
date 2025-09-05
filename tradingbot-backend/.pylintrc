@@ -1,5 +1,5 @@
 [MASTER]
-ignore=docs,readme_docs,docs/legacy
+ignore=archived
 jobs=0
 
 [FORMAT]

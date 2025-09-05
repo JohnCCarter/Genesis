@@ -8,12 +8,11 @@ from collections import deque
 from datetime import datetime, timedelta
 from typing import Any
 
-from utils.logger import get_logger
-
 from config.settings import Settings
 from services.metrics import metrics_store
 from services.risk_guards import risk_guards
 from services.risk_policy_engine import RiskPolicyEngine
+from utils.logger import get_logger
 
 logger = get_logger(__name__)
 

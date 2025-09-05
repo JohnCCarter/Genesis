@@ -11,9 +11,10 @@ services:
       - "8000:8000"
     volumes:
       - ./tradingbot-backend/config:/app/config
-      - ./tradingbot-backend/tradingbot.log:/app/tradingbot.log
+      - ./tradingbot-backend/logs:/app/logs
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"]
       interval: 30s
       timeout: 5s
       retries: 3
+    restart: unless-stopped

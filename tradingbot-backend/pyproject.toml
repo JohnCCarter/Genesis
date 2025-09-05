@@ -9,12 +9,8 @@ exclude = [
     "venv",
     "cache",
     "cache/**",
-    "scraper",
-    "scraper/**",
-    "docs",
-    "docs/**",
-    "examples",
-    "examples/**",
+    "archived",
+    "archived/**",
     "tests",
     "tests/**",
     "ws",
@@ -74,12 +70,8 @@ exclude = [
   ".pytest_cache",
   ".venv",
   "venv",
-  "docs",
-  "docs/**",
-  "examples",
-  "examples/**",
-  "scraper",
-  "scraper/**",
+  "archived",
+  "archived/**",
 ]
 
 [tool.isort]
@@ -96,7 +88,7 @@ known_first_party = [
     "ws",
 ]
 skip_glob = [
-    "docs/legacy/**",
+    "archived/**",
 ]
 
 [tool.bandit]

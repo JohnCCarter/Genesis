@@ -10,9 +10,8 @@ import re
 from dataclasses import dataclass
 from datetime import datetime, time, timedelta
 
-from utils.logger import get_logger
-
 from config.settings import Settings
+from utils.logger import get_logger
 
 try:
     from zoneinfo import ZoneInfo  # py3.9+

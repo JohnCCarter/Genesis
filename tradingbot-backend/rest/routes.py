@@ -12,23 +12,17 @@ from typing import Any
 import jwt
 from fastapi import APIRouter, Depends, HTTPException, Response
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from indicators.atr import calculate_atr
 from pydantic import BaseModel
-from utils.advanced_rate_limiter import get_advanced_rate_limiter
-from utils.candle_cache import candle_cache
-from utils.candles import parse_candles_to_strategy_data
-from utils.logger import get_logger
-from utils.rate_limiter import get_rate_limiter
-
-# WebSocket Autentisering endpoints
-from ws.auth import generate_token
 
 from config.settings import Settings
+from indicators.atr import calculate_atr
 from rest import auth as rest_auth
 from rest.active_orders import ActiveOrdersService
 from rest.funding import FundingService
 from rest.margin import MarginService
-from rest.mcp_routes import router as mcp_router
+
+# MCP routes removed - MCP functionality disabled
+# from rest.mcp_routes import router as mcp_router
 from rest.order_history import (
     LedgerEntry,
     OrderHistoryItem,
@@ -49,6 +43,7 @@ from services.performance import PerformanceService
 from services.prob_model import prob_model
 from services.prob_validation import validate_on_candles
 from services.risk_manager import RiskManager
+from services.risk_policy_engine import RiskPolicyEngine
 from services.runtime_mode import (
     get_validation_on_start,
     get_ws_connect_on_start,
@@ -65,6 +60,14 @@ from services.templates import OrderTemplatesService
 from services.trading_integration import trading_integration
 from services.trading_window import TradingWindowService
 from services.watchlist_service import get_watchlist_service
+from utils.advanced_rate_limiter import get_advanced_rate_limiter
+from utils.candle_cache import candle_cache
+from utils.candles import parse_candles_to_strategy_data
+from utils.logger import get_logger
+from utils.rate_limiter import get_rate_limiter
+
+# WebSocket Autentisering endpoints
+from ws.auth import generate_token
 
 logger = get_logger(__name__)
 
@@ -546,14 +549,15 @@ async def place_order_endpoint(order: OrderRequest, _: bool = Depends(require_au
         import os
 
         if "PYTEST_CURRENT_TEST" not in os.environ:
-            risk = RiskManager()
+            # Använd RiskPolicyEngine (som inkluderar TradeConstraintsService)
+            policy = RiskPolicyEngine()
             # Extrahera amount och price för riskvakter
             amount = float(order.amount) if order.amount else 0.0
             price = float(order.price) if order.price else 0.0
-            ok, reason = risk.pre_trade_checks(symbol=order.symbol, amount=amount, price=price)
-            if not ok:
-                logger.warning(f"Order blockeras av riskkontroll: {reason}")
-                return OrderResponse(success=False, error=f"risk_blocked:{reason}")
+            decision = policy.evaluate(symbol=order.symbol, amount=amount, price=price)
+            if not decision.allowed:
+                logger.warning(f"Order blockeras av riskkontroll: {decision.reason}")
+                return OrderResponse(success=False, error=f"risk_blocked:{decision.reason}")
         else:
             risk = RiskManager()
 
@@ -4545,7 +4549,6 @@ async def get_strategy_regime(symbol: str, _: bool = Depends(require_auth)):
         from datetime import datetime, timedelta
 
         from indicators.regime import detect_regime
-
         from services.market_data_facade import get_market_data
 
         # OPTIMERING: Cache regime-data för 5 minuter

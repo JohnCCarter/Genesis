@@ -26,7 +26,9 @@ class Settings(_BaseSettings):
     AUTH_REQUIRED: bool = False
 
     # CORS
-    ALLOWED_ORIGINS: str = '["http://localhost:3000", "http://localhost:8080", "http://localhost:5173", "http://localhost:5174", "http://127.0.0.1:5173", "http://127.0.0.1:5174"]'
+    ALLOWED_ORIGINS: str = (
+        '["http://localhost:3000", "http://localhost:8080", "http://localhost:5173", "http://localhost:5174", "http://127.0.0.1:5173", "http://127.0.0.1:5174"]'
+    )
 
     # Bitfinex REST API - för orderläggning och kontohantering
     BITFINEX_API_KEY: str | None = None
@@ -108,8 +110,8 @@ class Settings(_BaseSettings):
     EXCHANGE_ID: str | None = None
 
     # Nätverksinställningar (timeouts/retries) - Optimerat för server busy
-    DATA_HTTP_TIMEOUT: float = 10.0  # Ökad från 5.0 (mer tid för server busy)
-    DATA_MAX_RETRIES: int = 1  # Minskad från 2 (undvik rate limit)
+    DATA_HTTP_TIMEOUT: float = 15.0  # Ökad för att undvika timeout
+    DATA_MAX_RETRIES: int = 0  # Ingen retry för att undvika rate limit
     DATA_BACKOFF_BASE_MS: int = 1000  # Ökad från 500 (mer försiktig)
     DATA_BACKOFF_MAX_MS: int = 5000  # Ökad från 3000 (respektera rate limits)
     ORDER_HTTP_TIMEOUT: float = 15.0  # Ökad från 8.0 (mer tid för order processing)
@@ -117,17 +119,17 @@ class Settings(_BaseSettings):
     ORDER_BACKOFF_BASE_MS: int = 2000  # Ökad från 1000 (mer försiktig)
     ORDER_BACKOFF_MAX_MS: int = 10000  # Ökad från 5000 (respektera rate limits)
 
-    # Bitfinex API Rate Limiting - Ytterligare optimerat för server busy
-    BITFINEX_RATE_LIMIT_REQUESTS_PER_MINUTE: int = 10  # Minskad från 15 (extra säker marginal)
-    BITFINEX_RATE_LIMIT_BURST_SIZE: int = 1  # Minskad från 2 (undvik rate limit helt)
+    # Bitfinex API Rate Limiting - Mycket konservativ för att undvika rate limits
+    BITFINEX_RATE_LIMIT_REQUESTS_PER_MINUTE: int = 3  # Mycket konservativ
+    BITFINEX_RATE_LIMIT_BURST_SIZE: int = 1  # Undvik bursts
     BITFINEX_RATE_LIMIT_WINDOW_SECONDS: int = 60
     BITFINEX_RATE_LIMIT_ENABLED: bool = True
-    BITFINEX_SERVER_BUSY_BACKOFF_MIN_SECONDS: float = 15.0  # Ökad från 10.0 (respektera 60s block)
-    BITFINEX_SERVER_BUSY_BACKOFF_MAX_SECONDS: float = 60.0  # Ökad från 30.0 (full respekt för block)
+    BITFINEX_SERVER_BUSY_BACKOFF_MIN_SECONDS: float = 30.0  # Längre backoff
+    BITFINEX_SERVER_BUSY_BACKOFF_MAX_SECONDS: float = 120.0  # Längre backoff
 
-    # Concurrency caps
-    PUBLIC_REST_CONCURRENCY: int = 4
-    PRIVATE_REST_CONCURRENCY: int = 2
+    # Concurrency caps - Mycket konservativ
+    PUBLIC_REST_CONCURRENCY: int = 1
+    PRIVATE_REST_CONCURRENCY: int = 1
 
     # WS ticker prioritet: anse WS-data färsk i X sekunder innan REST-fallback
     WS_TICKER_STALE_SECS: int = 10
@@ -206,6 +208,7 @@ class Settings(_BaseSettings):
     DRY_RUN_ENABLED: bool = False
 
     # Supabase MCP Server
+    MCP_ENABLED: bool = False
     SUPABASE_URL: str | None = None
     SUPABASE_ANON_KEY: str | None = None
     SUPABASE_SERVICE_ROLE_KEY: str | None = None

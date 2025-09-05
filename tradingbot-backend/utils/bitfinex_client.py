@@ -8,10 +8,10 @@ för REST och WebSocket-anrop.
 from typing import Any
 
 import httpx
-from ws.auth import build_ws_auth_payload
 
 from rest.auth import build_auth_headers
 from utils.logger import get_logger
+from ws.auth import build_ws_auth_payload
 
 logger = get_logger(__name__)
 

@@ -11,12 +11,11 @@ from collections import defaultdict, deque
 from dataclasses import dataclass
 from typing import Any
 
-from utils.advanced_rate_limiter import get_advanced_rate_limiter
-from utils.logger import get_logger
-
 from services.bitfinex_data import BitfinexDataService
 from services.bitfinex_websocket import bitfinex_ws
 from services.incremental_indicators import ATRState, EMAState, RSIState
+from utils.advanced_rate_limiter import get_advanced_rate_limiter
+from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -83,6 +82,18 @@ class WSFirstDataService:
         try:
             if self._initialized:
                 return
+
+            # Kontrollera om WS-anslutning är aktiverad
+            from config.settings import Settings
+
+            settings = Settings()
+            ws_connect_on_start = getattr(settings, 'WS_CONNECT_ON_START', True)
+
+            if not ws_connect_on_start:
+                logger.info("🚫 WS-anslutning avstängd via WS_CONNECT_ON_START=False")
+                self._initialized = True
+                return
+
             if not bitfinex_ws.is_connected:
                 await bitfinex_ws.connect()
 

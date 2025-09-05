@@ -96,11 +96,10 @@ from datetime import datetime, timedelta
 from typing import Any as _Any
 
 from models.signal_models import LiveSignalsResponse, SignalResponse
-from utils.logger import get_logger
-
 from services.bitfinex_websocket import BitfinexWebSocketService
 from services.enhanced_auto_trader import EnhancedAutoTrader
 from services.signal_generator import SignalGeneratorService
+from utils.logger import get_logger
 
 logger = get_logger(__name__)
 

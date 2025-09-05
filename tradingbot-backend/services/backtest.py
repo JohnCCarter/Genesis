@@ -8,10 +8,9 @@ import math
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from utils.logger import get_logger
-
 from services.market_data_facade import get_market_data
 from services.strategy import evaluate_strategy
+from utils.logger import get_logger
 
 logger = get_logger(__name__)
 

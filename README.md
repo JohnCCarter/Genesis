@@ -14,15 +14,26 @@ git checkout Genesis
 
 ### 2. Konfigurera environment
 
-```bash
+**Windows PowerShell:**
+```powershell
 # Skapa virtual environment
 python -m venv .venv
-.venv\Scripts\Activate.ps1  # Windows PowerShell
-# eller
-.venv\Scripts\activate      # Windows Command Prompt
+.\.venv\Scripts\Activate.ps1
 
-# Installera dependencies
-pip install -r tradingbot-backend/requirements.txt
+# Installera dependencies med pip-tools
+pip install pip-tools
+pip-sync tradingbot-backend/requirements.txt
+```
+
+**Windows Command Prompt:**
+```cmd
+# Skapa virtual environment
+python -m venv .venv
+.venv\Scripts\activate
+
+# Installera dependencies med pip-tools
+pip install pip-tools
+pip-sync tradingbot-backend/requirements.txt
 ```
 
 ### 3. Konfigurera config-filer
@@ -43,16 +54,33 @@ BITFINEX_API_SECRET=din_api_secret
 
 ### 5. Starta systemet
 
-```bash
-# Backend
+**Windows PowerShell:**
+```powershell
+# Backend (förhindra WebSocket-hängning vid start)
 cd tradingbot-backend
+$env:WS_CONNECT_ON_START='False'
 uvicorn main:app --reload
 
-# Frontend (nytt terminal-fönster)
+# Frontend (nytt PowerShell-fönster)
 cd frontend/dashboard
 npm install
 npm run dev
 ```
+
+**Windows Command Prompt:**
+```cmd
+# Backend (förhindra WebSocket-hängning vid start)
+cd tradingbot-backend
+set WS_CONNECT_ON_START=False
+uvicorn main:app --reload
+
+# Frontend (nytt Command Prompt-fönster)
+cd frontend/dashboard
+npm install
+npm run dev
+```
+
+**OBS:** `WS_CONNECT_ON_START=False` förhindrar att backend hänger sig vid start. WebSocket kan aktiveras senare via API eller genom att sätta miljövariabeln till `True`.
 
 ## 📁 Config-filer
 
@@ -72,6 +100,69 @@ Efter setup skapas följande config-filer från templates:
 - **Performance Tracking** för enhanced trading
 - **TTL-baserad Cache** för live data-uppdateringar
 - **Risk Management** med circuit breakers och trading windows
+- **WebSocket-first Data Service** med intelligent REST-fallback
+- **Unified Market Data Facade** för konsistent dataåtkomst
+
+## 🔧 Felsökning
+
+### Backend hänger sig vid start
+Om backend hänger sig vid start, kontrollera:
+
+**Windows PowerShell:**
+```powershell
+# Stoppa alla Python-processer
+taskkill /F /IM python.exe
+
+# Starta med inaktiverad WebSocket-anslutning
+$env:WS_CONNECT_ON_START='False'
+cd tradingbot-backend
+uvicorn main:app --reload
+```
+
+**Windows Command Prompt:**
+```cmd
+# Stoppa alla Python-processer
+taskkill /F /IM python.exe
+
+# Starta med inaktiverad WebSocket-anslutning
+set WS_CONNECT_ON_START=False
+cd tradingbot-backend
+uvicorn main:app --reload
+```
+
+### Frontend får inte token
+Om frontend inte kan få JWT-token:
+
+**Windows PowerShell:**
+```powershell
+# Kontrollera att backend körs
+curl http://127.0.0.1:8000/health
+
+# Testa token-endpoint
+curl -X POST http://127.0.0.1:8000/api/v2/auth/ws-token -H "Content-Type: application/json" -d '{"user_id":"test","scope":"read","expiry_hours":1}'
+```
+
+**Windows Command Prompt:**
+```cmd
+# Kontrollera att backend körs
+curl http://127.0.0.1:8000/health
+
+# Testa token-endpoint
+curl -X POST http://127.0.0.1:8000/api/v2/auth/ws-token -H "Content-Type: application/json" -d "{\"user_id\":\"test\",\"scope\":\"read\",\"expiry_hours\":1}"
+```
+
+3. Kontrollera CORS-inställningar i backend
+
+### Dependencies-konflikter
+Om du får dependency-konflikter:
+
+**Windows PowerShell/Command Prompt:**
+```powershell
+# Använd pip-tools för kontrollerad installation
+pip install pip-tools
+pip-compile tradingbot-backend/requirements.in
+pip-sync tradingbot-backend/requirements.txt
+```
 
 ## 📚 Dokumentation
 

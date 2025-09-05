@@ -9,11 +9,10 @@ from models.signal_models import (
     SignalStrength,
     SignalThresholds,
 )
-from utils.logger import get_logger
-
 from services.market_data_facade import get_market_data
 from services.signal_service import SignalService
 from services.symbols import SymbolService
+from utils.logger import get_logger
 
 logger = get_logger(__name__)
 

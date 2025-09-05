@@ -12,9 +12,10 @@ import os
 from datetime import datetime
 
 from fastapi.security import HTTPBearer
-from utils.logger import get_logger
 
 from config.settings import Settings
+from services.exchange_client import get_exchange_client
+from utils.logger import get_logger
 
 security = HTTPBearer()
 logger = get_logger(__name__)
@@ -37,46 +38,9 @@ def build_auth_headers(
     v1: bool = False,
     payload_str: str | None = None,
 ) -> dict:
-    """
-    Bygger autentiseringsheaders för Bitfinex REST API (v1 eller v2).
-
-    Args:
-        endpoint: API endpoint (t.ex. 'auth/r/orders/active')
-        payload: Optional payload för POST-requests
-        v1: Om True, bygger headers för v1 API, annars för v2 API
-
-    Returns:
-        dict: Headers med nonce, signature och API-key
-    """
-    # Hämta aktuella nycklar dynamiskt
-    settings = Settings()
-    api_key = settings.BITFINEX_API_KEY
-    api_secret = settings.BITFINEX_API_SECRET
-
-    # Använd nonce_manager för att säkerställa strikt ökande nonces
-    import utils.nonce_manager
-
-    nonce = utils.nonce_manager.get_nonce(api_key)  # Mikrosekunder
-
-    # Bygg message enligt Bitfinex dokumentation
-    api_version = "v1" if v1 else "v2"
-    # Använd exakt samma JSON-sträng som skickas i requesten för signering
-    if payload_str is None and payload is not None:
-        # Deterministisk serialisering
-        payload_str = json.dumps(payload, separators=(",", ":"), ensure_ascii=False)
-
-    message = f"/api/{api_version}/{endpoint}{nonce!s}"
-    if payload_str is not None:
-        message += payload_str
-
-    signature = hmac.new(key=api_secret.encode(), msg=message.encode(), digestmod=hashlib.sha384).hexdigest()
-
-    return {
-        "bfx-apikey": api_key,
-        "bfx-nonce": str(nonce),
-        "bfx-signature": signature,
-        "Content-Type": "application/json",
-    }
+    """Proxy till ExchangeClient för att behålla bakåtkompatibelt API."""
+    client = get_exchange_client()
+    return client.build_rest_headers(endpoint=endpoint, payload=payload, v1=v1, payload_str=payload_str)
 
 
 def redact_headers(headers: dict) -> dict:
