@@ -13,9 +13,9 @@ python-dotenv>=1.0,<2
 orjson>=3.9,<4
 msgpack>=1.0,<2
 
-# Data
-numpy>=1.24,<2
-pandas>=2.0,<2.1
+# Data (ABI-stabil för Py3.11 på Windows)
+numpy==1.26.4
+pandas==2.0.3
 
 # Dev/QA
 pytest>=8.2,<9
