@@ -58,6 +58,7 @@ from services.runtime_mode import (
     set_ws_connect_on_start,
     set_ws_strategy_enabled,
 )
+from services.signal_service import SignalService
 from services.strategy import evaluate_weighted_strategy
 from services.strategy_settings import StrategySettings, StrategySettingsService
 from services.symbols import SymbolService
@@ -4728,45 +4729,8 @@ async def get_all_regimes(_: bool = Depends(require_auth)):
     else:
         get_all_regimes._cache = {}
 
-    def calculate_confidence_score(adx_value, ema_z_value):
-        """Beräknar confidence score baserat på ADX och EMA Z"""
-        if not adx_value or not ema_z_value:
-            return 50.0  # Default 50% om data saknas
-
-        # ADX-baserad confidence (0-50%)
-        adx_confidence = min(adx_value / 50.0, 1.0) * 50
-
-        # EMA Z-baserad confidence (0-50%)
-        ema_confidence = min(abs(ema_z_value) / 2.0, 1.0) * 50
-
-        return round(adx_confidence + ema_confidence, 1)
-
-    def calculate_trading_probability(regime, confidence):
-        """Beräknar trading probability baserat på regim och confidence"""
-        base_probabilities = {
-            "trend": 0.85,  # 85% chans att trade trend
-            "balanced": 0.60,  # 60% chans att trade balanced
-            "range": 0.25,  # 25% chans att trade range
-        }
-
-        # Justera baserat på confidence
-        confidence_multiplier = confidence / 100.0
-        base_prob = base_probabilities.get(regime, 0.5)
-
-        return round(base_prob * confidence_multiplier * 100, 1)
-
-    def get_recommendation(regime, confidence, trading_prob):
-        """Ger rekommendation baserat på regim och confidence"""
-        if confidence < 30:
-            return "LOW_CONFIDENCE"
-        elif trading_prob > 70:
-            return "STRONG_BUY" if regime == "trend" else "BUY"
-        elif trading_prob > 40:
-            return "WEAK_BUY"
-        elif trading_prob > 20:
-            return "HOLD"
-        else:
-            return "AVOID"
+    # Enhetlig scoring via SignalService (ersätter lokala beräkningar)
+    scorer = SignalService()
 
     # Statisk test-data med confidence scores
 
@@ -4808,12 +4772,27 @@ async def get_all_regimes(_: bool = Depends(require_auth)):
         },
     ]
 
-    # Beräkna confidence scores och trading probabilities
+    # Beräkna confidence/probability och rekommendation via SignalService
     enhanced_regimes = []
     for regime_data in test_regimes:
-        confidence = calculate_confidence_score(regime_data["adx_value"], regime_data["ema_z_value"])
-        trading_prob = calculate_trading_probability(regime_data["regime"], confidence)
-        recommendation = get_recommendation(regime_data["regime"], confidence, trading_prob)
+        sc = scorer.score(
+            regime=regime_data["regime"],
+            adx_value=regime_data["adx_value"],
+            ema_z_value=regime_data["ema_z_value"],
+        )
+
+        confidence = sc.confidence
+        trading_prob = sc.probability
+
+        # Behåll tidigare kategorier men basera på enhetliga värden
+        if confidence < 30:
+            recommendation = "LOW_CONFIDENCE"
+        elif sc.recommendation == "buy":
+            recommendation = "STRONG_BUY" if trading_prob > 70 else "BUY"
+        elif sc.recommendation == "hold":
+            recommendation = "HOLD"
+        else:
+            recommendation = "AVOID"
 
         enhanced_regimes.append(
             {
