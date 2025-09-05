@@ -1,0 +1,27 @@
+# Direct deps
+fastapi>=0.109,<0.110
+uvicorn>=0.24,<0.25
+httpx>=0.24,<0.26
+supabase>=2.3,<3
+
+# Runtime
+websockets>=12,<13
+python-socketio>=5.7,<6
+requests>=2.31,<3
+PyJWT>=2.8,<3
+python-dotenv>=1.0,<2
+orjson>=3.9,<4
+msgpack>=1.0,<2
+
+# Data
+numpy>=1.24,<2
+pandas>=2.0,<2.1
+
+# Dev/QA
+pytest>=8.2,<9
+pytest-asyncio>=0.23,<2
+black>=24.10,<26
+ruff>=0.5,<1
+mypy>=1.6,<2
+bandit>=1.7,<2
+pip-audit>=2.7,<3
