@@ -77,9 +77,11 @@ class RiskManager:
             self.trading_window.set_paused(True)
             global _CB_OPENED_AT
             _CB_OPENED_AT = datetime.utcnow()
-            logger.warning("🚨 Circuit breaker aktiverad: pausar handel pga felspikar")
+            logger.warning("🚨 TradingCircuitBreaker aktiverad: pausar handel pga felspikar")
             try:
+                # Behåll bakåtkompatibel nyckel + ny namngiven nyckel
                 metrics_store["circuit_breaker_active"] = 1
+                metrics_store["trading_circuit_breaker_active"] = 1
             except Exception:
                 pass
             if self.settings.CB_NOTIFY:
@@ -102,7 +104,7 @@ class RiskManager:
                 except Exception:
                     pass
         except Exception as e:
-            logger.error(f"Kunde inte aktivera circuit breaker: {e}")
+            logger.error(f"Kunde inte aktivera TradingCircuitBreaker: {e}")
 
     def status(self) -> dict[str, Any]:
         now = datetime.utcnow()
@@ -135,6 +137,7 @@ class RiskManager:
             _CB_OPENED_AT = None
             try:
                 metrics_store["circuit_breaker_active"] = 0
+                metrics_store["trading_circuit_breaker_active"] = 0
             except Exception:
                 pass
             if resume:

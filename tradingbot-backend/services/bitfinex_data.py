@@ -152,6 +152,13 @@ class BitfinexDataService:
                                     "candles", int(response.status_code), retry_after
                                 )
                                 logger.warning(f"CB öppnad för candles i {cooldown:.1f}s")
+                            # Toggle transport CB metric on failure
+                            try:
+                                from services.metrics import metrics_store
+
+                                metrics_store["transport_circuit_breaker_active"] = 1
+                            except Exception:
+                                pass
                             await self.rate_limiter.handle_server_busy("candles")
                         except Exception:
                             pass
@@ -171,6 +178,13 @@ class BitfinexDataService:
                         self.rate_limiter.reset_server_busy_count()
                         if hasattr(self.rate_limiter, "note_success"):
                             self.rate_limiter.note_success("candles")
+                        # Reset transport CB metric on success
+                        try:
+                            from services.metrics import metrics_store
+
+                            metrics_store["transport_circuit_breaker_active"] = 0
+                        except Exception:
+                            pass
                     except Exception:
                         pass
                     return candles
@@ -440,6 +454,13 @@ class BitfinexDataService:
                                             "ticker", int(response.status_code), retry_after
                                         )
                                         logger.warning(f"CB öppnad för ticker i {cooldown:.1f}s")
+                                    # Toggle transport CB metric on failure
+                                    try:
+                                        from services.metrics import metrics_store
+
+                                        metrics_store["transport_circuit_breaker_active"] = 1
+                                    except Exception:
+                                        pass
                                     await self.rate_limiter.handle_server_busy("ticker")
                                 except Exception:
                                     pass
@@ -480,6 +501,13 @@ class BitfinexDataService:
                                 self.rate_limiter.reset_server_busy_count()
                                 if hasattr(self.rate_limiter, "note_success"):
                                     self.rate_limiter.note_success("ticker")
+                                # Reset transport CB metric on success
+                                try:
+                                    from services.metrics import metrics_store
+
+                                    metrics_store["transport_circuit_breaker_active"] = 0
+                                except Exception:
+                                    pass
                             except Exception:
                                 pass
                             return out

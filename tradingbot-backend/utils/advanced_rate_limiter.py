@@ -285,7 +285,7 @@ class AdvancedRateLimiter:
             st["last_failure"] = 0.0
             self._cb_state[key] = st
 
-    def note_failure(self, endpoint: str, status_code: int, retry_after: str | None = None) -> float:  # noqa: ARG002
+    def note_failure(self, endpoint: str, status_code: int, retry_after: str | None = None) -> float:
         key = self._cb_key(endpoint)
         st = self._cb_state.get(key) or {"fail_count": 0, "open_until": 0.0, "last_failure": 0.0}
         st["fail_count"] = int(st.get("fail_count", 0)) + 1
@@ -301,6 +301,12 @@ class AdvancedRateLimiter:
         cooldown = max(ra_sec, float(base))
         st["open_until"] = time.time() + cooldown
         self._cb_state[key] = st
+
+        # Namngiven loggning för transport/circuit breaker (REST-transportnivå)
+        try:
+            logger.warning("🚦 TransportCircuitBreaker: %s status=%s cooldown=%.1fs", endpoint, status_code, cooldown)
+        except Exception:
+            pass
         return cooldown
 
 

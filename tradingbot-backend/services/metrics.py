@@ -162,6 +162,11 @@ def render_prometheus_text() -> str:
     lines.append(f"tradingbot_order_submit_ms_total {submit_ms}")
     cb_active = 1 if metrics_store.get("circuit_breaker_active") else 0
     lines.append(f"tradingbot_circuit_breaker_active {cb_active}")
+    # Ny: separerad export för Trading vs Transport circuit breakers
+    tcb = 1 if metrics_store.get("trading_circuit_breaker_active") else 0
+    lines.append(f"tradingbot_trading_circuit_breaker_active {tcb}")
+    xcb = 1 if metrics_store.get("transport_circuit_breaker_active") else 0
+    lines.append(f"tradingbot_transport_circuit_breaker_active {xcb}")
 
     # Lägg till latensmetrik per endpoint
     try:

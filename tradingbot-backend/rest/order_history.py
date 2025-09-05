@@ -341,6 +341,13 @@ class OrderHistoryService:
                             if hasattr(self.rate_limiter, "note_failure"):
                                 cooldown = self.rate_limiter.note_failure(endpoint, response.status_code, retry_after)
                                 logger.warning(f"CB öppnad för {endpoint} i {cooldown:.1f}s")
+                                try:
+                                    # Toggle transport CB metric on failure
+                                    from services.metrics import metrics_store
+
+                                    metrics_store["transport_circuit_breaker_active"] = 1
+                                except Exception:
+                                    pass
                             await self.rate_limiter.handle_server_busy(endpoint)
                         raise httpx.HTTPError("server busy")
 
@@ -348,6 +355,12 @@ class OrderHistoryService:
                     # Återställ räknare och CB vid framgång
                     try:
                         self.rate_limiter.reset_server_busy_count()
+                        try:
+                            from services.metrics import metrics_store
+
+                            metrics_store["transport_circuit_breaker_active"] = 0
+                        except Exception:
+                            pass
                     except Exception:
                         pass
                     try:
