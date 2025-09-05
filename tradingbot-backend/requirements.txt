@@ -93,7 +93,7 @@ pyflakes==3.4.0
 Pygments==2.19.2
 pyproject_hooks==1.2.0
 rich==14.1.0
-ruff==0.12.11
+ruff==0.12.12
 stevedore==5.5.0
 toml==0.10.2
 virtualenv==20.34.0
