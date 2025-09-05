@@ -199,7 +199,7 @@ class SchedulerService:
         Uppdaterar metrics_store med senaste värden per symbol/tf samt aggregat.
         """
         try:
-            from services.bitfinex_data import BitfinexDataService
+            from services.market_data_facade import get_market_data
             from services.metrics import metrics_store
             from services.prob_validation import validate_on_candles
 
@@ -224,7 +224,7 @@ class SchedulerService:
             limit = int(getattr(s, "PROB_VALIDATE_LIMIT", 1200) or 1200)
             max_samples = int(getattr(s, "PROB_VALIDATE_MAX_SAMPLES", 500) or 500)
 
-            data = BitfinexDataService()
+            data = get_market_data()
             agg_brier_vals: list[float] = []
             agg_logloss_vals: list[float] = []
             for sym in symbols:
@@ -306,7 +306,7 @@ class SchedulerService:
         try:
             import os
 
-            from services.bitfinex_data import BitfinexDataService
+            from services.market_data_facade import get_market_data
             from services.metrics import metrics_store
             from services.prob_model import prob_model
             from services.prob_train import train_and_export
@@ -332,7 +332,7 @@ class SchedulerService:
             out_dir = str(getattr(s, "PROB_RETRAIN_OUTPUT_DIR", "config/models"))
             os.makedirs(out_dir, exist_ok=True)
 
-            data = BitfinexDataService()
+            data = get_market_data()
             from services.symbols import SymbolService
 
             sym_svc = SymbolService()

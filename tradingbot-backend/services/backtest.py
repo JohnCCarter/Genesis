@@ -10,7 +10,7 @@ from typing import Any
 
 from utils.logger import get_logger
 
-from services.bitfinex_data import BitfinexDataService
+from services.market_data_facade import get_market_data
 from services.strategy import evaluate_strategy
 
 logger = get_logger(__name__)
@@ -18,11 +18,17 @@ logger = get_logger(__name__)
 
 class BacktestService:
     async def run(self, symbol: str, timeframe: str, limit: int = 500, tz_offset_minutes: int = 0) -> dict[str, Any]:
-        data = BitfinexDataService()
+        data = get_market_data()
         candles = await data.get_candles(symbol, timeframe, limit)
         if not candles:
             return {"success": False, "error": "no_data"}
-        parsed = data.parse_candles_to_strategy_data(candles)
+        # Använd centraliserad candle-parsning via utils
+        try:
+            from utils.candles import parse_candles_to_strategy_data
+
+            parsed = parse_candles_to_strategy_data(candles)
+        except Exception:
+            parsed = {"closes": [], "highs": [], "lows": []}
 
         # Rullande strategiutvärdering och pseudo-PnL (mycket förenklad)
         closes: list[float] = parsed.get("closes", [])

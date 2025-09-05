@@ -114,9 +114,9 @@ class DataCoordinatorService:
 
     async def get_candles(self, symbol: str, timeframe: str = "1m", limit: int = 100) -> list[list] | None:
         """Hämta candles med caching."""
-        from services.bitfinex_data import BitfinexDataService
+        from services.market_data_facade import get_market_data
 
-        data_service = BitfinexDataService()
+        data_service = get_market_data()
 
         async def fetch_candles(sym: str, **kwargs: Any):
             return await data_service.get_candles(sym, timeframe, limit)
@@ -125,9 +125,9 @@ class DataCoordinatorService:
 
     async def get_ticker(self, symbol: str) -> dict | None:
         """Hämta ticker med caching."""
-        from services.bitfinex_data import BitfinexDataService
+        from services.market_data_facade import get_market_data
 
-        data_service = BitfinexDataService()
+        data_service = get_market_data()
 
         async def fetch_ticker(sym: str):
             return await data_service.get_ticker(sym)
@@ -169,9 +169,9 @@ class DataCoordinatorService:
             Dict med symbol -> candles mapping
         """
         try:
-            from services.bitfinex_data import BitfinexDataService
+            from services.market_data_facade import get_market_data
 
-            data_service = BitfinexDataService()
+            data_service = get_market_data()
 
             # Skapa tasks för alla symboler
             tasks = []

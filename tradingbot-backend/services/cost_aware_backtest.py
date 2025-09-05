@@ -17,7 +17,7 @@ from typing import Any
 
 from utils.logger import get_logger
 
-from services.bitfinex_data import BitfinexDataService
+from services.market_data_facade import get_market_data
 from services.strategy import evaluate_strategy
 
 logger = get_logger(__name__)
@@ -80,7 +80,7 @@ class CostAwareBacktestService:
 
     def __init__(self, costs: TradeCosts | None = None):
         self.costs = costs or TradeCosts()
-        self.data_service = BitfinexDataService()
+        self.data_service = get_market_data()
 
     def simulate_market_impact(self, base_price: float, amount: float, side: str) -> tuple[float, float, float]:
         """
@@ -392,7 +392,12 @@ class CostAwareBacktestService:
             raise ValueError(f"Kunde inte hämta data för {symbol}")
 
         # Parse candles
-        parsed = self.data_service.parse_candles_to_strategy_data(candles)
+        try:
+            from utils.candles import parse_candles_to_strategy_data
+
+            parsed = parse_candles_to_strategy_data(candles)
+        except Exception:
+            parsed = {"closes": [], "highs": [], "lows": []}
         closes = parsed.get("closes", [])
         highs = parsed.get("highs", [])
         lows = parsed.get("lows", [])

@@ -5,6 +5,8 @@ Denna modul hanterar tradingstrategier och signalgenerering.
 Inkluderar strategiutvärdering och orderhantering.
 """
 
+from __future__ import annotations
+
 import os
 from datetime import datetime
 from typing import Any
@@ -13,6 +15,8 @@ from indicators.atr import calculate_atr
 from indicators.ema import calculate_ema
 from indicators.rsi import calculate_rsi
 from utils.logger import get_logger
+
+from services.market_data_facade import get_market_data
 
 logger = get_logger(__name__)
 
@@ -323,7 +327,7 @@ def update_settings_from_regime(symbol: str | None = None) -> dict[str, float]:
         from indicators.regime import detect_regime
         from strategy.weights import PRESETS
 
-        from services.bitfinex_data import BitfinexDataService
+        from services.market_data_facade import get_market_data
         from services.strategy_settings import StrategySettingsService
 
         # Läs aktuella settings och auto-flaggor
@@ -359,7 +363,7 @@ def update_settings_from_regime(symbol: str | None = None) -> dict[str, float]:
         if not symbol:
             symbol = "tBTCUSD"  # Default symbol
 
-        data_service = BitfinexDataService()
+        data_service = get_market_data()
         # Använd asyncio för att köra async get_candles synkront
         import asyncio
 
@@ -530,7 +534,7 @@ def update_settings_from_regime_batch(symbols: list[str]) -> dict[str, dict[str,
             }
 
         # OPTIMERING: Batch-hämta candles för alla symboler parallellt
-        data_service = BitfinexDataService()
+        data_service = get_market_data()
 
         async def get_candles_batch():
             """Hämta candles för alla symboler parallellt"""

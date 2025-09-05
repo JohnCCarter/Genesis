@@ -105,10 +105,10 @@ class SymbolService:
                     self._alias_rev = _CACHE["alias_rev"]
                     self._last_refresh_ts = _CACHE["ts"]
                     return
-                # Hämta från BitfinexDataService
-                from services.bitfinex_data import BitfinexDataService
+                # Hämta från MarketDataFacade (WS-first med REST-proxy)
+                from services.market_data_facade import get_market_data
 
-                svc = BitfinexDataService()
+                svc = get_market_data()
                 pairs = await svc.get_configs_symbols() or []
                 fwd, rev = await svc.get_currency_symbol_map()
                 if pairs:
