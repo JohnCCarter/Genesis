@@ -16,7 +16,7 @@ Detta är backend-delen av Genesis Trading Bot, en plattform för automatiserad 
 10. [Backtest & Heatmap](#backtest--heatmap)
 11. [CI (GitHub Actions)](#ci-github-actions)
 12. [CodeQL](#codeql)
-13. [Cursor Prompts](#cursor-prompts)
+13. [Arkitektur: MarketDataFacade, SignalService, RiskPolicyEngine, Circuit Breakers](#arkitektur-marketdatafacade-signalservice-riskpolicyengine-circuit-breakers)
 
 ## Översikt
 
@@ -418,12 +418,22 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+          cache: 'pip'
+          cache-dependency-path: 'tradingbot-backend/requirements.txt'
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pytest
+          pip install pytest mypy bandit
+
+      - name: Type-check (mypy)
+        run: |
+          mypy --ignore-missing-imports --install-types --non-interactive . || true
+
+      - name: Security (bandit)
+        run: |
+          bandit -q -r . || true
 
       - name: Lint (importable modules)
         run: python -c "import sys; import pkgutil; print('OK')"
@@ -489,3 +499,30 @@ Observera att `post_only` ignoreras för MARKET-ordrar (gäller LIMIT). `reduce_
 ## Cursor Prompts
 
 Se `cursor_prompts.md` för en svensk systemprompt och tio återanvändbara Cursor‑mallar (bugfix, REST/WS‑endpoint, strategi/indikator, ordervalidering, tester, dokumentation, refaktorering, scraper, CI). Mallarna är anpassade till projektets modulstruktur (`services`, `rest`, `ws`, `indicators`, `utils`) och Bitfinex API v2 (REST + WS, autentiserat).
+
+## Arkitektur: MarketDataFacade, SignalService, RiskPolicyEngine, Circuit Breakers
+
+### MarketDataFacade
+- En enhetlig datatjänst som prioriterar WebSocket-data med REST fallback och gemensam cache.
+- API (urval):
+  - `get_ticker(symbol)`
+  - `get_candles(symbol, timeframe, limit, force_fresh=False)`
+  - `get_configs_symbols()` och `get_currency_symbol_map()` (proxy via REST)
+  - `parse_candles_to_strategy_data(candles)` (helper som använder `utils.candles`)
+
+### SignalService
+- Enhetlig signal-orkestrering som kan kombinera deterministiska heuristiker med sannolikhetsmodell.
+- Returnerar `SignalScore` med fält: `recommendation`, `confidence`, `probability`, `source`, `features`.
+- Används nu i REST där lokala confidence/prob tidigare beräknades (t.ex. watchlist, regime-all).
+
+### RiskPolicyEngine
+- Samlar RiskGuards och TradeConstraintsService i en tydlig policy:
+  - RiskGuards (globala vakter: max daily loss, kill-switch, exposure limits)
+  - TradeConstraintsService (trading window, dagliga limit och cooldown via TradeCounter/TradingWindow)
+- API (urval): `evaluate(symbol, amount, price)`, `record_trade(symbol)`, `status()`
+
+### Circuit Breakers
+- Två separata kretsbrytare i logg/metrics:
+  - TradingCircuitBreaker (handel) – pausar handel vid felspikar i risk/routing.
+  - TransportCircuitBreaker (nätverk/REST) – öppnas per endpoint vid 429/5xx och återställer automatiskt.
+- Exponeras via Prometheus-metrics: `tradingbot_trading_circuit_breaker_active` och `tradingbot_transport_circuit_breaker_active` (bakåtkompatibelt `tradingbot_circuit_breaker_active`).

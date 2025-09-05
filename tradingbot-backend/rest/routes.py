@@ -2942,54 +2942,29 @@ async def market_watchlist(symbols: str | None = None, prob: bool = False, _: bo
             }
             if prob:
                 try:
-                    from services.prob_model import prob_model as _pm
+                    # Enhetlig score via SignalService
+                    from services.signal_service import SignalService as _Sig
 
-                    # använd snabbinferens med enkla features (via /prob/predict-logik), här direkt
                     ds = get_market_data()
                     candles_prob = await ds.get_candles(s, "1m", 50)
                     if candles_prob:
-                        # Minimal proxy (samma som i /prob/predict)
                         closes = [row[2] for row in candles_prob if isinstance(row, (list, tuple)) and len(row) >= 3]
-                        price = float(closes[-1]) if len(closes) >= 1 else None
-                        ema = sum(closes[-10:]) / min(10, len(closes)) if len(closes) >= 1 else price
-                        f_ema = (
-                            1.0
-                            if (price is not None and ema is not None and price > ema)
-                            else (-1.0 if (price is not None and ema is not None and price < ema) else 0.0)
-                        )
-                        try:
-                            delta = float(closes[-1]) - float(closes[-2])
-                            rsi_norm = max(
-                                min(delta / (abs(float(closes[-2])) + 1e-9), 1.0),
-                                -1.0,
-                            )
-                        except Exception:
-                            rsi_norm = 0.0
-                        probs = (
-                            _pm.predict_proba({"ema": f_ema, "rsi": rsi_norm})
-                            if hasattr(_pm, "predict_proba")
-                            else {"buy": 0.0, "sell": 0.0}
-                        )
-                        # EV-policy
-                        from config.settings import Settings as _S
-
-                        s2 = _S()
-                        ev_th = float(getattr(s2, "PROB_MODEL_EV_THRESHOLD", 0.0) or 0.0)
-                        conf_th = float(getattr(s2, "PROB_MODEL_CONFIDENCE_MIN", 0.0) or 0.0)
-                        p_buy = float(probs.get("buy", 0.0))
-                        p_sell = float(probs.get("sell", 0.0))
-                        ev_buy = p_buy * 0.002 - p_sell * 0.002 - 0.0003
-                        ev_sell = p_sell * 0.002 - p_buy * 0.002 - 0.0003
-                        side = "buy" if ev_buy >= ev_sell else "sell"
-                        best_ev = ev_buy if side == "buy" else ev_sell
-                        decision = side if (best_ev >= ev_th and max(probs.values()) >= conf_th) else "abstain"
-                        item["prob"] = {
-                            "probabilities": probs,
-                            "decision": decision,
-                            "ev": best_ev,
-                        }
+                        if len(closes) >= 2:
+                            price = float(closes[-1])
+                            ema = sum(closes[-10:]) / min(10, len(closes))
+                            ema_z = (price - ema) / (abs(ema) + 1e-9)
+                            sc = _Sig().score(regime="trend", adx_value=20.0, ema_z_value=ema_z)
+                            item["prob"] = {
+                                "probabilities": {
+                                    "buy": round(sc.probability / 100.0, 6),
+                                    "sell": round(1.0 - (sc.probability / 100.0), 6),
+                                },
+                                "decision": "buy"
+                                if sc.recommendation == "buy"
+                                else ("abstain" if sc.recommendation == "hold" else "sell"),
+                                "ev": round(sc.probability / 100.0, 6),
+                            }
                 except Exception as pe:
-                    # Skydda mot prob-fel – lägg bara in notering
                     item["prob_error"] = str(pe)[:120]
             out.append(item)
 
