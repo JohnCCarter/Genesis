@@ -13,6 +13,7 @@ from datetime import datetime
 import uvicorn
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from utils.logger import get_logger
@@ -169,6 +170,32 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Mitigera DoS-relaterade risker i multipart/stora svar
+app.add_middleware(GZipMiddleware, minimum_size=1024)
+
+
+# Enkel RequestGuard: blockera multipart och cap Content-Length
+@app.middleware("http")
+async def request_guard(request: Request, call_next):
+    try:
+        # Blockera multipart/form-data helt (kan öppnas vid behov via vitlista)
+        ctype = request.headers.get("content-type", "").lower()
+        if "multipart/form-data" in ctype:
+            return Response(status_code=413)
+
+        # Cap Content-Length (t.ex. 2 MB)
+        try:
+            clen = int(request.headers.get("content-length", "0"))
+        except Exception:
+            clen = 0
+        if clen and clen > 2 * 1024 * 1024:
+            return Response(status_code=413)
+    except Exception:
+        # Falla tillbaka till normal hantering
+        pass
+    return await call_next(request)
+
 
 # Inkludera REST endpoints
 app.include_router(rest_router)

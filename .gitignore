@@ -314,3 +314,4 @@ scripts/**/.venv/
 
 # SQLite backups
 tradingbot-backend/config/*.sqlite3.backup*
+audit-backend.json

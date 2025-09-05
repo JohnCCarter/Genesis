@@ -377,3 +377,18 @@ frontend/dashboard/src/components/
 **Skapad:** 2025-08-20
 **Status:** Ready for implementation
 **Prioritet:** Högsta (Live Trading Signals)
+
+# FastAPI-stack uppgraderingsplan (security/upgrade-fastapi-stack-2025-09)
+
+- Målversioner (tbd via test):
+  - FastAPI >= 0.110 (kompatibel med Starlette >= 0.47)
+  - Starlette >= 0.47.2 (fixar CVEs)
+  - httpx >= 0.27
+  - httpcore >= 1.0
+  - h11 >= 0.15
+  - uvicorn >= 0.30
+- Steg:
+  1. Uppdatera `requirements.txt` i branch, installera, kör pytest/ruff/black/mypy/bandit/pip-audit.
+  2. Åtgärda ev. brytande ändringar (UploadFile/form, middleware-signaturer).
+  3. Kör integrationstester för `/market/watchlist`, `/strategy/regime/all`, WS-flöden.
+  4. När grönt: öppna PR och merge.
