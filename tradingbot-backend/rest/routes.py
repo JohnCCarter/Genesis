@@ -39,7 +39,6 @@ from rest.order_validator import order_validator
 from rest.positions import Position, PositionsService
 from rest.wallet import WalletBalance, WalletService
 from services.backtest import BacktestService
-from services.bitfinex_data import BitfinexDataService
 from services.bitfinex_websocket import bitfinex_ws
 from services.bracket_manager import bracket_manager
 from services.market_data_facade import get_market_data
@@ -1730,7 +1729,7 @@ async def calculate_position_size(req: PositionSizeRequest, _: bool = Depends(re
 
             # 2) REST public ticker (fallback)
             if price is None or price <= 0:
-                data = BitfinexDataService()
+                data = get_market_data()
                 ticker = await data.get_ticker(req.symbol)
                 if ticker:
                     price = float(ticker.get("last_price", 0))
@@ -1739,7 +1738,7 @@ async def calculate_position_size(req: PositionSizeRequest, _: bool = Depends(re
 
             # 3) Candle close (sista fallback)
             if not price or price <= 0:
-                data = BitfinexDataService()
+                data = get_market_data()
                 candles = await data.get_candles(req.symbol, req.timeframe, limit=1)
                 if candles and len(candles) > 0:
                     try:
@@ -1775,14 +1774,19 @@ async def calculate_position_size(req: PositionSizeRequest, _: bool = Depends(re
         sl_price = None
         tp_price = None
         try:
-            data = BitfinexDataService()
+            data = get_market_data()
             candles = await data.get_candles(
                 req.symbol,
                 req.timeframe,
                 limit=100,
             )
             if candles:
-                parsed = data.parse_candles_to_strategy_data(candles)
+                try:
+                    from utils.candles import parse_candles_to_strategy_data as _parse
+
+                    parsed = _parse(candles)
+                except Exception:
+                    parsed = {"highs": [], "lows": [], "closes": []}
                 # Hämta ATR-period från strategiinställningar
                 ssvc = StrategySettingsService()
                 s = ssvc.get_settings(symbol=req.symbol)
@@ -1847,7 +1851,7 @@ async def get_account_performance(_: bool = Depends(require_auth)):
 @router.get("/market/ticker/{symbol}")
 async def market_ticker(symbol: str, _: bool = Depends(require_auth)):
     try:
-        data = BitfinexDataService()
+        data = get_market_data()
         result = await data.get_ticker(symbol)
         if not result:
             # Offline/CI fallback: returnera minimal dummy om nätverk saknas
@@ -1875,14 +1879,19 @@ async def market_tickers(symbols: str, _: bool = Depends(require_auth)):
     Ex: /api/v2/market/tickers?symbols=tBTCUSD,tETHUSD
     """
     try:
-        data = BitfinexDataService()
+        data = get_market_data()
         syms = [s.strip() for s in (symbols or "").split(",") if s.strip()]
         if not syms:
             raise HTTPException(status_code=400, detail="symbols required")
-        result = await data.get_tickers(syms)
-        if result is None:
+        # MarketDataFacade saknar batch just nu; hämta sekventiellt
+        out = []
+        for s in syms:
+            t = await data.get_ticker(s)
+            if t:
+                out.append(t)
+        if not out:
             raise HTTPException(status_code=502, detail="Kunde inte hämta tickers")
-        return result
+        return out
     except HTTPException:
         raise
     except Exception as e:
@@ -1894,7 +1903,7 @@ async def market_tickers(symbols: str, _: bool = Depends(require_auth)):
 async def platform_status(_: bool = Depends(require_auth)):
     """Hälsa/underhållsläge från Bitfinex public REST."""
     try:
-        data = BitfinexDataService()
+        data = get_market_data()
         st = await data.get_platform_status()
         if st is None:
             return {"status": "unknown"}
@@ -1910,7 +1919,7 @@ async def platform_status(_: bool = Depends(require_auth)):
 async def market_symbols_config(format: str = "v2", _: bool = Depends(require_auth)):
     """Symbol-lista via Bitfinex public Configs. OBS: innehåller inte TEST-symboler."""
     try:
-        data = BitfinexDataService()
+        data = get_market_data()
         pairs = await data.get_configs_symbols()
         if not pairs:
             return []
@@ -1961,11 +1970,16 @@ async def market_candles(
     _: bool = Depends(require_auth),
 ):
     try:
-        data = BitfinexDataService()
+        data = get_market_data()
         candles = await data.get_candles(symbol, timeframe, limit)
         if candles is None:
             raise HTTPException(status_code=502, detail="Kunde inte hämta candles")
-        parsed_any = data.parse_candles_to_strategy_data(candles)
+        try:
+            from utils.candles import parse_candles_to_strategy_data as _parse
+
+            parsed_any = _parse(candles)
+        except Exception:
+            parsed_any = {"closes": [], "highs": [], "lows": []}
         from services.strategy import evaluate_strategy
 
         # bädda in symbol i parsed för vikt-override
@@ -1990,7 +2004,7 @@ async def market_resync(symbol: str, _: bool = Depends(require_auth)):
         # WS re-subscribe (idempotent skydd finns i subscribe)
         await bitfinex_ws.subscribe_ticker(symbol, bitfinex_ws._handle_ticker_with_strategy)
         # Trigger omedelbar REST snapshot (värms upp cache)
-        data = BitfinexDataService()
+        data = get_market_data()
         _ = await data.get_ticker(symbol)
         return {"success": True}
     except Exception as e:
@@ -2087,7 +2101,7 @@ async def prob_predict(req: ProbPredictRequest, _: bool = Depends(require_auth))
 
         t0 = _t.time()
         # Hämta senaste candles för features
-        data = BitfinexDataService()
+        data = get_market_data()
         closes_pack = await data.get_candles(req.symbol, req.timeframe, limit=max(req.horizon, 50))
         if not closes_pack:
             return {
@@ -2284,7 +2298,7 @@ class ProbValidateRequest(BaseModel):
 @router.post("/prob/validate")
 async def prob_validate(req: ProbValidateRequest, _: bool = Depends(require_auth)):
     try:
-        data = BitfinexDataService()
+        data = get_market_data()
         candles = await data.get_candles(req.symbol, req.timeframe, req.limit)
         if not candles:
             return {"samples": 0, "brier": None, "logloss": None, "by_label": {}}
@@ -2336,7 +2350,7 @@ class ProbValidateRunRequest(BaseModel):
 async def prob_validate_run(req: ProbValidateRunRequest, _: bool = Depends(require_auth)):
     """Kör validering direkt (utan att invänta schemaläggare) och uppdatera metrics."""
     try:
-        data = BitfinexDataService()
+        data = get_market_data()
         s = Settings()
         symbols: list[str]
         if req.symbols and len(req.symbols) > 0:
@@ -2370,33 +2384,12 @@ async def prob_validate_run(req: ProbValidateRunRequest, _: bool = Depends(requi
                 max_samples=max_samples,
             )
             out[sym] = res
-            try:
-                from services.metrics import metrics_store
-
-                key = f"{sym}|{tf}"
-                pv = metrics_store.setdefault("prob_validation", {})
-                by = pv.setdefault("by", {})
-                by[key] = {
-                    "brier": res.get("brier"),
-                    "logloss": res.get("logloss"),
-                    "ts": int(__import__("time").time()),
-                }
-                if res.get("brier") is not None:
-                    agg_brier.append(float(res["brier"]))
-                if res.get("logloss") is not None:
-                    agg_logloss.append(float(res["logloss"]))
-            except Exception:
-                pass
-        try:
-            from services.metrics import metrics_store
-
-            if agg_brier:
-                metrics_store.setdefault("prob_validation", {})["brier"] = sum(agg_brier) / max(1, len(agg_brier))
-            if agg_logloss:
-                metrics_store.setdefault("prob_validation", {})["logloss"] = sum(agg_logloss) / max(1, len(agg_logloss))
-        except Exception:
-            pass
-        return {"timeframe": tf, "results": out}
+            if res.get("brier") is not None:
+                agg_brier.append(float(res["brier"]))
+            if res.get("logloss") is not None:
+                agg_logloss.append(float(res["logloss"]))
+        # Aggregat hanteras av scheduler/metrics-moduler
+        return out
     except Exception as e:
         logger.exception(f"prob/validate/run error: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
@@ -2419,7 +2412,7 @@ async def prob_retrain_run(req: ProbRetrainRunRequest, _: bool = Depends(require
         from services.symbols import SymbolService
 
         s = Settings()
-        data = BitfinexDataService()
+        data = get_market_data()
         sym_svc = SymbolService()
         await sym_svc.refresh()
 
@@ -2721,7 +2714,7 @@ async def market_watchlist(symbols: str | None = None, prob: bool = False, _: bo
             market_watchlist._cache = {}
 
         svc = SymbolService()
-        data = BitfinexDataService()
+        data = get_market_data()
         # Refresh live configs/aliases
         try:
             await svc.refresh()
@@ -2890,7 +2883,12 @@ async def market_watchlist(symbols: str | None = None, prob: bool = False, _: bo
             except Exception:
                 ind5 = None
             if candles:
-                parsed_any = data.parse_candles_to_strategy_data(candles)
+                try:
+                    from utils.candles import parse_candles_to_strategy_data as _parse
+
+                    parsed_any = _parse(candles)
+                except Exception:
+                    parsed_any = {"closes": [], "highs": [], "lows": []}
                 from services.strategy import evaluate_strategy
 
                 parsed_map: dict[str, Any] = dict(parsed_any) if isinstance(parsed_any, dict) else {}
@@ -2904,7 +2902,12 @@ async def market_watchlist(symbols: str | None = None, prob: bool = False, _: bo
                         pass
                 strat = evaluate_strategy(parsed_map)  # type: ignore[arg-type]
             if candles5m_row:
-                parsed_any5 = data.parse_candles_to_strategy_data(candles5m_row)
+                try:
+                    from utils.candles import parse_candles_to_strategy_data as _parse
+
+                    parsed_any5 = _parse(candles5m_row)
+                except Exception:
+                    parsed_any5 = {"closes": [], "highs": [], "lows": []}
                 from services.strategy import evaluate_strategy as eval5
 
                 parsed_map5: dict[str, Any] = dict(parsed_any5) if isinstance(parsed_any5, dict) else {}
@@ -2939,11 +2942,10 @@ async def market_watchlist(symbols: str | None = None, prob: bool = False, _: bo
             }
             if prob:
                 try:
-                    from services.bitfinex_data import BitfinexDataService as _DS
                     from services.prob_model import prob_model as _pm
 
                     # använd snabbinferens med enkla features (via /prob/predict-logik), här direkt
-                    ds = _DS()
+                    ds = get_market_data()
                     candles_prob = await ds.get_candles(s, "1m", 50)
                     if candles_prob:
                         # Minimal proxy (samma som i /prob/predict)
@@ -3298,7 +3300,7 @@ async def get_account_performance_detail(_: bool = Depends(require_auth)):
     try:
         wallet_svc = WalletService()
         pos_svc = PositionsService()
-        data_svc = BitfinexDataService()
+        data_svc = get_market_data()
         perf = PerformanceService()
 
         wallets = await wallet_svc.get_wallets()
@@ -4286,7 +4288,7 @@ async def cache_candles_clear(req: CacheClearRequest, _: bool = Depends(require_
 @router.post("/cache/candles/backfill")
 async def cache_candles_backfill(req: BackfillRequest, _: bool = Depends(require_auth)):
     try:
-        svc = BitfinexDataService()
+        svc = get_market_data()
         inserted = await svc.backfill_history(req.symbol, req.timeframe, req.max_batches, req.batch_limit)
         _emit_notification(
             "info",
@@ -4842,7 +4844,7 @@ async def get_strategy_regime(symbol: str, _: bool = Depends(require_auth)):
 
         from indicators.regime import detect_regime
 
-        from services.bitfinex_data import BitfinexDataService
+        from services.market_data_facade import get_market_data
 
         # OPTIMERING: Cache regime-data för 5 minuter
         cache_key = f"regime_{symbol}"
@@ -4858,7 +4860,7 @@ async def get_strategy_regime(symbol: str, _: bool = Depends(require_auth)):
             get_strategy_regime._cache = {}
 
         # Hämta candles för regim-detektering (kortare timeframe för mer känslighet)
-        data_service = BitfinexDataService()
+        data_service = get_market_data()
         candles = await data_service.get_candles(symbol, "1m", limit=50)
 
         if not candles or len(candles) < 20:
