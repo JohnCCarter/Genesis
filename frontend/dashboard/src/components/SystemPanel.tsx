@@ -1,6 +1,6 @@
 import React from 'react';
 import { io } from 'socket.io-client';
-import { ensureToken, get, getText, post } from '@lib/api';
+import { ensureToken, get, getText, post, getApiBase } from '@lib/api';
 
 export function SystemPanel() {
     const [health, setHealth] = React.useState<any>(null);
@@ -13,7 +13,7 @@ export function SystemPanel() {
     const [chan, setChan] = React.useState<string>('ticker');
     const [tf, setTf] = React.useState<string>('1m');
     const socketRef = React.useRef<any>(null);
-    const WS_BASE = (import.meta as any).env?.VITE_API_BASE || 'http://127.0.0.1:8000';
+    const WS_BASE = getApiBase();
 
     const refresh = React.useCallback(async () => {
         try {
@@ -90,10 +90,10 @@ export function SystemPanel() {
                         try {
                             await ensureToken();
                         } catch { }
-                        const tk = localStorage.getItem('genesis_access_token');
+                        const tk = localStorage.getItem('jwt') || localStorage.getItem('genesis_access_token');
                         const base = String(WS_BASE);
                         const url = tk ? `${base}${base.includes('?') ? '&' : '?'}token=${encodeURIComponent(tk)}` : base;
-                        const s = io(url, { path: '/ws/socket.io', transports: ['websocket'] });
+                        const s = io(url, { path: '/ws/socket.io' });
                         socketRef.current = s;
                         s.on('connect', () => { setWsStatus('connected'); setWsLog((v) => v + `\n[${new Date().toISOString()}] connected`); });
                         s.on('disconnect', () => { setWsStatus('disconnected'); setWsLog((v) => v + `\n[${new Date().toISOString()}] disconnected`); socketRef.current = null; });
