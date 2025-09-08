@@ -248,7 +248,11 @@ def evaluate_strategy(data: dict[str, list[float]]) -> dict[str, Any]:
                         auto_regime = True
                         auto_weights = True
 
-                    w_map = {"ema": base.ema_weight, "rsi": base.rsi_weight, "atr": base.atr_weight}
+                    w_map = {
+                        "ema": base.ema_weight,
+                        "rsi": base.rsi_weight,
+                        "atr": base.atr_weight,
+                    }
                     if auto_regime and auto_weights:
                         regime = detect_regime(highs, lows, prices, cfg)
                         preset = PRESETS.get(regime, PRESETS["balanced"])
@@ -479,7 +483,9 @@ def update_settings_from_regime(symbol: str | None = None) -> dict[str, float]:
         return {"ema_weight": 0.4, "rsi_weight": 0.4, "atr_weight": 0.2}
 
 
-def update_settings_from_regime_batch(symbols: list[str]) -> dict[str, dict[str, float]]:
+def update_settings_from_regime_batch(
+    symbols: list[str],
+) -> dict[str, dict[str, float]]:
     """
     OPTIMERAD: Batch-version av update_settings_from_regime.
     Hämtar candles för alla symboler parallellt istället för sekventiellt.

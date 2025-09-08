@@ -12,7 +12,11 @@ from pydantic import BaseModel
 
 from config.settings import Settings
 from rest.auth import build_auth_headers
+from services.exchange_client import get_exchange_client
+from services.symbols import SymbolService
+from services.bitfinex_websocket import bitfinex_ws
 from utils.bitfinex_rate_limiter import get_bitfinex_rate_limiter
+from services.transport_circuit_breaker import get_transport_circuit_breaker
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -131,57 +135,83 @@ class MarginService:
             # Försök först med v2 API endpoint (base)
             endpoint = "auth/r/info/margin/base"
             body_json = "{}"
-            headers = build_auth_headers(endpoint, payload_str=body_json)
-
-            async with httpx.AsyncClient() as client:
-                try:
+            try:
+                ec = get_exchange_client()
+                response = await ec.signed_request(method="post", endpoint=endpoint, body={}, timeout=None)
+            except Exception:
+                headers = build_auth_headers(endpoint, payload_str=body_json)
+                async with httpx.AsyncClient() as client:
                     logger.info(f"🌐 REST API: Försöker hämta margin-info från {self.base_url}/{endpoint}")
                     response = await client.post(
                         f"{self.base_url}/{endpoint}",
                         headers=headers,
                         content=body_json.encode("utf-8"),
                     )
-                    response.raise_for_status()
-                    # v2 base svar: [ 'base', [USER_PL, USER_SWAPS, MARGIN_BALANCE, MARGIN_NET, MARGIN_MIN] ]
-                    raw = response.json()
-                    if isinstance(raw, list) and len(raw) >= 2 and isinstance(raw[1], list):
-                        data = raw[1]
-                    else:
-                        data = [0, 0, 0, 0, 0]
-                    margin_data = [data[2], data[0], data[1], data[3], data[4]]
-                    logger.info("✅ REST API: Hämtade margin-information (base) från v2 API")
-                except httpx.HTTPStatusError as e:
-                    # Om v2 API misslyckas, försök med v1 API endpoint
-                    if e.response.status_code in (404, 400, 500):
-                        logger.warning(
-                            "⚠️ v2 API misslyckades (%s), försöker med v1 API",
-                            e.response.status_code,
-                        )
-                        try:
-                            v1_endpoint = "margin_infos"
-                            v1_base_url = "https://api.bitfinex.com/v1"
-                            v1_headers = build_auth_headers(v1_endpoint, v1=True)
+            response.raise_for_status()
+            # v2 base svar: [ 'base', [USER_PL, USER_SWAPS, MARGIN_BALANCE, MARGIN_NET, MARGIN_MIN] ]
+            raw = response.json()
+            if isinstance(raw, list) and len(raw) >= 2 and isinstance(raw[1], list):
+                data = raw[1]
+            else:
+                data = [0, 0, 0, 0, 0]
+            margin_data = [data[2], data[0], data[1], data[3], data[4]]
+            logger.info("✅ REST API: Hämtade margin-information (base) från v2 API")
+            try:
+                # TransportCircuitBreaker success
+                tcb = get_transport_circuit_breaker()
+                tcb.note_success(endpoint)
+            except Exception:
+                pass
+        except httpx.HTTPStatusError as e:
+            # Om v2 API misslyckas, försök med v1 API endpoint
+            if e.response.status_code in (404, 400, 500):
+                logger.warning(
+                    "⚠️ v2 API misslyckades (%s), försöker med v1 API",
+                    e.response.status_code,
+                )
+                try:
+                    v1_endpoint = "margin_infos"
+                    v1_base_url = "https://api.bitfinex.com/v1"
+                    try:
+                        ec = get_exchange_client()
+                        # v1-signering hanteras av build_rest_headers med v1=True internt? Vi faller tillbaka till befintligt
+                        raise RuntimeError("use_fallback")
+                    except Exception:
+                        v1_headers = build_auth_headers(v1_endpoint, v1=True)
+                        async with httpx.AsyncClient() as client:
                             v1_response = await client.post(f"{v1_base_url}/{v1_endpoint}", headers=v1_headers)
-                            v1_response.raise_for_status()
-                            v1_data = v1_response.json()
-                            margin_data = self._convert_v1_to_v2_format(v1_data)
-                            logger.info("✅ REST API: Hämtade margin-information från v1 API")
-                        except Exception as e1:
-                            logger.error(f"❌ v1 margin API misslyckades: {e1}")
-                            # Fallback – returnera neutral struktur så flödet inte kraschar
-                            margin_data = [0, 0, 0, 0, 0]
-                    else:
-                        # Okänt fel – fallback med neutral struktur
-                        logger.error(f"❌ v2 margin API fel: {e}")
-                        margin_data = [0, 0, 0, 0, 0]
+                        v1_response.raise_for_status()
+                        v1_data = v1_response.json()
+                        margin_data = self._convert_v1_to_v2_format(v1_data)
+                        logger.info("✅ REST API: Hämtade margin-information från v1 API")
+                        try:
+                            tcb = get_transport_circuit_breaker()
+                            tcb.note_success(v1_endpoint)
+                        except Exception:
+                            pass
+                except Exception as e1:
+                    logger.error(f"❌ v1 margin API misslyckades: {e1}")
+                    # Fallback – returnera neutral struktur så flödet inte kraschar
+                    margin_data = [0, 0, 0, 0, 0]
+                    try:
+                        tcb = get_transport_circuit_breaker()
+                        status = getattr(getattr(e1, "response", None), "status_code", 500) or 500
+                        tcb.note_failure(v1_endpoint, int(status), None)
+                    except Exception:
+                        pass
+            else:
+                # Okänt fel – fallback med neutral struktur
+                logger.error(f"❌ v2 margin API fel: {e}")
+                margin_data = [0, 0, 0, 0, 0]
+                try:
+                    tcb = get_transport_circuit_breaker()
+                    status = getattr(getattr(e, "response", None), "status_code", 500) or 500
+                    tcb.note_failure(endpoint, int(status), None)
+                except Exception:
+                    pass
 
-                margin_info = MarginInfo.from_bitfinex_data(margin_data)
-                return margin_info
-
-        except Exception as e:
-            logger.error(f"Fel vid hämtning av margin-information: {e}")
-            # Fallback – returnera tom/neutral margin-info istället för att höja
-            return MarginInfo.from_bitfinex_data([0, 0, 0, 0, 0])
+        margin_info = MarginInfo.from_bitfinex_data(margin_data)
+        return margin_info
 
     async def get_margin_limits(self) -> list[MarginLimitInfo]:
         """
@@ -319,8 +349,6 @@ class MarginService:
             # Normalisera/resolve symbol
             eff = symbol
             try:
-                from services.symbols import SymbolService
-
                 svc = SymbolService()
                 await svc.refresh()
                 eff = svc.resolve(symbol)
@@ -329,8 +357,6 @@ class MarginService:
 
             # WS‑först: läs miu:sym arr om tillgängligt
             try:
-                from services.bitfinex_websocket import bitfinex_ws
-
                 arr = (bitfinex_ws.margin_sym or {}).get(eff)
                 if isinstance(arr, list) and arr:
                     # Försök tolka fält: [tradable, gross, buy, sell, ...]
@@ -438,7 +464,10 @@ class MarginService:
 
                         # Spara i cache
                         cache_key = f"margin_status_{eff}"
-                        self._margin_status_cache[cache_key] = {"timestamp": now, "data": result}
+                        self._margin_status_cache[cache_key] = {
+                            "timestamp": now,
+                            "data": result,
+                        }
             except Exception as e:
                 logger.warning(f"⚠️ WS batch margin-status misslyckades: {e}")
 
@@ -475,7 +504,10 @@ class MarginService:
 
                         # Spara i cache
                         cache_key = f"margin_status_{eff}"
-                        self._margin_status_cache[cache_key] = {"timestamp": now, "data": result}
+                        self._margin_status_cache[cache_key] = {
+                            "timestamp": now,
+                            "data": result,
+                        }
 
                 except Exception as e:
                     logger.warning(f"⚠️ REST batch margin-status misslyckades: {e}")

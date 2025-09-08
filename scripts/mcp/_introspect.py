@@ -16,7 +16,9 @@ def load_module_from_path(module_name: str, file_path: str):
 
 def main():
     # __file__ == <project>/scripts/mcp/_introspect.py
-    project_root = os.path.dirname(os.path.abspath(os.path.join(__file__, os.pardir, os.pardir)))
+    project_root = os.path.dirname(
+        os.path.abspath(os.path.join(__file__, os.pardir, os.pardir))
+    )
     target = os.path.join(project_root, "scripts", "mcp", "genesis_mcp.py")
     mod = load_module_from_path("genesis_mcp_mod", target)
     app = getattr(mod, "app", None)
@@ -27,14 +29,19 @@ def main():
         "has_run_stdio": hasattr(app, "run_stdio") if app is not None else None,
         "tools_attr": hasattr(app, "tools") if app is not None else None,
         "tools": None,
-        "dir_runish": [n for n in dir(app) if n.startswith("run")] if app is not None else None,
+        "dir_runish": (
+            [n for n in dir(app) if n.startswith("run")] if app is not None else None
+        ),
     }
     if app is not None:
         tools = getattr(app, "tools", None)
         if tools is not None:
             try:
                 info["tools"] = [
-                    (getattr(t, "name", None) or (t.get("name") if isinstance(t, dict) else None))
+                    (
+                        getattr(t, "name", None)
+                        or (t.get("name") if isinstance(t, dict) else None)
+                    )
                     for t in tools
                 ]
             except Exception as e:

@@ -394,7 +394,11 @@ class SchedulerService:
                 import json
                 import os
 
-                cfg_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config", "strategy_settings.json")
+                cfg_path = os.path.join(
+                    os.path.dirname(os.path.dirname(__file__)),
+                    "config",
+                    "strategy_settings.json",
+                )
                 with open(cfg_path, encoding="utf-8") as f:
                     data = json.load(f)
                 auto_regime = bool(data.get("AUTO_REGIME_ENABLED", True))

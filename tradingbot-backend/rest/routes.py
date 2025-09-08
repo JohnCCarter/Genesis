@@ -43,6 +43,7 @@ from services.performance import PerformanceService
 from services.prob_model import prob_model
 from services.prob_validation import validate_on_candles
 from services.risk_manager import RiskManager
+from services import runtime_config as runtime_cfg
 from services.risk_policy_engine import RiskPolicyEngine
 from services.runtime_mode import (
     get_validation_on_start,
@@ -1508,7 +1509,10 @@ async def get_strategy_settings(symbol: str | None = None, _: bool = Depends(req
         result = svc.get_settings(symbol=symbol).to_dict()
 
         # Spara i cache
-        get_strategy_settings._cache[cache_key] = {"data": result, "timestamp": datetime.now()}
+        get_strategy_settings._cache[cache_key] = {
+            "data": result,
+            "timestamp": datetime.now(),
+        }
 
         return result
     except Exception as e:
@@ -1580,7 +1584,11 @@ async def get_strategy_auto(_: bool = Depends(require_auth)):
         import json
         import os
 
-        cfg_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config", "strategy_settings.json")
+        cfg_path = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            "config",
+            "strategy_settings.json",
+        )
         data: dict[str, object]
         try:
             with open(cfg_path, encoding="utf-8") as f:
@@ -1605,7 +1613,11 @@ async def update_strategy_auto(payload: StrategyAutoPayload, _: bool = Depends(r
         import json
         import os
 
-        cfg_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config", "strategy_settings.json")
+        cfg_path = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            "config",
+            "strategy_settings.json",
+        )
         try:
             with open(cfg_path, encoding="utf-8") as f:
                 data = json.load(f)
@@ -2463,7 +2475,10 @@ async def prob_retrain_run(req: ProbRetrainRunRequest, _: bool = Depends(require
         if user_dir:
             # Only allow relative paths
             if _os.path.isabs(user_dir):
-                raise HTTPException(status_code=400, detail="Invalid output_dir: must be a relative path.")
+                raise HTTPException(
+                    status_code=400,
+                    detail="Invalid output_dir: must be a relative path.",
+                )
 
             # Reject path traversal attempts (.. components)
             if ".." in user_dir.split(_os.sep):
@@ -2477,7 +2492,10 @@ async def prob_retrain_run(req: ProbRetrainRunRequest, _: bool = Depends(require
 
             # Strong containment check: out_dir must be a strict subdirectory of safe_root_real
             if not is_safe_subdir(safe_root_real, out_dir):
-                raise HTTPException(status_code=400, detail="Invalid output_dir: must be within allowed directory.")
+                raise HTTPException(
+                    status_code=400,
+                    detail="Invalid output_dir: must be within allowed directory.",
+                )
         else:
             out_dir = safe_root_real
         _os.makedirs(out_dir, exist_ok=True)
@@ -3109,7 +3127,62 @@ class UpdateMaxTradesRequest(BaseModel):
 @router.get("/risk/status")
 async def get_risk_status(_: bool = Depends(require_auth)):
     rm = RiskManager()
-    return rm.status()
+    status = rm.status()
+    # Utöka med TransportCircuitBreaker state från limiter om tillgängligt
+    try:
+        from utils.advanced_rate_limiter import get_advanced_rate_limiter
+
+        limiter = get_advanced_rate_limiter()
+        # Exportera aktuella limiter-metrics och inkludera CB open-times per endpoint
+        limiter.export_metrics()
+        # Addera enkel vy av CB-keys med time_until_open
+        # Exponera endast kända endpoints av intresse
+        endpoints = [
+            "auth/r/wallets",
+            "auth/r/positions",
+            "auth/r/info/margin/base",
+            "auth/r/trades",
+        ]
+        transport_cb = {}
+        for ep in endpoints:
+            try:
+                ttl = float(limiter.time_until_open(ep))
+                transport_cb[ep] = {"cooldown_seconds": ttl}
+            except Exception:
+                transport_cb[ep] = {"cooldown_seconds": 0.0}
+        status["transport_circuit_breaker"] = transport_cb
+    except Exception:
+        pass
+    return status
+
+
+# --- Runtime config (hot‑reload) ---
+class RuntimeConfigRequest(BaseModel):
+    values: dict[str, Any]
+
+
+@router.get("/runtime/config")
+async def runtime_config_get(_: bool = Depends(require_auth)):
+    try:
+        return {"overrides": runtime_cfg.current()}
+    except Exception as e:
+        logger.exception(f"Fel vid runtime config get: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.post("/runtime/config")
+async def runtime_config_set(req: RuntimeConfigRequest, _: bool = Depends(require_auth)):
+    try:
+        runtime_cfg.set_overrides(req.values or {})
+        # Hot-reload limiter metrics export
+        try:
+            get_advanced_rate_limiter().export_metrics()
+        except Exception:
+            pass
+        return {"ok": True, "overrides": runtime_cfg.current()}
+    except Exception as e:
+        logger.exception(f"Fel vid runtime config set: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/risk/max-trades")
@@ -3227,7 +3300,10 @@ async def reset_risk_guard(req: RiskGuardResetRequest, _: bool = Depends(require
         if success:
             return {"success": True, "message": f"Riskvakt {req.guard_name} återställd"}
         else:
-            raise HTTPException(status_code=400, detail=f"Kunde inte återställa riskvakt {req.guard_name}")
+            raise HTTPException(
+                status_code=400,
+                detail=f"Kunde inte återställa riskvakt {req.guard_name}",
+            )
     except Exception as e:
         logger.exception(f"Fel vid återställning av riskvakt: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
@@ -3251,7 +3327,10 @@ async def update_risk_guard_config(req: RiskGuardConfigRequest, _: bool = Depend
                 "message": f"Riskvakt {req.guard_name} konfiguration uppdaterad",
             }
         else:
-            raise HTTPException(status_code=400, detail=f"Kunde inte uppdatera riskvakt {req.guard_name}")
+            raise HTTPException(
+                status_code=400,
+                detail=f"Kunde inte uppdatera riskvakt {req.guard_name}",
+            )
     except Exception as e:
         logger.exception(f"Fel vid uppdatering av riskvakt konfiguration: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
@@ -3399,9 +3478,15 @@ async def update_regime_performance(regime_name: str, _: bool = Depends(require_
 
         success = regime_ablation.update_regime_performance(regime_name)
         if success:
-            return {"success": True, "message": f"Performance uppdaterad för regime {regime_name}"}
+            return {
+                "success": True,
+                "message": f"Performance uppdaterad för regime {regime_name}",
+            }
         else:
-            raise HTTPException(status_code=400, detail=f"Kunde inte uppdatera performance för regime {regime_name}")
+            raise HTTPException(
+                status_code=400,
+                detail=f"Kunde inte uppdatera performance för regime {regime_name}",
+            )
     except Exception as e:
         logger.exception(f"Fel vid uppdatering av regime performance: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
@@ -3735,7 +3820,7 @@ async def mcp_execute(req: MCPExecuteRequest, _: bool = Depends(require_auth)):
             token_data = generate_token(user_id=user_id, scope=scope, expiry_minutes=expiry_hours * 60)
             return {
                 "success": True,
-                "token": token_data.get("access_token") if isinstance(token_data, dict) else None,
+                "token": (token_data.get("access_token") if isinstance(token_data, dict) else None),
             }
 
         # ws_status
@@ -3748,17 +3833,26 @@ async def mcp_execute(req: MCPExecuteRequest, _: bool = Depends(require_auth)):
         if name == "toggle_ws_strategy":
             enabled = bool(p.get("enabled"))
             set_ws_strategy_enabled(enabled)
-            return {"success": True, "ws_strategy_enabled": bool(get_ws_strategy_enabled())}
+            return {
+                "success": True,
+                "ws_strategy_enabled": bool(get_ws_strategy_enabled()),
+            }
 
         if name == "toggle_validation_warmup":
             enabled = bool(p.get("enabled"))
             set_validation_on_start(enabled)
-            return {"success": True, "validation_on_start": bool(get_validation_on_start())}
+            return {
+                "success": True,
+                "validation_on_start": bool(get_validation_on_start()),
+            }
 
         if name == "toggle_ws_connect_on_start":
             enabled = bool(p.get("enabled"))
             set_ws_connect_on_start(enabled)
-            return {"success": True, "ws_connect_on_start": bool(get_ws_connect_on_start())}
+            return {
+                "success": True,
+                "ws_connect_on_start": bool(get_ws_connect_on_start()),
+            }
 
         # market_ticker
         if name == "market_ticker":
@@ -3824,7 +3918,7 @@ async def mcp_get_token(
         token_data = generate_token(user_id=user_id, scope=scope, expiry_minutes=expiry_hours * 60)
         return {
             "success": True,
-            "token": token_data.get("access_token") if isinstance(token_data, dict) else None,
+            "token": (token_data.get("access_token") if isinstance(token_data, dict) else None),
         }
     except Exception as e:
         logger.exception(f"MCP get_token error: {e}")
@@ -4610,7 +4704,10 @@ async def get_strategy_regime(symbol: str, _: bool = Depends(require_auth)):
         }
 
         # Spara i cache
-        get_strategy_regime._cache[cache_key] = {"data": result, "timestamp": datetime.now()}
+        get_strategy_regime._cache[cache_key] = {
+            "data": result,
+            "timestamp": datetime.now(),
+        }
 
         return result
 
@@ -4657,7 +4754,11 @@ async def start_enhanced_auto_trading(symbol: str, _: bool = Depends(require_aut
         await enhanced_trader.start_enhanced_trading(symbol)
 
         _emit_notification("info", "Enhanced Auto-trading startad", {"symbol": symbol})
-        return {"ok": True, "symbol": symbol, "message": "Enhanced auto-trading startad"}
+        return {
+            "ok": True,
+            "symbol": symbol,
+            "message": "Enhanced auto-trading startad",
+        }
 
     except Exception as e:
         logger.error(f"❌ Fel vid start av enhanced auto-trading: {e}")
@@ -4676,7 +4777,11 @@ async def stop_enhanced_auto_trading(symbol: str, _: bool = Depends(require_auth
         await enhanced_trader.stop_enhanced_trading(symbol)
 
         _emit_notification("info", "Enhanced Auto-trading stoppad", {"symbol": symbol})
-        return {"ok": True, "symbol": symbol, "message": "Enhanced auto-trading stoppad"}
+        return {
+            "ok": True,
+            "symbol": symbol,
+            "message": "Enhanced auto-trading stoppad",
+        }
 
     except Exception as e:
         logger.error(f"❌ Fel vid stopp av enhanced auto-trading: {e}")
@@ -4827,7 +4932,10 @@ async def get_live_signals(_: bool = Depends(require_auth)):
         signals = await signal_service.generate_live_signals()
 
         # Spara i cache
-        get_live_signals._cache[cache_key] = {"data": signals, "timestamp": datetime.now()}
+        get_live_signals._cache[cache_key] = {
+            "data": signals,
+            "timestamp": datetime.now(),
+        }
 
         logger.info(f"📊 Returnerar {signals.total_signals} live signals")
         return signals

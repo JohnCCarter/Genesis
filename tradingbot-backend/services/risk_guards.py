@@ -153,7 +153,10 @@ class RiskGuardsService:
 
                 if datetime.now() < cooldown_end:
                     remaining = cooldown_end - datetime.now()
-                    return True, f"Max daily loss cooldown aktiv: {remaining.seconds // 3600}h kvar"
+                    return (
+                        True,
+                        f"Max daily loss cooldown aktiv: {remaining.seconds // 3600}h kvar",
+                    )
             except Exception:
                 pass
 
@@ -194,7 +197,10 @@ class RiskGuardsService:
 
                 if datetime.now() < cooldown_end:
                     remaining = cooldown_end - datetime.now()
-                    return True, f"Kill-switch cooldown aktiv: {remaining.seconds // 3600}h kvar"
+                    return (
+                        True,
+                        f"Kill-switch cooldown aktiv: {remaining.seconds // 3600}h kvar",
+                    )
             except Exception:
                 pass
 
@@ -216,7 +222,9 @@ class RiskGuardsService:
 
         return False, None
 
-    def check_exposure_limits(self, symbol: str, amount: float, price: float) -> tuple[bool, str | None]:
+    def check_exposure_limits(
+        self, symbol: str, amount: float, price: float
+    ) -> tuple[bool, str | None]:  # noqa: ARG002, ANN401
         """
         Kontrollera exposure limits för en ny position.
 

@@ -14,7 +14,11 @@ class _StubRes:
 async def test_risk_policy_blocks_on_guards(monkeypatch):
     import services.risk_policy_engine as rpe
 
-    monkeypatch.setattr(rpe.risk_guards, "check_all_guards", lambda *args, **kwargs: (True, "max_daily_loss"))
+    monkeypatch.setattr(
+        rpe.risk_guards,
+        "check_all_guards",
+        lambda *args, **kwargs: (True, "max_daily_loss"),
+    )
 
     eng = RiskPolicyEngine()
     res = eng.evaluate(symbol="tBTCUSD")

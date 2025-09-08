@@ -23,8 +23,8 @@ class TestRiskGuardsService:
         self.guards_file = os.path.join(self.temp_dir, "test_risk_guards.json")
 
         # Mock settings
-        with patch('services.risk_guards.Settings') as mock_settings:
-            mock_settings.return_value = type('Settings', (), {})()
+        with patch("services.risk_guards.Settings") as mock_settings:
+            mock_settings.return_value = type("Settings", (), {})()
             self.service = RiskGuardsService()
             self.service.guards_file = self.guards_file
 
@@ -87,7 +87,7 @@ class TestRiskGuardsService:
         assert loaded_guards["max_daily_loss"]["percentage"] == 3.0
         assert loaded_guards["kill_switch"]["enabled"] is False
 
-    @patch('services.risk_guards.RiskGuardsService._get_current_equity')
+    @patch("services.risk_guards.RiskGuardsService._get_current_equity")
     def test_check_max_daily_loss_not_triggered(self, mock_equity):
         """Test max daily loss när inte triggad."""
         mock_equity.return_value = 10000.0
@@ -102,7 +102,7 @@ class TestRiskGuardsService:
         assert blocked is False
         assert reason is None
 
-    @patch('services.risk_guards.RiskGuardsService._get_current_equity')
+    @patch("services.risk_guards.RiskGuardsService._get_current_equity")
     def test_check_max_daily_loss_triggered(self, mock_equity):
         """Test max daily loss när triggad."""
         mock_equity.return_value = 9400.0  # 6% förlust
@@ -118,7 +118,7 @@ class TestRiskGuardsService:
         assert "Max daily loss överskriden" in reason
         assert self.service.guards["max_daily_loss"]["triggered"] is True
 
-    @patch('services.risk_guards.RiskGuardsService._get_current_equity')
+    @patch("services.risk_guards.RiskGuardsService._get_current_equity")
     def test_check_max_daily_loss_cooldown(self, mock_equity):
         """Test max daily loss cooldown."""
         mock_equity.return_value = 9400.0
@@ -133,7 +133,7 @@ class TestRiskGuardsService:
         assert blocked is True
         assert "cooldown aktiv" in reason
 
-    @patch('services.risk_guards.RiskGuardsService._get_current_equity')
+    @patch("services.risk_guards.RiskGuardsService._get_current_equity")
     def test_check_kill_switch_triggered(self, mock_equity):
         """Test kill switch när triggad."""
         mock_equity.return_value = 8500.0  # 15% drawdown
@@ -154,7 +154,7 @@ class TestRiskGuardsService:
         self.service.guards["exposure_limits"]["enabled"] = True
         self.service.guards["exposure_limits"]["max_position_size_percentage"] = 20.0
 
-        with patch.object(self.service, '_get_current_equity', return_value=10000.0):
+        with patch.object(self.service, "_get_current_equity", return_value=10000.0):
             # Test - position size inom gränsen
             blocked, reason = self.service.check_exposure_limits("tBTCUSD", 0.1, 50000)
             assert blocked is False
@@ -167,9 +167,9 @@ class TestRiskGuardsService:
     def test_check_all_guards(self):
         """Test alla guards tillsammans."""
         with (
-            patch.object(self.service, 'check_max_daily_loss', return_value=(False, None)),
-            patch.object(self.service, 'check_kill_switch', return_value=(False, None)),
-            patch.object(self.service, 'check_exposure_limits', return_value=(False, None)),
+            patch.object(self.service, "check_max_daily_loss", return_value=(False, None)),
+            patch.object(self.service, "check_kill_switch", return_value=(False, None)),
+            patch.object(self.service, "check_exposure_limits", return_value=(False, None)),
         ):
             # Test - alla guards passerar
             blocked, reason = self.service.check_all_guards("tBTCUSD", 0.1, 50000)
@@ -200,7 +200,7 @@ class TestRiskGuardsService:
         assert self.service.guards["max_daily_loss"]["percentage"] == 7.5
         assert self.service.guards["max_daily_loss"]["cooldown_hours"] == 36
 
-    @patch('services.risk_guards.RiskGuardsService._get_current_equity')
+    @patch("services.risk_guards.RiskGuardsService._get_current_equity")
     def test_get_guards_status(self, mock_equity):
         """Test hämtning av guards status."""
         mock_equity.return_value = 9500.0

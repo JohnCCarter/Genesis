@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from rest.auth import require_auth
+
 # MCP client removed - MCP functionality disabled
 # from services.mcp_client import mcp_tools
 from utils.logger import get_logger
@@ -51,7 +52,9 @@ async def list_mcp_tools(_: bool = Depends(require_auth)):
 async def call_mcp_tool(request: MCPToolCall, _: bool = Depends(require_auth)):
     """Anropa ett MCP-tool"""
     # MCP functionality disabled
-    return MCPToolCallResponse(success=False, result={}, error="MCP functionality disabled")
+    return MCPToolCallResponse(
+        success=False, result={}, error="MCP functionality disabled"
+    )
 
 
 @router.get("/trading/status")

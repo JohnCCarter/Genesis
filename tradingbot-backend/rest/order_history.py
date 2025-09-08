@@ -13,11 +13,12 @@ from datetime import datetime
 from typing import Any
 
 import httpx
+from services.exchange_client import get_exchange_client
 from pydantic import BaseModel
 
 from config.settings import Settings
 from rest.auth import build_auth_headers
-from services.metrics import record_http_result
+from services.metrics import record_http_result, metrics_store
 from services.transport_circuit_breaker import get_transport_circuit_breaker
 from utils.advanced_rate_limiter import get_advanced_rate_limiter
 from utils.logger import get_logger
@@ -282,14 +283,19 @@ class OrderHistoryService:
                 # Använd rate limiter före varje request
                 await self.rate_limiter.wait_if_needed(endpoint)
 
-                async with httpx.AsyncClient(timeout=timeout) as client:
-                    _t0 = time.perf_counter()
-                    async with self._sem:
-                        response = await client.post(
-                            f"{self.base_url}/{endpoint}",
-                            content=body_json.encode("utf-8"),
-                            headers=headers,
-                        )
+                _t0 = time.perf_counter()
+                async with self._sem:
+                    try:
+                        # Använd centraliserad ExchangeClient för signering/nonce-hantering
+                        ec = get_exchange_client()
+                        response = await ec.signed_request(method="post", endpoint=endpoint, body=body, timeout=timeout)
+                    except Exception:
+                        async with httpx.AsyncClient(timeout=timeout) as client:
+                            response = await client.post(
+                                f"{self.base_url}/{endpoint}",
+                                content=body_json.encode("utf-8"),
+                                headers=headers,
+                            )
                     _t1 = time.perf_counter()
                     try:
                         record_http_result(
@@ -312,23 +318,9 @@ class OrderHistoryService:
                                 and "nonce" in str(error_data[2]).lower()
                             ):
                                 logger.error(f"🚨 Nonce-fel detekterat: {error_data}")
-                                try:
-                                    from config.settings import Settings as _S
-                                    from utils.nonce_manager import bump_nonce
-
-                                    api_key = _S().BITFINEX_API_KEY or "default_key"
-                                    bump_nonce(api_key)
-                                    # Bygg om headers med ny nonce
-                                    headers = build_auth_headers(endpoint, payload_str=body_json)
-                                    async with self._sem:
-                                        response = await client.post(
-                                            f"{self.base_url}/{endpoint}",
-                                            content=body_json.encode("utf-8"),
-                                            headers=headers,
-                                        )
-                                except Exception:
-                                    # Misslyckad bump – returnera originalsvaret
-                                    return response
+                                # Nonce bump hanteras redan i ExchangeClient.signed_request
+                                # Returnera originalsvaret utan lokal bump
+                                return response
                         except (json.JSONDecodeError, ValueError):
                             pass  # Inte JSON eller felformat, fortsätt med vanlig hantering
 

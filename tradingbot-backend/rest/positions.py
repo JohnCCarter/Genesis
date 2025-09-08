@@ -7,6 +7,8 @@ Inkluderar funktioner för att hämta aktiva positioner och hantera positioner.
 
 import asyncio
 import time
+import random
+from datetime import datetime
 from typing import Any
 
 import httpx
@@ -16,8 +18,10 @@ from config.settings import Settings
 from rest.auth import build_auth_headers
 from services.metrics import record_http_result
 from utils.advanced_rate_limiter import get_advanced_rate_limiter
+from services.transport_circuit_breaker import get_transport_circuit_breaker
 from utils.logger import get_logger
 from utils.private_concurrency import get_private_rest_semaphore
+from services.exchange_client import get_exchange_client
 
 logger = get_logger(__name__)
 
@@ -101,98 +105,95 @@ class PositionsService:
             except Exception:
                 pass
 
-            headers = build_auth_headers(endpoint)
-
-            async with httpx.AsyncClient(timeout=httpx.Timeout(15.0)) as client:
-                logger.info(f"🌐 REST API: Hämtar positioner från {self.base_url}/{endpoint}")
-                try:
-                    _t0 = time.perf_counter()
-                    async with self._sem:
-                        response = await client.post(f"{self.base_url}/{endpoint}", headers=headers)
-                    _t1 = time.perf_counter()
+            logger.info(f"🌐 REST API: Hämtar positioner från {self.base_url}/{endpoint}")
+            try:
+                _t0 = time.perf_counter()
+                async with self._sem:
                     try:
-                        record_http_result(
-                            path=f"/{endpoint}",
-                            method="POST",
-                            status_code=int(response.status_code),
-                            duration_ms=int((_t1 - _t0) * 1000),
-                            retry_after=response.headers.get("Retry-After"),
-                        )
-                        if response.status_code in (429, 500, 502, 503, 504):
-                            ra = response.headers.get("Retry-After")
-                            logger.warning(
-                                "HTTP %s %s Retry-After=%s",
-                                response.status_code,
-                                endpoint,
-                                ra if ra is not None else "-",
-                            )
+                        ec = get_exchange_client()
+                        response = await ec.signed_request(method="post", endpoint=endpoint, body=None, timeout=15.0)
                     except Exception:
-                        pass
-
-                    # Kontrollera nonce-fel specifikt (10114) och bumpa + engångs‑retry
-                    if response.status_code == 500:
-                        try:
-                            error_data = response.json()
-                            if (
-                                isinstance(error_data, list)
-                                and len(error_data) >= 3
-                                and "nonce" in str(error_data[2]).lower()
-                            ):
-                                logger.error(f"🚨 Nonce-fel i positions: {error_data}")
-                                try:
-                                    from utils.nonce_manager import bump_nonce
-
-                                    bump_nonce(self.settings.BITFINEX_API_KEY or "default_key")
-                                    headers = build_auth_headers(endpoint)
-                                    async with self._sem:
-                                        response = await client.post(f"{self.base_url}/{endpoint}", headers=headers)
-                                except Exception:
-                                    pass
-                        except Exception:
-                            pass
-
-                    # Hantera server busy
+                        async with httpx.AsyncClient(timeout=httpx.Timeout(15.0)) as client:
+                            headers = build_auth_headers(endpoint)
+                            response = await client.post(f"{self.base_url}/{endpoint}", headers=headers)
+                _t1 = time.perf_counter()
+                try:
+                    record_http_result(
+                        path=f"/{endpoint}",
+                        method="POST",
+                        status_code=int(response.status_code),
+                        duration_ms=int((_t1 - _t0) * 1000),
+                        retry_after=response.headers.get("Retry-After"),
+                    )
                     if response.status_code in (429, 500, 502, 503, 504):
-                        try:
-                            if (
-                                "server busy" in (response.text or "").lower() or response.status_code in (429, 503)
-                            ) and hasattr(self.rate_limiter, "note_failure"):
-                                cooldown = self.rate_limiter.note_failure(
+                        ra = response.headers.get("Retry-After")
+                        logger.warning(
+                            "HTTP %s %s Retry-After=%s",
+                            response.status_code,
+                            endpoint,
+                            ra if ra is not None else "-",
+                        )
+                except Exception:
+                    pass
+
+                # Nonce-fel hanteras centralt i ExchangeClient; behåll endast generisk hantering nedan
+
+                # Hantera server busy
+                if response.status_code in (429, 500, 502, 503, 504):
+                    try:
+                        if (
+                            "server busy" in (response.text or "").lower() or response.status_code in (429, 503)
+                        ) and hasattr(self.rate_limiter, "note_failure"):
+                            cooldown = self.rate_limiter.note_failure(
+                                endpoint,
+                                int(response.status_code),
+                                response.headers.get("Retry-After"),
+                            )
+                            logger.warning(f"CB öppnad för {endpoint} i {cooldown:.1f}s")
+                            try:
+                                # Namngiven TransportCircuitBreaker
+                                tcb = get_transport_circuit_breaker()
+                                tcb.note_failure(
                                     endpoint,
                                     int(response.status_code),
                                     response.headers.get("Retry-After"),
                                 )
-                                logger.warning(f"CB öppnad för {endpoint} i {cooldown:.1f}s")
-                            await self.rate_limiter.handle_server_busy(endpoint)
-                        except Exception:
-                            pass
-                        logger.warning(f"Bitfinex server busy för positions (status {response.status_code})")
-                        return []
-
-                    response.raise_for_status()
-                    # Återställ server busy count vid framgång
-                    try:
-                        self.rate_limiter.reset_server_busy_count()
+                            except Exception:
+                                pass
+                        await self.rate_limiter.handle_server_busy(endpoint)
                     except Exception:
                         pass
-                    try:
-                        if hasattr(self.rate_limiter, "note_success"):
-                            self.rate_limiter.note_success(endpoint)
-                    except Exception:
-                        pass
-                    positions_data = response.json()
-                except httpx.HTTPStatusError as e:
-                    # Vid temporära serverfel – returnera tom lista istället för att krascha flöden
-                    if e.response.status_code in (500, 502, 503, 504):
-                        logger.error(
-                            f"Serverfel vid positionshämtning ({e.response.status_code}), returnerar tom lista"
-                        )
-                        return []
-                    raise
+                    logger.warning(f"Bitfinex server busy för positions (status {response.status_code})")
+                    return []
 
-                logger.info(f"✅ REST API: Hämtade {len(positions_data)} positioner")
-                positions = [Position.from_bitfinex_data(position) for position in positions_data]
-                return positions
+                response.raise_for_status()
+                # Återställ server busy count vid framgång
+                try:
+                    self.rate_limiter.reset_server_busy_count()
+                except Exception:
+                    pass
+                try:
+                    if hasattr(self.rate_limiter, "note_success"):
+                        self.rate_limiter.note_success(endpoint)
+                except Exception:
+                    pass
+                try:
+                    # TransportCircuitBreaker success
+                    tcb = get_transport_circuit_breaker()
+                    tcb.note_success(endpoint)
+                except Exception:
+                    pass
+                positions_data = response.json()
+            except httpx.HTTPStatusError as e:
+                # Vid temporära serverfel – returnera tom lista istället för att krascha flöden
+                if e.response.status_code in (500, 502, 503, 504):
+                    logger.error(f"Serverfel vid positionshämtning ({e.response.status_code}), returnerar tom lista")
+                    return []
+                raise
+
+            logger.info(f"✅ REST API: Hämtade {len(positions_data)} positioner")
+            positions = [Position.from_bitfinex_data(position) for position in positions_data]
+            return positions
 
         except Exception as e:
             logger.error(f"Fel vid hämtning av positioner: {e}")

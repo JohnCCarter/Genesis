@@ -50,7 +50,13 @@ class PerformanceTracker:
         except Exception as e:
             logger.error(f"❌ Fel vid sparande av performance data: {e}")
 
-    def record_trade(self, symbol: str, signal: SignalResponse, trade_result: dict, execution_time: datetime):
+    def record_trade(
+        self,
+        symbol: str,
+        signal: SignalResponse,
+        trade_result: dict,
+        execution_time: datetime,
+    ):
         """Registrera en utförd trade"""
         try:
             trade_record = {
@@ -229,7 +235,7 @@ class PerformanceTracker:
                 "period_days": days,
                 "total_trades": len(recent_trades),
                 "closed_trades": len(closed_trades),
-                "win_rate": len(winning_trades) / len(closed_trades) * 100 if closed_trades else 0,
+                "win_rate": (len(winning_trades) / len(closed_trades) * 100 if closed_trades else 0),
                 "total_profit_loss": total_profit_loss,
                 "avg_profit_per_trade": (total_profit_loss / len(closed_trades) if closed_trades else 0),
                 "best_trade": max((t.get("profit_loss", 0) for t in closed_trades), default=0),
@@ -276,7 +282,7 @@ class PerformanceTracker:
                 "period_days": days,
                 "total_trades": len(symbol_trades),
                 "closed_trades": len(closed_trades),
-                "win_rate": len(winning_trades) / len(closed_trades) * 100 if closed_trades else 0,
+                "win_rate": (len(winning_trades) / len(closed_trades) * 100 if closed_trades else 0),
                 "total_profit_loss": total_profit_loss,
                 "avg_profit_per_trade": (total_profit_loss / len(closed_trades) if closed_trades else 0),
                 "avg_confidence": avg_confidence,

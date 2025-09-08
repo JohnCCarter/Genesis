@@ -35,15 +35,13 @@ class SignalService:
         return round(base * (confidence / 100.0) * 100.0, 1)
 
     @staticmethod
-    def recommend(regime: str | None, confidence: float, probability: float) -> str:
+    def recommend(regime: str | None, confidence: float, probability: float) -> str:  # noqa: ARG004
         if confidence < 30:
             return "hold"
         if probability > 70:
-            return "buy" if (regime or "").lower() == "trend" else "buy"
+            return "buy"
         if probability > 40:
             return "buy"
-        if probability > 20:
-            return "hold"
         return "hold"
 
     def score(
@@ -170,7 +168,12 @@ class UnifiedSignalService:
             except Exception as e:
                 logger.error(f"❌ Kunde inte generera enhanced signal för {symbol}: {e}")
 
-        return LiveSignalsResponse(success=True, signals=signals, timestamp=datetime.now(), total_signals=len(signals))
+        return LiveSignalsResponse(
+            success=True,
+            signals=signals,
+            timestamp=datetime.now(),
+            total_signals=len(signals),
+        )
 
     async def _generate_realtime_signals(self, symbols: list[str]) -> LiveSignalsResponse:
         """Realtids-signaler via WebSocket (om tillgängligt)"""
@@ -193,7 +196,12 @@ class UnifiedSignalService:
             except Exception as e:
                 logger.error(f"❌ Kunde inte generera realtids-signal för {symbol}: {e}")
 
-        return LiveSignalsResponse(success=True, signals=signals, timestamp=datetime.now(), total_signals=len(signals))
+        return LiveSignalsResponse(
+            success=True,
+            signals=signals,
+            timestamp=datetime.now(),
+            total_signals=len(signals),
+        )
 
     async def _generate_realtime_signal_for_symbol(self, symbol: str, price_data: float) -> SignalResponse | None:
         """Generera realtids-signal för en symbol baserat på WebSocket-data"""
@@ -241,8 +249,8 @@ class UnifiedSignalService:
         return {
             "total_cached": len(self._signal_cache),
             "cache_ttl_minutes": self._cache_ttl.total_seconds() / 60,
-            "oldest_entry": min(self._last_update.values()) if self._last_update else None,
-            "newest_entry": max(self._last_update.values()) if self._last_update else None,
+            "oldest_entry": (min(self._last_update.values()) if self._last_update else None),
+            "newest_entry": (max(self._last_update.values()) if self._last_update else None),
         }
 
 

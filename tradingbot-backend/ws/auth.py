@@ -208,8 +208,8 @@ def authenticate_socket_io(environ) -> bool:
         logger.info(f"HTTP_USER_AGENT: {environ.get('HTTP_USER_AGENT', 'okänd')}")
 
         # Temporär fix: Tillåt anslutning från localhost utan autentisering för utveckling
-        remote_addr = environ.get('REMOTE_ADDR', '')
-        if remote_addr in ['127.0.0.1', 'localhost', '::1']:
+        remote_addr = environ.get("REMOTE_ADDR", "")
+        if remote_addr in ["127.0.0.1", "localhost", "::1"]:
             logger.info("🔓 Tillåter localhost-anslutning utan autentisering (utvecklingsläge)")
             environ["user"] = {"sub": "localhost_user", "scope": "read"}
             return True

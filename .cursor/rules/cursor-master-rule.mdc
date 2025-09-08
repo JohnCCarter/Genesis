@@ -17,6 +17,7 @@ Persistence: Fortsätt tills arbetet är klart.
    Vara transparent med eventuella begränsningar eller osäkerheter
    Stanna upp och reflektera för att undvika förhastade slutsatser
    Bekräfta förståelse innan jag genererar omfattande svar eller kod
+   Använda både codebase_search och grep för varje punkt
 
 2. Projektarkitektur & Kodkvalitet
    Respektera den befintliga modulära strukturen (services, indicators, rest, ws, utils)

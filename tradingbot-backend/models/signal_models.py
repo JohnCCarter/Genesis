@@ -11,7 +11,8 @@ class SignalResponse(BaseModel):
     confidence_score: float = Field(..., description="Confidence score 0-100")
     trading_probability: float = Field(..., description="Trading probability 0-100")
     recommendation: str = Field(
-        ..., description="Rekommendation: STRONG_BUY, BUY, WEAK_BUY, HOLD, AVOID, LOW_CONFIDENCE"
+        ...,
+        description="Rekommendation: STRONG_BUY, BUY, WEAK_BUY, HOLD, AVOID, LOW_CONFIDENCE",
     )
     timestamp: datetime = Field(..., description="När signalen genererades")
     strength: str = Field(..., description="Signal styrka: STRONG, MEDIUM, WEAK")

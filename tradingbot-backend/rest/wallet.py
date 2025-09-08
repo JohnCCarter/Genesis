@@ -9,12 +9,14 @@ import asyncio
 import time
 
 import httpx
+from services.exchange_client import get_exchange_client
 from pydantic import BaseModel
 
 from config.settings import Settings
 from rest.auth import build_auth_headers
 from services.metrics import record_http_result
 from utils.advanced_rate_limiter import get_advanced_rate_limiter
+from services.transport_circuit_breaker import get_transport_circuit_breaker
 from utils.logger import get_logger
 from utils.private_concurrency import get_private_rest_semaphore
 
@@ -83,13 +85,16 @@ class WalletService:
             except Exception:
                 pass
 
-            headers = build_auth_headers(endpoint)
-
-            async with httpx.AsyncClient(timeout=httpx.Timeout(15.0)) as client:
-                logger.info(f"🌐 REST API: Hämtar plånböcker från {self.base_url}/{endpoint}")
-                _t0 = time.perf_counter()
-                async with self._sem:
-                    response = await client.post(f"{self.base_url}/{endpoint}", headers=headers)
+            logger.info(f"🌐 REST API: Hämtar plånböcker från {self.base_url}/{endpoint}")
+            _t0 = time.perf_counter()
+            async with self._sem:
+                try:
+                    ec = get_exchange_client()
+                    response = await ec.signed_request(method="post", endpoint=endpoint, body=None, timeout=15.0)
+                except Exception:
+                    async with httpx.AsyncClient(timeout=httpx.Timeout(15.0)) as client:
+                        headers = build_auth_headers(endpoint)
+                        response = await client.post(f"{self.base_url}/{endpoint}", headers=headers)
                 _t1 = time.perf_counter()
                 try:
                     record_http_result(
@@ -121,14 +126,9 @@ class WalletService:
                         ):
                             logger.error(f"🚨 Nonce-fel i wallets: {error_data}")
                             try:
-                                # Bumpa nonce för REST‑nyckeln och försök en gång till
-                                from utils.nonce_manager import bump_nonce
-
-                                bump_nonce(self.settings.BITFINEX_API_KEY or "default_key")
-                                headers = build_auth_headers(endpoint)
-                                async with self._sem:
-                                    response = await client.post(f"{self.base_url}/{endpoint}", headers=headers)
-                                # Om fortfarande fel – fortsätt ned till generisk hantering
+                                # Nonce bump hanteras centralt i ExchangeClient.signed_request
+                                # Returnera svar för vidare hantering
+                                return []
                             except Exception:
                                 pass
                     except Exception:
@@ -146,6 +146,16 @@ class WalletService:
                                 response.headers.get("Retry-After"),
                             )
                             logger.warning(f"CB öppnad för {endpoint} i {cooldown:.1f}s")
+                            try:
+                                # Namngiven TransportCircuitBreaker
+                                tcb = get_transport_circuit_breaker()
+                                tcb.note_failure(
+                                    endpoint,
+                                    int(response.status_code),
+                                    response.headers.get("Retry-After"),
+                                )
+                            except Exception:
+                                pass
                         await self.rate_limiter.handle_server_busy(endpoint)
                     except Exception:
                         pass
@@ -162,6 +172,12 @@ class WalletService:
                     try:
                         if hasattr(self.rate_limiter, "note_success"):
                             self.rate_limiter.note_success(endpoint)
+                    except Exception:
+                        pass
+                    try:
+                        # TransportCircuitBreaker success
+                        tcb = get_transport_circuit_breaker()
+                        tcb.note_success(endpoint)
                     except Exception:
                         pass
                 except httpx.HTTPStatusError as he:

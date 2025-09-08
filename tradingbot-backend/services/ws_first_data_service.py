@@ -12,10 +12,13 @@ from dataclasses import dataclass
 from typing import Any
 
 from services.bitfinex_data import BitfinexDataService
+from services import runtime_config as rc
 from services.bitfinex_websocket import bitfinex_ws
 from services.incremental_indicators import ATRState, EMAState, RSIState
+from services.metrics import inc_labeled
 from utils.advanced_rate_limiter import get_advanced_rate_limiter
 from utils.logger import get_logger
+from utils.candle_cache import candle_cache
 
 logger = get_logger(__name__)
 
@@ -69,7 +72,12 @@ class WSFirstDataService:
         self.candle_debounce_ms = 250
 
         # Statistics
-        self.stats = {"ws_hits": 0, "rest_fallbacks": 0, "debounced_updates": 0, "cache_hits": 0}
+        self.stats = {
+            "ws_hits": 0,
+            "rest_fallbacks": 0,
+            "debounced_updates": 0,
+            "cache_hits": 0,
+        }
 
         # Inkrementella indikatorer per (symbol|timeframe)
         self._ema_state: dict[str, EMAState] = {}
@@ -87,7 +95,7 @@ class WSFirstDataService:
             from config.settings import Settings
 
             settings = Settings()
-            ws_connect_on_start = getattr(settings, 'WS_CONNECT_ON_START', True)
+            ws_connect_on_start = getattr(settings, "WS_CONNECT_ON_START", True)
 
             if not ws_connect_on_start:
                 logger.info("🚫 WS-anslutning avstängd via WS_CONNECT_ON_START=False")
@@ -198,6 +206,11 @@ class WSFirstDataService:
             data_point = DataPoint(symbol=symbol, data=latest_list, timestamp=now, source="ws")
             self._candle_cache[symbol][timeframe] = data_point
             self.stats["ws_hits"] += 1
+            try:
+                # Persist WS-data till CandleCache (senaste batchen)
+                candle_cache.store(symbol, timeframe, latest_list[-50:])
+            except Exception:
+                pass
 
             # Uppdatera inkrementella indikatorer
             last = latest_list[-1] if latest_list else None
@@ -213,7 +226,11 @@ class WSFirstDataService:
 
                     ssvc = StrategySettingsService()
                     s = ssvc.get_settings(symbol=symbol)
-                    ema_p, rsi_p, atr_p = int(s.ema_period), int(s.rsi_period), int(s.atr_period)
+                    ema_p, rsi_p, atr_p = (
+                        int(s.ema_period),
+                        int(s.rsi_period),
+                        int(s.atr_period),
+                    )
                 except Exception:
                     ema_p = rsi_p = atr_p = 14
 
@@ -300,13 +317,26 @@ class WSFirstDataService:
             # Kontrollera WS cache först (om inte force_fresh)
             if not force_fresh and symbol in self._ticker_cache:
                 cached = self._ticker_cache[symbol]
-                if now - cached.timestamp < self.ticker_stale_seconds:
+                try:
+                    stale = rc.get_int("WS_TICKER_STALE_SECS", self.ticker_stale_seconds)
+                except Exception:
+                    stale = self.ticker_stale_seconds
+
+                if now - cached.timestamp < stale:
                     self.stats["cache_hits"] += 1
+                    try:
+                        inc_labeled("marketdata_cache_hits_total", {"type": "ticker"})
+                    except Exception:
+                        pass
                     return cached.data
 
             # WS-data för gammal eller saknas, använd REST fallback
             logger.debug(f"🔄 REST fallback för ticker {symbol}")
             self.stats["rest_fallbacks"] += 1
+            try:
+                inc_labeled("marketdata_rest_fallbacks_total", {"type": "ticker"})
+            except Exception:
+                pass
 
             # Använd rate limiter för REST-anrop
             await self.rate_limiter.wait_if_needed(f"ticker/{symbol}")
@@ -317,6 +347,10 @@ class WSFirstDataService:
                 # Uppdatera cache med REST-data
                 data_point = DataPoint(symbol=symbol, data=ticker_data, timestamp=now, source="rest")
                 self._ticker_cache[symbol] = data_point
+                try:
+                    inc_labeled("marketdata_ws_hits_total", {"type": "ticker", "source": "rest"})
+                except Exception:
+                    pass
 
             return ticker_data
 
@@ -325,7 +359,11 @@ class WSFirstDataService:
             return None
 
     async def get_candles(
-        self, symbol: str, timeframe: str = "1m", limit: int = 100, force_fresh: bool = False
+        self,
+        symbol: str,
+        timeframe: str = "1m",
+        limit: int = 100,
+        force_fresh: bool = False,
     ) -> list | None:
         """
         Hämta candle-data med intelligent caching.
@@ -346,8 +384,20 @@ class WSFirstDataService:
             # Kontrollera cache först
             if not force_fresh and timeframe in self._candle_cache[symbol]:
                 cached = self._candle_cache[symbol][timeframe]
-                if now - cached.timestamp < self.candle_stale_seconds:
+                try:
+                    stale = rc.get_int("CANDLE_STALE_SECS", self.candle_stale_seconds)
+                except Exception:
+                    stale = self.candle_stale_seconds
+
+                if now - cached.timestamp < stale:
                     self.stats["cache_hits"] += 1
+                    try:
+                        inc_labeled(
+                            "marketdata_cache_hits_total",
+                            {"type": "candles", "tf": timeframe},
+                        )
+                    except Exception:
+                        pass
                     return cached.data
 
             # Om vi har WS-kö men stale cache, returnera senaste 'limit' från WS medan REST fyller bakgrund
@@ -363,9 +413,29 @@ class WSFirstDataService:
             except Exception:
                 pass
 
+            # Innan REST: försök läsa från persist CandleCache som bridge
+            try:
+                persisted = candle_cache.load(symbol, timeframe, limit)
+                if persisted:
+                    # Uppdatera in-memory cache och returnera
+                    self._candle_cache[symbol][timeframe] = DataPoint(
+                        symbol=symbol, data=persisted, timestamp=now, source="cache"
+                    )
+                    self.stats["cache_hits"] += 1
+                    return persisted
+            except Exception:
+                pass
+
             # Cache miss eller för gammal, hämta från REST
             logger.debug(f"🔄 REST fallback för candles {symbol} {timeframe}")
             self.stats["rest_fallbacks"] += 1
+            try:
+                inc_labeled(
+                    "marketdata_rest_fallbacks_total",
+                    {"type": "candles", "tf": timeframe},
+                )
+            except Exception:
+                pass
 
             # Använd rate limiter för REST-anrop
             await self.rate_limiter.wait_if_needed(f"candles/{symbol}")
@@ -376,61 +446,23 @@ class WSFirstDataService:
                 # Uppdatera cache
                 data_point = DataPoint(symbol=symbol, data=candle_data, timestamp=now, source="rest")
                 self._candle_cache[symbol][timeframe] = data_point
-
-                # Beräkna och spara indikator-snapshot från REST-data (för initialt läge)
                 try:
-                    key = f"{symbol}|{timeframe}"
-                    closes = [row[2] for row in candle_data if isinstance(row, (list, tuple)) and len(row) >= 3]
-                    highs = [row[3] for row in candle_data if isinstance(row, (list, tuple)) and len(row) >= 4]
-                    lows = [row[4] for row in candle_data if isinstance(row, (list, tuple)) and len(row) >= 5]
-                    if closes:
-                        try:
-                            from services.strategy_settings import StrategySettingsService
-
-                            ssvc = StrategySettingsService()
-                            s = ssvc.get_settings(symbol=symbol)
-                            ema_p, rsi_p, atr_p = (
-                                int(s.ema_period),
-                                int(s.rsi_period),
-                                int(s.atr_period),
-                            )
-                        except Exception:
-                            ema_p = rsi_p = atr_p = 14
-                        if key not in self._ema_state:
-                            self._ema_state[key] = EMAState(period=ema_p)
-                        if key not in self._rsi_state:
-                            self._rsi_state[key] = RSIState(period=rsi_p)
-                        if key not in self._atr_state:
-                            self._atr_state[key] = ATRState(period=atr_p)
-                        # Seed om oinitierat
-                        if self._ema_state[key].value is None:
-                            for px in closes[-ema_p:]:
-                                self._ema_state[key].update(float(px))
-                        if self._rsi_state[key].prev_close is None:
-                            for px in closes[-(rsi_p + 1) :]:
-                                self._rsi_state[key].update(float(px))
-                        if self._atr_state[key].prev_close is None and len(highs) == len(lows) == len(closes):
-                            for i in range(max(0, len(closes) - atr_p), len(closes)):
-                                self._atr_state[key].update(float(highs[i]), float(lows[i]), float(closes[i]))
-                        # Inkrementellt med sista raden
-                        last_close = float(closes[-1])
-                        last_high = float(highs[-1]) if highs else last_close
-                        last_low = float(lows[-1]) if lows else last_close
-                        ema_val = self._ema_state[key].update(last_close)
-                        rsi_val = self._rsi_state[key].update(last_close)
-                        atr_val = self._atr_state[key].update(last_high, last_low, last_close)
-                        self._ind_values[key] = {
-                            "ema": float(ema_val),
-                            "rsi": float(rsi_val),
-                            "atr": float(atr_val),
-                        }
+                    # Persist REST-data till CandleCache för framtida läsning
+                    candle_cache.store(symbol, timeframe, candle_data)
                 except Exception:
                     pass
+                try:
+                    inc_labeled(
+                        "marketdata_ws_hits_total",
+                        {"type": "candles", "source": "rest", "tf": timeframe},
+                    )
+                except Exception:
+                    pass
+                return candle_data
 
-            return candle_data
-
+            return None
         except Exception as e:
-            logger.error(f"Fel vid hämtning av candles för {symbol}: {e}")
+            logger.error(f"Fel vid hämtning av candles för {symbol} {timeframe}: {e}")
             return None
 
     def get_indicator_snapshot(self, symbol: str, timeframe: str) -> dict | None:

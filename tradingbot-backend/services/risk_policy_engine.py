@@ -25,7 +25,11 @@ class RiskPolicyEngine:
         self.constraints = TradeConstraintsService(self.settings)
 
     def evaluate(
-        self, *, symbol: str | None = None, amount: float | None = None, price: float | None = None
+        self,
+        *,
+        symbol: str | None = None,
+        amount: float | None = None,
+        price: float | None = None,
     ) -> PolicyDecision:
         # 1) Globala RiskGuards
         blocked, reason = risk_guards.check_all_guards(symbol, amount, price)

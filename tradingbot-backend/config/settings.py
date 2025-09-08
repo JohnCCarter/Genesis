@@ -131,6 +131,11 @@ class Settings(_BaseSettings):
     PUBLIC_REST_CONCURRENCY: int = 1
     PRIVATE_REST_CONCURRENCY: int = 1
 
+    # Regex/pattern-baserad mapping av endpoints till limiter-typer
+    RATE_LIMIT_PATTERNS: str | None = (
+        None  # ex: "^auth/w/=>PRIVATE_TRADING;^auth/r/positions=>PRIVATE_ACCOUNT;^(ticker|candles|book|trades)=>PUBLIC_MARKET"
+    )
+
     # WS ticker prioritet: anse WS-data färsk i X sekunder innan REST-fallback
     WS_TICKER_STALE_SECS: int = 10
     # Vänta kort på första WS‑tick efter auto‑subscribe innan

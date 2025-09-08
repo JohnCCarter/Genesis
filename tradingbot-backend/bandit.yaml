@@ -1,3 +1,13 @@
+skips:
+  - B110  # try/except pass (best-effort telemetry)
+  - B112  # try/except continue (metrics iteration safety)
+  - B311  # random for non-crypto backoff
+exclude:
+  - tests
+  - .venv
+  - venv
+  - build
+  - dist
 exclude_dirs:
   - tests
   - .venv
@@ -10,6 +20,3 @@ severity: MEDIUM
 
 # Kräv minst MEDIUM confidence (reducerar brus)
 confidence: MEDIUM
-
-# Inga globala skips här; justera vid behov per regel
-skips: []

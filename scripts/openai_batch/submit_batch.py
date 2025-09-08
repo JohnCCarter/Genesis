@@ -26,7 +26,9 @@ def parse_args() -> argparse.Namespace:
         default=os.getenv("OPENAI_BATCH_COMPLETION_WINDOW", "24h"),
         help="Completion window, e.g. 24h",
     )
-    parser.add_argument("--desc", default="", help="Optional description/metadata for this batch")
+    parser.add_argument(
+        "--desc", default="", help="Optional description/metadata for this batch"
+    )
     parser.add_argument(
         "--override-model",
         default=os.getenv("OPENAI_BATCH_MODEL"),
@@ -38,7 +40,9 @@ def parse_args() -> argparse.Namespace:
 def _rewrite_jsonl_with_model(source: Path, model: str) -> Path:
     """Create a temp JSONL with body.model overridden on each line."""
     tmp = Path(tempfile.mkstemp(suffix=".jsonl")[1])
-    with source.open("r", encoding="utf-8") as fin, tmp.open("w", encoding="utf-8") as fout:
+    with source.open("r", encoding="utf-8") as fin, tmp.open(
+        "w", encoding="utf-8"
+    ) as fout:
         for line in fin:
             if not line.strip():
                 continue
@@ -83,7 +87,9 @@ def main() -> None:
 
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
-        raise SystemExit("OPENAI_API_KEY is not set. Put it in .env or export it before running.")
+        raise SystemExit(
+            "OPENAI_API_KEY is not set. Put it in .env or export it before running."
+        )
 
     args = parse_args()
     input_path = Path(args.input)

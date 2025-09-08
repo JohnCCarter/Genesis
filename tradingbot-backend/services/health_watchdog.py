@@ -275,7 +275,11 @@ class HealthWatchdogService:
                     },
                 )
             else:
-                return False, "Databasfil saknas", {"database_exists": False, "db_path": db_path}
+                return (
+                    False,
+                    "Databasfil saknas",
+                    {"database_exists": False, "db_path": db_path},
+                )
         except Exception as e:
             return False, f"Databasanslutning fel: {e}", {"error": str(e)}
 

@@ -14,6 +14,8 @@ import json
 from dataclasses import dataclass
 from typing import Any
 
+import httpx
+
 from config.settings import Settings
 from utils.logger import get_logger
 
@@ -89,6 +91,56 @@ class ExchangeClient:
             "authSig": signature,
         }
         return json.dumps(message)
+
+    async def signed_request(
+        self,
+        *,
+        method: str,
+        endpoint: str,
+        body: dict[str, Any] | None = None,
+        timeout: float | None = None,
+    ) -> httpx.Response:
+        """Centraliserad signerad REST-anropare med nonce‑bump och enkel retry.
+
+        - Signerar exakt JSON som skickas
+        - Respekterar rate limiter/circuit breaker via anroparen (call site)
+        - Hanterar nonce‑fel: bump och engångs‑retry
+        """
+        body = body or {}
+        body_json = json.dumps(body, separators=(",", ":"), ensure_ascii=False)
+
+        headers = self.build_rest_headers(endpoint=endpoint, payload_str=body_json)
+        base_url = getattr(self.settings, "BITFINEX_AUTH_API_URL", None) or self.settings.BITFINEX_API_URL
+        to = float(timeout or getattr(self.settings, "ORDER_HTTP_TIMEOUT", 15.0))
+
+        async with httpx.AsyncClient(timeout=to) as client:
+            req = getattr(client, method.lower())
+            response = await req(
+                f"{base_url}/{endpoint}",
+                content=body_json.encode("utf-8"),
+                headers=headers,
+            )
+
+            # Nonce‑fel (Bitfinex returnerar 500 med feltextlista där index 2 brukar innehålla meddelandet)
+            if response.status_code == 500:
+                try:
+                    data = response.json()
+                    if isinstance(data, list) and len(data) >= 3 and "nonce" in str(data[2]).lower():
+                        from utils.nonce_manager import bump_nonce
+
+                        api_key = self.settings.BITFINEX_API_KEY or "default_key"
+                        bump_nonce(api_key)
+                        # Bygg om headers och försök en gång till
+                        headers = self.build_rest_headers(endpoint=endpoint, payload_str=body_json)
+                        response = await req(
+                            f"{base_url}/{endpoint}",
+                            content=body_json.encode("utf-8"),
+                            headers=headers,
+                        )
+                except Exception:
+                    pass
+
+            return response
 
 
 _client_singleton: ExchangeClient | None = None

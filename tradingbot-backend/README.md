@@ -418,8 +418,8 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-          cache: 'pip'
-          cache-dependency-path: 'tradingbot-backend/requirements.txt'
+          cache: "pip"
+          cache-dependency-path: "tradingbot-backend/requirements.txt"
 
       - name: Install dependencies
         run: |
@@ -503,6 +503,7 @@ Se `cursor_prompts.md` för en svensk systemprompt och tio återanvändbara Curs
 ## Arkitektur: MarketDataFacade, SignalService, RiskPolicyEngine, Circuit Breakers
 
 ### MarketDataFacade
+
 - En enhetlig datatjänst som prioriterar WebSocket-data med REST fallback och gemensam cache.
 - API (urval):
   - `get_ticker(symbol)`
@@ -511,18 +512,54 @@ Se `cursor_prompts.md` för en svensk systemprompt och tio återanvändbara Curs
   - `parse_candles_to_strategy_data(candles)` (helper som använder `utils.candles`)
 
 ### SignalService
+
 - Enhetlig signal-orkestrering som kan kombinera deterministiska heuristiker med sannolikhetsmodell.
 - Returnerar `SignalScore` med fält: `recommendation`, `confidence`, `probability`, `source`, `features`.
 - Används nu i REST där lokala confidence/prob tidigare beräknades (t.ex. watchlist, regime-all).
 
 ### RiskPolicyEngine
+
 - Samlar RiskGuards och TradeConstraintsService i en tydlig policy:
   - RiskGuards (globala vakter: max daily loss, kill-switch, exposure limits)
   - TradeConstraintsService (trading window, dagliga limit och cooldown via TradeCounter/TradingWindow)
 - API (urval): `evaluate(symbol, amount, price)`, `record_trade(symbol)`, `status()`
 
 ### Circuit Breakers
+
 - Två separata kretsbrytare i logg/metrics:
   - TradingCircuitBreaker (handel) – pausar handel vid felspikar i risk/routing.
   - TransportCircuitBreaker (nätverk/REST) – öppnas per endpoint vid 429/5xx och återställer automatiskt.
 - Exponeras via Prometheus-metrics: `tradingbot_trading_circuit_breaker_active` och `tradingbot_transport_circuit_breaker_active` (bakåtkompatibelt `tradingbot_circuit_breaker_active`).
+
+### Rate limiting
+
+Backend använder en avancerad token‑bucket limiter per endpoint‑typ med semaforer.
+Du kan mönster‑klassificera endpoints via `RATE_LIMIT_PATTERNS` i `.env`:
+
+```
+RATE_LIMIT_PATTERNS=^auth/w/=>PRIVATE_TRADING;^auth/r/positions=>PRIVATE_ACCOUNT;^auth/r/wallets=>PRIVATE_ACCOUNT;^auth/r/info/margin=>PRIVATE_MARGIN;^(ticker|candles|book|trades)=>PUBLIC_MARKET
+```
+
+Detta styr både token‑bucket och concurrency caps per endpoint‑typ, samt exporteras som metrics (tokens tillgängliga och utilization%).
+
+### Runtime‑konfiguration (hot‑reload)
+
+Backend stödjer enkla runtime‑overrides för utvalda nycklar via REST:
+
+```
+GET  /api/v2/runtime/config           # listar aktiva overrides
+POST /api/v2/runtime/config { "values": { "WS_TICKER_STALE_SECS": 5, "CANDLE_STALE_SECS": 120 } }
+```
+
+Stödda nycklar just nu:
+- `WS_TICKER_STALE_SECS`: override för hur länge WS‑ticker anses färsk (sek)
+- `CANDLE_STALE_SECS`: override för candle‑cache staleness (sek)
+
+### Metrics: marknadsdata‑andelar
+
+I `/metrics` exponeras aggregerade procentandelar för datakällor:
+- `tradingbot_marketdata_cache_percent`
+- `tradingbot_marketdata_rest_percent`
+- `tradingbot_marketdata_ws_percent`
+
+Använd dem för paneler i t.ex. Grafana för att följa cache‑träffar, REST‑fallbacks, och WS‑andel över tid.

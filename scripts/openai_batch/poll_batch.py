@@ -13,10 +13,16 @@ TERMINAL_STATES = {"completed", "failed", "cancelled", "expired"}
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Poll an OpenAI Batch job and download results")
-    parser.add_argument("--batch-id", required=True, help="The batch id (bat_...) to poll")
+    parser = argparse.ArgumentParser(
+        description="Poll an OpenAI Batch job and download results"
+    )
+    parser.add_argument(
+        "--batch-id", required=True, help="The batch id (bat_...) to poll"
+    )
     parser.add_argument("--out", default="results", help="Output directory for results")
-    parser.add_argument("--interval", type=float, default=5.0, help="Polling interval in seconds")
+    parser.add_argument(
+        "--interval", type=float, default=5.0, help="Polling interval in seconds"
+    )
     parser.add_argument(
         "--max-wait", type=int, default=3600, help="Max seconds to wait before exiting"
     )
@@ -32,7 +38,9 @@ def main() -> None:
     load_dotenv()
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
-        raise SystemExit("OPENAI_API_KEY is not set. Put it in .env or export it before running.")
+        raise SystemExit(
+            "OPENAI_API_KEY is not set. Put it in .env or export it before running."
+        )
 
     args = parse_args()
     client = OpenAI()

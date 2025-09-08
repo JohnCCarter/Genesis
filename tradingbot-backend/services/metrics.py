@@ -98,7 +98,11 @@ def _samples_key(path: str, method: str, status_code: int) -> str:
 
 
 def record_http_result(
-    path: str, method: str, status_code: int, duration_ms: int, _retry_after: str | None = None
+    path: str,
+    method: str,
+    status_code: int,
+    duration_ms: int,
+    _retry_after: str | None = None,
 ) -> None:
     """Registrera latens och felstatistik för ett HTTP-anrop.
 
@@ -170,12 +174,25 @@ def render_prometheus_text() -> str:
 
     # Lägg till latensmetrik per endpoint
     try:
-        lat: dict[str, dict[str, int]] = metrics_store.get("request_latency", {})
+        lat_any = metrics_store.get("request_latency", {}) or {}
+        lat: dict[str, dict[str, int]] = {}
+        for k, v in lat_any.items():
+            try:
+                lat[str(k)] = {
+                    "count": int(v.get("count", 0)),
+                    "sum_ms": int(v.get("sum_ms", 0)),
+                }
+            except Exception:
+                continue
         for key, bucket in lat.items():
             try:
                 method, path, status = key.split("|", 2)
-                label_map = {"path": path, "method": method, "status": str(status)}
-                labels = _labels_to_str(label_map)
+                latency_labels_map = {
+                    "path": path,
+                    "method": method,
+                    "status": str(status),
+                }
+                labels = _labels_to_str(latency_labels_map)
                 cnt = int(bucket.get("count", 0))
                 metric = "tradingbot_request_latency_ms_count"
                 lines.append(f"{metric}{labels} {cnt}")
@@ -190,7 +207,12 @@ def render_prometheus_text() -> str:
                     def q(p: float, arr: list[int] = samples) -> int:
                         if not arr:
                             return 0
-                        idx = int(max(0, min(len(arr) - 1, round((p / 100.0) * (len(arr) - 1)))))
+                        idx = int(
+                            max(
+                                0,
+                                min(len(arr) - 1, round((p / 100.0) * (len(arr) - 1))),
+                            )
+                        )
                         return int(arr[idx])
 
                     lines.append(f"tradingbot_request_latency_ms_p50{labels} {q(50)}")
@@ -203,11 +225,55 @@ def render_prometheus_text() -> str:
 
     # Labeled counters
     try:
-        ctrs: dict[str, dict[str, int]] = metrics_store.get("counters", {})
+        ctrs_any = metrics_store.get("counters", {}) or {}
+        ctrs: dict[str, dict[str, int]] = {}
+        # defensiv cast
+        for m, lm in ctrs_any.items():
+            try:
+                lm_typed: dict[str, int] = {str(k): int(v) for k, v in (lm or {}).items()}
+            except Exception:
+                lm_typed = {}
+            ctrs[str(m)] = lm_typed
         for metric_name, label_map in ctrs.items():
             for label_str, value in label_map.items():
                 val_int = int(value)
                 lines.append(f"tradingbot_{metric_name}{label_str} {val_int}")
+    except Exception:
+        pass
+
+    # Härled enkla procentmått för marketdata cache/rest/ws om counters finns
+    try:
+        ctrs_any = metrics_store.get("counters", {}) or {}
+
+        # Typed map of label->int
+        def _typed_map(m):
+            try:
+                return {str(k): int(v) for k, v in (m or {}).items()}
+            except Exception:
+                return {}
+
+        ctrs = {str(k): _typed_map(v) for k, v in ctrs_any.items()}
+        cache_map = ctrs.get("marketdata_cache_hits_total", {}) or {}
+        rest_map = ctrs.get("marketdata_rest_fallbacks_total", {}) or {}
+        ws_map = ctrs.get("marketdata_ws_hits_total", {}) or {}
+
+        # Summera över alla labels
+        def _sum_map(m: dict[str, int]) -> int:
+            try:
+                return int(sum(int(v) for v in m.values()))
+            except Exception:
+                return 0
+
+        cache = float(_sum_map(cache_map))
+        rest = float(_sum_map(rest_map))
+        ws = float(_sum_map(ws_map))
+        total = max(1.0, cache + rest + ws)
+        pct_cache = (cache / total) * 100.0
+        pct_rest = (rest / total) * 100.0
+        pct_ws = (ws / total) * 100.0
+        lines.append(f"tradingbot_marketdata_cache_percent {pct_cache:.2f}")
+        lines.append(f"tradingbot_marketdata_rest_percent {pct_rest:.2f}")
+        lines.append(f"tradingbot_marketdata_ws_percent {pct_ws:.2f}")
     except Exception:
         pass
 
@@ -258,14 +324,14 @@ def render_prometheus_text() -> str:
         logloss = pv.get("logloss")
         if brier is not None:
             try:
-                val = float(brier or 0.0)
-                lines.append(f"tradingbot_prob_brier {val}")
+                val_brier = float(brier or 0.0)
+                lines.append(f"tradingbot_prob_brier {val_brier}")
             except Exception:
                 pass
         if logloss is not None:
             try:
-                val = float(logloss or 0.0)
-                lines.append(f"tradingbot_prob_logloss {val}")
+                val_logloss = float(logloss or 0.0)
+                lines.append(f"tradingbot_prob_logloss {val_logloss}")
             except Exception:
                 pass
         by_any = pv.get("by") or {}

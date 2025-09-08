@@ -2,6 +2,10 @@ from datetime import datetime, timedelta
 from typing import Callable
 
 from models.signal_models import SignalResponse, SignalThresholds
+from indicators.regime import detect_regime, ema_z
+from indicators.adx import adx as adx_series
+from services.market_data_facade import get_market_data
+from services.signal_service import SignalService as _StdSignalService
 from services.performance_tracker import get_performance_tracker
 from services.realtime_strategy import RealtimeStrategyService
 from services.signal_generator import SignalGeneratorService
@@ -18,7 +22,9 @@ class EnhancedAutoTrader:
     """Enhanced auto-trader som kombinerar live signals med befintligt auto-trading"""
 
     def __init__(self):
-        self.signal_service = SignalGeneratorService()
+        # Använd standardiserad SignalService (SignalScore) som primär källa
+        # SignalGeneratorService används enbart som transport/aggregation om behövs
+        self.signal_service = _StdSignalService()
         self.trading_integration = TradingIntegrationService()
         self.realtime_strategy = RealtimeStrategyService()
         self.performance_tracker = get_performance_tracker()
@@ -119,13 +125,46 @@ class EnhancedAutoTrader:
     async def _get_enhanced_signal(self, symbol: str) -> SignalResponse | None:
         """Hämta enhanced signal med confidence scores"""
         try:
-            # Generera live signal
-            signals_response = await self.signal_service.generate_live_signals([symbol], force_refresh=True)
+            # Hämta regim + indikatorer lokalt (undvik beroende på REST-routes)
+            regime_data = await self._get_regime_data_local(symbol)
+            if not regime_data or "regime" not in regime_data:
+                return None
 
-            if signals_response.signals:
-                signal = signals_response.signals[0]
-                self._last_signals[symbol] = signal
-                return signal
+            sc = self.signal_service.score(
+                regime=regime_data.get("regime"),
+                adx_value=regime_data.get("adx_value"),
+                ema_z_value=regime_data.get("ema_z_value"),
+                features={"symbol": symbol},
+            )
+
+            # Mappa SignalScore -> SignalResponse (befintlig modell)
+            signal = SignalResponse(
+                symbol=symbol,
+                signal_type=(
+                    "BUY" if sc.recommendation == "buy" else ("SELL" if sc.recommendation == "sell" else "HOLD")
+                ),
+                confidence_score=sc.confidence,
+                trading_probability=sc.probability,
+                recommendation=(
+                    "STRONG_BUY"
+                    if sc.recommendation == "buy" and sc.probability > 70
+                    else ("BUY" if sc.recommendation == "buy" else ("HOLD" if sc.recommendation == "hold" else "AVOID"))
+                ),
+                timestamp=datetime.now(),
+                strength=(
+                    "STRONG"
+                    if sc.confidence >= self.thresholds.strong_signal_min
+                    else ("MEDIUM" if sc.confidence >= self.thresholds.medium_signal_min else "WEAK")
+                ),
+                reason=f"Confidence: {sc.confidence:.1f}%, Probability: {sc.probability:.1f}%, Source: {sc.source}",
+                current_price=None,
+                adx_value=regime_data.get("adx_value"),
+                ema_z_value=regime_data.get("ema_z_value"),
+                regime=regime_data.get("regime"),
+            )
+
+            self._last_signals[symbol] = signal
+            return signal
 
             return None
 
@@ -266,6 +305,49 @@ class EnhancedAutoTrader:
         except Exception as e:
             logger.error(f"❌ Fel vid status hämtning: {e}")
             return {"error": "An internal error occurred, please try again later."}
+
+    async def _get_regime_data_local(self, symbol: str) -> dict | None:
+        """Beräkna regim och indikatorvärden utan REST-beroende (för att undvika cirkulär import).
+
+        Hämtar candles via MarketDataFacade (WS-first, REST-fallback), beräknar ADX och EMA-Z,
+        och returnerar struktur som matchar REST-endpointens schema.
+        """
+        try:
+            data = get_market_data()
+            candles = await data.get_candles(symbol, timeframe="1m", limit=100)
+            if not candles or len(candles) < 20:
+                return None
+
+            highs = [float(c[3]) for c in candles if len(c) >= 4]
+            lows = [float(c[4]) for c in candles if len(c) >= 5]
+            closes = [float(c[2]) for c in candles if len(c) >= 3]
+            if len(highs) < 20 or len(lows) < 20 or len(closes) < 20:
+                return None
+
+            cfg = {
+                "ADX_PERIOD": 14,
+                "ADX_HIGH": 30,
+                "ADX_LOW": 15,
+                "SLOPE_Z_HIGH": 1.0,
+                "SLOPE_Z_LOW": 0.5,
+            }
+            regime = detect_regime(highs, lows, closes, cfg)
+
+            # Beräkna indikatorvärden som REST brukar returnera
+            adx_vals = adx_series(highs, lows, closes, period=cfg["ADX_PERIOD"])
+            adx_value = float(adx_vals[-1]) if adx_vals else None
+            ez_vals = ema_z(closes, fast=3, slow=7, z_win=200)
+            ema_z_value = float(ez_vals[-1]) if ez_vals else None
+
+            return {
+                "symbol": symbol,
+                "regime": regime,
+                "adx_value": adx_value,
+                "ema_z_value": ema_z_value,
+            }
+        except Exception as e:
+            logger.error(f"❌ Fel vid lokal regim-beräkning för {symbol}: {e}")
+            return None
 
     async def stop_all_enhanced_trading(self):
         """Stoppa all enhanced auto-trading"""

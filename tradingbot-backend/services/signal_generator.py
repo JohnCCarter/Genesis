@@ -325,33 +325,17 @@ class SignalGeneratorService:
     async def _get_current_price(self, symbol: str) -> float | None:
         """Hämta aktuellt pris för symbol (WS‑first, REST fallback)."""
         try:
-            # WS‑first: försök hämta ticker från WS‑cache
-            try:
-                from services.ws_first_data_service import get_ws_first_data_service
+            # WS‑first via central MarketDataFacade (med REST fallback internt)
+            ticker = await self.data_service.get_ticker(symbol)
+            if isinstance(ticker, dict):
+                last = ticker.get("last_price")
+                if last is not None:
+                    return float(last)
 
-                ws = get_ws_first_data_service()
-                try:
-                    await ws.initialize()
-                except Exception:
-                    pass
-
-                ticker = await ws.get_ticker(symbol)
-                if isinstance(ticker, dict):
-                    last = ticker.get("last_price")
-                    if last is not None:
-                        return float(last)
-
-                # Fallback via WS‑first candles
-                candles = await ws.get_candles(symbol, "1m", limit=1)
-                if candles and len(candles) > 0:
-                    # Bitfinex candle format: [MTS, OPEN, CLOSE, HIGH, LOW, VOLUME]
-                    return float(candles[0][2])
-            except Exception:
-                pass
-
-            # Sista fallback: REST data service (kan vara långsammare)
+            # Fallback via candles genom samma facade
             candles = await self.data_service.get_candles(symbol, "1m", limit=1)
             if candles and len(candles) > 0:
+                # Bitfinex candle format: [MTS, OPEN, CLOSE, HIGH, LOW, VOLUME]
                 return float(candles[0][2])
             return None
 

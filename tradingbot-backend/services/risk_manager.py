@@ -81,6 +81,14 @@ class RiskManager:
                 # Behåll bakåtkompatibel nyckel + ny namngiven nyckel
                 metrics_store["circuit_breaker_active"] = 1
                 metrics_store["trading_circuit_breaker_active"] = 1
+                # Reason counter
+                reason = "error_spike"
+                counters = metrics_store.get("counters", {})
+                labeled = counters.get("trading_cb_reasons_total", {})
+                key = '{"reason":"' + reason + '"}'
+                labeled[key] = int(labeled.get(key, 0)) + 1
+                counters["trading_cb_reasons_total"] = labeled
+                metrics_store["counters"] = counters
             except Exception:
                 pass
             if self.settings.CB_NOTIFY:
@@ -110,6 +118,13 @@ class RiskManager:
         self._prune_errors(now)
         opened_at = _CB_OPENED_AT.isoformat() if _CB_OPENED_AT else None
         ps = self.policy.status()
+        ttl_ms = 0
+        try:
+            if self.trading_window.is_paused() and _CB_OPENED_AT is not None:
+                # TTL är "hur länge sedan öppning" i ms; vi rapporterar elapsed
+                ttl_ms = int((now - _CB_OPENED_AT).total_seconds() * 1000)
+        except Exception:
+            ttl_ms = 0
         return {
             "open": ps.get("open"),
             "paused": ps.get("paused"),
@@ -122,6 +137,7 @@ class RiskManager:
                 "window_seconds": int(self.settings.CB_ERROR_WINDOW_SECONDS),
                 "max_errors_per_window": int(self.settings.CB_MAX_ERRORS_PER_WINDOW),
                 "opened_at": opened_at,
+                "elapsed_ms": ttl_ms,
                 "notify": bool(getattr(self.settings, "CB_NOTIFY", True)),
             },
         }

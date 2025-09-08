@@ -7,12 +7,14 @@ Token-bucket baserad rate limiting med separata limits för olika endpoint-typer
 import asyncio
 import contextlib
 import random
+import re
 import time
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Awaitable, Callable, ParamSpec, TypeVar
 
 from config.settings import Settings
+from services.metrics import _labels_to_str, metrics_store
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -145,6 +147,28 @@ class AdvancedRateLimiter:
             "auth/r/funding": EndpointType.PRIVATE_MARGIN,
         }
 
+        # Valfri mönsterbaserad mapping via settings (format: "regex=>TYPE;regex=>TYPE")
+        patterns = getattr(self.settings, "RATE_LIMIT_PATTERNS", None)
+        self._pattern_map: list[tuple[re.Pattern[str], EndpointType]] = []
+        if patterns:
+            for mapping_part in str(patterns).split(";"):
+                mapping_part_stripped = mapping_part.strip()
+                if not mapping_part_stripped or "=>" not in mapping_part_stripped:
+                    continue
+                rx, typ = [x.strip() for x in mapping_part_stripped.split("=>", 1)]
+                try:
+                    et = EndpointType[typ]
+                except Exception:
+                    # tillåt även värden (PUBLIC_MARKET...) direkt
+                    try:
+                        et = EndpointType(typ.lower())  # type: ignore[arg-type]
+                    except Exception:
+                        continue
+                try:
+                    self._pattern_map.append((re.compile(rx), et))
+                except re.error:
+                    continue
+
     def _classify_endpoint(self, endpoint: str) -> EndpointType:
         """Klassificera endpoint till typ"""
         # Exact match först
@@ -152,6 +176,12 @@ class AdvancedRateLimiter:
             return self._endpoint_mapping[endpoint]
 
         # Pattern matching
+        for rx, et in getattr(self, "_pattern_map", []) or []:
+            try:
+                if rx.search(endpoint):
+                    return et
+            except Exception:
+                continue
         if endpoint.startswith("auth/w/"):
             return EndpointType.PRIVATE_TRADING
         elif endpoint.startswith("auth/r/info/margin"):
@@ -232,6 +262,20 @@ class AdvancedRateLimiter:
             }
         return stats
 
+    def export_metrics(self) -> None:
+        """Skicka limiter-stats till metrics_store för Prometheus-export."""
+        stats = self.get_stats()
+        counters: dict[str, dict[str, float]] = metrics_store.get("counters", {}) or {}
+        tokens_map = counters.setdefault("limiter_bucket_tokens", {})
+        util_map = counters.setdefault("limiter_bucket_utilization_percent", {})
+        for et, s in stats.items():
+            labels = _labels_to_str({"endpoint_type": str(et)})
+            tokens_map[labels] = float(s.get("tokens_available", 0.0))
+            util_map[labels] = float(s.get("utilization_percent", 0.0))
+        counters["limiter_bucket_tokens"] = tokens_map
+        counters["limiter_bucket_utilization_percent"] = util_map
+        metrics_store["counters"] = counters
+
     def force_refill(self) -> None:
         """Tvinga påfyllning av alla buckets (för testing)"""
         for bucket in self._buckets.values():
@@ -287,7 +331,11 @@ class AdvancedRateLimiter:
 
     def note_failure(self, endpoint: str, status_code: int, retry_after: str | None = None) -> float:
         key = self._cb_key(endpoint)
-        st = self._cb_state.get(key) or {"fail_count": 0, "open_until": 0.0, "last_failure": 0.0}
+        st = self._cb_state.get(key) or {
+            "fail_count": 0,
+            "open_until": 0.0,
+            "last_failure": 0.0,
+        }
         st["fail_count"] = int(st.get("fail_count", 0)) + 1
         st["last_failure"] = time.time()
         # Cooldown baserat på Retry-After eller exponentiell backoff
@@ -304,7 +352,12 @@ class AdvancedRateLimiter:
 
         # Namngiven loggning för transport/circuit breaker (REST-transportnivå)
         try:
-            logger.warning("🚦 TransportCircuitBreaker: %s status=%s cooldown=%.1fs", endpoint, status_code, cooldown)
+            logger.warning(
+                "🚦 TransportCircuitBreaker: %s status=%s cooldown=%.1fs",
+                endpoint,
+                status_code,
+                cooldown,
+            )
         except Exception:
             pass
         return cooldown
@@ -327,7 +380,9 @@ R = TypeVar("R")
 
 
 # Hjälp-dekoratorer/context managers för enkel användning
-def limit_endpoint(endpoint: str) -> Callable[[Callable[P, Awaitable[R]]], Callable[P, Awaitable[R]]]:
+def limit_endpoint(
+    endpoint: str,
+) -> Callable[[Callable[P, Awaitable[R]]], Callable[P, Awaitable[R]]]:
     """Async-dekorator som begränsar concurrency och respekterar token bucket för endpoint."""
 
     def _decorator(func: Callable[P, Awaitable[R]]) -> Callable[P, Awaitable[R]]:

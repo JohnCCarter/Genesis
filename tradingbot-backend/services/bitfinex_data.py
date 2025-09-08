@@ -451,7 +451,9 @@ class BitfinexDataService:
                                     retry_after = response.headers.get("Retry-After")
                                     if hasattr(self.rate_limiter, "note_failure"):
                                         cooldown = self.rate_limiter.note_failure(
-                                            "ticker", int(response.status_code), retry_after
+                                            "ticker",
+                                            int(response.status_code),
+                                            retry_after,
                                         )
                                         logger.warning(f"CB öppnad för ticker i {cooldown:.1f}s")
                                     # Toggle transport CB metric on failure
@@ -857,7 +859,10 @@ class BitfinexDataService:
             from utils.candles import parse_candles_to_strategy_data as _parse
 
             data = _parse(candles)
-            logger.debug("Parsade %s datapunkter för strategiutvärdering", len(data.get("closes", [])))
+            logger.debug(
+                "Parsade %s datapunkter för strategiutvärdering",
+                len(data.get("closes", [])),
+            )
             return data
         except Exception:
             # Fallback (bör inte inträffa)

@@ -10,6 +10,7 @@ from typing import Any
 from config.settings import Settings
 from services.trade_counter import TradeCounterService
 from services.trading_window import TradingWindowService
+from services.metrics import inc, inc_labeled
 
 
 @dataclass
@@ -28,8 +29,19 @@ class TradeConstraintsService:
     def check(self, *, symbol: str | None = None) -> ConstraintResult:
         # Global paus eller stängt fönster
         if self.trading_window.is_paused():
+            try:
+                inc_labeled("trade_constraints_blocked_total", {"reason": "trading_paused"})
+            except Exception:
+                pass
             return ConstraintResult(False, "trading_paused")
         if not self.trading_window.is_open():
+            try:
+                inc_labeled(
+                    "trade_constraints_blocked_total",
+                    {"reason": "outside_trading_window"},
+                )
+            except Exception:
+                pass
             return ConstraintResult(False, "outside_trading_window")
 
         # Per-symbol daglig limit
@@ -39,6 +51,13 @@ class TradeConstraintsService:
             if symbol and limit_sym > 0:
                 per_symbol = self.trade_counter.stats().get("per_symbol", {})
                 if per_symbol.get(symbol.upper(), 0) >= limit_sym:
+                    try:
+                        inc_labeled(
+                            "trade_constraints_blocked_total",
+                            {"reason": "symbol_daily_trade_limit_reached"},
+                        )
+                    except Exception:
+                        pass
                     return ConstraintResult(False, "symbol_daily_trade_limit_reached")
         except Exception:
             pass
@@ -47,11 +66,33 @@ class TradeConstraintsService:
         if not self.trade_counter.can_execute():
             stats = self.trade_counter.stats()
             if stats.get("count", 0) >= stats.get("max_per_day", 0):
+                try:
+                    inc_labeled(
+                        "trade_constraints_blocked_total",
+                        {"reason": "daily_trade_limit_reached"},
+                    )
+                except Exception:
+                    pass
                 return ConstraintResult(False, "daily_trade_limit_reached", stats)
             if stats.get("cooldown_active", False):
+                try:
+                    inc_labeled(
+                        "trade_constraints_blocked_total",
+                        {"reason": "trade_cooldown_active"},
+                    )
+                except Exception:
+                    pass
                 return ConstraintResult(False, "trade_cooldown_active", stats)
+            try:
+                inc_labeled("trade_constraints_blocked_total", {"reason": "trade_blocked"})
+            except Exception:
+                pass
             return ConstraintResult(False, "trade_blocked", stats)
 
+        try:
+            inc("trade_constraints_allowed_total")
+        except Exception:
+            pass
         return ConstraintResult(True)
 
     def record_trade(self, *, symbol: str | None = None) -> None:

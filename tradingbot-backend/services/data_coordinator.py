@@ -103,7 +103,10 @@ class DataCoordinatorService:
 
                 if data is not None:
                     # Spara i cache
-                    self._data_cache[cache_key] = {"data": data, "timestamp": datetime.now()}
+                    self._data_cache[cache_key] = {
+                        "data": data,
+                        "timestamp": datetime.now(),
+                    }
                     logger.debug(f"Cache-miss, sparade data för {cache_key}")
 
                 return data
@@ -177,7 +180,11 @@ class DataCoordinatorService:
             tasks = []
             for symbol in symbols:
                 task = self.get_cached_data(
-                    "candles", symbol, data_service.get_candles, timeframe=timeframe, limit=limit
+                    "candles",
+                    symbol,
+                    data_service.get_candles,
+                    timeframe=timeframe,
+                    limit=limit,
                 )
                 tasks.append(task)
 

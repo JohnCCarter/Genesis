@@ -21,7 +21,9 @@ def load_token() -> str | None:
     env_path = Path(".env")
     if env_path.exists():
         try:
-            for line in env_path.read_text(encoding="utf-8", errors="ignore").splitlines():
+            for line in env_path.read_text(
+                encoding="utf-8", errors="ignore"
+            ).splitlines():
                 line = line.strip()
                 if not line or line.startswith("#"):
                     continue
@@ -75,7 +77,9 @@ def list_jobs(owner: str, repo: str, run_id: int, token: str | None) -> dict[str
     return http_get_json(url, token)
 
 
-def download_logs(owner: str, repo: str, run_id: int, out_dir: Path, token: str | None) -> Path:
+def download_logs(
+    owner: str, repo: str, run_id: int, out_dir: Path, token: str | None
+) -> Path:
     out_dir.mkdir(parents=True, exist_ok=True)
     url = f"{GITHUB_API}/repos/{owner}/{repo}/actions/runs/{run_id}/logs"
     # Accept */* to avoid 415 for binary stream
@@ -87,7 +91,9 @@ def download_logs(owner: str, repo: str, run_id: int, out_dir: Path, token: str 
     return zip_path
 
 
-def download_job_logs(owner: str, repo: str, job_id: int, token: str | None) -> list[str]:
+def download_job_logs(
+    owner: str, repo: str, job_id: int, token: str | None
+) -> list[str]:
     url = f"{GITHUB_API}/repos/{owner}/{repo}/actions/jobs/{job_id}/logs"
     blob = http_get(url, token, accept="*/*")
     out_lines: list[str] = []
@@ -132,7 +138,9 @@ def main() -> None:
         print("No runs found.")
         return
 
-    print(f"Latest {len(items)} runs for {args.owner}/{args.repo} (branch={args.branch or '-'}):")
+    print(
+        f"Latest {len(items)} runs for {args.owner}/{args.repo} (branch={args.branch or '-'}):"
+    )
     for i, r in enumerate(items, 1):
         print(
             f"{i}. id={r.get('id')} name={r.get('name')} status={r.get('status')} "

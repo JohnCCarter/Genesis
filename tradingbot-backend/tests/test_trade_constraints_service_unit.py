@@ -47,9 +47,15 @@ def test_trade_constraints_passes_and_records(monkeypatch):
 def test_trade_constraints_limits(monkeypatch):
     svc = TradeConstraintsService(Settings())
     monkeypatch.setattr(
-        svc.trading_window, "get_limits", lambda: {"max_trades_per_day": 3, "trade_cooldown_seconds": 10}
+        svc.trading_window,
+        "get_limits",
+        lambda: {"max_trades_per_day": 3, "trade_cooldown_seconds": 10},
     )
-    monkeypatch.setattr(svc.trade_counter, "stats", lambda: {"count": 1, "max_per_day": 3, "cooldown_seconds": 10})
+    monkeypatch.setattr(
+        svc.trade_counter,
+        "stats",
+        lambda: {"count": 1, "max_per_day": 3, "cooldown_seconds": 10},
+    )
     lim = svc.limits()
     assert lim["max_trades_per_day"] == 3
     st = svc.status()

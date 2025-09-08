@@ -1542,7 +1542,10 @@ class BitfinexWebSocketService:
                 if not hasattr(self, "funding_rates"):
                     self.funding_rates = {}
 
-                self.funding_rates[symbol] = {"rates": rates_data, "timestamp": time.time()}
+                self.funding_rates[symbol] = {
+                    "rates": rates_data,
+                    "timestamp": time.time(),
+                }
 
                 logger.debug("📈 Funding rates uppdaterad: %s = %s", symbol, rates_data)
         except Exception as e:

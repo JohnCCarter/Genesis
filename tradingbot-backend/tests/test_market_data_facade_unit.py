@@ -21,7 +21,12 @@ class _StubWSFirst:
         return {"symbol": symbol, "last_price": 123.45}
 
     async def get_candles(
-        self, symbol: str, timeframe: str = "1m", limit: int = 5, *, force_fresh: bool = False
+        self,
+        symbol: str,
+        timeframe: str = "1m",
+        limit: int = 5,
+        *,
+        force_fresh: bool = False,
     ):  # noqa: ARG002
         # Returnera minimalt giltig bitfinex-candle: [MTS, OPEN, CLOSE, HIGH, LOW, VOLUME]
         base = 100.0

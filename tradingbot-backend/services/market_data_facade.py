@@ -4,9 +4,22 @@ Market Data Facade - WS-first med REST fallback och gemensam cache-access.
 
 from __future__ import annotations
 
-from typing import Any, Tuple
+from typing import Any, Tuple, Protocol
 
 from services.ws_first_data_service import WSFirstDataService, get_ws_first_data_service
+
+
+class IMarketDataProvider(Protocol):
+    async def get_ticker(self, symbol: str, *, force_fresh: bool = False) -> dict[str, Any] | None: ...
+    async def get_candles(
+        self,
+        symbol: str,
+        timeframe: str = "1m",
+        limit: int = 100,
+        *,
+        force_fresh: bool = False,
+    ) -> list | None: ...
+    def get_indicator_snapshot(self, symbol: str, timeframe: str) -> dict | None: ...
 
 
 class MarketDataFacade:
@@ -17,7 +30,12 @@ class MarketDataFacade:
         return await self.ws_first.get_ticker(symbol, force_fresh=force_fresh)
 
     async def get_candles(
-        self, symbol: str, timeframe: str = "1m", limit: int = 100, *, force_fresh: bool = False
+        self,
+        symbol: str,
+        timeframe: str = "1m",
+        limit: int = 100,
+        *,
+        force_fresh: bool = False,
     ) -> list | None:
         return await self.ws_first.get_candles(symbol, timeframe=timeframe, limit=limit, force_fresh=force_fresh)
 
@@ -48,6 +66,13 @@ class MarketDataFacade:
             return {"closes": [], "highs": [], "lows": []}
 
     def stats(self) -> dict[str, Any]:
+        try:
+            # Exportera limiterstats innan hämtning (best effort)
+            from utils.advanced_rate_limiter import get_advanced_rate_limiter
+
+            get_advanced_rate_limiter().export_metrics()
+        except Exception:
+            pass
         return self.ws_first.get_stats()
 
 
@@ -61,7 +86,7 @@ def get_market_data() -> MarketDataFacade:
         from config.settings import Settings
 
         settings = Settings()
-        ws_connect_on_start = getattr(settings, 'WS_CONNECT_ON_START', True)
+        ws_connect_on_start = getattr(settings, "WS_CONNECT_ON_START", True)
 
         if not ws_connect_on_start:
             # Skapa en mock WSFirstDataService som inte ansluter till WebSocket

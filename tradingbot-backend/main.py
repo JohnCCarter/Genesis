@@ -15,7 +15,10 @@ import uvicorn
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.openapi.docs import get_swagger_ui_html, get_swagger_ui_oauth2_redirect_html
+from fastapi.openapi.docs import (
+    get_swagger_ui_html,
+    get_swagger_ui_oauth2_redirect_html,
+)
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -33,6 +36,7 @@ except Exception:
 from rest.routes import router as rest_router
 from services.bitfinex_websocket import bitfinex_ws
 from services.metrics import observe_latency, render_prometheus_text
+from services.metrics import get_metrics_summary
 from services.runtime_mode import get_validation_on_start, get_ws_connect_on_start
 from services.signal_service import signal_service
 from services.trading_service import trading_service
@@ -377,11 +381,36 @@ async def metrics(request: Request) -> Response:
             status_code = 401 if (basic_user and basic_pass) else 403
             return Response(status_code=status_code)
 
+    # Uppdatera dynamiska metrics (best effort)
+    try:
+        from utils.advanced_rate_limiter import get_advanced_rate_limiter
+        from services.market_data_facade import get_market_data
+
+        # Exportera limiter-stats
+        get_advanced_rate_limiter().export_metrics()
+        # Pinga market data stats (kan uppdatera cache/metrics)
+        _ = get_market_data().stats()
+    except Exception:
+        pass
+
     txt = render_prometheus_text()
     return Response(
         content=txt,
         media_type="text/plain; version=0.0.4",
     )
+
+
+@app.get("/metrics/summary")
+async def metrics_summary(_: Request) -> dict:
+    """JSON-sammanfattning av nyckelmetrik (latency, errors) för snabb hälsokontroll."""
+    try:
+        # Uppdatera limiter-stats innan summering
+        from utils.advanced_rate_limiter import get_advanced_rate_limiter
+
+        get_advanced_rate_limiter().export_metrics()
+    except Exception:
+        pass
+    return get_metrics_summary()
 
 
 # Förbättrad ASGI-middleware för latens och prestanda-monitoring

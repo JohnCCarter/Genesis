@@ -142,7 +142,10 @@ class CandleCache:
         with closing(sqlite3.connect(self.db_path)) as conn:
             cur = conn.cursor()
             if timeframe:
-                cur.execute("DELETE FROM candles WHERE symbol = ? AND timeframe = ?", (symbol, timeframe))
+                cur.execute(
+                    "DELETE FROM candles WHERE symbol = ? AND timeframe = ?",
+                    (symbol, timeframe),
+                )
             else:
                 cur.execute("DELETE FROM candles WHERE symbol = ?", (symbol,))
             deleted_count = cur.rowcount

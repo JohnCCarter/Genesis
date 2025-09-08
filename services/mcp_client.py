@@ -38,7 +38,9 @@ class MCPClient:
 
     def __init__(self):
         self.settings = Settings()
-        self.base_url = "https://kxibqgvpdfmklvwhmcry.supabase.co/functions/v1/mcp_server"
+        self.base_url = (
+            "https://kxibqgvpdfmklvwhmcry.supabase.co/functions/v1/mcp_server"
+        )
         self.client_info = {"name": "Genesis-TradingBot", "version": "1.0.0"}
         self.session_id: str | None = None
         self.initialized = False
@@ -124,7 +126,9 @@ class MCPClient:
             logger.error(f"❌ List tools fel: {e}")
             return []
 
-    async def call_tool(self, tool_name: str, arguments: dict[str, Any]) -> dict[str, Any] | None:
+    async def call_tool(
+        self, tool_name: str, arguments: dict[str, Any]
+    ) -> dict[str, Any] | None:
         """Anropa ett MCP-tool"""
         if not self.initialized:
             await self.initialize()
@@ -154,7 +158,9 @@ class MCPClient:
         """Gör HTTP-request till MCP-servern"""
         try:
             response = await self.http_client.post(
-                self.base_url, json=request, headers={"Content-Type": "application/json"}
+                self.base_url,
+                json=request,
+                headers={"Content-Type": "application/json"},
             )
 
             if response.status_code == 200:
@@ -192,7 +198,9 @@ class GenesisMCPTools:
             logger.error(f"❌ get_trading_status fel: {e}")
             return {"status": "error", "error": str(e)}
 
-    async def execute_trade(self, symbol: str, side: str, amount: float) -> dict[str, Any]:
+    async def execute_trade(
+        self, symbol: str, side: str, amount: float
+    ) -> dict[str, Any]:
         """Exekvera en trade"""
         try:
             arguments = {
@@ -212,7 +220,9 @@ class GenesisMCPTools:
         """Hämta prestanda-metrics"""
         try:
             arguments = {"timeframe": timeframe}
-            result = await self.mcp_client.call_tool("get_performance_metrics", arguments)
+            result = await self.mcp_client.call_tool(
+                "get_performance_metrics", arguments
+            )
             return result or {"metrics": {}, "error": "Tool not available"}
         except Exception as e:
             logger.error(f"❌ get_performance_metrics fel: {e}")
@@ -224,7 +234,9 @@ class GenesisMCPTools:
         """Uppdatera strategi-parametrar"""
         try:
             arguments = {"strategy_name": strategy_name, "parameters": params}
-            result = await self.mcp_client.call_tool("update_strategy_parameters", arguments)
+            result = await self.mcp_client.call_tool(
+                "update_strategy_parameters", arguments
+            )
             return result or {"status": "failed", "error": "Tool not available"}
         except Exception as e:
             logger.error(f"❌ update_strategy_parameters fel: {e}")

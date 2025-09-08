@@ -95,7 +95,12 @@ class TradingService:
             return result
         except Exception as e:
             logger.error(f"❌ Fel vid standard trade för {symbol}: {e}")
-            return {"success": False, "error": str(e), "symbol": symbol, "mode": "standard"}
+            return {
+                "success": False,
+                "error": str(e),
+                "symbol": symbol,
+                "mode": "standard",
+            }
 
     async def _execute_enhanced_trade(self, symbol: str, signal: SignalResponse) -> dict[str, Any]:
         """Enhanced trading med position sizing"""
@@ -115,7 +120,12 @@ class TradingService:
             return result
         except Exception as e:
             logger.error(f"❌ Fel vid enhanced trade för {symbol}: {e}")
-            return {"success": False, "error": str(e), "symbol": symbol, "mode": "enhanced"}
+            return {
+                "success": False,
+                "error": str(e),
+                "symbol": symbol,
+                "mode": "enhanced",
+            }
 
     async def _execute_realtime_trade(self, symbol: str, signal: SignalResponse) -> dict[str, Any]:
         """Realtids-trading via WebSocket (om tillgängligt)"""
@@ -135,7 +145,12 @@ class TradingService:
             return result
         except Exception as e:
             logger.error(f"❌ Fel vid realtids-trade för {symbol}: {e}")
-            return {"success": False, "error": str(e), "symbol": symbol, "mode": "realtime"}
+            return {
+                "success": False,
+                "error": str(e),
+                "symbol": symbol,
+                "mode": "realtime",
+            }
 
     def _should_allow_trade(self, symbol: str, mode: str) -> bool:
         """Kontrollera om trade ska tillåtas baserat på frekvens"""
