@@ -36,7 +36,7 @@ jobs:
 
       - name: Security (bandit)
         run: |
-          bandit -q -r . || true
+          bandit -q -r . -c bandit.yaml || true
 
       - name: Security (pip-audit)
         run: |
@@ -45,6 +45,9 @@ jobs:
       - name: Run tests
         env:
           AUTH_REQUIRED: "False"
+          WS_CONNECT_ON_START: "0"
+          BITFINEX_API_KEY: ""
+          BITFINEX_API_SECRET: ""
         run: pytest -q
 
   frontend:
