@@ -52,8 +52,14 @@ async def connect(sid, environ):
         logger.info(f"HTTP_ORIGIN: {environ.get('HTTP_ORIGIN', 'okänd')}")
         logger.info(f"PATH_INFO: {environ.get('PATH_INFO', 'okänd')}")
 
-        # Respektera AUTH_REQUIRED för dev
-        if Settings().AUTH_REQUIRED and not authenticate_socket_io(environ):
+        # Respektera AUTH_REQUIRED med runtime-override
+        try:
+            from services.runtime_config import get_bool as _rc_get_bool
+
+            auth_required = bool(_rc_get_bool("AUTH_REQUIRED", Settings().AUTH_REQUIRED))
+        except Exception:
+            auth_required = bool(Settings().AUTH_REQUIRED)
+        if auth_required and not authenticate_socket_io(environ):
             logger.warning(f"❌ Socket.IO autentisering misslyckades för sid: {sid}")
             raise ConnectionRefusedError("unauthorized")
 

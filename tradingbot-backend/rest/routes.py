@@ -480,9 +480,17 @@ async def prob_trade(req: ProbTradeRequest, _bypass_auth: bool = Depends(securit
 
 
 def require_auth(credentials: HTTPAuthorizationCredentials | None = Depends(security)):
-    """Kräv JWT endast när AUTH_REQUIRED=True. Annars släpp igenom utan header."""
-    current = Settings()
-    if current.AUTH_REQUIRED is False:
+    """Kräv JWT endast när AUTH_REQUIRED=True. Annars släpp igenom utan header.
+
+    Läser runtime‑override först (POST /api/v2/runtime/config), faller tillbaka till Settings().
+    """
+    try:
+        from services.runtime_config import get_bool as _rc_get_bool  # lazy import
+
+        auth_required = bool(_rc_get_bool("AUTH_REQUIRED", Settings().AUTH_REQUIRED))
+    except Exception:
+        auth_required = bool(Settings().AUTH_REQUIRED)
+    if not auth_required:
         return True
     if not credentials or not credentials.credentials:
         raise HTTPException(status_code=403, detail="Not authenticated")
@@ -2073,6 +2081,13 @@ async def ws_subscribe(req: WSSubscribeRequest, _: bool = Depends(require_auth))
             sub_key = f"trades|{sym}"
         elif chan == "candles":
             tf = req.timeframe or "1m"
+            # Throttla candles-subs marginellt för att undvika burst‑stängningar
+            try:
+                import asyncio as _a
+
+                await _a.sleep(0.25)
+            except Exception:
+                pass
             await bitfinex_ws.subscribe_candles(sym, tf, bitfinex_ws._handle_ticker_with_strategy)
             sub_key = f"candles|trade:{tf}:{sym}"
         else:

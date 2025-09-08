@@ -6,6 +6,8 @@ Socket.IO. Hanterar startup, shutdown och routing till olika moduler.
 """
 
 import importlib
+import sys as _sys
+import asyncio as _asyncio
 import os
 from contextlib import asynccontextmanager
 from datetime import datetime
@@ -46,6 +48,23 @@ from services.trading_service import trading_service
 
 logger = get_logger(__name__)
 
+# Windows event loop policy: avoid Proactor issues with websockets
+try:
+    if _sys.platform.startswith("win"):
+        _asyncio.set_event_loop_policy(_asyncio.WindowsSelectorEventLoopPolicy())
+except Exception:
+    pass
+
+# Read env toggle for WS_CONNECT_ON_START into runtime flags
+try:
+    from services.runtime_mode import set_ws_connect_on_start as _set_ws_connect
+
+    _env_ws = os.environ.get("WS_CONNECT_ON_START")
+    if _env_ws is not None:
+        _set_ws_connect(str(_env_ws).strip().lower() not in ("0", "false", "no"))
+except Exception:
+    pass
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -59,27 +78,34 @@ async def lifespan(app: FastAPI):
             import time as _t
 
             _t0 = _t.perf_counter()
-            await bitfinex_ws.connect()
-            _t1 = _t.perf_counter()
-            logger.info("✅ WebSocket-anslutning etablerad (%.0f ms)", (_t1 - _t0) * 1000)
-
-            # Koppla WebSocket service till enhetliga services
-            signal_service.set_websocket_service(bitfinex_ws)
-            trading_service.set_websocket_service(bitfinex_ws)
-            logger.info("🔗 Enhetliga services kopplade till WebSocket")
-
-            # WS‑auth direkt om nycklar finns så att privata flöden (t.ex. margin miu) fungerar
             try:
-                _ta = _t.perf_counter()
-                await bitfinex_ws.ensure_authenticated()
-                _tb = _t.perf_counter()
-                logger.info("🔐 WS‑auth klar (%.0f ms)", (_tb - _ta) * 1000)
+                await _asyncio.wait_for(bitfinex_ws.connect(), timeout=5.0)
+                _t1 = _t.perf_counter()
+                logger.info("✅ WebSocket-anslutning etablerad (%.0f ms)", (_t1 - _t0) * 1000)
+
+                # Koppla WebSocket service till enhetliga services
+                signal_service.set_websocket_service(bitfinex_ws)
+                trading_service.set_websocket_service(bitfinex_ws)
+                logger.info("🔗 Enhetliga services kopplade till WebSocket")
+
+                # WS‑auth direkt om nycklar finns så att privata flöden fungerar
+                try:
+                    _ta = _t.perf_counter()
+                    await _asyncio.wait_for(bitfinex_ws.ensure_authenticated(), timeout=3.0)
+                    _tb = _t.perf_counter()
+                    logger.info("🔐 WS‑auth klar (%.0f ms)", (_tb - _ta) * 1000)
+                except TimeoutError:
+                    logger.warning("⚠️ WS‑auth timeout – fortsätter utan auth vid startup")
+                except Exception as e:
+                    logger.warning(f"⚠️ WS‑auth misslyckades: {e}")
+            except TimeoutError:
+                logger.warning("⚠️ WS‑connect timeout – hoppar över WS vid startup")
             except Exception as e:
-                logger.warning(f"⚠️ WS‑auth misslyckades: {e}")
+                logger.warning(f"⚠️ WebSocket-anslutning misslyckades: {e}")
         else:
             logger.info("WS‑connect vid start är AV. Kan startas via WS‑test sidan eller API.")
     except Exception as e:
-        logger.warning(f"⚠️ WebSocket-anslutning misslyckades: {e}")
+        logger.warning(f"⚠️ WebSocket-anslutning block misslyckades: {e}")
 
     # Scheduler avstängd för att undvika rate limiting och event loop problem
     logger.info("🚫 Scheduler avstängd för att undvika rate limiting")

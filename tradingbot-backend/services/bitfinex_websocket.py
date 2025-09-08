@@ -185,6 +185,9 @@ class BitfinexWebSocketService:
                         totals["book"] += 1
             except Exception:
                 pass
+            import time as _t
+
+            now = _t.time()
             return {
                 "pool_enabled": bool(self._pool_enabled),
                 "pool_max_sockets": int(self._pool_max_sockets),
@@ -195,6 +198,10 @@ class BitfinexWebSocketService:
                 "main": {
                     "connected": bool(self.is_connected),
                     "authenticated": bool(self.is_authenticated),
+                    "ping_interval_sec": float(getattr(self, "_ping_interval", 0.0) or 0.0),
+                    "hb_timeout_sec": float(getattr(self, "_hb_timeout", 0.0) or 0.0),
+                    "last_msg_ts": float(self._last_msg_ts or 0.0),
+                    "last_msg_age_sec": float((now - float(self._last_msg_ts)) if self._last_msg_ts else -1.0),
                 },
             }
         except Exception:
@@ -1020,6 +1027,16 @@ class BitfinexWebSocketService:
             logger.info("🕯️ Prenumererar på candles %s", ckey)
         except Exception as e:
             logger.error(f"❌ Candles-prenumeration misslyckades: {e}")
+            # Transient fel (t.ex. "no close frame received or sent") → logga men försök inte igen automatiskt
+            # för att undvika oändlig rekursion. Låt användaren starta om eller manuellt prenumerera.
+            try:
+                msg = str(e).lower()
+                if "no close frame" in msg or "websocket is closed" in msg:
+                    logger.warning(
+                        "⚠️ WS-anslutning instabil - candles-prenumeration pausad. Starta om för att återansluta."
+                    )
+            except Exception:
+                pass
 
     async def subscribe_book(
         self,
