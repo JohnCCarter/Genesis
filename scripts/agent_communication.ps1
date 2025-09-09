@@ -25,10 +25,27 @@ Param(
 
 $ErrorActionPreference = 'Stop'
 
-# Communication file paths
-$COMM_DIR = ".agent-communication"
-$MESSAGES_FILE = "$COMM_DIR\messages.json"
-$STATUS_FILE = "$COMM_DIR\status.json"
+# Communication file paths (absolute, based on repo root)
+$REPO_ROOT = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).Path
+$COMM_DIR = Join-Path $REPO_ROOT ".agent-communication"
+$MESSAGES_FILE = Join-Path $COMM_DIR "messages.json"
+$STATUS_FILE = Join-Path $COMM_DIR "status.json"
+
+function Read-JsonSafe {
+    param([string]$Path)
+    if (-not (Test-Path -LiteralPath $Path)) { return $null }
+    $raw = Get-Content -LiteralPath $Path -Raw -ErrorAction SilentlyContinue
+    if ($null -eq $raw) { return $null }
+    $raw = $raw -replace "`0", ''
+    if ([string]::IsNullOrWhiteSpace($raw)) { return $null }
+    return ($raw | ConvertFrom-Json)
+}
+
+function Write-JsonSafe {
+    param([string]$Path, $Object)
+    $json = $Object | ConvertTo-Json -Depth 5
+    Set-Content -LiteralPath $Path -Value $json -Encoding UTF8
+}
 
 function Acquire-CommLock {
     param([int]$TimeoutMs = 5000)
@@ -64,7 +81,7 @@ function Initialize-Communication {
     }
     
     if (-not (Test-Path $MESSAGES_FILE)) {
-        @() | ConvertTo-Json -Depth 3 | Out-File -FilePath $MESSAGES_FILE -Encoding UTF8
+        Write-JsonSafe -Path $MESSAGES_FILE -Object @()
     }
     
     if (-not (Test-Path $STATUS_FILE)) {
@@ -79,7 +96,7 @@ function Initialize-Communication {
                 "last_seen"    = (Get-Date).ToUniversalTime().ToString('o')
                 "current_task" = ""
             }
-        } | ConvertTo-Json -Depth 3 | Out-File -FilePath $STATUS_FILE -Encoding UTF8
+        } | Write-JsonSafe -Path $STATUS_FILE
     }
 }
 
@@ -96,7 +113,7 @@ function Send-Message {
     
     Acquire-CommLock
     try {
-        $messages = Get-Content $MESSAGES_FILE -Raw | ConvertFrom-Json
+        $messages = Read-JsonSafe -Path $MESSAGES_FILE
         if (-not $messages) { $messages = @() } else { $messages = @($messages) }
     
         $newMessage = @{
@@ -113,11 +130,9 @@ function Send-Message {
         $messages += $newMessage
     
     # Keep only last 50 messages
-        if ($messages.Count -gt 50) {
-            $messages = @($messages | Select-Object -Last 50)
-        }
+        if ($messages.Count -gt 50) { $messages = @($messages | Select-Object -Last 50) }
     
-        @($messages) | ConvertTo-Json -Depth 3 | Out-File -FilePath $MESSAGES_FILE -Encoding UTF8
+        Write-JsonSafe -Path $MESSAGES_FILE -Object @($messages)
     }
     finally {
         Release-CommLock
@@ -136,7 +151,7 @@ function Read-Messages {
 
     Acquire-CommLock
     try {
-        $messages = Get-Content $MESSAGES_FILE -Raw | ConvertFrom-Json
+        $messages = Read-JsonSafe -Path $MESSAGES_FILE
         if (-not $messages) { 
             Write-Host "No messages found" -ForegroundColor Yellow
             return 
@@ -175,7 +190,7 @@ function Read-Messages {
         }
         
         # Save updated messages
-        @($messages) | ConvertTo-Json -Depth 3 | Out-File -FilePath $MESSAGES_FILE -Encoding UTF8
+        Write-JsonSafe -Path $MESSAGES_FILE -Object @($messages)
     }
     finally {
         Release-CommLock
@@ -187,7 +202,7 @@ function Get-Status {
 
     Acquire-CommLock
     try {
-        $status = Get-Content $STATUS_FILE -Raw | ConvertFrom-Json
+        $status = Read-JsonSafe -Path $STATUS_FILE
         
         Write-Host "Agent Status:" -ForegroundColor Cyan
         Write-Host "=============" -ForegroundColor Cyan
@@ -251,7 +266,7 @@ function Update-Status {
     
     Acquire-CommLock
     try {
-        $statusData = Get-Content $STATUS_FILE -Raw | ConvertFrom-Json
+        $statusData = Read-JsonSafe -Path $STATUS_FILE
         
         if ($statusData.$Agent) {
             if ($Status) { $statusData.$Agent.status = $Status }
@@ -259,7 +274,7 @@ function Update-Status {
             if ($Task) { $statusData.$Agent.current_task = $Task }
         }
         
-        $statusData | ConvertTo-Json -Depth 3 | Out-File -FilePath $STATUS_FILE -Encoding UTF8
+        Write-JsonSafe -Path $STATUS_FILE -Object $statusData
     }
     finally {
         Release-CommLock

@@ -21,6 +21,15 @@ Agent messaging
   - Heartbeat/update: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/agent_communication.ps1 update-status -Agent "Codex" -Status busy -Task "..."`
   - Optional lock notifications: add `-Notify` flag to `scripts/agent_lock.ps1` to auto-message the other agent on lock/unlock.
 
+Notifications
+- Console notifications for new unread messages: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/agent_notification.ps1 check -Agent "Cursor"`
+- Background monitor (event-driven): `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/agent_notification.ps1 monitor -Agent "Cursor" -Watch -AutoReply -Toast -Sound -OnlyHigh`
+- Polling fallback: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/agent_notification.ps1 monitor -Agent "Cursor" -IntervalSeconds 15`
+
+Brainstorm threads
+- Use `context` starting with `brainstorm:` (e.g., `brainstorm:UI-state`) or prefix message with `/brainstorm` to log into `AGENT_THREADS.md`.
+- Enable logging: add `-LogThreads` to the monitor command (optional `-ThreadsFile 'AGENT_THREADS.md'`).
+
 Editing conventions
 - Prefer PowerShell on Windows. Quote paths with spaces/åäö using single quotes.
 - Do not reformat unrelated files; keep diffs surgical.
