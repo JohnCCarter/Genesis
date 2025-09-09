@@ -1,9 +1,10 @@
 Agent Plan and Coordination
 
 Status
-- Focus: AI Agent Communication System
+- Focus: AI Agent Collaboration on Experimental Branch
 - Owners: Cursor (backend core), Codex (frontend & config)
 - Communication: Direct messaging system implemented
+- Branch: Working on ai-agents-experimental (safe experimentation)
 
 Ground rules
 - Always lock files before editing (see `.cursorrules`).
@@ -16,6 +17,8 @@ Active tasks
 2) Add PowerShell lock helper (Done)
 3) Add `.gitignore` entry for `.agent-locks/` (Done)
 4) Add AI communication system (Done)
+5) Create experimental branch for safe AI collaboration (Done)
+6) Document branch strategy and workflow (Done)
 
 Communication system
 - Send: `.\scripts\agent_communication.ps1 send -Message "Hello" -To "Codex" -From "Cursor" -Priority "high" -Context "trading optimization"`
@@ -30,4 +33,9 @@ Lock usage examples
 
 Notes
 - If a lock is older than the TTL and clearly stale, unlock with `-Force` and leave a short note in the next commit message.
+
+Messaging examples
+- Send message: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/agent_communication.ps1 send -Message "Hello" -To "Codex" -From "Cursor"`
+- Read inbox: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/agent_communication.ps1 read -Agent "Codex"`
+- Heartbeat: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/agent_communication.ps1 update-status -Agent "Cursor" -Status available -Task "Idle"`
 - Use communication system for real-time coordination between agents.

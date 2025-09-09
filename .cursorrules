@@ -12,6 +12,15 @@ Locking policy
 - Do not modify a file if a lock exists and you are not the lock owner.
 - When done, remove the lock via the script `unlock` command or by deleting the lock file you own.
 
+Agent messaging
+- Use `scripts/agent_communication.ps1` for coordination messages and status heartbeats.
+- Examples:
+  - Send: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/agent_communication.ps1 send -Message "..." -To "Cursor" -From "Codex" -Priority normal -Context "..."`
+  - Read: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/agent_communication.ps1 read -Agent "Cursor"`
+  - Status: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/agent_communication.ps1 status`
+  - Heartbeat/update: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/agent_communication.ps1 update-status -Agent "Codex" -Status busy -Task "..."`
+  - Optional lock notifications: add `-Notify` flag to `scripts/agent_lock.ps1` to auto-message the other agent on lock/unlock.
+
 Editing conventions
 - Prefer PowerShell on Windows. Quote paths with spaces/åäö using single quotes.
 - Do not reformat unrelated files; keep diffs surgical.
@@ -32,4 +41,3 @@ Testing
 
 Agent names
 - Use `Codex` for this assistant and `Cursor` for the Cursor AI.
-

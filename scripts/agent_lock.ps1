@@ -9,7 +9,8 @@ Param(
     [string]$By,
     [string]$Reason,
     [int]$TTLMinutes = 240,
-    [switch]$Force
+    [switch]$Force,
+    [switch]$Notify
 )
 
 $ErrorActionPreference = 'Stop'
@@ -25,6 +26,24 @@ function Get-RepoRoot {
     # Resolve repo root as parent of this script (assumes script resides in scripts/)
     $root = Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')
     return $root.Path
+}
+
+function Notify-OtherAgent {
+    param(
+        [string]$Event,
+        [string]$TargetPath,
+        [string]$By,
+        [string]$Reason
+    )
+    if (-not $Notify) { return }
+    try {
+        $other = if ($By -eq 'Codex') { 'Cursor' } elseif ($By -eq 'Cursor') { 'Codex' } else { 'Cursor' }
+        $msg = "${Event}: ${TargetPath} (by ${By})" + ($(if ($Reason) { " Reason: ${Reason}" } else { '' }))
+        $comm = Join-Path $PSScriptRoot 'agent_communication.ps1'
+        if (Test-Path -LiteralPath $comm) {
+            & $comm send -Message $msg -To $other -From $By -Priority 'normal' -Context 'lock-notify' | Out-Null
+        }
+    } catch { }
 }
 
 function Sanitize([string]$p) {
@@ -82,6 +101,7 @@ switch ($Command) {
         }
         ($payload | ConvertTo-Json -Depth 3) | Set-Content -LiteralPath $lockFile -Encoding UTF8
         Write-Host "Locked: $Path (by $By)" -ForegroundColor Green
+        Notify-OtherAgent -Event 'LOCK' -TargetPath $Path -By $By -Reason $Reason
     }
 
     'unlock' {
@@ -105,6 +125,7 @@ switch ($Command) {
         if ($okToRemove) {
             Remove-Item -LiteralPath $lockFile -Force
             Write-Host "Unlocked: $Path (by $By)" -ForegroundColor Green
+            Notify-OtherAgent -Event 'UNLOCK' -TargetPath $Path -By $By -Reason $Reason
         }
     }
 
@@ -132,4 +153,3 @@ switch ($Command) {
         }
     }
 }
-

@@ -133,83 +133,111 @@ function Read-Messages {
     param([string]$Agent)
     
     Initialize-Communication
-    
-    $messages = Get-Content $MESSAGES_FILE | ConvertFrom-Json
-    if ($messages) { $messages = @($messages) }
-    if (-not $messages) { 
-        Write-Host "No messages found" -ForegroundColor Yellow
-        return 
-    }
-    
-    $unreadMessages = $messages | Where-Object { $_.to -eq $Agent -and -not $_.read }
-    
-    if ($unreadMessages.Count -eq 0) {
-        Write-Host "No unread messages for $Agent" -ForegroundColor Yellow
-        return
-    }
-    
-    Write-Host "Unread messages for ${Agent}:" -ForegroundColor Cyan
-    Write-Host "================================" -ForegroundColor Cyan
-    
-    foreach ($msg in $unreadMessages) {
-        $priorityColor = switch ($msg.priority) {
-            "high" { "Red" }
-            "normal" { "White" }
-            "low" { "Gray" }
-            default { "White" }
+
+    Acquire-CommLock
+    try {
+        $messages = Get-Content $MESSAGES_FILE -Raw | ConvertFrom-Json
+        if (-not $messages) { 
+            Write-Host "No messages found" -ForegroundColor Yellow
+            return 
+        }
+        $messages = @($messages)
+
+        $unreadMessages = $messages | Where-Object { $_.to -eq $Agent -and -not $_.read }
+        
+        if (-not $unreadMessages -or $unreadMessages.Count -eq 0) {
+            Write-Host "No unread messages for ${Agent}" -ForegroundColor Yellow
+            return
         }
         
-        Write-Host "[$($msg.timestamp)] From: $($msg.from)" -ForegroundColor $priorityColor
-        Write-Host "Priority: $($msg.priority)" -ForegroundColor $priorityColor
-        if ($msg.context) {
-            Write-Host "Context: $($msg.context)" -ForegroundColor Gray
-        }
-        Write-Host "Message: $($msg.message)" -ForegroundColor White
-        Write-Host "ID: $($msg.id)" -ForegroundColor Gray
-        Write-Host "--------------------------------" -ForegroundColor Gray
+        Write-Host "Unread messages for ${Agent}:" -ForegroundColor Cyan
+        Write-Host "================================" -ForegroundColor Cyan
         
-        # Mark as read
-        $msg.read = $true
+        foreach ($msg in $unreadMessages) {
+            $priorityColor = switch ($msg.priority) {
+                "high" { "Red" }
+                "normal" { "White" }
+                "low" { "Gray" }
+                default { "White" }
+            }
+            
+            Write-Host "[$($msg.timestamp)] From: $($msg.from)" -ForegroundColor $priorityColor
+            Write-Host "Priority: $($msg.priority)" -ForegroundColor $priorityColor
+            if ($msg.context) {
+                Write-Host "Context: $($msg.context)" -ForegroundColor Gray
+            }
+            Write-Host "Message: $($msg.message)" -ForegroundColor White
+            Write-Host "ID: $($msg.id)" -ForegroundColor Gray
+            Write-Host "--------------------------------" -ForegroundColor Gray
+            
+            # Mark as read
+            $msg.read = $true
+        }
+        
+        # Save updated messages
+        @($messages) | ConvertTo-Json -Depth 3 | Out-File -FilePath $MESSAGES_FILE -Encoding UTF8
     }
-    
-    # Save updated messages
-    $messages | ConvertTo-Json -Depth 3 | Out-File -FilePath $MESSAGES_FILE -Encoding UTF8
+    finally {
+        Release-CommLock
+    }
 }
 
 function Get-Status {
     Initialize-Communication
-    
-    $status = Get-Content $STATUS_FILE | ConvertFrom-Json
-    
-    Write-Host "Agent Status:" -ForegroundColor Cyan
-    Write-Host "=============" -ForegroundColor Cyan
-    
-    foreach ($agent in $status.PSObject.Properties) {
-        $agentName = $agent.Name
-        $agentData = $agent.Value
+
+    Acquire-CommLock
+    try {
+        $status = Get-Content $STATUS_FILE -Raw | ConvertFrom-Json
         
-        $statusColor = switch ($agentData.status) {
-            "available" { "Green" }
-            "busy" { "Yellow" }
-            "offline" { "Red" }
-            default { "White" }
-        }
+        Write-Host "Agent Status:" -ForegroundColor Cyan
+        Write-Host "=============" -ForegroundColor Cyan
         
-        Write-Host "${agentName}:" -ForegroundColor White
-        Write-Host "  Status: $($agentData.status)" -ForegroundColor $statusColor
-        Write-Host "  Last seen: $($agentData.last_seen)" -ForegroundColor Gray
-        if ($agentData.current_task) {
-            Write-Host "  Current task: $($agentData.current_task)" -ForegroundColor Cyan
+        foreach ($agent in $status.PSObject.Properties) {
+            $agentName = $agent.Name
+            $agentData = $agent.Value
+            
+            $statusColor = switch ($agentData.status) {
+                "available" { "Green" }
+                "busy" { "Yellow" }
+                "offline" { "Red" }
+                default { "White" }
+            }
+            
+            Write-Host "${agentName}:" -ForegroundColor White
+            Write-Host "  Status: $($agentData.status)" -ForegroundColor $statusColor
+            Write-Host "  Last seen: $($agentData.last_seen)" -ForegroundColor Gray
+            if ($agentData.current_task) {
+                Write-Host "  Current task: $($agentData.current_task)" -ForegroundColor Cyan
+            }
+            Write-Host ""
         }
-        Write-Host ""
+    }
+    finally {
+        Release-CommLock
     }
 }
 
 function Clear-Messages {
+    param([string]$Agent)
+
     Initialize-Communication
     
-    @() | ConvertTo-Json | Out-File -FilePath $MESSAGES_FILE -Encoding UTF8
-    Write-Host "All messages cleared" -ForegroundColor Green
+    Acquire-CommLock
+    try {
+        if ($Agent) {
+            $messages = Get-Content $MESSAGES_FILE -Raw | ConvertFrom-Json
+            $messages = if ($messages) { @($messages) } else { @() }
+            $remaining = $messages | Where-Object { $_.to -ne $Agent }
+            @($remaining) | ConvertTo-Json -Depth 3 | Out-File -FilePath $MESSAGES_FILE -Encoding UTF8
+            Write-Host "Cleared messages for ${Agent}" -ForegroundColor Green
+        } else {
+            @() | ConvertTo-Json -Depth 3 | Out-File -FilePath $MESSAGES_FILE -Encoding UTF8
+            Write-Host "All messages cleared" -ForegroundColor Green
+        }
+    }
+    finally {
+        Release-CommLock
+    }
 }
 
 function Update-Status {
@@ -221,17 +249,21 @@ function Update-Status {
     
     Initialize-Communication
     
-    $statusData = Get-Content $STATUS_FILE | ConvertFrom-Json
-    
-    if ($statusData.$Agent) {
-        $statusData.$Agent.status = $Status
-        $statusData.$Agent.last_seen = (Get-Date).ToString("yyyy-MM-ddTHH:mm:ssZ")
-        if ($Task) {
-            $statusData.$Agent.current_task = $Task
+    Acquire-CommLock
+    try {
+        $statusData = Get-Content $STATUS_FILE -Raw | ConvertFrom-Json
+        
+        if ($statusData.$Agent) {
+            if ($Status) { $statusData.$Agent.status = $Status }
+            $statusData.$Agent.last_seen = (Get-Date).ToUniversalTime().ToString('o')
+            if ($Task) { $statusData.$Agent.current_task = $Task }
         }
+        
+        $statusData | ConvertTo-Json -Depth 3 | Out-File -FilePath $STATUS_FILE -Encoding UTF8
     }
-    
-    $statusData | ConvertTo-Json -Depth 3 | Out-File -FilePath $STATUS_FILE -Encoding UTF8
+    finally {
+        Release-CommLock
+    }
 }
 
 # Main execution
@@ -244,19 +276,29 @@ switch ($Command) {
         Send-Message -To $To -From $From -Message $Message -Priority $Priority -Context $Context
     }
     "read" {
-        Read-Messages -Agent $From
+        $target = if ($Agent) { $Agent } elseif ($To) { $To } else { $From }
+        Read-Messages -Agent $target
     }
     "status" {
         Get-Status
     }
     "clear" {
-        Clear-Messages
+        Clear-Messages -Agent $Agent
+    }
+    "update-status" {
+        $target = if ($Agent) { $Agent } elseif ($From) { $From } else { 'Codex' }
+        if (-not $Status -and -not $Task) {
+            Update-Status -Agent $target -Status $null -Task $null
+        } else {
+            Update-Status -Agent $target -Status $Status -Task $Task
+        }
     }
     default {
         Write-Host "Usage:" -ForegroundColor Yellow
         Write-Host "  Send:   .\agent_communication.ps1 send -Message 'Hello' -To 'Codex' -From 'Cursor' -Priority 'high' -Context 'trading optimization'" -ForegroundColor Gray
-        Write-Host "  Read:   .\agent_communication.ps1 read -From 'Cursor'" -ForegroundColor Gray
+        Write-Host "  Read:   .\agent_communication.ps1 read -Agent 'Cursor'" -ForegroundColor Gray
         Write-Host "  Status: .\agent_communication.ps1 status" -ForegroundColor Gray
-        Write-Host "  Clear:  .\agent_communication.ps1 clear" -ForegroundColor Gray
+        Write-Host "  Clear:  .\agent_communication.ps1 clear -Agent 'Cursor'  # omit -Agent to clear all" -ForegroundColor Gray
+        Write-Host "  Update: .\agent_communication.ps1 update-status -Agent 'Codex' -Status 'busy' -Task 'Editing start script'  # heartbeat if no args" -ForegroundColor Gray
     }
 }
