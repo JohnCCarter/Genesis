@@ -26,6 +26,11 @@ Communication system
 - Status: `.\scripts\agent_communication.ps1 status`
 - Clear: `.\scripts\agent_communication.ps1 clear`
 
+Notification system
+- Check: `.\scripts\agent_notification.ps1 check -Agent "Cursor"`
+- Monitor: `.\scripts\agent_notification.ps1 monitor -Agent "Cursor" -IntervalSeconds 30`
+- Stop: `.\scripts\agent_notification.ps1 stop`
+
 Lock usage examples
 - Lock: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/agent_lock.ps1 lock -Path "scripts/start_normal.ps1" -By "Codex" -Reason "Edit start flow"`
 - Unlock: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/agent_lock.ps1 unlock -Path "scripts/start_normal.ps1" -By "Codex"`
