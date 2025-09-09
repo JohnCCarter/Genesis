@@ -286,7 +286,7 @@ Thumbs.db
 # Log files (additional patterns)
 logs/
 *.log.*
-tradingbot.log
+tradingbot.log # kommentera ut om du vill se loggarna
 
 # OpenAI Batch local artifacts (removed)
 
@@ -312,3 +312,10 @@ scripts/**/.venv/
 # SQLite backups
 tradingbot-backend/config/*.sqlite3.backup*
 audit-backend.json
+
+# AI agent locks (do not commit)
+.agent-locks/
+.agent-communication/
+
+# AI agent communication (do not commit)
+.agent-communication/

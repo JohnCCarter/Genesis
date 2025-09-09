@@ -1420,7 +1420,8 @@ async def generate_ws_token(request: TokenRequest):
             return TokenResponse(success=False, error="Kunde inte generera token")
 
     except Exception as e:
-        logger.exception(f"Fel vid generering av WebSocket-token: {e}")
+        from utils.token_masking import safe_log_data
+        logger.exception(safe_log_data(e, "Fel vid generering av WebSocket-token"))
         return TokenResponse(success=False, error=str(e))
 
 
@@ -3936,7 +3937,8 @@ async def mcp_get_token(
             "token": (token_data.get("access_token") if isinstance(token_data, dict) else None),
         }
     except Exception as e:
-        logger.exception(f"MCP get_token error: {e}")
+        from utils.token_masking import safe_log_data
+        logger.exception(safe_log_data(e, "MCP get_token error"))
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -4533,9 +4535,9 @@ async def get_all_regimes(_: bool = Depends(require_auth)):
     """
     logger.info("🎯 /strategy/regime/all endpoint anropad - MED CONFIDENCE SCORES")
 
-    # OPTIMERING: Cache för alla regimer
+    # OPTIMERING: Cache för alla regimer - samma TTL som Live Signals
     cache_key = "all_regimes_enhanced"
-    cache_ttl = timedelta(minutes=2)  # Kort cache för live data
+    cache_ttl = timedelta(minutes=2)  # Kort cache för live data - konsekvent med Live Signals
 
     # Kontrollera cache först
     if hasattr(get_all_regimes, "_cache"):
@@ -4549,45 +4551,85 @@ async def get_all_regimes(_: bool = Depends(require_auth)):
     # Enhetlig scoring via SignalService (ersätter lokala beräkningar)
     scorer = SignalService()
 
-    # Statisk test-data med confidence scores
-
-    test_regimes = [
-        {
-            "symbol": "TESTBTC:TESTUSD",
-            "regime": "trend",
-            "adx_value": 28.3,
-            "ema_z_value": -1.93,
-            "last_close": 115090.0,
-        },
-        {
-            "symbol": "TESTETH:TESTUSD",
-            "regime": "balanced",
-            "adx_value": 21.7,
-            "ema_z_value": -0.70,
-            "last_close": 4676.6,
-        },
-        {
-            "symbol": "TESTADA:TESTUSD",
-            "regime": "balanced",
-            "adx_value": 18.5,
-            "ema_z_value": -0.45,
-            "last_close": 0.52,
-        },
-        {
-            "symbol": "TESTSOL:TESTUSD",
-            "regime": "range",
-            "adx_value": 12.3,
-            "ema_z_value": -0.15,
-            "last_close": 89.45,
-        },
-        {
-            "symbol": "TESTDOT:TESTUSD",
-            "regime": "trend",
-            "adx_value": 35.8,
-            "ema_z_value": -2.45,
-            "last_close": 7.23,
-        },
-    ]
+    # Hämta live symboler istället för statisk test-data
+    try:
+        from services.symbols import SymbolService
+        from config.settings import Settings
+        
+        symbol_service = SymbolService()
+        settings = Settings()
+        
+        # Hämta symboler från samma källa som Live Signals
+        raw_symbols = (settings.WS_SUBSCRIBE_SYMBOLS or "").strip()
+        if raw_symbols:
+            symbols = [s.strip() for s in raw_symbols.split(",") if s.strip()]
+        else:
+            symbols = symbol_service.get_symbols(test_only=True, fmt="v2")[:5]  # Begränsa till 5 för prestanda
+            
+        logger.info(f"📊 Hämtar live regime data för {len(symbols)} symboler")
+        
+        # Hämta live regime data för varje symbol
+        live_regimes = []
+        for symbol in symbols:
+            try:
+                # Använd samma regime endpoint som Live Signals
+                # Hämta regime data direkt via MarketDataFacade
+                from services.market_data_facade import get_market_data
+                from indicators.regime import detect_regime
+                from indicators.adx import adx as adx_series
+                from indicators.regime import ema_z
+                
+                data_service = get_market_data()
+                candles = await data_service.get_candles(symbol, "1m", limit=50)
+                
+                if candles and len(candles) >= 20:
+                    highs = [float(candle[3]) for candle in candles if len(candle) >= 4]
+                    lows = [float(candle[4]) for candle in candles if len(candle) >= 5]
+                    closes = [float(candle[2]) for candle in candles if len(candle) >= 3]
+                    
+                    if len(highs) >= 20 and len(lows) >= 20 and len(closes) >= 20:
+                        regime = detect_regime(highs, lows, closes)
+                        adx_vals = adx_series(highs, lows, closes, period=14)
+                        ez_vals = ema_z(closes, 3, 7, 200)
+                        
+                        regime_data = {
+                            "symbol": symbol,
+                            "regime": regime,
+                            "adx_value": adx_vals[-1] if adx_vals else None,
+                            "ema_z_value": ez_vals[-1] if ez_vals else None,
+                            "last_close": closes[-1] if closes else None,
+                        }
+                    else:
+                        regime_data = None
+                else:
+                    regime_data = None
+                if regime_data and "regime" in regime_data and regime_data["regime"] != "unknown":
+                    live_regimes.append(regime_data)
+            except Exception as e:
+                logger.warning(f"⚠️ Kunde inte hämta regime för {symbol}: {e}")
+                continue
+                
+        test_regimes = live_regimes
+        
+    except Exception as e:
+        logger.error(f"❌ Fel vid hämtning av live symboler, använder fallback: {e}")
+        # Fallback till statisk test-data om live hämtning misslyckas
+        test_regimes = [
+            {
+                "symbol": "TESTBTC:TESTUSD",
+                "regime": "trend",
+                "adx_value": 28.3,
+                "ema_z_value": -1.93,
+                "last_close": 115090.0,
+            },
+            {
+                "symbol": "TESTETH:TESTUSD",
+                "regime": "balanced",
+                "adx_value": 21.7,
+                "ema_z_value": -0.70,
+                "last_close": 4676.6,
+            },
+        ]
 
     # Beräkna confidence/probability och rekommendation via SignalService
     enhanced_regimes = []
@@ -5078,8 +5120,8 @@ async def get_performance_stats():
 
         from services.data_coordinator import data_coordinator
 
-        # System-resurser
-        cpu_percent = psutil.cpu_percent(interval=1)
+        # System-resurser (använd non-blocking calls)
+        cpu_percent = psutil.cpu_percent(interval=None)  # Non-blocking
         memory = psutil.virtual_memory()
         disk = psutil.disk_usage("/")
 
@@ -5127,7 +5169,7 @@ async def get_performance_stats():
             },
             "process": {
                 "memory_mb": round(process_memory.rss / (1024**2), 2),
-                "cpu_percent": process.cpu_percent(),
+                "cpu_percent": process.cpu_percent(),  # Non-blocking
                 "active_tasks": active_tasks,
                 "task_types": task_types,
             },

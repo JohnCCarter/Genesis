@@ -41,4 +41,44 @@ export function useThrottledValue<T>(value: T, intervalMs = 300): T {
   return throttled;
 }
 
+// Hook för att throttla API-anrop
+export function useThrottledApiCall<T extends (...args: any[]) => Promise<any>>(
+  apiCall: T,
+  intervalMs = 1000
+): T {
+  const lastCallRef = useRef<number>(0);
+  const pendingCallRef = useRef<Timer | null>(null);
+
+  const throttledCall = useRef(async (...args: Parameters<T>): Promise<ReturnType<T>> => {
+    const now = Date.now();
+    const elapsed = now - lastCallRef.current;
+
+    if (elapsed >= intervalMs) {
+      lastCallRef.current = now;
+      return apiCall(...args);
+    }
+
+    // Cancel any pending call
+    if (pendingCallRef.current) {
+      clearTimeout(pendingCallRef.current);
+    }
+
+    // Schedule the call for later
+    return new Promise((resolve, reject) => {
+      const remaining = intervalMs - elapsed;
+      pendingCallRef.current = setTimeout(async () => {
+        try {
+          lastCallRef.current = Date.now();
+          const result = await apiCall(...args);
+          resolve(result);
+        } catch (error) {
+          reject(error);
+        }
+      }, remaining);
+    });
+  }).current;
+
+  return throttledCall as T;
+}
+
 export default useThrottledValue;

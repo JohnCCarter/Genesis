@@ -109,9 +109,17 @@ class SignalGeneratorService:
                     signal = SignalResponse(
                         symbol=symbol,
                         signal_type=signal_type,
-                        confidence_score=regime_data.get("confidence_score", 0),
-                        trading_probability=regime_data.get("trading_probability", 0),
-                        recommendation=regime_data.get("recommendation", "LOW_CONFIDENCE"),
+                        confidence_score=sc.confidence,  # Använd samma källa som Enhanced Auto-Trading
+                        trading_probability=sc.probability,  # Använd samma källa som Enhanced Auto-Trading
+                        recommendation=(
+                            "STRONG_BUY"
+                            if sc.recommendation == "buy" and sc.probability > 70
+                            else (
+                                "BUY"
+                                if sc.recommendation == "buy"
+                                else ("HOLD" if sc.recommendation == "hold" else "AVOID")
+                            )
+                        ),
                         timestamp=datetime.now(),
                         strength=strength,
                         reason=reason,
@@ -231,9 +239,13 @@ class SignalGeneratorService:
             signal = SignalResponse(
                 symbol=symbol,
                 signal_type=signal_type,
-                confidence_score=regime_data.get("confidence_score", 0),
-                trading_probability=regime_data.get("trading_probability", 0),
-                recommendation=regime_data.get("recommendation", "LOW_CONFIDENCE"),
+                confidence_score=sc.confidence,  # Använd SignalService.score() direkt
+                trading_probability=sc.probability,  # Använd SignalService.score() direkt
+                recommendation=(
+                    "STRONG_BUY"
+                    if sc.recommendation == "buy" and sc.probability > 70
+                    else ("BUY" if sc.recommendation == "buy" else ("HOLD" if sc.recommendation == "hold" else "AVOID"))
+                ),
                 timestamp=datetime.now(),
                 strength=strength,
                 reason=reason,
@@ -261,18 +273,27 @@ class SignalGeneratorService:
             regime_data = await get_strategy_regime(symbol, None)
 
             if regime_data and "regime" in regime_data:
-                # Lägg till confidence scores om de saknas
-                confidence = self._calculate_confidence_score(
-                    regime_data.get("adx_value"), regime_data.get("ema_z_value")
+                # Använd SignalService.score() för enhetlig confidence/probability
+                sc = self.signal_service.score(
+                    regime=regime_data.get("regime"),
+                    adx_value=regime_data.get("adx_value"),
+                    ema_z_value=regime_data.get("ema_z_value"),
+                    features={"symbol": symbol},
                 )
-                trading_prob = self._calculate_trading_probability(regime_data.get("regime"), confidence)
-                recommendation = self._get_recommendation(regime_data.get("regime"), confidence, trading_prob)
 
                 regime_data.update(
                     {
-                        "confidence_score": confidence,
-                        "trading_probability": trading_prob,
-                        "recommendation": recommendation,
+                        "confidence_score": sc.confidence,
+                        "trading_probability": sc.probability,
+                        "recommendation": (
+                            "STRONG_BUY"
+                            if sc.recommendation == "buy" and sc.probability > 70
+                            else (
+                                "BUY"
+                                if sc.recommendation == "buy"
+                                else ("HOLD" if sc.recommendation == "hold" else "AVOID")
+                            )
+                        ),
                     }
                 )
                 return regime_data
@@ -283,44 +304,19 @@ class SignalGeneratorService:
             return None
 
     def _calculate_confidence_score(self, adx_value, ema_z_value):
-        """Beräknar confidence score baserat på ADX och EMA Z"""
-        if not adx_value or not ema_z_value:
-            return 50.0  # Default 50% om data saknas
-
-        # ADX-baserad confidence (0-50%)
-        adx_confidence = min(adx_value / 50.0, 1.0) * 50
-
-        # EMA Z-baserad confidence (0-50%)
-        ema_confidence = min(abs(ema_z_value) / 2.0, 1.0) * 50
-
-        return round(adx_confidence + ema_confidence, 1)
+        """DEPRECATED: Använd SignalService.score() direkt istället"""
+        logger.warning("⚠️ _calculate_confidence_score() är deprecated - använd SignalService.score() direkt")
+        return 50.0
 
     def _calculate_trading_probability(self, regime, confidence):
-        """Beräknar trading probability baserat på regim och confidence"""
-        base_probabilities = {
-            "trend": 0.85,  # 85% chans att trade trend
-            "balanced": 0.60,  # 60% chans att trade balanced
-            "range": 0.25,  # 25% chans att trade range
-        }
-
-        # Justera baserat på confidence
-        confidence_multiplier = confidence / 100.0
-        base_prob = base_probabilities.get(regime, 0.5)
-
-        return round(base_prob * confidence_multiplier * 100, 1)
+        """DEPRECATED: Använd SignalService.score() direkt istället"""
+        logger.warning("⚠️ _calculate_trading_probability() är deprecated - använd SignalService.score() direkt")
+        return 50.0
 
     def _get_recommendation(self, regime, confidence, trading_prob):
-        """Ger rekommendation baserat på regim och confidence"""
-        if confidence < 30:
-            return "LOW_CONFIDENCE"
-        elif trading_prob > 70:
-            return "STRONG_BUY" if regime == "trend" else "BUY"
-        elif trading_prob > 40:
-            return "WEAK_BUY"
-        elif trading_prob > 20:
-            return "HOLD"
-        else:
-            return "AVOID"
+        """DEPRECATED: Använd SignalService.score() direkt istället"""
+        logger.warning("⚠️ _get_recommendation() är deprecated - använd SignalService.score() direkt")
+        return "HOLD"
 
     async def _get_current_price(self, symbol: str) -> float | None:
         """Hämta aktuellt pris för symbol (WS‑first, REST fallback)."""
@@ -344,25 +340,9 @@ class SignalGeneratorService:
             return None
 
     def _determine_signal_type(self, regime_data: dict) -> str:
-        """Bestäm signal typ baserat på regime data och pris"""
-        try:
-            # Enkel logik baserat på confidence och probability
-            confidence = regime_data.get("confidence_score", 0)
-            probability = regime_data.get("trading_probability", 0)
-
-            # Hög confidence + probability = BUY
-            if confidence > 70 and probability > 70:
-                return "BUY"
-            # Låg confidence + probability = SELL
-            elif confidence < 30 and probability < 30:
-                return "SELL"
-            # Annars HOLD
-            else:
-                return "HOLD"
-
-        except Exception as e:
-            logger.error(f"Fel vid signal typ bestämning: {e}")
-            return "HOLD"
+        """DEPRECATED: Använd SignalService.score() direkt istället"""
+        logger.warning("⚠️ _determine_signal_type() är deprecated - använd SignalService.score() direkt")
+        return "HOLD"
 
     def _evaluate_signal_strength(self, regime_data: dict) -> str:
         """Utvärdera signal styrka baserat på confidence och probability"""
@@ -391,22 +371,9 @@ class SignalGeneratorService:
             return "WEAK"
 
     def _generate_signal_reason(self, regime_data: dict, signal_type: str) -> str:
-        """Generera anledning för signalen"""
-        try:
-            confidence = regime_data.get("confidence_score", 0)
-            probability = regime_data.get("trading_probability", 0)
-            regime = regime_data.get("regime", "unknown")
-
-            if signal_type == "BUY":
-                return f"Confidence: {confidence:.1f}%, Probability: {probability:.1f}%, Regime: {regime}"
-            elif signal_type == "SELL":
-                return f"Low confidence: {confidence:.1f}%, Low probability: {probability:.1f}%, Regime: {regime}"
-            else:
-                return f"Neutral: Confidence: {confidence:.1f}%, Probability: {probability:.1f}%, Regime: {regime}"
-
-        except Exception as e:
-            logger.error(f"Fel vid signal reason generation: {e}")
-            return "Signal reason unavailable"
+        """DEPRECATED: Använd SignalService.score() direkt istället"""
+        logger.warning("⚠️ _generate_signal_reason() är deprecated - använd SignalService.score() direkt")
+        return "DEPRECATED - använd SignalService.score()"
 
     async def _get_active_symbols(self) -> list[str]:
         """Hämta lista av aktiva symboler – läs från WS_SUBSCRIBE_SYMBOLS i .env.

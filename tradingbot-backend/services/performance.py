@@ -309,33 +309,74 @@ class PerformanceService:
 
     # ---- Equity (USD) + snapshots ----
     async def compute_current_equity(self) -> dict[str, Any]:
-        """Beräkna equity i USD:
+        """Beräkna equity i USD med timeout på alla calls:
         - Summan av alla plånböcker konverterade till USD (USD och USD-stablecoins → 1.0)
         - Plus summerad unrealized PnL (om tillgängligt)
         """
-        wallets = await self.wallet_service.get_wallets()
-        positions = await self.positions_service.get_positions()
+        try:
+            import asyncio
 
-        wallets_usd_total = 0.0
-        for w in wallets:
-            cur = (w.currency or "").upper()
-            fx = 1.0 if cur == "USD" or self._is_usd_stablecoin(cur) else await self._fx_to_usd(cur)
-            try:
-                wallets_usd_total += float(w.balance) * (fx if fx > 0 else 0.0)
-            except Exception:
-                # Ignorera korrupta värden
-                pass
+            # Skapa tasks för wallet och position calls med timeout
+            wallets_task = asyncio.create_task(asyncio.wait_for(self.wallet_service.get_wallets(), timeout=1.0))
+            positions_task = asyncio.create_task(asyncio.wait_for(self.positions_service.get_positions(), timeout=1.0))
 
-        # OBS: profit_loss från Bitfinex är normalt i quote-valuta; i praktiken USD för USD-par
-        # Vi antar USD här. (För icke-USD-par kan detta förbättras genom FX per position.)
-        unrealized = sum(float(p.profit_loss or 0.0) for p in positions)
+            # Vänta på båda med total timeout
+            wallets, positions = await asyncio.wait_for(
+                asyncio.gather(wallets_task, positions_task, return_exceptions=True), timeout=2.0
+            )
 
-        return {
-            "total_usd": round(float(wallets_usd_total) + float(unrealized), 8),
-            "wallets_usd": round(float(wallets_usd_total), 8),
-            "unrealized_pnl_usd": round(float(unrealized), 8),
-            "positions_count": len(positions),
-        }
+            # Hantera exceptions från tasks
+            if isinstance(wallets, Exception):
+                logger.warning(f"⚠️ Wallet fetch failed: {wallets}")
+                wallets = []
+            if isinstance(positions, Exception):
+                logger.warning(f"⚠️ Position fetch failed: {positions}")
+                positions = []
+
+            wallets_usd_total = 0.0
+            for w in wallets:
+                cur = (w.currency or "").upper()
+                try:
+                    fx = (
+                        1.0
+                        if cur == "USD" or self._is_usd_stablecoin(cur)
+                        else await asyncio.wait_for(self._fx_to_usd(cur), timeout=0.5)
+                    )
+                    wallets_usd_total += float(w.balance) * (fx if fx > 0 else 0.0)
+                except asyncio.TimeoutError:
+                    logger.warning(f"⚠️ FX timeout for {cur}, using 0.0")
+                    wallets_usd_total += 0.0
+                except Exception:
+                    # Ignorera korrupta värden
+                    pass
+
+            # OBS: profit_loss från Bitfinex är normalt i quote-valuta; i praktiken USD för USD-par
+            # Vi antar USD här. (För icke-USD-par kan detta förbättras genom FX per position.)
+            unrealized = sum(float(p.profit_loss or 0.0) for p in positions)
+
+            return {
+                "total_usd": round(float(wallets_usd_total) + float(unrealized), 8),
+                "wallets_usd": round(float(wallets_usd_total), 8),
+                "unrealized_pnl_usd": round(float(unrealized), 8),
+                "positions_count": len(positions),
+            }
+
+        except asyncio.TimeoutError:
+            logger.warning("⚠️ Equity computation timeout - returning fallback")
+            return {
+                "total_usd": 0.0,
+                "wallets_usd": 0.0,
+                "unrealized_pnl_usd": 0.0,
+                "positions_count": 0,
+            }
+        except Exception as e:
+            logger.error(f"❌ Equity computation error: {e}")
+            return {
+                "total_usd": 0.0,
+                "wallets_usd": 0.0,
+                "unrealized_pnl_usd": 0.0,
+                "positions_count": 0,
+            }
 
     def _now_local_date(self) -> str:
         tzname = getattr(self.settings, "TIMEZONE", None) or "UTC"

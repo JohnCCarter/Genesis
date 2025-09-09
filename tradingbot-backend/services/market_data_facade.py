@@ -4,9 +4,15 @@ Market Data Facade - WS-first med REST fallback och gemensam cache-access.
 
 from __future__ import annotations
 
+import asyncio
+import time
 from typing import Any, Tuple, Protocol
 
+from config.settings import Settings
 from services.ws_first_data_service import WSFirstDataService, get_ws_first_data_service
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class IMarketDataProvider(Protocol):
@@ -25,9 +31,43 @@ class IMarketDataProvider(Protocol):
 class MarketDataFacade:
     def __init__(self, ws_first: WSFirstDataService | None = None) -> None:
         self.ws_first = ws_first or get_ws_first_data_service()
+        self.settings = Settings()
 
     async def get_ticker(self, symbol: str, *, force_fresh: bool = False) -> dict[str, Any] | None:
-        return await self.ws_first.get_ticker(symbol, force_fresh=force_fresh)
+        """Hämta ticker med timeout och bättre logging."""
+        start_time = time.perf_counter()
+
+        try:
+            # Kontrollera market data mode
+            mode = getattr(self.settings, "MARKETDATA_MODE", "auto")
+            if mode == "rest_only":
+                # Force REST fallback
+                data = await self.ws_first.rest_service.get_ticker(symbol)
+                logger.info(
+                    f"marketdata.source=rest reason=forced_mode symbol={symbol} lag_ms={(time.perf_counter() - start_time) * 1000:.1f}"
+                )
+                return data
+
+            # Timeout för WS-snapshot
+            timeout = 0.5  # 500ms timeout för WS
+            try:
+                data = await asyncio.wait_for(
+                    self.ws_first.get_ticker(symbol, force_fresh=force_fresh), timeout=timeout
+                )
+                lag_ms = (time.perf_counter() - start_time) * 1000
+                logger.info(f"marketdata.source=ws symbol={symbol} lag_ms={lag_ms:.1f}")
+                return data
+            except TimeoutError:
+                # Fallback till REST
+                data = await self.ws_first.rest_service.get_ticker(symbol)
+                lag_ms = (time.perf_counter() - start_time) * 1000
+                logger.info(f"marketdata.source=rest reason=ws_timeout symbol={symbol} lag_ms={lag_ms:.1f}")
+                return data
+
+        except Exception as e:
+            lag_ms = (time.perf_counter() - start_time) * 1000
+            logger.error(f"marketdata.error symbol={symbol} error={e!s} lag_ms={lag_ms:.1f}")
+            return None
 
     async def get_candles(
         self,

@@ -123,7 +123,7 @@ class WSFirstDataService:
                 backfill_pairs: list[tuple[str, str]] = []
                 for symbol in symbols[:6]:  # Begränsa till 6 för att undvika rate limits
                     try:
-                        await bitfinex_ws.subscribe_ticker(symbol=symbol, callback=self._handle_ws_ticker)
+                        await bitfinex_ws.subscribe_ticker(symbol=symbol, callback=lambda ticker_data, sym=symbol: self._handle_ws_ticker(sym, ticker_data))
 
                         # Prenumerera på candles för alla timeframes
                         for tf in tfs:

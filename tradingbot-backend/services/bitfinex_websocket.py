@@ -399,8 +399,9 @@ class BitfinexWebSocketService:
             self.websocket = await ws_connect(self.ws_url)
             self.is_connected = True
             logger.info("✅ Ansluten till Bitfinex WebSocket")
-            # Starta lyssnare i bakgrunden direkt för att fånga auth-ack
-            self._asyncio.create_task(self.listen_for_messages(), name="ws-message-listener")
+            # Starta lyssnare i bakgrunden direkt för att fånga auth-ack (endast om inte redan startad)
+            if not hasattr(self, '_message_listener_task') or self._message_listener_task.done():
+                self._message_listener_task = self._asyncio.create_task(self.listen_for_messages(), name="ws-message-listener")
             # Starta ping/heartbeat‑övervakning
             try:
                 await self._start_heartbeat_tasks()
@@ -1297,9 +1298,15 @@ class BitfinexWebSocketService:
                         return
 
                     cb = self.private_event_callbacks.get(event_code)
-                    if cb:
+                    if cb and callable(cb):
                         # Skicka hela ursprungsmeddelandet så handlers kan läsa msg[1] och msg[2]
-                        await cb(data)
+                        try:
+                            if asyncio.iscoroutinefunction(cb):
+                                await cb(data)
+                            else:
+                                cb(data)
+                        except Exception as e:
+                            logger.warning(f"⚠️ Callback error for {event_code}: {e}")
                     else:
                         logger.debug(f"ℹ️ Ohanterad privat händelse: {event_code}")
                 else:
@@ -1317,7 +1324,7 @@ class BitfinexWebSocketService:
             if current_ws is None:
                 current_ws = self.websocket
             cb = self._chan_callbacks.get((current_ws, int(channel_id))) or self.channel_callbacks.get(int(channel_id))
-            if cb:
+            if cb and callable(cb):
                 # Ignorera heartbeat
                 if message_data == "hb":
                     return
@@ -1341,10 +1348,22 @@ class BitfinexWebSocketService:
                         "high": message_data[8] if len(message_data) > 8 else 0,
                         "low": message_data[9] if len(message_data) > 9 else 0,
                     }
-                    await cb(norm)
+                    try:
+                        if asyncio.iscoroutinefunction(cb):
+                            await cb(norm)
+                        else:
+                            cb(norm)
+                    except Exception as e:
+                        logger.warning(f"⚠️ Ticker callback error: {e}")
                     return
                 # För övriga kanaler, skicka rå payload vidare
-                await cb(message_data)
+                try:
+                    if asyncio.iscoroutinefunction(cb):
+                        await cb(message_data)
+                    else:
+                        cb(message_data)
+                except Exception as e:
+                    logger.warning(f"⚠️ Channel callback error: {e}")
                 return
             # Fallback: heuristik för ticker/trades (äldre väg)
             if isinstance(message_data, list) and len(message_data) >= 7:
@@ -1362,8 +1381,14 @@ class BitfinexWebSocketService:
                     "low": message_data[9] if len(message_data) > 9 else 0,
                 }
                 for k, callback in self.callbacks.items():
-                    if k.startswith("ticker|") and ticker_data["symbol"] in k:
-                        await callback(ticker_data)
+                    if k.startswith("ticker|") and ticker_data["symbol"] in k and callback and callable(callback):
+                        try:
+                            if asyncio.iscoroutinefunction(callback):
+                                await callback(ticker_data)
+                            else:
+                                callback(ticker_data)
+                        except Exception as e:
+                            logger.warning(f"⚠️ Fallback ticker callback error: {e}")
                         break
 
         except Exception as e:
@@ -1828,9 +1853,12 @@ class BitfinexWebSocketService:
         if not self.is_connected:
             await self.connect()
 
-        # Starta lyssnare i bakgrunden
-        asyncio.create_task(self.listen_for_messages())
-        logger.info("🚀 WebSocket-lyssnare startad")
+        # Starta lyssnare i bakgrunden (endast om inte redan startad)
+        if not hasattr(self, '_message_listener_task') or self._message_listener_task.done():
+            self._message_listener_task = asyncio.create_task(self.listen_for_messages())
+            logger.info("🚀 WebSocket-lyssnare startad")
+        else:
+            logger.info("🚀 WebSocket-lyssnare redan aktiv")
 
 
 # Global instans för enkel åtkomst

@@ -36,6 +36,7 @@ except Exception:
     mcp_router = None  # type: ignore
 
 from rest.routes import router as rest_router
+from rest.debug_routes import router as debug_router
 from services.bitfinex_websocket import bitfinex_ws
 from services.metrics import observe_latency, render_prometheus_text
 from services.metrics import get_metrics_summary
@@ -52,6 +53,17 @@ logger = get_logger(__name__)
 try:
     if _sys.platform.startswith("win"):
         _asyncio.set_event_loop_policy(_asyncio.WindowsSelectorEventLoopPolicy())
+except Exception:
+    pass
+
+# Asyncio debug support
+try:
+    from config.settings import Settings
+    settings = Settings()
+    if getattr(settings, "DEBUG_ASYNC", False):
+        _asyncio.get_event_loop().set_debug(True)
+        _asyncio.get_event_loop().slow_callback_duration = 0.05  # Log callbacks > 50ms
+        logger.info("🔍 Asyncio debug aktiverat")
 except Exception:
     pass
 
@@ -224,6 +236,7 @@ async def request_guard(request: Request, call_next):
 
 # Inkludera REST endpoints
 app.include_router(rest_router)
+app.include_router(debug_router)
 
 # MCP kan stängas av via settings
 try:
@@ -459,11 +472,11 @@ async def latency_middleware(request: Request, call_next):
                 duration_ms,
                 getattr(response, "status_code", 0),
             )
-
-        # Logga mycket långsamma requests (>2000ms)
+            
+        # Logga mycket långsamma requests (>2000ms) som potentiella hängningar
         if duration_ms > 2000:
             logger.error(
-                "🚨 Mycket långsam request: %s %s - %dms (status: %d)",
+                "🚨 POTENTIELL HÄNGNING: %s %s - %dms (status: %d)",
                 request.method,
                 request.url.path,
                 duration_ms,

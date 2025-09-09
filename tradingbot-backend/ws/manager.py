@@ -22,6 +22,29 @@ logger = get_logger(__name__)
 socket_app = socketio.AsyncServer(async_mode="asgi", cors_allowed_origins="*", logger=True, engineio_logger=True)
 
 
+def is_ui_push_enabled() -> bool:
+    """Kontrollera om UI push är aktiverat via environment flag."""
+    try:
+        settings = Settings()
+        return getattr(settings, "UI_PUSH_ENABLED", True)
+    except Exception:
+        return True
+
+
+async def safe_emit(event: str, data: dict, room: str = None, skip_sid: str = None):
+    """Säker emit med UI push kontroll."""
+    if not is_ui_push_enabled():
+        return
+    
+    try:
+        if room:
+            await socket_app.emit(event, data, room=room, skip_sid=skip_sid)
+        else:
+            await socket_app.emit(event, data, skip_sid=skip_sid)
+    except Exception as e:
+        logger.warning(f"UI push misslyckades: {e}")
+
+
 # Wrapper för Socket.IO applikation med autentisering
 # Använd auth middleware för att hantera autentisering
 async def socket_auth_middleware(environ, send):

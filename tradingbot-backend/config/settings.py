@@ -10,8 +10,13 @@ import os as _os
 # Kompatibilitet: Pydantic v2 (pydantic-settings) och v1 (pydantic)
 try:  # Pydantic v2
     from pydantic_settings import BaseSettings as _BaseSettings  # type: ignore
-except Exception:  # Fall tillbaka till v1
-    from pydantic import BaseSettings as _BaseSettings  # type: ignore
+    print("Using pydantic-settings (v2)")
+except ImportError:  # Fall tillbaka till v1
+    try:
+        from pydantic import BaseSettings as _BaseSettings  # type: ignore
+        print("Using pydantic BaseSettings (v1)")
+    except ImportError:
+        raise ImportError("Neither pydantic-settings nor pydantic BaseSettings found")
 
 
 class Settings(_BaseSettings):
@@ -146,6 +151,12 @@ class Settings(_BaseSettings):
 
     # REST ticker cache TTL för att undvika överpollning
     TICKER_CACHE_TTL_SECS: int = 30  # Ökad från 10 (minska API-anrop)
+    
+    # Debug och isolerings-flags
+    MARKETDATA_MODE: str = "auto"  # "auto", "rest_only", "ws_only"
+    TRADING_MODE: str = "full"  # "full", "read_only", "disabled"
+    UI_PUSH_ENABLED: bool = True
+    DEBUG_ASYNC: bool = False  # Aktivera asyncio debug
 
     # Candle cache retention
     CANDLE_CACHE_RETENTION_DAYS: int = 7

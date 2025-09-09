@@ -87,7 +87,8 @@ def generate_token(user_id: str, scope: str = "read", expiry_minutes: int = 15) 
             "user_id": user_id,
         }
     except Exception as e:
-        logger.error(f"Fel vid generering av tokens: {e}")
+        from utils.token_masking import safe_log_data
+        logger.error(safe_log_data(e, "Fel vid generering av tokens"))
         return None
 
 
@@ -123,10 +124,12 @@ def validate_token(token: str) -> Dict[str, Any]:
         logger.warning("Token har löpt ut")
         return None
     except jwt.InvalidTokenError as e:
-        logger.warning(f"Ogiltig token: {e}")
+        from utils.token_masking import mask_token, safe_log_data
+        logger.warning(safe_log_data(e, f"Ogiltig token: {mask_token(token)}"))
         return None
     except Exception as e:
-        logger.error(f"Fel vid validering av token: {e}")
+        from utils.token_masking import mask_token, safe_log_data
+        logger.error(safe_log_data(e, f"Fel vid validering av token: {mask_token(token)}"))
         return None
 
 
