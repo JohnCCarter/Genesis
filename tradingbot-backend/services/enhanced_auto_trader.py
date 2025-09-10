@@ -8,6 +8,7 @@ from services.market_data_facade import get_market_data
 from services.signal_service import SignalService as _StdSignalService
 from services.performance_tracker import get_performance_tracker
 from services.realtime_strategy import RealtimeStrategyService
+
 # from services.signal_generator import SignalGeneratorService  # Cirkulär import - inte använd
 from services.trading_integration import TradingIntegrationService
 from utils.logger import get_logger

@@ -319,3 +319,10 @@ audit-backend.json
 
 # AI agent communication (do not commit)
 .agent-communication/
+
+# Tillåt specifika filer
+!.agent-communication/contracts.json
+!.agent-communication/messages.json
+!.agent-communication/notifications.json
+!.agent-communication/status.json
+!.agent-communication/contracts.view.txt

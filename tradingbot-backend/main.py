@@ -24,9 +24,23 @@ from fastapi.openapi.docs import (
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from config.settings import Settings
+# Initialize logger early to catch startup errors
 from utils.logger import get_logger
-from ws.manager import socket_app
+
+logger = get_logger(__name__)
+
+try:
+    from config.settings import Settings
+except Exception as e:
+    logger.error(f"❌ Critical startup error - cannot import Settings: {e}")
+    logger.error("This error will also appear in uvicorn.out.txt")
+    raise
+
+try:
+    from ws.manager import socket_app
+except Exception as e:
+    logger.error(f"❌ Critical startup error - cannot import socket_app: {e}")
+    raise
 
 try:
     # MCP routes removed - MCP functionality disabled
@@ -35,19 +49,21 @@ try:
 except Exception:
     mcp_router = None  # type: ignore
 
-from rest.routes import router as rest_router
-from rest.debug_routes import router as debug_router
-from services.bitfinex_websocket import bitfinex_ws
-from services.metrics import observe_latency, render_prometheus_text
-from services.metrics import get_metrics_summary
-from services.runtime_mode import get_validation_on_start, get_ws_connect_on_start
-from services.signal_service import signal_service
-from services.trading_service import trading_service
+try:
+    from rest.routes import router as rest_router
+    from rest.debug_routes import router as debug_router
+    from services.bitfinex_websocket import bitfinex_ws
+    from services.metrics import observe_latency, render_prometheus_text
+    from services.metrics import get_metrics_summary
+    from services.runtime_mode import get_validation_on_start, get_ws_connect_on_start
+    from services.signal_service import signal_service
+    from services.trading_service import trading_service
+except Exception as e:
+    logger.error(f"❌ Critical startup error - cannot import core modules: {e}")
+    raise
 
 # Kommenterar ut för att undvika cirkulära imports
 # from tests.test_backend_order import test_backend_limit_order
-
-logger = get_logger(__name__)
 
 # Windows event loop policy: avoid Proactor issues with websockets
 try:
@@ -58,14 +74,13 @@ except Exception:
 
 # Asyncio debug support
 try:
-    from config.settings import Settings
     settings = Settings()
     if getattr(settings, "DEBUG_ASYNC", False):
         _asyncio.get_event_loop().set_debug(True)
         _asyncio.get_event_loop().slow_callback_duration = 0.05  # Log callbacks > 50ms
         logger.info("🔍 Asyncio debug aktiverat")
-except Exception:
-    pass
+except Exception as e:
+    logger.warning(f"⚠️ Could not configure asyncio debug: {e}")
 
 # Read env toggle for WS_CONNECT_ON_START into runtime flags
 try:
@@ -179,7 +194,11 @@ async def lifespan(app: FastAPI):
 
 
 # Skapa FastAPI-applikation – loggning före app-instans för tydlighet
-settings = Settings()
+try:
+    settings = Settings()
+except Exception as e:
+    logger.error(f"❌ Critical startup error - cannot create Settings instance: {e}")
+    raise
 
 logger.info("🔑 Kontroll vid startup:")
 logger.info(
@@ -472,7 +491,7 @@ async def latency_middleware(request: Request, call_next):
                 duration_ms,
                 getattr(response, "status_code", 0),
             )
-            
+
         # Logga mycket långsamma requests (>2000ms) som potentiella hängningar
         if duration_ms > 2000:
             logger.error(
@@ -531,8 +550,6 @@ if __name__ == "__main__":
     import signal
     import sys
 
-    from config.settings import Settings as _S
-
     def signal_handler(signum, _frame):
         """Hantera shutdown-signaler."""
         logger.info(f"📡 Mottog signal {signum}, startar shutdown...")
@@ -549,11 +566,15 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal_handler)  # Ctrl+C
     signal.signal(signal.SIGTERM, signal_handler)  # Terminate
 
-    _s = _S()
-    uvicorn.run(
-        "main:app",
-        host=_s.HOST,
-        port=_s.PORT,
-        reload=True,
-        log_level="info",
-    )
+    try:
+        _s = Settings()
+        uvicorn.run(
+            "main:app",
+            host=_s.HOST,
+            port=_s.PORT,
+            reload=True,
+            log_level="info",
+        )
+    except Exception as e:
+        logger.error(f"❌ Critical startup error - cannot start uvicorn: {e}")
+        raise

@@ -58,7 +58,7 @@ async def log_file_analysis():
         logger.info(f"📁 Analyserar: {file_path}")
 
         try:
-            with open(full_path, 'r', encoding='utf-8') as f:
+            with open(full_path, encoding='utf-8') as f:
                 content = f.read()
 
             # Analysera potentiella problem

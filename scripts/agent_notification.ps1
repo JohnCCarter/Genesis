@@ -16,7 +16,8 @@ Param(
     [switch]$OnlyHigh,
     [switch]$Watch,
     [switch]$LogThreads,
-    [string]$ThreadsFile = 'AGENT_THREADS.md'
+    [string]$ThreadsFile = 'AGENT_THREADS.md',
+    [int]$ContractSweepSeconds = 60
 )
 
 $ErrorActionPreference = 'Stop'
@@ -26,6 +27,7 @@ $REPO_ROOT = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).Path
 $COMM_DIR = Join-Path $REPO_ROOT ".agent-communication"
 $MESSAGES_FILE = Join-Path $COMM_DIR "messages.json"
 $NOTIFICATION_FILE = Join-Path $COMM_DIR "notifications.json"
+$CONTRACTS_FILE = Join-Path $COMM_DIR "contracts.json"
 
 function Ensure-BurntToast {
     param([switch]$Install)
@@ -95,6 +97,46 @@ function Run-AutoCommands {
             . $auto
             $replies = AutoCommands-Process -Agent $Agent -Messages $Messages
             Send-CommandReplies -Replies $replies
+        }
+    } catch { }
+}
+
+function Contract-Sweep {
+    try {
+        $contracts = Join-Path $PSScriptRoot 'agent_contracts.ps1'
+        if (Test-Path -LiteralPath $contracts) { & $contracts sweep | Out-Null }
+    } catch { }
+}
+
+function Contract-Heartbeat {
+    param(
+        [string]$Agent,
+        [int]$HeartbeatSeconds
+    )
+    try {
+        if (-not (Test-Path -LiteralPath $CONTRACTS_FILE)) { return }
+        $raw = Get-Content -LiteralPath $CONTRACTS_FILE -Raw -ErrorAction SilentlyContinue
+        if ([string]::IsNullOrWhiteSpace($raw)) { return }
+        $contracts = $raw | ConvertFrom-Json
+        $contracts = if ($contracts) { @($contracts) } else { @() }
+        if ($contracts.Count -eq 0) { return }
+        $now = Get-Date
+        foreach ($c in $contracts) {
+            try {
+                if (($c.status -ne 'in_progress') -or ($c.to -ne $Agent)) { continue }
+                $hbInt = 0
+                try { $hbInt = [int]$c.heartbeat_interval_sec } catch { $hbInt = 0 }
+                if ($hbInt -le 0) { $hbInt = [int]$HeartbeatSeconds }
+                $interval = [math]::Max(60, [int][math]::Min($HeartbeatSeconds, $hbInt))
+                $last = $null
+                if ($c.last_heartbeat) { try { $last = [datetime]$c.last_heartbeat } catch { $last = $null } }
+                $due = $true
+                if ($last) { $due = (($now.ToUniversalTime() - $last.ToUniversalTime()).TotalSeconds -ge $interval) }
+                if ($due) {
+                    $contractsScript = Join-Path $PSScriptRoot 'agent_contracts.ps1'
+                    if (Test-Path -LiteralPath $contractsScript) { & $contractsScript heartbeat -Id $c.id -From $Agent -Note 'auto' | Out-Null }
+                }
+            } catch { }
         }
     } catch { }
 }
@@ -288,7 +330,9 @@ function Start-Monitoring {
         [switch]$OnlyHigh,
         [switch]$Watch,
         [switch]$LogThreads,
-        [string]$ThreadsFile = 'AGENT_THREADS.md'
+        [string]$ThreadsFile = 'AGENT_THREADS.md',
+        [int]$ContractSweepSeconds = 60,
+        [int]$HeartbeatSeconds = 600
     )
     
     Write-Host "ðŸ”” Starting notification monitoring for $Agent" -ForegroundColor Green
@@ -296,7 +340,9 @@ function Start-Monitoring {
     Write-Host "Press Ctrl+C to stop" -ForegroundColor Gray
     Write-Host ""
     
-    try { if ($Watch) { Start-EventWatch -Agent $Agent -AutoReply:$AutoReply -AutoReplyTemplate $AutoReplyTemplate -Toast:$Toast -Sound:$Sound -OnlyHigh:$OnlyHigh -LogThreads:$LogThreads -ThreadsFile $ThreadsFile; return }`n        $first = $true
+    try { if ($Watch) { Start-EventWatch -Agent $Agent -AutoReply:$AutoReply -AutoReplyTemplate $AutoReplyTemplate -Toast:$Toast -Sound:$Sound -OnlyHigh:$OnlyHigh -LogThreads:$LogThreads -ThreadsFile $ThreadsFile -ContractSweepSeconds $ContractSweepSeconds -HeartbeatSeconds $HeartbeatSeconds; return }`n        $first = $true
+        $lastSweep = Get-Date '1970-01-01T00:00:00Z'
+        $lastHb = Get-Date '1970-01-01T00:00:00Z'
         while ($true) {
             $newMessages = Check-NewMessages -Agent $Agent -All:([bool]$first)
             
@@ -317,7 +363,32 @@ function Start-Monitoring {
                 Update-LastChecked -Agent $Agent
                 $first = $false
             }
-            
+            # Periodic contract expiration sweep
+            try {
+                $now = Get-Date
+                if ( ($now - $lastSweep).TotalSeconds -ge [math]::Max(10, [int]$ContractSweepSeconds) ) {
+                    Contract-Sweep
+                    $lastSweep = $now
+                }
+            } catch { }
+            # Periodic contract expiration sweep
+            try {
+                $now = Get-Date
+                if ( ($now - $lastSweep).TotalSeconds -ge [math]::Max(10, [int]$ContractSweepSeconds) ) {
+                    Contract-Sweep
+                    $lastSweep = $now
+                }
+            } catch { }
+
+            # Periodic heartbeats for active contracts
+            try {
+                $now2 = Get-Date
+                if ( ($now2 - $lastHb).TotalSeconds -ge [math]::Max(60, [int]$HeartbeatSeconds) ) {
+                    Contract-Heartbeat -Agent $Agent -HeartbeatSeconds $HeartbeatSeconds
+                    $lastHb = $now2
+                }
+            } catch { }
+
             Start-Sleep -Seconds $IntervalSeconds
         }
     }
@@ -401,7 +472,8 @@ function Start-EventWatch {
         [switch]$Sound,
         [switch]$OnlyHigh,
         [switch]$LogThreads,
-        [string]$ThreadsFile = 'AGENT_THREADS.md'
+        [string]$ThreadsFile = 'AGENT_THREADS.md',
+        [int]$ContractSweepSeconds = 60
     )
     Initialize-Notifications
     $script:lastEventAt = Get-Date '1970-01-01T00:00:00Z'
@@ -447,6 +519,22 @@ function Start-EventWatch {
         }
         Update-LastChecked -Agent $Agent
     }
+    # Start periodic contract sweep via timer
+    try {
+        $timer = New-Object System.Timers.Timer
+        $timer.Interval = [math]::Max(10, [int]$ContractSweepSeconds) * 1000
+        $timer.AutoReset = $true
+        Register-ObjectEvent -InputObject $timer -EventName Elapsed -Action { try { Contract-Sweep } catch { } } | Out-Null
+        $timer.Start()
+    } catch { }
+    # Periodic contract heartbeats via timer
+    try {
+        $hbTimer = New-Object System.Timers.Timer
+        $hbTimer.Interval = [math]::Max(60, [int]$HeartbeatSeconds) * 1000
+        $hbTimer.AutoReset = $true
+        Register-ObjectEvent -InputObject $hbTimer -EventName Elapsed -Action { try { Contract-Heartbeat -Agent $using:Agent -HeartbeatSeconds $using:HeartbeatSeconds } catch { } } | Out-Null
+        $hbTimer.Start()
+    } catch { }
     while ($true) { Start-Sleep -Seconds 86400 }
 }function Stop-Monitoring {
     Write-Host "ðŸ›‘ Stopping all notification monitoring..." -ForegroundColor Yellow
@@ -483,7 +571,7 @@ switch ($Command) {
         }
     }
     "monitor" {
-        Start-Monitoring -Agent $Agent -IntervalSeconds $IntervalSeconds -AutoReply:$AutoReply -AutoReplyTemplate $AutoReplyTemplate -Toast:$Toast -Sound:$Sound -OnlyHigh:$OnlyHigh -Watch:$Watch -LogThreads:$LogThreads -ThreadsFile $ThreadsFile
+        Start-Monitoring -Agent $Agent -IntervalSeconds $IntervalSeconds -AutoReply:$AutoReply -AutoReplyTemplate $AutoReplyTemplate -Toast:$Toast -Sound:$Sound -OnlyHigh:$OnlyHigh -Watch:$Watch -LogThreads:$LogThreads -ThreadsFile $ThreadsFile -ContractSweepSeconds $ContractSweepSeconds -HeartbeatSeconds $HeartbeatSeconds
     }
     "stop" {
         Stop-Monitoring

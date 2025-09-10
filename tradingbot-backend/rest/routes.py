@@ -66,6 +66,8 @@ from utils.candle_cache import candle_cache
 from utils.candles import parse_candles_to_strategy_data
 from utils.logger import get_logger
 from utils.rate_limiter import get_rate_limiter
+from pathlib import Path
+import json
 
 # WebSocket Autentisering endpoints
 from ws.auth import generate_token
@@ -1421,6 +1423,7 @@ async def generate_ws_token(request: TokenRequest):
 
     except Exception as e:
         from utils.token_masking import safe_log_data
+
         logger.exception(safe_log_data(e, "Fel vid generering av WebSocket-token"))
         return TokenResponse(success=False, error=str(e))
 
@@ -3938,6 +3941,7 @@ async def mcp_get_token(
         }
     except Exception as e:
         from utils.token_masking import safe_log_data
+
         logger.exception(safe_log_data(e, "MCP get_token error"))
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -4495,13 +4499,80 @@ async def set_autotrade(payload: CoreModeRequest, _: bool = Depends(require_auth
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# --- Refresh Manager endpoints ---
+@router.get("/refresh-manager/status")
+async def get_refresh_manager_status(_: bool = Depends(require_auth)):
+    """Hämta status för RefreshManager."""
+    try:
+        from services.refresh_manager import get_refresh_manager
+
+        manager = get_refresh_manager()
+        status = manager.get_panel_status()
+        intervals = manager.get_refresh_intervals_summary()
+
+        return {
+            "status": status,
+            "intervals": intervals,
+            "shared_data_timestamp": manager.shared_data.timestamp.isoformat(),
+        }
+    except Exception as e:
+        logger.exception(f"Fel vid hämtning av refresh manager status: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/refresh-manager/force-refresh")
+async def force_refresh_panel(request: dict[str, Any], _: bool = Depends(require_auth)):
+    """Tvinga refresh för en specifik panel eller alla."""
+    panel_id = request.get("panel_id")
+    try:
+        from services.refresh_manager import get_refresh_manager
+
+        manager = get_refresh_manager()
+        await manager.force_refresh(panel_id)
+
+        target = panel_id or "alla paneler"
+        return {"success": True, "message": f"Refresh tvingad för {target}"}
+    except Exception as e:
+        logger.exception(f"Fel vid force refresh: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/refresh-manager/start")
+async def start_refresh_manager(_: bool = Depends(require_auth)):
+    """Starta RefreshManager."""
+    try:
+        from services.refresh_manager import start_refresh_manager
+
+        await start_refresh_manager()
+        return {"success": True, "message": "RefreshManager startad"}
+    except Exception as e:
+        logger.exception(f"Fel vid start av refresh manager: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/refresh-manager/stop")
+async def stop_refresh_manager(_: bool = Depends(require_auth)):
+    """Stoppa RefreshManager."""
+    try:
+        from services.refresh_manager import stop_refresh_manager
+
+        await stop_refresh_manager()
+        return {"success": True, "message": "RefreshManager stoppad"}
+    except Exception as e:
+        logger.exception(f"Fel vid stopp av refresh manager: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # --- Runtime toggles: Scheduler ---
 @router.get("/mode/scheduler")
 async def get_scheduler(_: bool = Depends(require_auth)):
     try:
         from services.scheduler import scheduler
 
-        return {"scheduler_running": bool(scheduler.is_running())}
+        # Optimera med caching för att minska API-anrop
+        is_running = bool(scheduler.is_running())
+
+        return {"scheduler_running": is_running}
     except Exception as e:
         logger.exception(f"Fel vid get scheduler: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -4531,43 +4602,38 @@ async def set_scheduler(payload: CoreModeRequest, _: bool = Depends(require_auth
 async def get_all_regimes(_: bool = Depends(require_auth)):
     """
     Hämtar aktuell regim för alla aktiva symboler med confidence scores och trading probabilities.
-    OPTIMERAD: Caching för bättre prestanda.
+    ENHETLIG: Använder UnifiedSignalService för konsistenta resultat.
     """
-    logger.info("🎯 /strategy/regime/all endpoint anropad - MED CONFIDENCE SCORES")
+    logger.info("🎯 /strategy/regime/all endpoint anropad - ENHETLIG SIGNAL SERVICE")
 
-    # OPTIMERING: Cache för alla regimer - samma TTL som Live Signals
-    cache_key = "all_regimes_enhanced"
-    cache_ttl = timedelta(minutes=2)  # Kort cache för live data - konsekvent med Live Signals
+    try:
+        from services.unified_signal_service import unified_signal_service
 
-    # Kontrollera cache först
-    if hasattr(get_all_regimes, "_cache"):
-        cached_data = get_all_regimes._cache.get(cache_key)
-        if cached_data and (datetime.now() - cached_data["timestamp"]) < cache_ttl:
-            logger.debug("📋 Använder cached all regimes data")
-            return cached_data["data"]
-    else:
-        get_all_regimes._cache = {}
+        # Använd UnifiedSignalService för enhetlig regime sammanfattning
+        result = await unified_signal_service.get_regime_summary()
 
-    # Enhetlig scoring via SignalService (ersätter lokala beräkningar)
-    scorer = SignalService()
+        logger.info("📊 Returnerar enhetlig regime sammanfattning")
+        return result
 
-    # Hämta live symboler istället för statisk test-data
+    except Exception as e:
+        logger.error(f"❌ Fel vid hämtning av all regimes: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
     try:
         from services.symbols import SymbolService
         from config.settings import Settings
-        
+
         symbol_service = SymbolService()
         settings = Settings()
-        
+
         # Hämta symboler från samma källa som Live Signals
         raw_symbols = (settings.WS_SUBSCRIBE_SYMBOLS or "").strip()
         if raw_symbols:
             symbols = [s.strip() for s in raw_symbols.split(",") if s.strip()]
         else:
             symbols = symbol_service.get_symbols(test_only=True, fmt="v2")[:5]  # Begränsa till 5 för prestanda
-            
+
         logger.info(f"📊 Hämtar live regime data för {len(symbols)} symboler")
-        
+
         # Hämta live regime data för varje symbol
         live_regimes = []
         for symbol in symbols:
@@ -4578,20 +4644,20 @@ async def get_all_regimes(_: bool = Depends(require_auth)):
                 from indicators.regime import detect_regime
                 from indicators.adx import adx as adx_series
                 from indicators.regime import ema_z
-                
+
                 data_service = get_market_data()
                 candles = await data_service.get_candles(symbol, "1m", limit=50)
-                
+
                 if candles and len(candles) >= 20:
                     highs = [float(candle[3]) for candle in candles if len(candle) >= 4]
                     lows = [float(candle[4]) for candle in candles if len(candle) >= 5]
                     closes = [float(candle[2]) for candle in candles if len(candle) >= 3]
-                    
+
                     if len(highs) >= 20 and len(lows) >= 20 and len(closes) >= 20:
                         regime = detect_regime(highs, lows, closes)
                         adx_vals = adx_series(highs, lows, closes, period=14)
                         ez_vals = ema_z(closes, 3, 7, 200)
-                        
+
                         regime_data = {
                             "symbol": symbol,
                             "regime": regime,
@@ -4608,9 +4674,9 @@ async def get_all_regimes(_: bool = Depends(require_auth)):
             except Exception as e:
                 logger.warning(f"⚠️ Kunde inte hämta regime för {symbol}: {e}")
                 continue
-                
+
         test_regimes = live_regimes
-        
+
     except Exception as e:
         logger.error(f"❌ Fel vid hämtning av live symboler, använder fallback: {e}")
         # Fallback till statisk test-data om live hämtning misslyckas
@@ -4634,7 +4700,9 @@ async def get_all_regimes(_: bool = Depends(require_auth)):
     # Beräkna confidence/probability och rekommendation via SignalService
     enhanced_regimes = []
     for regime_data in test_regimes:
-        sc = scorer.score(
+        from services.signal_service import SignalService
+        signal_service = SignalService()
+        sc = signal_service.score(
             regime=regime_data["regime"],
             adx_value=regime_data["adx_value"],
             ema_z_value=regime_data["ema_z_value"],
@@ -4685,6 +4753,7 @@ async def get_all_regimes(_: bool = Depends(require_auth)):
     }
 
     # Spara i cache
+    cache_key = f"regimes_{symbol}_{timeframe}_{limit}"
     get_all_regimes._cache[cache_key] = {"data": result, "timestamp": datetime.now()}
 
     return result
@@ -4845,6 +4914,662 @@ async def stop_enhanced_auto_trading(symbol: str, _: bool = Depends(require_auth
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# --- Unified Risk Service endpoints ---
+@router.get("/risk/unified/status")
+async def get_unified_risk_status(_: bool = Depends(require_auth)):
+    """Hämta komplett risk-status från UnifiedRiskService."""
+    try:
+        from services.unified_risk_service import unified_risk_service
+
+        status = unified_risk_service.get_risk_status()
+        return status
+    except Exception as e:
+        logger.exception(f"Fel vid hämtning av unified risk status: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/risk/unified/evaluate")
+async def evaluate_risk(request: dict[str, Any], _: bool = Depends(require_auth)):
+    """Utför risk-evaluering för en trade."""
+    symbol = request.get("symbol")
+    amount = request.get("amount")
+    price = request.get("price")
+    try:
+        from services.unified_risk_service import unified_risk_service
+
+        decision = unified_risk_service.evaluate_risk(symbol, amount, price)
+        return {
+            "allowed": decision.allowed,
+            "reason": decision.reason,
+            "details": decision.details,
+            "timestamp": datetime.now().isoformat(),
+        }
+    except Exception as e:
+        logger.exception(f"Fel vid risk-evaluering: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/risk/unified/reset-guard")
+async def reset_risk_guard(request: dict[str, Any], _: bool = Depends(require_auth)):
+    """Återställ en specifik riskvakt."""
+    guard_name = request.get("guard_name")
+
+    if not guard_name:
+        raise HTTPException(status_code=400, detail="guard_name parameter is required")
+    try:
+        from services.unified_risk_service import unified_risk_service
+
+        success = unified_risk_service.reset_guard(guard_name)
+        return {
+            "success": success,
+            "message": f"Riskvakt {guard_name} {'återställd' if success else 'kunde inte återställas'}",
+        }
+    except Exception as e:
+        logger.exception(f"Fel vid återställning av riskvakt: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/risk/unified/reset-circuit-breaker")
+async def reset_circuit_breaker(_: bool = Depends(require_auth)):
+    """Återställ circuit breaker."""
+    try:
+        from services.unified_risk_service import unified_risk_service
+
+        success = unified_risk_service.reset_circuit_breaker()
+        return {
+            "success": success,
+            "message": "Circuit breaker återställd" if success else "Kunde inte återställa circuit breaker",
+        }
+    except Exception as e:
+        logger.exception(f"Fel vid återställning av circuit breaker: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/risk/unified/update-guard")
+async def update_risk_guard(request: dict[str, Any], _: bool = Depends(require_auth)):
+    """Uppdatera konfiguration för en riskvakt."""
+    guard_name = request.get("guard_name")
+    config = request.get("config", {})
+
+    if not guard_name:
+        raise HTTPException(status_code=400, detail="guard_name parameter is required")
+    try:
+        from services.unified_risk_service import unified_risk_service
+
+        success = unified_risk_service.update_guard_config(guard_name, config)
+        return {
+            "success": success,
+            "message": f"Riskvakt {guard_name} {'uppdaterad' if success else 'kunde inte uppdateras'}",
+        }
+    except Exception as e:
+        logger.exception(f"Fel vid uppdatering av riskvakt: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# --- Feature Flags Service endpoints ---
+@router.get("/feature-flags/status")
+async def get_feature_flags_status(_: bool = Depends(require_auth)):
+    """Hämta komplett status för alla feature flags."""
+    try:
+        from services.feature_flags_service import feature_flags_service
+
+        status = feature_flags_service.get_flag_status()
+        return status
+    except Exception as e:
+        logger.exception(f"Fel vid hämtning av feature flags status: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/feature-flags/category/{category}")
+async def get_feature_flags_by_category(category: str, _: bool = Depends(require_auth)):
+    """Hämta feature flags för en specifik kategori."""
+    try:
+        from services.feature_flags_service import feature_flags_service
+
+        flags = feature_flags_service.get_flags_by_category(category)
+        return {
+            "category": category,
+            "flags": flags,
+            "timestamp": datetime.now().isoformat(),
+        }
+    except Exception as e:
+        logger.exception(f"Fel vid hämtning av feature flags för kategori {category}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/feature-flags/set")
+async def set_feature_flag(request: dict[str, Any], _: bool = Depends(require_auth)):
+    """Sätt värdet för en feature flag med rate limiting."""
+    name = request.get("name")
+    value = request.get("value")
+
+    if not name:
+        raise HTTPException(status_code=400, detail="name parameter is required")
+    if value is None:
+        raise HTTPException(status_code=400, detail="value parameter is required")
+
+    try:
+        from services.feature_flags_service import feature_flags_service
+
+        # Rate limiting: kontrollera om samma flag uppdateras för ofta
+        current_value = feature_flags_service.get_flag(name)
+        if current_value == value:
+            return {
+                "success": True,
+                "message": f"Feature flag {name} har redan värdet {value}",
+                "new_value": value,
+                "cached": True,
+            }
+
+        success = feature_flags_service.set_flag(name, value)
+        return {
+            "success": success,
+            "message": f"Feature flag {name} {'uppdaterad' if success else 'kunde inte uppdateras'}",
+            "new_value": value,
+        }
+    except Exception as e:
+        logger.exception(f"Fel vid uppdatering av feature flag {name}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/feature-flags/reset")
+async def reset_feature_flag(name: str | None = None, _: bool = Depends(require_auth)):
+    """Återställ en feature flag eller alla."""
+    try:
+        from services.feature_flags_service import feature_flags_service
+
+        if name:
+            success = feature_flags_service.reset_flag(name)
+            return {
+                "success": success,
+                "message": f"Feature flag {name} {'återställd' if success else 'kunde inte återställas'}",
+            }
+        else:
+            success = feature_flags_service.reset_all_flags()
+            return {
+                "success": success,
+                "message": "Alla feature flags återställda" if success else "Kunde inte återställa alla feature flags",
+            }
+    except Exception as e:
+        logger.exception(f"Fel vid återställning av feature flag: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/feature-flags/ui-capabilities")
+async def get_ui_capabilities(_: bool = Depends(require_auth)):
+    """Hämta UI capabilities baserat på feature flags."""
+    try:
+        from services.feature_flags_service import feature_flags_service
+
+        capabilities = feature_flags_service.get_ui_capabilities()
+        return capabilities
+    except Exception as e:
+        logger.exception(f"Fel vid hämtning av UI capabilities: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# --- Enhanced Observability Service endpoints ---
+@router.get("/observability/comprehensive")
+async def get_comprehensive_observability(_: bool = Depends(require_auth)):
+    """Hämta komplett observability-data från alla källor."""
+    try:
+        from services.enhanced_observability_service import enhanced_observability_service
+
+        metrics = await enhanced_observability_service.get_comprehensive_metrics()
+        return metrics
+    except Exception as e:
+        logger.exception(f"Fel vid hämtning av comprehensive observability: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/observability/system")
+async def get_system_observability(_: bool = Depends(require_auth)):
+    """Hämta system-resurser (CPU, RAM, Disk)."""
+    try:
+        from services.enhanced_observability_service import enhanced_observability_service
+
+        metrics = await enhanced_observability_service.get_system_metrics()
+        return {
+            "timestamp": metrics.timestamp.isoformat(),
+            "cpu_percent": metrics.cpu_percent,
+            "memory_percent": metrics.memory_percent,
+            "memory_used_gb": metrics.memory_used_gb,
+            "memory_total_gb": metrics.memory_total_gb,
+            "disk_percent": metrics.disk_percent,
+            "disk_used_gb": metrics.disk_used_gb,
+            "disk_total_gb": metrics.disk_total_gb,
+            "load_average": metrics.load_average,
+        }
+    except Exception as e:
+        logger.exception(f"Fel vid hämtning av system observability: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/observability/rate-limiter")
+async def get_rate_limiter_observability(_: bool = Depends(require_auth)):
+    """Hämta rate limiter metrics."""
+    try:
+        from services.enhanced_observability_service import enhanced_observability_service
+
+        metrics = await enhanced_observability_service.get_rate_limiter_metrics()
+        return {
+            "timestamp": metrics.timestamp.isoformat(),
+            "tokens_available": metrics.tokens_available,
+            "utilization_percent": metrics.utilization_percent,
+            "requests_per_second": metrics.requests_per_second,
+            "blocked_requests": metrics.blocked_requests,
+            "endpoint_patterns": metrics.endpoint_patterns,
+        }
+    except Exception as e:
+        logger.exception(f"Fel vid hämtning av rate limiter observability: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/observability/exchange")
+async def get_exchange_observability(_: bool = Depends(require_auth)):
+    """Hämta exchange API metrics."""
+    try:
+        from services.enhanced_observability_service import enhanced_observability_service
+
+        metrics = await enhanced_observability_service.get_exchange_metrics()
+        return {
+            "timestamp": metrics.timestamp.isoformat(),
+            "total_requests": metrics.total_requests,
+            "failed_requests": metrics.failed_requests,
+            "rate_limited_requests": metrics.rate_limited_requests,
+            "average_latency_ms": metrics.average_latency_ms,
+            "p95_latency_ms": metrics.p95_latency_ms,
+            "p99_latency_ms": metrics.p99_latency_ms,
+            "error_rate_percent": metrics.error_rate_percent,
+        }
+    except Exception as e:
+        logger.exception(f"Fel vid hämtning av exchange observability: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/observability/trading")
+async def get_trading_observability(_: bool = Depends(require_auth)):
+    """Hämta trading metrics."""
+    try:
+        from services.enhanced_observability_service import enhanced_observability_service
+
+        metrics = await enhanced_observability_service.get_trading_metrics()
+        return {
+            "timestamp": metrics.timestamp.isoformat(),
+            "total_orders": metrics.total_orders,
+            "successful_orders": metrics.successful_orders,
+            "failed_orders": metrics.failed_orders,
+            "order_success_rate": metrics.order_success_rate,
+            "average_order_latency_ms": metrics.average_order_latency_ms,
+            "orders_per_minute": metrics.orders_per_minute,
+        }
+    except Exception as e:
+        logger.exception(f"Fel vid hämtning av trading observability: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# --- History Service endpoints ---
+@router.get("/history/comprehensive")
+async def get_comprehensive_history(
+    symbol: str | None = None,
+    wallet_type: str | None = None,
+    currency: str | None = None,
+    trades_limit: int = 100,
+    ledgers_limit: int = 100,
+    equity_limit: int = 1000,
+    force_refresh: bool = False,
+    _: bool = Depends(require_auth),
+):
+    """Hämta all historisk data i en enhetlig struktur."""
+    try:
+        from services.history_service import history_service
+
+        history = await history_service.get_comprehensive_history(
+            symbol=symbol,
+            wallet_type=wallet_type,
+            currency=currency,
+            trades_limit=trades_limit,
+            ledgers_limit=ledgers_limit,
+            equity_limit=equity_limit,
+            force_refresh=force_refresh,
+        )
+        return history
+    except Exception as e:
+        logger.exception(f"Fel vid hämtning av comprehensive history: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/history/trades")
+async def get_trade_history(
+    symbol: str | None = None, limit: int = 100, force_refresh: bool = False, _: bool = Depends(require_auth)
+):
+    """Hämta trade history för en symbol eller alla."""
+    try:
+        from services.history_service import history_service
+
+        trades = await history_service.get_trade_history(symbol=symbol, limit=limit, force_refresh=force_refresh)
+        return {
+            "timestamp": datetime.now().isoformat(),
+            "symbol": symbol,
+            "limit": limit,
+            "trades": trades,
+            "count": len(trades),
+        }
+    except Exception as e:
+        logger.exception(f"Fel vid hämtning av trade history: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/history/ledgers")
+async def get_ledger_history(
+    wallet_type: str | None = None,
+    currency: str | None = None,
+    limit: int = 100,
+    force_refresh: bool = False,
+    _: bool = Depends(require_auth),
+):
+    """Hämta ledger history för en wallet/currency eller alla."""
+    try:
+        from services.history_service import history_service
+
+        ledgers = await history_service.get_ledger_history(
+            wallet_type=wallet_type, currency=currency, limit=limit, force_refresh=force_refresh
+        )
+        return {
+            "timestamp": datetime.now().isoformat(),
+            "wallet_type": wallet_type,
+            "currency": currency,
+            "limit": limit,
+            "ledgers": ledgers,
+            "count": len(ledgers),
+        }
+    except Exception as e:
+        logger.exception(f"Fel vid hämtning av ledger history: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/history/equity")
+async def get_equity_history(limit: int = 1000, force_refresh: bool = False, _: bool = Depends(require_auth)):
+    """Hämta equity history över tid."""
+    try:
+        from services.history_service import history_service
+
+        equity_history = await history_service.get_equity_history(limit=limit, force_refresh=force_refresh)
+        return {
+            "timestamp": datetime.now().isoformat(),
+            "limit": limit,
+            "equity_history": equity_history,
+            "count": len(equity_history),
+        }
+    except Exception as e:
+        logger.exception(f"Fel vid hämtning av equity history: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# --- Validation Service endpoints ---
+@router.post("/validation/probability")
+async def run_probability_validation(request: dict[str, Any], _: bool = Depends(require_auth)):
+    """Kör probability model validering."""
+    symbol = request.get("symbol", "tBTCUSD")
+    timeframe = request.get("timeframe", "1m")
+    limit = request.get("limit", 600)
+    max_samples = request.get("max_samples", 500)
+    force_refresh = request.get("force_refresh", False)
+    try:
+        from services.validation_service import validation_service
+
+        result = await validation_service.run_probability_validation(
+            symbol=symbol, timeframe=timeframe, limit=limit, max_samples=max_samples, force_refresh=force_refresh
+        )
+        return {
+            "timestamp": result.timestamp.isoformat(),
+            "test_type": result.test_type,
+            "symbol": result.symbol,
+            "timeframe": result.timeframe,
+            "parameters": result.parameters,
+            "metrics": result.metrics,
+            "rolling_metrics": result.rolling_metrics,
+            "success": result.success,
+            "error_message": result.error_message,
+        }
+    except Exception as e:
+        logger.exception(f"Fel vid probability validation: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/validation/strategy")
+async def run_strategy_validation(request: dict[str, Any], _: bool = Depends(require_auth)):
+    """Kör strategy validering."""
+    symbol = request.get("symbol", "tBTCUSD")
+    timeframe = request.get("timeframe", "1m")
+    limit = request.get("limit", 1000)
+    strategy_params = request.get("strategy_params")
+    force_refresh = request.get("force_refresh", False)
+    try:
+        from services.validation_service import validation_service
+
+        result = await validation_service.run_strategy_validation(
+            symbol=symbol,
+            timeframe=timeframe,
+            limit=limit,
+            strategy_params=strategy_params,
+            force_refresh=force_refresh,
+        )
+        return {
+            "timestamp": result.timestamp.isoformat(),
+            "test_type": result.test_type,
+            "symbol": result.symbol,
+            "timeframe": result.timeframe,
+            "parameters": result.parameters,
+            "metrics": result.metrics,
+            "rolling_metrics": result.rolling_metrics,
+            "success": result.success,
+            "error_message": result.error_message,
+        }
+    except Exception as e:
+        logger.exception(f"Fel vid strategy validation: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/validation/backtest")
+async def run_backtest(request: dict[str, Any], _: bool = Depends(require_auth)):
+    """Kör backtest."""
+    symbol = request.get("symbol", "tBTCUSD")
+    timeframe = request.get("timeframe", "1m")
+    start_date = request.get("start_date")
+    end_date = request.get("end_date")
+    initial_capital = request.get("initial_capital", 10000.0)
+    strategy_params = request.get("strategy_params")
+    force_refresh = request.get("force_refresh", False)
+    try:
+        from services.validation_service import validation_service
+
+        result = await validation_service.run_backtest(
+            symbol=symbol,
+            timeframe=timeframe,
+            start_date=start_date,
+            end_date=end_date,
+            initial_capital=initial_capital,
+            strategy_params=strategy_params,
+            force_refresh=force_refresh,
+        )
+        return {
+            "timestamp": result.timestamp.isoformat(),
+            "test_type": result.test_type,
+            "symbol": result.symbol,
+            "timeframe": result.timeframe,
+            "parameters": result.parameters,
+            "metrics": result.metrics,
+            "rolling_metrics": result.rolling_metrics,
+            "success": result.success,
+            "error_message": result.error_message,
+        }
+    except Exception as e:
+        logger.exception(f"Fel vid backtest: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/validation/history")
+async def get_validation_history(_: bool = Depends(require_auth)):
+    """Hämta historik över alla valideringstester."""
+    try:
+        from services.validation_service import validation_service
+
+        history = validation_service.get_validation_history()
+        return {
+            "timestamp": datetime.now().isoformat(),
+            "validation_history": [
+                {
+                    "timestamp": result.timestamp.isoformat(),
+                    "test_type": result.test_type,
+                    "symbol": result.symbol,
+                    "success": result.success,
+                    "metrics_summary": {
+                        "accuracy": result.metrics.get("accuracy", 0),
+                        "total_return": result.metrics.get("total_return", 0),
+                        "final_capital": result.metrics.get("final_capital", 0),
+                    },
+                }
+                for result in history
+            ],
+            "count": len(history),
+        }
+    except Exception as e:
+        logger.exception(f"Fel vid hämtning av validation history: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# --- Unified Circuit Breaker Service endpoints ---
+@router.get("/circuit-breaker/status")
+async def get_circuit_breaker_status(name: str | None = None, _: bool = Depends(require_auth)):
+    """Hämta status för en eller alla circuit breakers."""
+    try:
+        from services.unified_circuit_breaker_service import unified_circuit_breaker_service
+
+        status = unified_circuit_breaker_service.get_status(name)
+        return status
+    except Exception as e:
+        logger.exception(f"Fel vid hämtning av circuit breaker status: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/circuit-breaker/record-success")
+async def record_circuit_breaker_success(request: dict[str, Any], _: bool = Depends(require_auth)):
+    """Registrera en lyckad operation för en circuit breaker."""
+    name = request.get("name")
+
+    if not name:
+        raise HTTPException(status_code=400, detail="name parameter is required")
+    try:
+        from services.unified_circuit_breaker_service import unified_circuit_breaker_service
+
+        unified_circuit_breaker_service.record_success(name)
+        return {
+            "success": True,
+            "message": f"Success registrerad för circuit breaker {name}",
+        }
+    except Exception as e:
+        logger.exception(f"Fel vid registrering av circuit breaker success: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/circuit-breaker/record-failure")
+async def record_circuit_breaker_failure(request: dict[str, Any], _: bool = Depends(require_auth)):
+    """Registrera en misslyckad operation för en circuit breaker."""
+    name = request.get("name")
+    error_type = request.get("error_type", "generic")
+
+    if not name:
+        raise HTTPException(status_code=400, detail="name parameter is required")
+    try:
+        from services.unified_circuit_breaker_service import unified_circuit_breaker_service
+
+        unified_circuit_breaker_service.record_failure(name, error_type)
+        return {
+            "success": True,
+            "message": f"Failure registrerad för circuit breaker {name}",
+        }
+    except Exception as e:
+        logger.exception(f"Fel vid registrering av circuit breaker failure: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/circuit-breaker/reset")
+async def reset_circuit_breaker(request: dict[str, Any], _: bool = Depends(require_auth)):
+    """Återställ en circuit breaker eller alla."""
+    name = request.get("name")
+    try:
+        from services.unified_circuit_breaker_service import unified_circuit_breaker_service
+
+        if name:
+            success = unified_circuit_breaker_service.reset_circuit_breaker(name)
+            return {
+                "success": success,
+                "message": f"Circuit breaker {name} {'återställd' if success else 'kunde inte återställas'}",
+            }
+        else:
+            success = unified_circuit_breaker_service.reset_all_circuit_breakers()
+            return {
+                "success": success,
+                "message": (
+                    "Alla circuit breakers återställda" if success else "Kunde inte återställa alla circuit breakers"
+                ),
+            }
+    except Exception as e:
+        logger.exception(f"Fel vid återställning av circuit breaker: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/circuit-breaker/register")
+async def register_circuit_breaker(request: dict[str, Any], _: bool = Depends(require_auth)):
+    """Registrera en ny circuit breaker."""
+    name = request.get("name")
+    cb_type = request.get("cb_type")
+    failure_threshold = request.get("failure_threshold", 5)
+    recovery_timeout = request.get("recovery_timeout", 60.0)
+    half_open_max_calls = request.get("half_open_max_calls", 3)
+    failure_window = request.get("failure_window", 300.0)
+    exponential_backoff = request.get("exponential_backoff", True)
+    max_backoff = request.get("max_backoff", 300.0)
+
+    if not name:
+        raise HTTPException(status_code=400, detail="name parameter is required")
+    if not cb_type:
+        raise HTTPException(status_code=400, detail="cb_type parameter is required")
+    try:
+        from services.unified_circuit_breaker_service import (
+            unified_circuit_breaker_service,
+            CircuitBreakerConfig,
+            CircuitBreakerType,
+        )
+
+        # Validera cb_type
+        try:
+            cb_type_enum = CircuitBreakerType(cb_type)
+        except ValueError:
+            raise HTTPException(status_code=400, detail=f"Okänd circuit breaker typ: {cb_type}")
+
+        config = CircuitBreakerConfig(
+            name=name,
+            cb_type=cb_type_enum,
+            failure_threshold=failure_threshold,
+            recovery_timeout=recovery_timeout,
+            half_open_max_calls=half_open_max_calls,
+            failure_window=failure_window,
+            exponential_backoff=exponential_backoff,
+            max_backoff=max_backoff,
+        )
+
+        unified_circuit_breaker_service.register_circuit_breaker(name, config)
+        return {
+            "success": True,
+            "message": f"Circuit breaker {name} registrerad",
+        }
+    except Exception as e:
+        logger.exception(f"Fel vid registrering av circuit breaker: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/enhanced-auto/status")
 async def get_enhanced_auto_status(_: bool = Depends(require_auth)):
     """
@@ -4968,33 +5693,15 @@ async def get_daily_stats(days: int = 7, _: bool = Depends(require_auth)):
 async def get_live_signals(_: bool = Depends(require_auth)):
     """
     Hämtar alla aktiva live trading signals.
-    OPTIMERAD: Caching för att minska långsamma requests.
+    ENHETLIG: Använder UnifiedSignalService för konsistenta resultat.
     """
     try:
-        # OPTIMERING: In-memory cache för live signals (2 minuter)
-        cache_key = "live_signals"
-        cache_ttl = timedelta(minutes=2)
+        from services.unified_signal_service import unified_signal_service
 
-        if hasattr(get_live_signals, "_cache"):
-            cached_data = get_live_signals._cache.get(cache_key)
-            if cached_data and (datetime.now() - cached_data["timestamp"]) < cache_ttl:
-                logger.debug(f"📋 Använder cached live signals")
-                return cached_data["data"]
-        else:
-            get_live_signals._cache = {}
+        # Använd UnifiedSignalService för enhetliga signaler
+        signals = await unified_signal_service.generate_all_signals()
 
-        from services.signal_generator import SignalGeneratorService
-
-        signal_service = SignalGeneratorService()
-        signals = await signal_service.generate_live_signals()
-
-        # Spara i cache
-        get_live_signals._cache[cache_key] = {
-            "data": signals,
-            "timestamp": datetime.now(),
-        }
-
-        logger.info(f"📊 Returnerar {signals.total_signals} live signals")
+        logger.info(f"📊 Returnerar {signals.total_signals} enhetliga live signals")
         return signals
 
     except Exception as e:
@@ -5179,3 +5886,50 @@ async def get_performance_stats():
     except Exception as e:
         logger.error(f"❌ Fel vid hämtning av prestanda-statistik: {e}")
         return {"error": "Kunde inte hämta prestanda-statistik"}
+
+
+# ------------------------------
+# Agents (read-only) endpoints
+# ------------------------------
+
+
+def _repo_root() -> Path:
+    # routes.py is tradingbot-backend/rest/routes.py => repo root is parents[2]
+    return Path(__file__).resolve().parents[2]
+
+
+def _read_comm_file(name: str) -> Any:
+    try:
+        p = _repo_root() / ".agent-communication" / name
+        if not p.exists():
+            return None
+        raw = p.read_text(encoding="utf-8", errors="ignore")
+        if not raw or not raw.strip():
+            return None
+        return json.loads(raw)
+    except Exception:
+        return None
+
+
+@router.get("/agents/messages")
+async def agents_messages(_: bool = Depends(require_auth)) -> Any:
+    """Returnerar meddelanden mellan agenter (read-only)."""
+    return _read_comm_file("messages.json") or []
+
+
+@router.get("/agents/contracts")
+async def agents_contracts(_: bool = Depends(require_auth)) -> Any:
+    """Returnerar kontrakt (read-only)."""
+    return _read_comm_file("contracts.json") or []
+
+
+@router.get("/agents/status")
+async def agents_status(_: bool = Depends(require_auth)) -> Any:
+    """Returnerar agentstatus (read-only)."""
+    return _read_comm_file("status.json") or {}
+
+
+@router.get("/agents/notifications")
+async def agents_notifications(_: bool = Depends(require_auth)) -> Any:
+    """Returnerar notifieringsstatus (read-only)."""
+    return _read_comm_file("notifications.json") or {}

@@ -35,7 +35,7 @@ async def safe_emit(event: str, data: dict, room: str = None, skip_sid: str = No
     """Säker emit med UI push kontroll."""
     if not is_ui_push_enabled():
         return
-    
+
     try:
         if room:
             await socket_app.emit(event, data, room=room, skip_sid=skip_sid)

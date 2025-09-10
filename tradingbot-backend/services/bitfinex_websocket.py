@@ -401,7 +401,9 @@ class BitfinexWebSocketService:
             logger.info("✅ Ansluten till Bitfinex WebSocket")
             # Starta lyssnare i bakgrunden direkt för att fånga auth-ack (endast om inte redan startad)
             if not hasattr(self, '_message_listener_task') or self._message_listener_task.done():
-                self._message_listener_task = self._asyncio.create_task(self.listen_for_messages(), name="ws-message-listener")
+                self._message_listener_task = self._asyncio.create_task(
+                    self.listen_for_messages(), name="ws-message-listener"
+                )
             # Starta ping/heartbeat‑övervakning
             try:
                 await self._start_heartbeat_tasks()

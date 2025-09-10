@@ -88,6 +88,7 @@ def generate_token(user_id: str, scope: str = "read", expiry_minutes: int = 15) 
         }
     except Exception as e:
         from utils.token_masking import safe_log_data
+
         logger.error(safe_log_data(e, "Fel vid generering av tokens"))
         return None
 
@@ -125,10 +126,12 @@ def validate_token(token: str) -> Dict[str, Any]:
         return None
     except jwt.InvalidTokenError as e:
         from utils.token_masking import mask_token, safe_log_data
+
         logger.warning(safe_log_data(e, f"Ogiltig token: {mask_token(token)}"))
         return None
     except Exception as e:
         from utils.token_masking import mask_token, safe_log_data
+
         logger.error(safe_log_data(e, f"Fel vid validering av token: {mask_token(token)}"))
         return None
 

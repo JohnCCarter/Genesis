@@ -130,6 +130,8 @@ async function fetchWithRetry<T>(
   { maxRetries = MAX_RETRIES, timeout = API_TIMEOUT, ignoreCircuitBreaker = false, refreshOn401 = true } = {}
 ): Promise<T> {
   if (!ignoreCircuitBreaker && isCircuitBreakerOpen()) {
+    // Add a small delay before throwing error to prevent rapid retries
+    await sleep(1000);
     throw new Error("Circuit breaker is OPEN - backend appears to be down");
   }
 

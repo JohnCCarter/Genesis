@@ -343,7 +343,7 @@ class PerformanceService:
                         else await asyncio.wait_for(self._fx_to_usd(cur), timeout=0.5)
                     )
                     wallets_usd_total += float(w.balance) * (fx if fx > 0 else 0.0)
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     logger.warning(f"⚠️ FX timeout for {cur}, using 0.0")
                     wallets_usd_total += 0.0
                 except Exception:
@@ -361,7 +361,7 @@ class PerformanceService:
                 "positions_count": len(positions),
             }
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             logger.warning("⚠️ Equity computation timeout - returning fallback")
             return {
                 "total_usd": 0.0,
