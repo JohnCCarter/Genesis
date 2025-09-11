@@ -270,7 +270,10 @@ class ValidationService:
 
             # Hämta market data för backtest-period
             candles = await self.market_data.get_candles(
-                symbol=symbol, timeframe=timeframe, limit=2000, force_fresh=True  # Större limit för backtest
+                symbol=symbol,
+                timeframe=timeframe,
+                limit=2000,
+                force_fresh=True,  # Större limit för backtest
             )
 
             if not candles or len(candles) < 200:
@@ -302,7 +305,11 @@ class ValidationService:
             return result
 
     def _calculate_probability_metrics(
-        self, candles: list[dict[str, Any]], regimes: list[str], adx_values: list[float], ema_z_values: list[float]
+        self,
+        candles: list[dict[str, Any]],
+        regimes: list[str],
+        adx_values: list[float],
+        ema_z_values: list[float],
     ) -> dict[str, Any]:
         """Beräkna probability validation metrics."""
         try:
@@ -359,6 +366,7 @@ class ValidationService:
     ) -> dict[str, Any]:
         """Simulera strategy execution."""
         try:
+            _ = strategy_params
             # Förenklad strategy simulation
             total_trades = 0
             winning_trades = 0
@@ -385,7 +393,7 @@ class ValidationService:
                 "winning_trades": winning_trades,
                 "win_rate": win_rate,
                 "total_return": total_return,
-                "avg_return_per_trade": total_return / total_trades if total_trades > 0 else 0,
+                "avg_return_per_trade": (total_return / total_trades if total_trades > 0 else 0),
             }
 
         except Exception as e:
@@ -393,10 +401,14 @@ class ValidationService:
             return {}
 
     def _run_backtest_simulation(
-        self, candles: list[dict[str, Any]], initial_capital: float, strategy_params: dict[str, Any] | None
+        self,
+        candles: list[dict[str, Any]],
+        initial_capital: float,
+        strategy_params: dict[str, Any] | None,
     ) -> dict[str, Any]:
         """Kör backtest simulation."""
         try:
+            _ = strategy_params
             capital = initial_capital
             position = 0.0
             trades = []
@@ -440,7 +452,7 @@ class ValidationService:
                 "total_return": total_return,
                 "total_trades": len(trades),
                 "max_drawdown": 0.05,  # Förenklad
-                "sharpe_ratio": total_return / 0.1 if total_return > 0 else 0,  # Förenklad
+                "sharpe_ratio": (total_return / 0.1 if total_return > 0 else 0),  # Förenklad
             }
 
         except Exception as e:

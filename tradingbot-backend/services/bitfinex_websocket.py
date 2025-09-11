@@ -19,6 +19,8 @@ from config.settings import Settings
 from utils.logger import get_logger
 from ws.auth import build_ws_auth_payload
 
+# Lazy import i metoder för att undvika cirkulär import
+
 logger = get_logger(__name__)
 
 
@@ -315,9 +317,9 @@ class BitfinexWebSocketService:
             quote = s[-3:]
             # Hämta currency sym-map (fwd) från REST-configs och applicera (ex. ALGO->ALG)
             try:
-                from services.bitfinex_data import BitfinexDataService
+                from services.market_data_facade import get_market_data
 
-                svc = BitfinexDataService()
+                svc = get_market_data()
                 fwd, _ = await svc.get_currency_symbol_map()
                 mapped = fwd.get(base.upper())
                 if mapped and mapped.upper() != base.upper():
@@ -346,10 +348,10 @@ class BitfinexWebSocketService:
                     pairs = items
             if pairs is None:
                 try:
-                    # Lazy import för att undvika cirkulära imports
-                    from services.bitfinex_data import BitfinexDataService
+                    # Lazy import via MarketDataFacade
+                    from services.market_data_facade import get_market_data
 
-                    svc = BitfinexDataService()
+                    svc = get_market_data()
                     pairs = await svc.get_configs_symbols() or []
                     self._pairs_cache = {"ts": now_ts or 0, "pairs": pairs}
                 except Exception:
@@ -400,7 +402,7 @@ class BitfinexWebSocketService:
             self.is_connected = True
             logger.info("✅ Ansluten till Bitfinex WebSocket")
             # Starta lyssnare i bakgrunden direkt för att fånga auth-ack (endast om inte redan startad)
-            if not hasattr(self, '_message_listener_task') or self._message_listener_task.done():
+            if not hasattr(self, "_message_listener_task") or self._message_listener_task.done():
                 self._message_listener_task = self._asyncio.create_task(
                     self.listen_for_messages(), name="ws-message-listener"
                 )
@@ -1153,84 +1155,80 @@ class BitfinexWebSocketService:
                 self.active_tickers.add(symbol)
                 logger.info(f"📡 WS ticker live: {symbol}")
 
-            # Lägg till i pris-historik (behåll senaste 100 datapunkter)
-            if symbol not in self.price_history:
-                self.price_history[symbol] = []
+            # Throttle: max 1 eval/sek per symbol → generera enhetlig signal via UnifiedSignalService
+            import time as _t
 
-            self.price_history[symbol].append(price)
-            if len(self.price_history[symbol]) > 100:
-                self.price_history[symbol].pop(0)
+            now_s = _t.time()
+            last_eval = float(self._last_eval_ts.get(symbol, 0))
+            if now_s - last_eval >= 1.0 and symbol != "unknown":
+                self._last_eval_ts[symbol] = now_s
+                try:
+                    from services.unified_signal_service import (
+                        unified_signal_service as _uss,
+                    )
 
-            # Kör strategiutvärdering om vi har tillräckligt med data
-            if len(self.price_history[symbol]) >= 30:  # Minst 30 datapunkter
-                # Throttle: max 1 eval/sek per symbol
-                import time as _t
+                    sig = await _uss.generate_signal(symbol, force_refresh=False)
+                    if sig is not None:
+                        result = {
+                            "symbol": getattr(sig, "symbol", symbol),
+                            "signal": getattr(sig, "signal_type", None) or "UNKNOWN",
+                            "current_price": (
+                                getattr(sig, "current_price", None)
+                                if getattr(sig, "current_price", None) is not None
+                                else price
+                            ),
+                            "reason": getattr(sig, "reason", "") or "",
+                            "timestamp": datetime.now().isoformat(),
+                        }
+                        # Anropa callback om registrerad
+                        if symbol in self.strategy_callbacks:
+                            await self.strategy_callbacks[symbol](result)
 
-                now_s = _t.time()
-                last_eval = float(self._last_eval_ts.get(symbol, 0))
-                if now_s - last_eval >= 1.0:
-                    self._last_eval_ts[symbol] = now_s
-                    await self._evaluate_strategy_for_symbol(symbol)
+                        # Logga endast vid tillståndsskifte eller var 30s
+                        now_s2 = _t.time()
+                        last_sig = self._last_strategy_signal.get(symbol)
+                        last_reason = self._last_strategy_reason.get(symbol)
+                        last_log = float(self._last_strategy_log_ts.get(symbol, 0))
+                        changed = result.get("signal") != last_sig or result.get("reason") != last_reason
+                        min_interval = 30.0
+                        _reason_str = str(result.get("reason", "") or "")
+                        if "Otillräcklig data" in _reason_str:
+                            min_interval = 60.0
+                        if changed or (now_s2 - last_log) >= min_interval:
+                            logger.info(
+                                f"🎯 Strategiutvärdering för {symbol}: {result['signal']} - {result.get('reason','')}"
+                            )
+                            self._last_strategy_signal[symbol] = result.get("signal")
+                            self._last_strategy_reason[symbol] = result.get("reason")
+                            self._last_strategy_log_ts[symbol] = now_s2
+                except Exception as e:
+                    logger.error(f"❌ UnifiedSignalService fel för {symbol}: {e}")
 
         except Exception as e:
             logger.error(f"❌ Fel vid hantering av ticker med strategi: {e}")
 
     async def _evaluate_strategy_for_symbol(self, symbol: str):
         """
-        Utvärderar strategi för en symbol baserat på pris-historik.
-
-        Args:
-            symbol: Trading pair
+        Avvecklad: Strategiutvärdering flyttad till UnifiedSignalService.
+        Behålls som no-op för bakåtkompatibilitet under övergången.
         """
         try:
-            from services.strategy import evaluate_strategy
+            from services.unified_signal_service import unified_signal_service as _uss
 
-            # Förbered data för strategiutvärdering
-            prices = self.price_history[symbol]
-
-            # Skapa mock-data för strategi (eftersom vi bara har closes)
-            strategy_data = {
-                "closes": prices,
-                "highs": prices,  # Använd samma värden som approximation
-                "lows": prices,  # Använd samma värden som approximation
-                "symbol": symbol,
+            sig = await _uss.generate_signal(symbol, force_refresh=False)
+            if sig is None:
+                return
+            result = {
+                "symbol": getattr(sig, "symbol", symbol),
+                "signal": getattr(sig, "signal_type", None) or "UNKNOWN",
+                "current_price": getattr(sig, "current_price", None) or self.latest_prices.get(symbol, 0),
+                "reason": getattr(sig, "reason", "") or "",
+                "timestamp": datetime.now().isoformat(),
             }
-
-            # Utvärdera strategi
-            result = evaluate_strategy(strategy_data)
-
-            # Lägg till symbol och timestamp
-            result["symbol"] = symbol
-            result["current_price"] = self.latest_prices.get(symbol, 0)
-            result["timestamp"] = datetime.now().isoformat()
-
-            # Anropa callback om den finns
             if symbol in self.strategy_callbacks:
                 await self.strategy_callbacks[symbol](result)
-
-            # Logga endast vid tillståndsskifte eller var 30s vid oförändrat läge
-            import time as _t
-
-            now_s = _t.time()
-            last_sig = self._last_strategy_signal.get(symbol)
-            last_reason = self._last_strategy_reason.get(symbol)
-            last_log = float(self._last_strategy_log_ts.get(symbol, 0))
-            changed = result.get("signal") != last_sig or result.get("reason") != last_reason
-
-            # Underlätta: spamma inte "Otillräcklig data" annat än var 60s om oförändrat
-            reason = str(result.get("reason", ""))
-            min_interval = 30.0
-            if "Otillräcklig data" in reason:
-                min_interval = 60.0
-
-            if changed or (now_s - last_log) >= min_interval:
-                logger.info(f"🎯 Strategiutvärdering för {symbol}: {result['signal']} - {result['reason']}")
-                self._last_strategy_signal[symbol] = result.get("signal")
-                self._last_strategy_reason[symbol] = result.get("reason")
-                self._last_strategy_log_ts[symbol] = now_s
-
         except Exception as e:
-            logger.error(f"❌ Fel vid strategiutvärdering för {symbol}: {e}")
+            logger.error(f"❌ UnifiedSignalService fel (legacy wrapper) för {symbol}: {e}")
 
     async def listen_for_messages(self):
         """Lyssnar på WebSocket-meddelanden."""
@@ -1856,7 +1854,7 @@ class BitfinexWebSocketService:
             await self.connect()
 
         # Starta lyssnare i bakgrunden (endast om inte redan startad)
-        if not hasattr(self, '_message_listener_task') or self._message_listener_task.done():
+        if not hasattr(self, "_message_listener_task") or self._message_listener_task.done():
             self._message_listener_task = asyncio.create_task(self.listen_for_messages())
             logger.info("🚀 WebSocket-lyssnare startad")
         else:

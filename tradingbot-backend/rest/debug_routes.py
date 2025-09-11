@@ -29,7 +29,7 @@ async def dump_tasks() -> dict[str, Any]:
             try:
                 # Hämta stack trace för task
                 stack = ""
-                if hasattr(task, '_coro') and task._coro:
+                if hasattr(task, "_coro") and task._coro:
                     try:
                         # Försök få stack från coroutine
                         frame = task._coro.cr_frame
@@ -45,7 +45,7 @@ async def dump_tasks() -> dict[str, Any]:
                         "name": task.get_name(),
                         "done": task.done(),
                         "cancelled": task.cancelled(),
-                        "exception": str(task.exception()) if task.done() and task.exception() else None,
+                        "exception": (str(task.exception()) if task.done() and task.exception() else None),
                         "stack": stack,
                     }
                 )
@@ -55,7 +55,7 @@ async def dump_tasks() -> dict[str, Any]:
         return {
             "count": len(out),
             "tasks": out,
-            "current_task": asyncio.current_task().get_name() if asyncio.current_task() else None,
+            "current_task": (asyncio.current_task().get_name() if asyncio.current_task() else None),
         }
     except Exception as e:
         logger.error(f"Fel vid task dump: {e}")
@@ -88,7 +88,11 @@ def dump_threads() -> dict[str, Any]:
             except Exception as e:
                 data.append({"name": "unknown", "error": str(e), "stack": ""})
 
-        return {"count": len(data), "threads": data, "main_thread": threading.main_thread().name}
+        return {
+            "count": len(data),
+            "threads": data,
+            "main_thread": threading.main_thread().name,
+        }
     except Exception as e:
         logger.error(f"Fel vid thread dump: {e}")
         return {"error": str(e), "count": 0, "threads": []}

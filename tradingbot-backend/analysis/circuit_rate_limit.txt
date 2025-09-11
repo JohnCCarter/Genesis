@@ -1,0 +1,525 @@
+﻿C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\config\settings.py:101:     # Circuit Breaker
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\config\settings.py:130:     BITFINEX_RATE_LIMIT_REQUESTS_PER_MINUTE: int = 3  # Mycket konservativ
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\config\settings.py:131:     BITFINEX_RATE_LIMIT_BURST_SIZE: int = 1  # Undvik bursts
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\config\settings.py:132:     BITFINEX_RATE_LIMIT_WINDOW_SECONDS: int = 60
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\config\settings.py:133:     BITFINEX_RATE_LIMIT_ENABLED: bool = True
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\config\settings.py:142:     RATE_LIMIT_PATTERNS: str | None = (
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\debug_routes.py:97: @router.get("/api/v2/debug/rate_limiter")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\debug_routes.py:98: async def dump_rate_limiter() -> dict[str, Any]:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\debug_routes.py:99:     """Dump rate limiter status och circuit breaker state."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\debug_routes.py:101:         from utils.advanced_rate_limiter import get_advanced_rate_limiter
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\debug_routes.py:103:         limiter = get_advanced_rate_limiter()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\debug_routes.py:106:         # Hämta circuit breaker state
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\debug_routes.py:116:             "circuit_breakers": cb_state,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\margin.py:18: from utils.bitfinex_rate_limiter import get_bitfinex_rate_limiter
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\margin.py:19: from services.transport_circuit_breaker import get_transport_circuit_breaker
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\margin.py:83:         self.rate_limiter = get_bitfinex_rate_limiter()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\margin.py:160:                 # TransportCircuitBreaker success
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\margin.py:161:                 tcb = get_transport_circuit_breaker()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\margin.py:188:                             tcb = get_transport_circuit_breaker()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\margin.py:197:                         tcb = get_transport_circuit_breaker()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\margin.py:207:                     tcb = get_transport_circuit_breaker()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\order_history.py:22: from services.transport_circuit_breaker import get_transport_circuit_breaker
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\order_history.py:23: from utils.advanced_rate_limiter import get_advanced_rate_limiter
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\order_history.py:253:         self.rate_limiter = get_advanced_rate_limiter()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\order_history.py:278:                 # Circuit breaker: respektera cooldown
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\order_history.py:279:                 if hasattr(self.rate_limiter, "can_request") and not self.rate_limiter.can_request(endpoint):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\order_history.py:280:                     wait = self.rate_limiter.time_until_open(endpoint)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\order_history.py:284:                 await self.rate_limiter.wait_if_needed(endpoint)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\order_history.py:331:                             # Circuit breaker + Retry-After
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\order_history.py:333:                             if hasattr(self.rate_limiter, "note_failure"):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\order_history.py:334:                                 cooldown = self.rate_limiter.note_failure(endpoint, response.status_code, retry_after)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\order_history.py:338:                                     metrics_store["transport_circuit_breaker_active"] = 1
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\order_history.py:341:                             # Ny: namngiven TransportCircuitBreaker wrapper (parallell markering)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\order_history.py:343:                                 tcb = get_transport_circuit_breaker()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\order_history.py:347:                             await self.rate_limiter.handle_server_busy(endpoint)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\order_history.py:353:                         self.rate_limiter.reset_server_busy_count()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\order_history.py:355:                             metrics_store["transport_circuit_breaker_active"] = 0
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\order_history.py:361:                         if hasattr(self.rate_limiter, "note_success"):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\order_history.py:362:                             self.rate_limiter.note_success(endpoint)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\order_history.py:365:                     # Ny: parallell success till TransportCircuitBreaker
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\order_history.py:367:                         tcb = get_transport_circuit_breaker()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\positions.py:20: from utils.advanced_rate_limiter import get_advanced_rate_limiter
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\positions.py:21: from services.transport_circuit_breaker import get_transport_circuit_breaker
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\positions.py:77:         self.rate_limiter = get_advanced_rate_limiter()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\positions.py:95:             # Circuit breaker + rate limiter
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\positions.py:97:                 if hasattr(self.rate_limiter, "can_request") and not self.rate_limiter.can_request(endpoint):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\positions.py:98:                     wait = float(self.rate_limiter.time_until_open(endpoint))
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\positions.py:104:                 await self.rate_limiter.wait_if_needed(endpoint)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\positions.py:146:                         ) and hasattr(self.rate_limiter, "note_failure"):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\positions.py:147:                             cooldown = self.rate_limiter.note_failure(
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\positions.py:154:                                 # Namngiven TransportCircuitBreaker
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\positions.py:155:                                 tcb = get_transport_circuit_breaker()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\positions.py:163:                         await self.rate_limiter.handle_server_busy(endpoint)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\positions.py:172:                     self.rate_limiter.reset_server_busy_count()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\positions.py:176:                     if hasattr(self.rate_limiter, "note_success"):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\positions.py:177:                         self.rate_limiter.note_success(endpoint)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\positions.py:181:                     # TransportCircuitBreaker success
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\positions.py:182:                     tcb = get_transport_circuit_breaker()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:64: from utils.advanced_rate_limiter import get_advanced_rate_limiter
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:68: from utils.rate_limiter import get_rate_limiter
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:82: _rl_adv = get_advanced_rate_limiter()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:83: _rl = get_rate_limiter()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:526:         # Enkel rate-limit (default avstängd om MAX_REQUESTS <= 0)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:528:             max_requests = int(getattr(settings, "ORDER_RATE_LIMIT_MAX", 0) or 0)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:529:             window_seconds = int(getattr(settings, "ORDER_RATE_LIMIT_WINDOW", 0) or 0)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:534:                         metrics_inc("rate_limited_total")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:537:                     return OrderResponse(success=False, error="rate_limited")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:767:             max_requests = int(getattr(settings, "ORDER_RATE_LIMIT_MAX", 0) or 0)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:768:             window_seconds = int(getattr(settings, "ORDER_RATE_LIMIT_WINDOW", 0) or 0)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:772:                         metrics_inc("rate_limited_total")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:775:                     return OrderResponse(success=False, error="rate_limited")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:914:         # Rate-limit skydd
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:916:             max_requests = int(getattr(settings, "ORDER_RATE_LIMIT_MAX", 0) or 0)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:917:             window_seconds = int(getattr(settings, "ORDER_RATE_LIMIT_WINDOW", 0) or 0)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:923:                         _inc("rate_limited_total")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:926:                     return OrderResponse(success=False, error="rate_limited")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:2851:         # Rate-limit skydd
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:2853:             max_requests = int(getattr(settings, "ORDER_RATE_LIMIT_MAX", 0) or 0)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:2854:             window_seconds = int(getattr(settings, "ORDER_RATE_LIMIT_WINDOW", 0) or 0)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:2860:                         _inc("rate_limited_total")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:2863:                     return OrderResponse(success=False, error="rate_limited")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3150:     # Utöka med TransportCircuitBreaker state från limiter om tillgängligt
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3152:         from utils.advanced_rate_limiter import get_advanced_rate_limiter
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3154:         limiter = get_advanced_rate_limiter()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3172:         status["transport_circuit_breaker"] = transport_cb
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3198:             get_advanced_rate_limiter().export_metrics()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3251: # --- Circuit Breaker endpoints ---
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3252: class CircuitConfigRequest(BaseModel):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3259: @router.get("/risk/circuit")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3260: async def circuit_status(_: bool = Depends(require_auth)):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3263:         return rm.status().get("circuit", {})
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3265:         logger.exception(f"Fel vid circuit status: {e}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3269: @router.post("/risk/circuit/reset")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3270: async def circuit_reset(resume: bool = True, clear_errors: bool = True, _: bool = Depends(require_auth)):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3273:         return rm.circuit_reset(resume=resume, clear_errors=clear_errors)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3275:         logger.exception(f"Fel vid circuit reset: {e}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3279: @router.post("/risk/circuit/config")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3280: async def circuit_config(req: CircuitConfigRequest, _: bool = Depends(require_auth)):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3283:         return rm.update_circuit_config(
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3290:         logger.exception(f"Fel vid circuit config: {e}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4015:             "rate_limit": {
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4016:                 "order_max": int(getattr(s, "ORDER_RATE_LIMIT_MAX", 0) or 0),
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4017:                 "order_window": int(getattr(s, "ORDER_RATE_LIMIT_WINDOW", 0) or 0),
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4972: @router.post("/risk/unified/reset-circuit-breaker")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4973: async def reset_circuit_breaker(_: bool = Depends(require_auth)):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4974:     """Återställ circuit breaker."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4978:         success = unified_risk_service.reset_circuit_breaker()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4981:             "message": "Circuit breaker återställd" if success else "Kunde inte återställa circuit breaker",
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4984:         logger.exception(f"Fel vid återställning av circuit breaker: {e}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5148: @router.get("/observability/rate-limiter")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5149: async def get_rate_limiter_observability(_: bool = Depends(require_auth)):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5154:         metrics = await enhanced_observability_service.get_rate_limiter_metrics()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5179:             "rate_limited_requests": metrics.rate_limited_requests,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5442: # --- Unified Circuit Breaker Service endpoints ---
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5443: @router.get("/circuit-breaker/status")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5444: async def get_circuit_breaker_status(name: str | None = None, _: bool = Depends(require_auth)):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5445:     """Hämta status för en eller alla circuit breakers."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5447:         from services.unified_circuit_breaker_service import unified_circuit_breaker_service
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5449:         status = unified_circuit_breaker_service.get_status(name)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5452:         logger.exception(f"Fel vid hämtning av circuit breaker status: {e}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5456: @router.post("/circuit-breaker/record-success")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5457: async def record_circuit_breaker_success(request: dict[str, Any], _: bool = Depends(require_auth)):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5458:     """Registrera en lyckad operation för en circuit breaker."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5464:         from services.unified_circuit_breaker_service import unified_circuit_breaker_service
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5466:         unified_circuit_breaker_service.record_success(name)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5469:             "message": f"Success registrerad för circuit breaker {name}",
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5472:         logger.exception(f"Fel vid registrering av circuit breaker success: {e}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5476: @router.post("/circuit-breaker/record-failure")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5477: async def record_circuit_breaker_failure(request: dict[str, Any], _: bool = Depends(require_auth)):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5478:     """Registrera en misslyckad operation för en circuit breaker."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5485:         from services.unified_circuit_breaker_service import unified_circuit_breaker_service
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5487:         unified_circuit_breaker_service.record_failure(name, error_type)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5490:             "message": f"Failure registrerad för circuit breaker {name}",
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5493:         logger.exception(f"Fel vid registrering av circuit breaker failure: {e}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5497: @router.post("/circuit-breaker/reset")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5498: async def reset_circuit_breaker(request: dict[str, Any], _: bool = Depends(require_auth)):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5499:     """Återställ en circuit breaker eller alla."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5502:         from services.unified_circuit_breaker_service import unified_circuit_breaker_service
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5505:             success = unified_circuit_breaker_service.reset_circuit_breaker(name)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5508:                 "message": f"Circuit breaker {name} {'återställd' if success else 'kunde inte återställas'}",
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5511:             success = unified_circuit_breaker_service.reset_all_circuit_breakers()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5515:                     "Alla circuit breakers återställda" if success else "Kunde inte återställa alla circuit breakers"
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5519:         logger.exception(f"Fel vid återställning av circuit breaker: {e}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5523: @router.post("/circuit-breaker/register")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5524: async def register_circuit_breaker(request: dict[str, Any], _: bool = Depends(require_auth)):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5525:     """Registrera en ny circuit breaker."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5540:         from services.unified_circuit_breaker_service import (
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5541:             unified_circuit_breaker_service,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5542:             CircuitBreakerConfig,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5543:             CircuitBreakerType,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5548:             cb_type_enum = CircuitBreakerType(cb_type)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5550:             raise HTTPException(status_code=400, detail=f"Okänd circuit breaker typ: {cb_type}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5552:         config = CircuitBreakerConfig(
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5563:         unified_circuit_breaker_service.register_circuit_breaker(name, config)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5566:             "message": f"Circuit breaker {name} registrerad",
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5569:         logger.exception(f"Fel vid registrering av circuit breaker: {e}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\wallet.py:18: from utils.advanced_rate_limiter import get_advanced_rate_limiter
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\wallet.py:19: from services.transport_circuit_breaker import get_transport_circuit_breaker
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\wallet.py:56:         self.rate_limiter = get_advanced_rate_limiter()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\wallet.py:75:             # Circuit breaker: respektera ev. cooldown + rate limiter
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\wallet.py:77:                 if hasattr(self.rate_limiter, "can_request") and not self.rate_limiter.can_request(endpoint):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\wallet.py:78:                     wait = float(self.rate_limiter.time_until_open(endpoint))
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\wallet.py:84:                 await self.rate_limiter.wait_if_needed(endpoint)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\wallet.py:142:                         ) and hasattr(self.rate_limiter, "note_failure"):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\wallet.py:143:                             cooldown = self.rate_limiter.note_failure(
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\wallet.py:150:                                 # Namngiven TransportCircuitBreaker
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\wallet.py:151:                                 tcb = get_transport_circuit_breaker()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\wallet.py:159:                         await self.rate_limiter.handle_server_busy(endpoint)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\wallet.py:169:                         self.rate_limiter.reset_server_busy_count()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\wallet.py:173:                         if hasattr(self.rate_limiter, "note_success"):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\wallet.py:174:                             self.rate_limiter.note_success(endpoint)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\wallet.py:178:                         # TransportCircuitBreaker success
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\wallet.py:179:                         tcb = get_transport_circuit_breaker()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_data.py:17: from utils.advanced_rate_limiter import get_advanced_rate_limiter
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_data.py:55:         # Advanced limiter (token-bucket + circuit breaker)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_data.py:56:         self.rate_limiter = get_advanced_rate_limiter()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_data.py:113:                     # Circuit breaker + limiter
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_data.py:116:                         if hasattr(self.rate_limiter, "can_request") and not self.rate_limiter.can_request(
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_data.py:119:                             wait = float(self.rate_limiter.time_until_open(endpoint_label))
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_data.py:121:                         await self.rate_limiter.wait_if_needed("candles")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_data.py:147:                         # Circuit breaker + server busy pacing
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_data.py:150:                             if hasattr(self.rate_limiter, "note_failure"):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_data.py:151:                                 cooldown = self.rate_limiter.note_failure(
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_data.py:159:                                 metrics_store["transport_circuit_breaker_active"] = 1
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_data.py:162:                             await self.rate_limiter.handle_server_busy("candles")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_data.py:178:                         self.rate_limiter.reset_server_busy_count()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_data.py:179:                         if hasattr(self.rate_limiter, "note_success"):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_data.py:180:                             self.rate_limiter.note_success("candles")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_data.py:185:                             metrics_store["transport_circuit_breaker_active"] = 0
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_data.py:417:                             # Circuit breaker + limiter
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_data.py:419:                                 if hasattr(self.rate_limiter, "can_request") and not self.rate_limiter.can_request(
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_data.py:422:                                     wait = float(self.rate_limiter.time_until_open("ticker"))
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_data.py:424:                                 await self.rate_limiter.wait_if_needed("ticker")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_data.py:452:                                     if hasattr(self.rate_limiter, "note_failure"):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_data.py:453:                                         cooldown = self.rate_limiter.note_failure(
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_data.py:463:                                         metrics_store["transport_circuit_breaker_active"] = 1
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_data.py:466:                                     await self.rate_limiter.handle_server_busy("ticker")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_data.py:503:                                 self.rate_limiter.reset_server_busy_count()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_data.py:504:                                 if hasattr(self.rate_limiter, "note_success"):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_data.py:505:                                     self.rate_limiter.note_success("ticker")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_data.py:510:                                     metrics_store["transport_circuit_breaker_active"] = 0
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_data.py:568:                             if hasattr(self.rate_limiter, "can_request") and not self.rate_limiter.can_request(
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_data.py:571:                                 wait = float(self.rate_limiter.time_until_open("tickers"))
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_data.py:573:                             await self.rate_limiter.wait_if_needed("tickers")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_data.py:581:                                 if hasattr(self.rate_limiter, "note_failure"):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_data.py:582:                                     cooldown = self.rate_limiter.note_failure(
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_data.py:586:                                 await self.rate_limiter.handle_server_busy("tickers")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_data.py:621:                             self.rate_limiter.reset_server_busy_count()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_data.py:622:                             if hasattr(self.rate_limiter, "note_success"):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_data.py:623:                                 self.rate_limiter.note_success("tickers")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:8: - Circuit breaker status
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:28: from utils.advanced_rate_limiter import get_advanced_rate_limiter
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:49: class RateLimiterMetrics:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:68:         self.rate_limited_requests = 0
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:76: class CircuitBreakerMetrics:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:77:     """Circuit breaker metrics."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:81:         self.trading_circuit_breaker_open = False
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:82:         self.transport_circuit_breaker_open = False
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:126:     - Circuit breakers
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:133:         self.rate_limiter = get_advanced_rate_limiter()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:175:     async def get_rate_limiter_metrics(self) -> RateLimiterMetrics:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:178:             metrics = RateLimiterMetrics()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:181:             if hasattr(self.rate_limiter, 'get_status'):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:182:                 status = self.rate_limiter.get_status()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:194:             return RateLimiterMetrics()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:204:             metrics.rate_limited_requests = metrics_store.get('rate_limited_total', 0)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:231:     async def get_circuit_breaker_metrics(self) -> CircuitBreakerMetrics:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:232:         """Hämta circuit breaker metrics."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:234:             metrics = CircuitBreakerMetrics()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:238:             # hämta från de faktiska circuit breaker services
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:240:             # Simulera circuit breaker status
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:241:             metrics.trading_circuit_breaker_open = False
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:242:             metrics.transport_circuit_breaker_open = False
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:246:             logger.debug("📊 Circuit breaker metrics: Alla stängda")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:250:             logger.error(f"❌ Fel vid hämtning av circuit breaker metrics: {e}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:251:             return CircuitBreakerMetrics()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:316:             rate_limiter_task = asyncio.create_task(self.get_rate_limiter_metrics())
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:318:             circuit_breaker_task = asyncio.create_task(self.get_circuit_breaker_metrics())
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:325:                 rate_limiter_task,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:327:                 circuit_breaker_task,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:335:             rate_limiter_metrics = results[1] if not isinstance(results[1], Exception) else RateLimiterMetrics()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:337:             circuit_breaker_metrics = results[3] if not isinstance(results[3], Exception) else CircuitBreakerMetrics()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:354:                 "rate_limiter": {
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:355:                     "tokens_available": rate_limiter_metrics.tokens_available,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:356:                     "utilization_percent": rate_limiter_metrics.utilization_percent,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:357:                     "requests_per_second": rate_limiter_metrics.requests_per_second,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:358:                     "blocked_requests": rate_limiter_metrics.blocked_requests,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:359:                     "endpoint_patterns": rate_limiter_metrics.endpoint_patterns,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:364:                     "rate_limited_requests": exchange_metrics.rate_limited_requests,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:370:                 "circuit_breaker": {
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:371:                     "trading_open": circuit_breaker_metrics.trading_circuit_breaker_open,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:372:                     "transport_open": circuit_breaker_metrics.transport_circuit_breaker_open,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:373:                     "trading_errors_count": circuit_breaker_metrics.trading_errors_count,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:374:                     "transport_errors_count": circuit_breaker_metrics.transport_errors_count,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:394:                         system_metrics, exchange_metrics, circuit_breaker_metrics, trading_metrics
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:397:                         system_metrics, exchange_metrics, circuit_breaker_metrics
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:421:         circuit_breaker: CircuitBreakerMetrics,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:427:             if circuit_breaker.trading_circuit_breaker_open or circuit_breaker.transport_circuit_breaker_open:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:445:         self, system: SystemMetrics, exchange: ExchangeMetrics, circuit_breaker: CircuitBreakerMetrics
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:451:             if circuit_breaker.trading_circuit_breaker_open:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:452:                 alerts.append("Trading circuit breaker är öppen")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:454:             if circuit_breaker.transport_circuit_breaker_open:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:455:                 alerts.append("Transport circuit breaker är öppen")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\exchange_client.py:106:         - Respekterar rate limiter/circuit breaker via anroparen (call site)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\feature_flags_service.py:186:         self.flags["rate_limit_enabled"] = FeatureFlag(
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\feature_flags_service.py:187:             "rate_limit_enabled",
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\feature_flags_service.py:188:             bool(getattr(self.settings, "ORDER_RATE_LIMIT_MAX", 0)),
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\feature_flags_service.py:190:             "rate_limit",
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\feature_flags_service.py:391:             "rate_limit": {
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\feature_flags_service.py:392:                 "enabled": self.get_flag("rate_limit_enabled"),
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\feature_flags_service.py:393:                 "order_max": getattr(self.settings, "ORDER_RATE_LIMIT_MAX", 0),
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\feature_flags_service.py:394:                 "order_window": getattr(self.settings, "ORDER_RATE_LIMIT_WINDOW", 0),
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\market_data_facade.py:111:             from utils.advanced_rate_limiter import get_advanced_rate_limiter
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\market_data_facade.py:113:             get_advanced_rate_limiter().export_metrics()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\metrics.py:17:     "rate_limited_total": 0,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\metrics.py:163:     rate_limited = metrics_store.get("rate_limited_total", 0)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\metrics.py:164:     lines.append(f"tradingbot_rate_limited_total {rate_limited}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\metrics.py:167:     cb_active = 1 if metrics_store.get("circuit_breaker_active") else 0
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\metrics.py:168:     lines.append(f"tradingbot_circuit_breaker_active {cb_active}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\metrics.py:169:     # Ny: separerad export för Trading vs Transport circuit breakers
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\metrics.py:170:     tcb = 1 if metrics_store.get("trading_circuit_breaker_active") else 0
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\metrics.py:171:     lines.append(f"tradingbot_trading_circuit_breaker_active {tcb}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\metrics.py:172:     xcb = 1 if metrics_store.get("transport_circuit_breaker_active") else 0
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\metrics.py:173:     lines.append(f"tradingbot_transport_circuit_breaker_active {xcb}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:27:     CRITICAL = 1  # 30s - Risk guards, circuit breakers
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:59:     circuit_breaker_status: dict[str, Any] | None = None
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:77:             RefreshPriority.CRITICAL: 30,  # Risk guards, circuit breakers
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:121:         elif data_type == "circuit_breaker_status":
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:122:             self.shared_data.circuit_breaker_status = data
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_manager.py:31:         # Circuit breaker state (global per process)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_manager.py:33:         self._circuit_opened_at_ref = lambda: _CB_OPENED_AT
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_manager.py:51:     # --- Circuit Breaker ---
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_manager.py:53:         """Registrera ett fel för circuit breaker-spårning."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_manager.py:59:         if self._should_open_circuit(now):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_manager.py:60:             self._open_circuit()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_manager.py:67:     def _should_open_circuit(self, now: datetime) -> bool:  # noqa: ARG002
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_manager.py:74:     def _open_circuit(self) -> None:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_manager.py:79:             logger.warning("🚨 TradingCircuitBreaker aktiverad: pausar handel pga felspikar")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_manager.py:82:                 metrics_store["circuit_breaker_active"] = 1
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_manager.py:83:                 metrics_store["trading_circuit_breaker_active"] = 1
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_manager.py:103:                             "Circuit breaker aktiverad",
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_manager.py:114:             logger.error(f"Kunde inte aktivera TradingCircuitBreaker: {e}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_manager.py:134:             "circuit": {
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_manager.py:145:     # --- Circuit Breaker controls ---
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_manager.py:146:     def circuit_reset(self, *, resume: bool = True, clear_errors: bool = True, notify: bool = True) -> dict[str, Any]:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_manager.py:147:         """Återställ circuit breaker: rensa fel och återuppta handel om så önskas."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_manager.py:154:                 metrics_store["circuit_breaker_active"] = 0
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_manager.py:155:                 metrics_store["trading_circuit_breaker_active"] = 0
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_manager.py:173:                                 "title": "Circuit breaker återställd",
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_manager.py:181:             logger.error(f"Fel vid circuit reset: {e}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_manager.py:184:     def update_circuit_config(
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_manager.py:192:         """Uppdatera runtime-konfiguration för circuit breaker (påverkar nya instanser via os.environ)."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\transport_circuit_breaker.py:2: Transport Circuit Breaker
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\transport_circuit_breaker.py:4: Namngiven wrapper runt AdvancedRateLimiter:s inbyggda circuit breaker för
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\transport_circuit_breaker.py:13: from utils.advanced_rate_limiter import get_advanced_rate_limiter
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\transport_circuit_breaker.py:19: class TransportCircuitBreaker:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\transport_circuit_breaker.py:21:         self._limiter = get_advanced_rate_limiter()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\transport_circuit_breaker.py:36:                 metrics_store["transport_circuit_breaker_active"] = 0
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\transport_circuit_breaker.py:48:             metrics_store["transport_circuit_breaker_active"] = 1
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\transport_circuit_breaker.py:54: _cb_singleton: TransportCircuitBreaker | None = None
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\transport_circuit_breaker.py:57: def get_transport_circuit_breaker() -> TransportCircuitBreaker:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\transport_circuit_breaker.py:60:         _cb_singleton = TransportCircuitBreaker()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:2: Unified Circuit Breaker Service - Enhetlig circuit breaker-hantering för TradingBot.
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:5: - Transport Circuit Breaker (REST/HTTP endpoints)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:6: - Trading Circuit Breaker (trading-fel)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:7: - Rate Limiter Circuit Breaker
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:8: - Custom Circuit Breakers
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:11: - Spridda circuit breaker-implementationer
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:12: - Inkonsistenta circuit breaker-logik
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:13: - Svår att debugga circuit breaker-problem
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:32: class CircuitBreakerState(Enum):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:33:     """Circuit Breaker states."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:36:     OPEN = "open"  # Circuit is open, blocking requests
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:40: class CircuitBreakerType(Enum):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:41:     """Types of circuit breakers."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:45:     RATE_LIMITER = "rate_limiter"  # Rate limiting
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:46:     CUSTOM = "custom"  # Custom circuit breakers
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:49: class CircuitBreakerConfig:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:50:     """Configuration for a circuit breaker."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:55:         cb_type: CircuitBreakerType,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:73: class CircuitBreakerStatus:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:74:     """Status of a circuit breaker."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:78:         self.cb_type = CircuitBreakerType.CUSTOM
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:79:         self.state = CircuitBreakerState.CLOSED
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:92: class UnifiedCircuitBreakerService:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:94:     Enhetlig service för all circuit breaker-hantering i systemet.
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:96:     Konsoliderar circuit breakers från:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:106:         # Circuit breaker configurations
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:107:         self.configs: dict[str, CircuitBreakerConfig] = {}
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:109:         # Circuit breaker states
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:110:         self.states: dict[str, CircuitBreakerStatus] = {}
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:115:         # Initialize default circuit breakers
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:116:         self._initialize_default_circuit_breakers()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:118:         logger.info("⚡ UnifiedCircuitBreakerService initialiserad - enhetlig circuit breaker-hantering")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:120:     def _initialize_default_circuit_breakers(self) -> None:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:121:         """Initialisera standard circuit breakers."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:123:         # Transport Circuit Breaker
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:124:         self.configs["transport"] = CircuitBreakerConfig(
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:126:             cb_type=CircuitBreakerType.TRANSPORT,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:135:         # Trading Circuit Breaker
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:136:         self.configs["trading"] = CircuitBreakerConfig(
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:138:             cb_type=CircuitBreakerType.TRADING,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:147:         # Rate Limiter Circuit Breaker
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:148:         self.configs["rate_limiter"] = CircuitBreakerConfig(
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:149:             name="rate_limiter",
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:150:             cb_type=CircuitBreakerType.RATE_LIMITER,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:161:             self.states[name] = CircuitBreakerStatus()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:166:     def register_circuit_breaker(self, name: str, config: CircuitBreakerConfig) -> None:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:167:         """Registrera en ny circuit breaker."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:169:         self.states[name] = CircuitBreakerStatus()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:173:         logger.info(f"⚡ Circuit breaker registrerad: {name} ({config.cb_type.value})")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:178:             logger.warning(f"⚠️ Okänd circuit breaker: {name}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:187:         # Kontrollera om circuit breaker är öppen
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:188:         if state.state == CircuitBreakerState.OPEN:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:193:                 state.state = CircuitBreakerState.HALF_OPEN
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:195:                 logger.info(f"⚡ Circuit breaker {name} går till half-open state")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:198:         if state.state == CircuitBreakerState.HALF_OPEN:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:219:         if state.state == CircuitBreakerState.HALF_OPEN:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:221:             state.state = CircuitBreakerState.CLOSED
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:226:             logger.info(f"⚡ Circuit breaker {name} återställd till closed state")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:227:         elif state.state == CircuitBreakerState.CLOSED:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:251:         # Kontrollera om circuit breaker ska öppnas
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:252:         if self._should_open_circuit(name):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:253:             self._open_circuit(name, error_type)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:258:         """Uppdatera circuit breaker state baserat på tid."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:265:         if state.state == CircuitBreakerState.OPEN:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:267:                 state.state = CircuitBreakerState.HALF_OPEN
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:269:                 logger.info(f"⚡ Circuit breaker {name} går till half-open state")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:271:     def _should_open_circuit(self, name: str) -> bool:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:272:         """Kontrollera om circuit breaker ska öppnas."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:292:     def _open_circuit(self, name: str, error_type: str) -> None:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:293:         """Öppna circuit breaker."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:300:         state.state = CircuitBreakerState.OPEN
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:314:         logger.warning(f"⚡ Circuit breaker {name} öppnad: {error_type}, cooldown: {backoff}s")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:333:         """Uppdatera metrics för circuit breaker."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:336:             metrics_store[f"{name}_circuit_breaker_active"] = is_open
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:340:                 metrics_store["circuit_breaker_active"] = is_open
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:341:                 metrics_store["trading_circuit_breaker_active"] = is_open
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:343:                 metrics_store["transport_circuit_breaker_active"] = is_open
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:347:             labeled = counters.get("circuit_breaker_reasons_total", {})
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:350:             counters["circuit_breaker_reasons_total"] = labeled
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:354:             logger.error(f"❌ Fel vid uppdatering av circuit breaker metrics: {e}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:357:         """Skicka notifikation om circuit breaker-aktivitet."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:365:                     f"Circuit Breaker {name} aktiverad",
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:375:             logger.error(f"❌ Fel vid skickande av circuit breaker notifikation: {e}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:378:         """Hämta status för en eller alla circuit breakers."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:381:                 return {"error": f"Okänd circuit breaker: {name}"}
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:410:             # Returnera status för alla circuit breakers
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:413:                 "circuit_breakers": {name: self.get_status(name) for name in self.states.keys()},
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:414:                 "total_circuit_breakers": len(self.states),
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:415:                 "open_circuit_breakers": sum(
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:416:                     1 for state in self.states.values() if state.state == CircuitBreakerState.OPEN
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:420:     def reset_circuit_breaker(self, name: str) -> bool:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:421:         """Återställ en circuit breaker till closed state."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:423:             logger.error(f"❌ Okänd circuit breaker: {name}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:427:         state.state = CircuitBreakerState.CLOSED
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:439:         logger.info(f"⚡ Circuit breaker {name} återställd")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:442:     def reset_all_circuit_breakers(self) -> bool:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:443:         """Återställ alla circuit breakers."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:446:                 self.reset_circuit_breaker(name)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:447:             logger.info("⚡ Alla circuit breakers återställda")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:450:             logger.error(f"❌ Fel vid återställning av alla circuit breakers: {e}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:455: unified_circuit_breaker_service = UnifiedCircuitBreakerService()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:8: - Circuit Breaker functionality
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:42: class CircuitBreakerState:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:43:     """Circuit Breaker tillstånd."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:48:         self.error_threshold = 5  # Antal fel innan circuit breaker öppnas
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:49:         self.timeout_minutes = 5  # Minuter innan circuit breaker stängs
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:62:     - Circuit breaker
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:69:         self.circuit_breaker = CircuitBreakerState()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:136:             # 1. Kontrollera circuit breaker
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:137:             if self._is_circuit_breaker_open():
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:140:                     "circuit_breaker_open",
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:143:                             self.circuit_breaker.opened_at.isoformat() if self.circuit_breaker.opened_at else None
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:184:         """Registrera ett fel för circuit breaker."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:187:             self.circuit_breaker.error_events.append(now)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:191:             while self.circuit_breaker.error_events and self.circuit_breaker.error_events[0] < cutoff:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:192:                 self.circuit_breaker.error_events.popleft()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:194:             # Kontrollera om circuit breaker ska öppnas
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:195:             if len(self.circuit_breaker.error_events) >= self.circuit_breaker.error_threshold:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:196:                 if not self.circuit_breaker.opened_at:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:197:                     self.circuit_breaker.opened_at = now
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:198:                     logger.warning(f"🚨 Circuit breaker öppnad efter {len(self.circuit_breaker.error_events)} fel")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:200:             logger.debug(f"📊 Fel registrerat. Totalt: {len(self.circuit_breaker.error_events)}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:204:     def _is_circuit_breaker_open(self) -> bool:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:205:         """Kontrollera om circuit breaker är öppen."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:206:         if not self.circuit_breaker.opened_at:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:209:         # Stäng circuit breaker efter timeout
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:210:         timeout = timedelta(minutes=self.circuit_breaker.timeout_minutes)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:211:         if datetime.now() - self.circuit_breaker.opened_at > timeout:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:212:             self.circuit_breaker.opened_at = None
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:213:             logger.info("✅ Circuit breaker stängd efter timeout")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:339:     def reset_circuit_breaker(self) -> bool:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:340:         """Återställ circuit breaker."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:342:             self.circuit_breaker.opened_at = None
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:343:             self.circuit_breaker.error_events.clear()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:344:             logger.info("🔄 Circuit breaker återställd")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:347:             logger.error(f"❌ Kunde inte återställa circuit breaker: {e}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:356:             # Hämta circuit breaker status
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:357:             circuit_breaker_status = {
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:358:                 "open": self._is_circuit_breaker_open(),
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:359:                 "opened_at": self.circuit_breaker.opened_at.isoformat() if self.circuit_breaker.opened_at else None,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:360:                 "error_count": len(self.circuit_breaker.error_events),
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:361:                 "error_threshold": self.circuit_breaker.error_threshold,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:377:                 "circuit_breaker": circuit_breaker_status,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:379:                 "overall_status": "healthy" if not self._is_circuit_breaker_open() else "degraded",
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\ws_first_data_service.py:19: from utils.advanced_rate_limiter import get_advanced_rate_limiter
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\ws_first_data_service.py:50:         self.rate_limiter = get_advanced_rate_limiter()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\ws_first_data_service.py:345:             await self.rate_limiter.wait_if_needed(f"ticker/{symbol}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\ws_first_data_service.py:444:             await self.rate_limiter.wait_if_needed(f"candles/{symbol}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\ws_first_data_service.py:514:             "rate_limiter_stats": self.rate_limiter.get_stats(),
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_advanced_rate_limiter_patterns.py:6: from utils.advanced_rate_limiter import AdvancedRateLimiter, EndpointType
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_advanced_rate_limiter_patterns.py:9: def test_rate_limit_patterns_classification(monkeypatch):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_advanced_rate_limiter_patterns.py:11:         "RATE_LIMIT_PATTERNS",
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_advanced_rate_limiter_patterns.py:16:     limiter = AdvancedRateLimiter(settings=s)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_advanced_rate_limiter_patterns.py:28: def test_rate_limit_export_metrics(monkeypatch):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_advanced_rate_limiter_patterns.py:29:     monkeypatch.setenv("RATE_LIMIT_PATTERNS", "^(ticker|candles)=>PUBLIC_MARKET")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_advanced_rate_limiter_patterns.py:31:     limiter = AdvancedRateLimiter(settings=s)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_manager.py:51: async def test_circuit_breaker_opens_and_notifies(tmp_path, monkeypatch):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_manager.py:85:     assert st["circuit"]["opened_at"] is not None
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_manager.py:88:     assert any(c.get("title") == "Circuit breaker aktiverad" for c in calls)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_manager.py:91: def test_circuit_breaker_reset_resumes(tmp_path):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_manager.py:111:     out = rm.circuit_reset(resume=True, clear_errors=True, notify=False)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_manager.py:113:     assert out["circuit"]["opened_at"] is None
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_manager.py:114:     assert out["circuit"]["errors_in_window"] == 0
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_routes_order.py:8: async def test_place_order_rate_limited(monkeypatch):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_routes_order.py:9:     # Aktivera rate-limit via settings-monkeypatch (återställs automatiskt)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_routes_order.py:12:     monkeypatch.setattr(routes_module.settings, "ORDER_RATE_LIMIT_MAX", 1, raising=False)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_routes_order.py:13:     monkeypatch.setattr(routes_module.settings, "ORDER_RATE_LIMIT_WINDOW", 60, raising=False)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_routes_order.py:35:     # Andra direkt efter ska rate-limita
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_routes_order.py:39:     assert resp2.success is False and resp2.error == "rate_limited"
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\utils\advanced_rate_limiter.py:69: class AdvancedRateLimiter:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\utils\advanced_rate_limiter.py:83:         # Circuit breaker per endpoint
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\utils\advanced_rate_limiter.py:151:         patterns = getattr(self.settings, "RATE_LIMIT_PATTERNS", None)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\utils\advanced_rate_limiter.py:213:         if not self.settings.BITFINEX_RATE_LIMIT_ENABLED:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\utils\advanced_rate_limiter.py:310:     # --- Circuit breaker helpers ---
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\utils\advanced_rate_limiter.py:353:         # Namngiven loggning för transport/circuit breaker (REST-transportnivå)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\utils\advanced_rate_limiter.py:356:                 "🚦 TransportCircuitBreaker: %s status=%s cooldown=%.1fs",
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\utils\advanced_rate_limiter.py:367: _advanced_rate_limiter: AdvancedRateLimiter | None = None
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\utils\advanced_rate_limiter.py:370: def get_advanced_rate_limiter() -> AdvancedRateLimiter:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\utils\advanced_rate_limiter.py:372:     global _advanced_rate_limiter
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\utils\advanced_rate_limiter.py:373:     if _advanced_rate_limiter is None:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\utils\advanced_rate_limiter.py:374:         _advanced_rate_limiter = AdvancedRateLimiter()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\utils\advanced_rate_limiter.py:375:     return _advanced_rate_limiter
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\utils\advanced_rate_limiter.py:390:             limiter = get_advanced_rate_limiter()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\utils\bitfinex_rate_limiter.py:19: class BitfinexRateLimiter:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\utils\bitfinex_rate_limiter.py:37:         if not self.settings.BITFINEX_RATE_LIMIT_ENABLED:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\utils\bitfinex_rate_limiter.py:42:             window_start = now - self.settings.BITFINEX_RATE_LIMIT_WINDOW_SECONDS
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\utils\bitfinex_rate_limiter.py:49:             max_requests = self.settings.BITFINEX_RATE_LIMIT_REQUESTS_PER_MINUTE
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\utils\bitfinex_rate_limiter.py:111:             "max_requests_per_minute": self.settings.BITFINEX_RATE_LIMIT_REQUESTS_PER_MINUTE,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\utils\bitfinex_rate_limiter.py:119: _bitfinex_rate_limiter: BitfinexRateLimiter | None = None
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\utils\bitfinex_rate_limiter.py:122: def get_bitfinex_rate_limiter() -> BitfinexRateLimiter:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\utils\bitfinex_rate_limiter.py:124:     global _bitfinex_rate_limiter
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\utils\bitfinex_rate_limiter.py:125:     if _bitfinex_rate_limiter is None:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\utils\bitfinex_rate_limiter.py:126:         _bitfinex_rate_limiter = BitfinexRateLimiter()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\utils\bitfinex_rate_limiter.py:127:     return _bitfinex_rate_limiter
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\utils\rate_limiter.py:5: Används av testerna (ORDER_RATE_LIMIT_MAX/WINDOW) för att validera att andra
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\utils\rate_limiter.py:16: class _RateLimiter:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\utils\rate_limiter.py:38: _singleton: _RateLimiter | None = None
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\utils\rate_limiter.py:42: def get_rate_limiter() -> _RateLimiter:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\utils\rate_limiter.py:47:                 _singleton = _RateLimiter()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\main.py:444:         from utils.advanced_rate_limiter import get_advanced_rate_limiter
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\main.py:448:         get_advanced_rate_limiter().export_metrics()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\main.py:466:         from utils.advanced_rate_limiter import get_advanced_rate_limiter
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\main.py:468:         get_advanced_rate_limiter().export_metrics()

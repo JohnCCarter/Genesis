@@ -33,7 +33,7 @@ class DataCoordinatorService:
         params = "_".join([f"{k}={v}" for k, v in sorted(kwargs.items())])
         return f"{data_type}:{symbol}:{params}"
 
-    def _is_cache_valid(self, cache_key: str, ttl_seconds: int = None) -> bool:
+    def _is_cache_valid(self, cache_key: str, ttl_seconds: int | None = None) -> bool:
         """Kontrollera om cache är giltig."""
         if cache_key not in self._data_cache:
             return False
@@ -206,7 +206,7 @@ class DataCoordinatorService:
 
         except Exception as e:
             logger.error(f"Fel vid batch-hämtning av candles: {e}")
-            return {symbol: None for symbol in symbols}
+            return {symbol: [] for symbol in symbols}
 
     async def batch_get_tickers(self, symbols: list[str]) -> dict[str, dict]:
         """
@@ -219,9 +219,9 @@ class DataCoordinatorService:
             Dict med symbol -> ticker data mapping
         """
         try:
-            from services.bitfinex_data import BitfinexDataService
+            from services.market_data_facade import get_market_data
 
-            data_service = BitfinexDataService()
+            data_service = get_market_data()
 
             # Skapa tasks för alla symboler
             tasks = []
@@ -247,7 +247,7 @@ class DataCoordinatorService:
 
         except Exception as e:
             logger.error(f"Fel vid batch-hämtning av tickers: {e}")
-            return {symbol: None for symbol in symbols}
+            return {symbol: {} for symbol in symbols}
 
     def get_cache_stats(self) -> dict[str, Any]:
         """Hämta cache-statistik."""

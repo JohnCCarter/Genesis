@@ -22,6 +22,7 @@ Löser problem med:
 from __future__ import annotations
 
 import os
+import services.runtime_config as rc
 import asyncio
 from datetime import datetime, timedelta
 from typing import Any
@@ -291,16 +292,13 @@ class FeatureFlagsService:
                 set_validation_on_start(bool(value))
 
             elif name == "prob_autotrade_enabled":
-                # Uppdatera miljövariabel
-                os.environ["PROB_AUTOTRADE_ENABLED"] = "True" if value else "False"
+                rc.set_bool("PROB_AUTOTRADE_ENABLED", bool(value))
 
             elif name == "trading_paused":
-                # Uppdatera miljövariabel
-                os.environ["TRADING_PAUSED"] = "True" if value else "False"
+                rc.set_bool("TRADING_PAUSED", bool(value))
 
             elif name == "dry_run_enabled":
-                # Uppdatera miljövariabel
-                os.environ["DRY_RUN_ENABLED"] = "True" if value else "False"
+                rc.set_bool("DRY_RUN_ENABLED", bool(value))
 
         except Exception as e:
             logger.warning(f"⚠️ Kunde inte uppdatera runtime flag {name}: {e}")
@@ -315,7 +313,7 @@ class FeatureFlagsService:
                 "description": flag.description,
                 "category": flag.category,
                 "requires_restart": flag.requires_restart,
-                "last_updated": flag.last_updated.isoformat() if flag.last_updated else None,
+                "last_updated": (flag.last_updated.isoformat() if flag.last_updated else None),
             }
         return result
 
@@ -329,7 +327,7 @@ class FeatureFlagsService:
                     "default_value": flag.default_value,
                     "description": flag.description,
                     "requires_restart": flag.requires_restart,
-                    "last_updated": flag.last_updated.isoformat() if flag.last_updated else None,
+                    "last_updated": (flag.last_updated.isoformat() if flag.last_updated else None),
                 }
         return result
 

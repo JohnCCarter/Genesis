@@ -18,7 +18,7 @@ except ImportError:  # Fall tillbaka till v1
 
         print("Using pydantic BaseSettings (v1)")
     except ImportError:
-        raise ImportError("Neither pydantic-settings nor pydantic BaseSettings found")
+        raise ImportError("Neither pydantic-settings nor pydantic BaseSettings found") from None
 
 
 class Settings(_BaseSettings):
@@ -86,6 +86,8 @@ class Settings(_BaseSettings):
     # Risk- och handelsregler
     TIMEZONE: str = "UTC"
     TRADING_RULES_FILE: str = "config/trading_rules.json"
+    # Global av/på för risklager (guards + constraints). Starta Off om du vill toggla i runtime
+    RISK_ENABLED: bool = True
     MAX_TRADES_PER_DAY: int = 15
     # Per-symbol daglig gräns (0 = inaktiverad)
     MAX_TRADES_PER_SYMBOL_PER_DAY: int = 0

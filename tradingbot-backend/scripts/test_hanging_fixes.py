@@ -28,7 +28,7 @@ async def test_websocket_no_race_condition():
 
         # Försök ansluta flera gånger snabbt
         tasks = []
-        for i in range(3):
+        for _i in range(3):
             task = asyncio.create_task(bitfinex_ws.connect())
             tasks.append(task)
 
@@ -113,7 +113,7 @@ async def test_rate_limiter_no_deadlock():
                 return True
 
         tasks = []
-        for i in range(5):
+        for _i in range(5):
             task = asyncio.create_task(test_endpoint("ticker"))
             tasks.append(task)
 

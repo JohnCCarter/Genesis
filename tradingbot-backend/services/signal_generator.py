@@ -306,16 +306,19 @@ class SignalGeneratorService:
     def _calculate_confidence_score(self, adx_value, ema_z_value):
         """DEPRECATED: Använd SignalService.score() direkt istället"""
         logger.warning("⚠️ _calculate_confidence_score() är deprecated - använd SignalService.score() direkt")
+        _ = (adx_value, ema_z_value)
         return 50.0
 
     def _calculate_trading_probability(self, regime, confidence):
         """DEPRECATED: Använd SignalService.score() direkt istället"""
         logger.warning("⚠️ _calculate_trading_probability() är deprecated - använd SignalService.score() direkt")
+        _ = (regime, confidence)
         return 50.0
 
     def _get_recommendation(self, regime, confidence, trading_prob):
         """DEPRECATED: Använd SignalService.score() direkt istället"""
         logger.warning("⚠️ _get_recommendation() är deprecated - använd SignalService.score() direkt")
+        _ = (regime, confidence, trading_prob)
         return "HOLD"
 
     async def _get_current_price(self, symbol: str) -> float | None:
@@ -342,6 +345,7 @@ class SignalGeneratorService:
     def _determine_signal_type(self, regime_data: dict) -> str:
         """DEPRECATED: Använd SignalService.score() direkt istället"""
         logger.warning("⚠️ _determine_signal_type() är deprecated - använd SignalService.score() direkt")
+        _ = regime_data
         return "HOLD"
 
     def _evaluate_signal_strength(self, regime_data: dict) -> str:
@@ -373,6 +377,7 @@ class SignalGeneratorService:
     def _generate_signal_reason(self, regime_data: dict, signal_type: str) -> str:
         """DEPRECATED: Använd SignalService.score() direkt istället"""
         logger.warning("⚠️ _generate_signal_reason() är deprecated - använd SignalService.score() direkt")
+        _ = (regime_data, signal_type)
         return "DEPRECATED - använd SignalService.score()"
 
     async def _get_active_symbols(self) -> list[str]:

@@ -2,11 +2,11 @@
   "max_daily_loss": {
     "enabled": true,
     "percentage": 5.0,
-    "triggered": false,
-    "triggered_at": null,
+    "triggered": true,
+    "triggered_at": "2025-09-11T15:14:24.371641",
     "daily_start_equity": 10000.0,
     "cooldown_hours": 24,
-    "daily_start_date": "2025-09-04"
+    "daily_start_date": "2025-09-11"
   },
   "kill_switch": {
     "enabled": true,

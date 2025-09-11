@@ -322,7 +322,8 @@ class PerformanceService:
 
             # Vänta på båda med total timeout
             wallets, positions = await asyncio.wait_for(
-                asyncio.gather(wallets_task, positions_task, return_exceptions=True), timeout=2.0
+                asyncio.gather(wallets_task, positions_task, return_exceptions=True),
+                timeout=2.0,
             )
 
             # Hantera exceptions från tasks

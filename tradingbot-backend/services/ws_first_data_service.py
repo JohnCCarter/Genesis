@@ -12,10 +12,10 @@ from dataclasses import dataclass
 from typing import Any
 
 from services.bitfinex_data import BitfinexDataService
-from services import runtime_config as rc
+import services.runtime_config as rc
 from services.bitfinex_websocket import bitfinex_ws
 from services.incremental_indicators import ATRState, EMAState, RSIState
-from services.metrics import inc_labeled
+from services.metrics_client import get_metrics_client
 from utils.advanced_rate_limiter import get_advanced_rate_limiter
 from utils.logger import get_logger
 from utils.candle_cache import candle_cache
@@ -28,7 +28,7 @@ class DataPoint:
     """Datapunkt med timestamp"""
 
     symbol: str
-    data: dict[str, Any]
+    data: Any
     timestamp: float
     source: str  # "ws" eller "rest"
 
@@ -118,39 +118,21 @@ class WSFirstDataService:
                 try:
                     tfs = [tf.strip() for tf in Settings().WS_CANDLE_TIMEFRAMES.split(",") if tf.strip()]
                 except Exception:
-                    tfs = ["1m", "5m"]
+                    tfs = ["1m"]
 
-                backfill_pairs: list[tuple[str, str]] = []
-                for symbol in symbols[:6]:  # Begränsa till 6 för att undvika rate limits
+                for symbol in symbols:
                     try:
-                        await bitfinex_ws.subscribe_ticker(
-                            symbol=symbol,
-                            callback=lambda ticker_data, sym=symbol: self._handle_ws_ticker(sym, ticker_data),
-                        )
-
-                        # Prenumerera på candles för alla timeframes
+                        # Ticker kräver callback – använd noop
+                        await bitfinex_ws.subscribe_ticker(symbol, callback=lambda _tick: None)
                         for tf in tfs:
 
-                            async def _cb(data, sym=symbol, tf=tf):
-                                await self._handle_ws_candles(sym, tf, data)
+                            async def _cb(_):
+                                pass
 
                             await bitfinex_ws.subscribe_candles(symbol=symbol, timeframe=tf, callback=_cb)
-                            backfill_pairs.append((symbol, tf))
-                            await asyncio.sleep(0.05)
-                        await asyncio.sleep(0.1)  # Små pauser mellan symboler
                     except Exception as e:
                         logger.warning(f"Kunde inte prenumerera på {symbol}: {e}")
-
-            logger.info("✅ WS-First Data Service initialiserad")
-            self._initialized = True
-
-            # Starta REST-backfill i bakgrunden (fönster, staggered) för varje (symbol, timeframe)
-            try:
-                if backfill_pairs:
-                    asyncio.create_task(self._run_backfills(backfill_pairs), name="wsfirst-backfill")
-            except Exception:
-                pass
-
+                logger.info("✅ WS-First Data Service initialiserad")
         except Exception as e:
             logger.error(f"❌ Fel vid initialisering av WS-First Data Service: {e}")
 
@@ -303,9 +285,9 @@ class WSFirstDataService:
         except Exception as e:
             logger.error(f"Fel vid hantering av WS ticker för {symbol}: {e}")
 
-    async def get_ticker(self, symbol: str, force_fresh: bool = False) -> dict[str, Any] | None:
+    async def get_ticker(self, symbol: str, force_fresh: bool = False) -> dict | None:
         """
-        Hämta ticker-data med WS-prioritet.
+        Hämta ticker med WS-prioritet och REST fallback.
 
         Args:
             symbol: Trading symbol
@@ -328,7 +310,7 @@ class WSFirstDataService:
                 if now - cached.timestamp < stale:
                     self.stats["cache_hits"] += 1
                     try:
-                        inc_labeled("marketdata_cache_hits_total", {"type": "ticker"})
+                        get_metrics_client().inc_labeled("marketdata_cache_hits_total", {"type": "ticker"})
                     except Exception:
                         pass
                     return cached.data
@@ -337,7 +319,7 @@ class WSFirstDataService:
             logger.debug(f"🔄 REST fallback för ticker {symbol}")
             self.stats["rest_fallbacks"] += 1
             try:
-                inc_labeled("marketdata_rest_fallbacks_total", {"type": "ticker"})
+                get_metrics_client().inc_labeled("marketdata_rest_fallbacks_total", {"type": "ticker"})
             except Exception:
                 pass
 
@@ -351,7 +333,7 @@ class WSFirstDataService:
                 data_point = DataPoint(symbol=symbol, data=ticker_data, timestamp=now, source="rest")
                 self._ticker_cache[symbol] = data_point
                 try:
-                    inc_labeled("marketdata_ws_hits_total", {"type": "ticker", "source": "rest"})
+                    get_metrics_client().inc_labeled("marketdata_ws_hits_total", {"type": "ticker", "source": "rest"})
                 except Exception:
                     pass
 
@@ -395,7 +377,7 @@ class WSFirstDataService:
                 if now - cached.timestamp < stale:
                     self.stats["cache_hits"] += 1
                     try:
-                        inc_labeled(
+                        get_metrics_client().inc_labeled(
                             "marketdata_cache_hits_total",
                             {"type": "candles", "tf": timeframe},
                         )
@@ -433,7 +415,7 @@ class WSFirstDataService:
             logger.debug(f"🔄 REST fallback för candles {symbol} {timeframe}")
             self.stats["rest_fallbacks"] += 1
             try:
-                inc_labeled(
+                get_metrics_client().inc_labeled(
                     "marketdata_rest_fallbacks_total",
                     {"type": "candles", "tf": timeframe},
                 )
@@ -455,7 +437,7 @@ class WSFirstDataService:
                 except Exception:
                     pass
                 try:
-                    inc_labeled(
+                    get_metrics_client().inc_labeled(
                         "marketdata_ws_hits_total",
                         {"type": "candles", "source": "rest", "tf": timeframe},
                     )
@@ -498,8 +480,8 @@ class WSFirstDataService:
                     logger.warning(f"⚠️ Backfill misslyckades för {sym} {tf}: {ie}")
                 # Liten paus mellan par även efter körning
                 await asyncio.sleep(0.1)
-        except Exception:
-            return
+        except Exception as e:
+            logger.error(f"Fel i backfill: {e}")
 
     def get_stats(self) -> dict[str, Any]:
         """Returnera service-statistik"""

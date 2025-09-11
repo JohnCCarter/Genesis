@@ -1,0 +1,1495 @@
+﻿
+.venv\Lib\site-packages\fastapi\applications.py:799:                class Item(BaseModel):
+.venv\Lib\site-packages\fastapi\applications.py:2226:        class Item(BaseModel):
+.venv\Lib\site-packages\fastapi\applications.py:2604:        class Item(BaseModel):
+.venv\Lib\site-packages\fastapi\applications.py:4101:        class Item(BaseModel):
+.venv\Lib\site-packages\fastapi\routing.py:2007:        class Item(BaseModel):
+.venv\Lib\site-packages\fastapi\routing.py:2389:        class Item(BaseModel):
+.venv\Lib\site-packages\fastapi\routing.py:3525:        class Item(BaseModel):
+.venv\Lib\site-packages\fastapi\routing.py:3907:        class Item(BaseModel):
+.venv\Lib\site-packages\fastapi\routing.py:4289:        class Item(BaseModel):
+.venv\Lib\site-packages\fastapi\openapi\models.py:58:class Contact(BaseModel):
+.venv\Lib\site-packages\fastapi\openapi\models.py:72:class License(BaseModel):
+.venv\Lib\site-packages\fastapi\openapi\models.py:86:class Info(BaseModel):
+.venv\Lib\site-packages\fastapi\openapi\models.py:104:class ServerVariable(BaseModel):
+.venv\Lib\site-packages\fastapi\openapi\models.py:118:class Server(BaseModel):
+.venv\Lib\site-packages\fastapi\openapi\models.py:132:class Reference(BaseModel):
+.venv\Lib\site-packages\fastapi\openapi\models.py:136:class Discriminator(BaseModel):
+.venv\Lib\site-packages\fastapi\openapi\models.py:141:class XML(BaseModel):
+.venv\Lib\site-packages\fastapi\openapi\models.py:157:class ExternalDocumentation(BaseModel):
+.venv\Lib\site-packages\fastapi\openapi\models.py:170:class Schema(BaseModel):
+.venv\Lib\site-packages\fastapi\openapi\models.py:292:class Encoding(BaseModel):
+.venv\Lib\site-packages\fastapi\openapi\models.py:308:class MediaType(BaseModel):
+.venv\Lib\site-packages\fastapi\openapi\models.py:323:class ParameterBase(BaseModel):
+.venv\Lib\site-packages\fastapi\openapi\models.py:355:class RequestBody(BaseModel):
+.venv\Lib\site-packages\fastapi\openapi\models.py:369:class Link(BaseModel):
+.venv\Lib\site-packages\fastapi\openapi\models.py:386:class Response(BaseModel):
+.venv\Lib\site-packages\fastapi\openapi\models.py:401:class Operation(BaseModel):
+.venv\Lib\site-packages\fastapi\openapi\models.py:425:class PathItem(BaseModel):
+.venv\Lib\site-packages\fastapi\openapi\models.py:456:class SecurityBase(BaseModel):
+.venv\Lib\site-packages\fastapi\openapi\models.py:491:class OAuthFlow(BaseModel):
+.venv\Lib\site-packages\fastapi\openapi\models.py:521:class OAuthFlows(BaseModel):
+.venv\Lib\site-packages\fastapi\openapi\models.py:551:class Components(BaseModel):
+.venv\Lib\site-packages\fastapi\openapi\models.py:573:class Tag(BaseModel):
+.venv\Lib\site-packages\fastapi\openapi\models.py:587:class OpenAPI(BaseModel):
+.venv\Lib\site-packages\fastapi\security\http.py:16:class HTTPBasicCredentials(BaseModel):
+.venv\Lib\site-packages\fastapi\security\http.py:29:class HTTPAuthorizationCredentials(BaseModel):
+.venv\Lib\site-packages\gotrue\types.py:66:class AMREntry(BaseModel):
+.venv\Lib\site-packages\gotrue\types.py:95:class AuthResponse(BaseModel):
+.venv\Lib\site-packages\gotrue\types.py:100:class AuthOtpResponse(BaseModel):
+.venv\Lib\site-packages\gotrue\types.py:106:class OAuthResponse(BaseModel):
+.venv\Lib\site-packages\gotrue\types.py:111:class SSOResponse(BaseModel):
+.venv\Lib\site-packages\gotrue\types.py:115:class LinkIdentityResponse(BaseModel):
+.venv\Lib\site-packages\gotrue\types.py:119:class IdentitiesResponse(BaseModel):
+.venv\Lib\site-packages\gotrue\types.py:123:class UserResponse(BaseModel):
+.venv\Lib\site-packages\gotrue\types.py:127:class Session(BaseModel):
+.venv\Lib\site-packages\gotrue\types.py:164:class UserIdentity(BaseModel):
+.venv\Lib\site-packages\gotrue\types.py:175:class Factor(BaseModel):
+.venv\Lib\site-packages\gotrue\types.py:201:class User(BaseModel):
+.venv\Lib\site-packages\gotrue\types.py:264:class Subscription(BaseModel):
+.venv\Lib\site-packages\gotrue\types.py:586:class AuthMFAVerifyResponse(BaseModel):
+.venv\Lib\site-packages\gotrue\types.py:609:class AuthMFAEnrollResponseTotp(BaseModel):
+.venv\Lib\site-packages\gotrue\types.py:629:class AuthMFAEnrollResponse(BaseModel):
+.venv\Lib\site-packages\gotrue\types.py:653:class AuthMFAUnenrollResponse(BaseModel):
+.venv\Lib\site-packages\gotrue\types.py:660:class AuthMFAChallengeResponse(BaseModel):
+.venv\Lib\site-packages\gotrue\types.py:675:class AuthMFAListFactorsResponse(BaseModel):
+.venv\Lib\site-packages\gotrue\types.py:693:class AuthMFAGetAuthenticatorAssuranceLevelResponse(BaseModel):
+.venv\Lib\site-packages\gotrue\types.py:711:class AuthMFAAdminDeleteFactorResponse(BaseModel):
+.venv\Lib\site-packages\gotrue\types.py:729:class AuthMFAAdminListFactorsResponse(BaseModel):
+.venv\Lib\site-packages\gotrue\types.py:743:class GenerateLinkProperties(BaseModel):
+.venv\Lib\site-packages\gotrue\types.py:774:class GenerateLinkResponse(BaseModel):
+.venv\Lib\site-packages\pandas\tests\io\test_sql.py:2912:        class Test(BaseModel):
+.venv\Lib\site-packages\postgrest\base_request_builder.py:130:class APIResponse(BaseModel, Generic[_ReturnT]):
+.venv\Lib\site-packages\pydantic\config.py:73:      class User(BaseModel):
+.venv\Lib\site-packages\pydantic\config.py:92:      class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\config.py:114:      class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\config.py:129:      class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\config.py:188:        class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\config.py:228:    class SomeModel(BaseModel):
+.venv\Lib\site-packages\pydantic\config.py:257:    class User(BaseModel):
+.venv\Lib\site-packages\pydantic\config.py:276:    class User(BaseModel, validate_assignment=True):  # (1)!
+.venv\Lib\site-packages\pydantic\config.py:310:    class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\config.py:378:    class Voice(BaseModel):
+.venv\Lib\site-packages\pydantic\config.py:398:    class Athlete(BaseModel):
+.venv\Lib\site-packages\pydantic\config.py:458:    class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\config.py:486:    class User(BaseModel, revalidate_instances='never'):  # (1)!
+.venv\Lib\site-packages\pydantic\config.py:492:    class Transaction(BaseModel):
+.venv\Lib\site-packages\pydantic\config.py:521:    class User(BaseModel, revalidate_instances='always'):  # (1)!
+.venv\Lib\site-packages\pydantic\config.py:527:    class Transaction(BaseModel):
+.venv\Lib\site-packages\pydantic\config.py:562:    class User(BaseModel, revalidate_instances='subclass-instances'):  # (1)!
+.venv\Lib\site-packages\pydantic\config.py:568:    class Transaction(BaseModel):
+.venv\Lib\site-packages\pydantic\config.py:663:        class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\config.py:686:        class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\config.py:718:        class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\config.py:726:        Field "model_validate" conflicts with member <bound method BaseModel.model_validate of <class 'pydantic.main.BaseModel'>> of protected namespace "model_".
+.venv\Lib\site-packages\pydantic\config.py:740:    class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\config.py:759:    class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\config.py:813:    class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\config.py:856:    class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\config.py:904:    class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\config.py:917:    class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\config.py:948:    class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\config.py:990:    class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\config.py:1051:    class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\config.py:1089:    class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\config.py:1126:    class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\fields.py:282:            class MyModel(pydantic.BaseModel):
+.venv\Lib\site-packages\pydantic\fields.py:299:        class MyModel(pydantic.BaseModel):
+.venv\Lib\site-packages\pydantic\fields.py:313:        class MyModel(pydantic.BaseModel):
+.venv\Lib\site-packages\pydantic\fields.py:382:        class MyModel(pydantic.BaseModel):
+.venv\Lib\site-packages\pydantic\fields.py:1387:    class Rectangle(BaseModel):
+.venv\Lib\site-packages\pydantic\fields.py:1417:    class Square(BaseModel):
+.venv\Lib\site-packages\pydantic\fields.py:1455:    class Parent(BaseModel):
+.venv\Lib\site-packages\pydantic\fields.py:1480:    class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\functional_serializers.py:34:    class StudentModel(BaseModel):
+.venv\Lib\site-packages\pydantic\functional_serializers.py:101:    class EventDatetime(BaseModel):
+.venv\Lib\site-packages\pydantic\functional_serializers.py:118:    class EventModel(BaseModel):
+.venv\Lib\site-packages\pydantic\functional_serializers.py:250:    class StudentModel(BaseModel):
+.venv\Lib\site-packages\pydantic\functional_serializers.py:369:    class TemperatureModel(BaseModel):
+.venv\Lib\site-packages\pydantic\functional_validators.py:45:        class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\functional_validators.py:108:        class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\functional_validators.py:186:        class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\functional_validators.py:283:    class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\functional_validators.py:430:    class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\functional_validators.py:684:    class Square(BaseModel):
+.venv\Lib\site-packages\pydantic\functional_validators.py:747:            class Bar(BaseModel):
+.venv\Lib\site-packages\pydantic\json_schema.py:2410:        raise AttributeError('model_json_schema() must be called on a subclass of BaseModel, not BaseModel itself.')
+.venv\Lib\site-packages\pydantic\json_schema.py:2643:            class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\main.py:121:class BaseModel(metaclass=_model_construction.ModelMetaclass):
+.venv\Lib\site-packages\pydantic\main.py:867:        # For a model `class Model[T, U, V = int](BaseModel): ...` parametrized with `(str, bool)`,
+.venv\Lib\site-packages\pydantic\main.py:1179:            class MyModel(BaseModel, extra='allow'): ...
+.venv\Lib\site-packages\pydantic\main.py:1696:    subclass of [`BaseModel`][pydantic.BaseModel].
+.venv\Lib\site-packages\pydantic\mypy.py:524:        # Handle `class MyModel(BaseModel, <name>=<expr>, ...):`
+.venv\Lib\site-packages\pydantic\mypy.py:1342:    # signature incompatible with the superclass, which causes mypy errors to occur for every subclass of BaseModel.
+.venv\Lib\site-packages\pydantic\networks.py:579:    class MyModel(BaseModel):
+.venv\Lib\site-packages\pydantic\networks.py:616:    class MyModel(BaseModel):
+.venv\Lib\site-packages\pydantic\networks.py:709:    class MyModel(BaseModel):
+.venv\Lib\site-packages\pydantic\networks.py:724:    class MyDatabaseModel(BaseModel):
+.venv\Lib\site-packages\pydantic\networks.py:972:        class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\networks.py:1021:    class User(BaseModel):
+.venv\Lib\site-packages\pydantic\networks.py:1108:        class IpModel(BaseModel):
+.venv\Lib\site-packages\pydantic\root_model.py:35:class RootModel(BaseModel, typing.Generic[RootModelRootType], metaclass=_RootModelMetaclass):
+.venv\Lib\site-packages\pydantic\types.py:174:            class Foo(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:184:            class Foo(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:204:    class ConstrainedExample(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:244:class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:275:class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:306:class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:337:class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:368:class StrictIntModel(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:435:            class Foo(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:445:            class Foo(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:466:    class ConstrainedExample(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:506:class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:537:class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:568:class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:599:class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:630:class StrictFloatModel(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:650:class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:773:            class Foo(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:783:            class Foo(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:797:    class Foo(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:929:        class ImportThings(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:957:        class ImportThingsDefaultPyObj(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:961:        class ImportThingsDefaultString(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:969:        class ImportThingsMissingValidateDefault(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:981:        class ImportThings(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:1067:            class Foo(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:1078:            class Foo(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:1100:    class ConstrainedExample(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:1191:class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:1205:class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:1219:class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:1233:class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:1247:class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:1261:class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:1275:class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:1352:class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:1394:class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:1453:        class AnyJsonModel(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:1456:        class ConstrainedJsonModel(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:1503:        class ConstrainedJsonModel(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:1590:    class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:1615:    class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:1641:    class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:1815:    class User(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:1838:    class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:1883:    class User(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:2046:    class MyModel(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:2504:    class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:2603:    class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:2726:class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:2773:class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:2812:class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:2833:class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:2865:    class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:2913:    class Pie(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:2928:    class ThanksgivingDinner(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:3000:    class Pie(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:3015:    class ThanksgivingDinner(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:3191:    class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\types.py:3269:    class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\warnings.py:87:class GenericBeforeBaseModelWarning(Warning):
+.venv\Lib\site-packages\pydantic\deprecated\decorator.py:243:        class DecoratorBaseModel(BaseModel):
+.venv\Lib\site-packages\pydantic\v1\dataclasses.py:472:    - `_cls` is not a processed pydantic dataclass (with a basemodel attached)
+.venv\Lib\site-packages\pydantic\v1\decorator.py:226:        class DecoratorBaseModel(BaseModel):
+.venv\Lib\site-packages\pydantic\v1\env_settings.py:23:class BaseSettings(BaseModel):
+.venv\Lib\site-packages\pydantic\v1\generics.py:64:class GenericModel(BaseModel):
+.venv\Lib\site-packages\pydantic\v1\main.py:316:class BaseModel(Representation, metaclass=ModelMetaclass):
+.venv\Lib\site-packages\pydantic\v1\schema.py:172:    :param model: a Pydantic model (a class that inherits from BaseModel)
+.venv\Lib\site-packages\pydantic\v1\schema.py:352:    model ``Foo`` (subclass of Pydantic ``BaseModel``) as ``model``, and it has a field of type ``Bar`` (also
+.venv\Lib\site-packages\pydantic\v1\schema.py:353:    subclass of ``BaseModel``) and that model ``Bar`` has a field of type ``Baz`` (also subclass of ``BaseModel``),
+.venv\Lib\site-packages\pydantic\v1\schema.py:371:    Take a single Pydantic ``ModelField`` (from a model) that could have been declared as a subclass of BaseModel
+.venv\Lib\site-packages\pydantic\v1\schema.py:373:    I.e. if you pass a field that was declared to be of type ``Foo`` (subclass of BaseModel) as ``field``, and that
+.venv\Lib\site-packages\pydantic\v1\schema.py:374:    model ``Foo`` has a field of type ``Bar`` (also subclass of ``BaseModel``) and that model ``Bar`` has a field of
+.venv\Lib\site-packages\pydantic\v1\schema.py:375:    type ``Baz`` (also subclass of ``BaseModel``), the return value will be ``set([Foo, Bar, Baz])``.
+.venv\Lib\site-packages\pydantic\v1\schema.py:402:    I.e. if you pass a the fields of a model ``Foo`` (subclass of ``BaseModel``) as ``fields``, and on of them has a
+.venv\Lib\site-packages\pydantic\v1\schema.py:403:    field of type ``Bar`` (also subclass of ``BaseModel``) and that model ``Bar`` has a field of type ``Baz`` (also
+.venv\Lib\site-packages\pydantic\v1\schema.py:404:    subclass of ``BaseModel``), the return value will be ``set([Foo, Bar, Baz])``.
+.venv\Lib\site-packages\pydantic\v1\schema.py:420:    a field of type ``Baz`` (also subclass of ``BaseModel``), the return value will be ``set([Foo, Bar, Baz])``.
+.venv\Lib\site-packages\pydantic\_internal\_decorators.py:431:        attributes in the namespace of the class (a BaseModel or dataclass)
+.venv\Lib\site-packages\pydantic\_internal\_generate_schema.py:751:                        # class Base[T](BaseModel):
+.venv\Lib\site-packages\pydantic\_internal\_generate_schema.py:754:                        # class Other(BaseModel):
+.venv\Lib\site-packages\pydantic\_internal\_generate_schema.py:935:        # class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\_internal\_generics.py:351:        class Model[T, U, V = int](BaseModel): ...
+.venv\Lib\site-packages\pydantic\_internal\_model_construction.py:258:                    None,  # In case the metaclass is used with a class other than `BaseModel`.
+.venv\Lib\site-packages\pydantic\_internal\_namespace_utils.py:173:                class Model(BaseModel):
+.venv\Lib\site-packages\pydantic\_internal\_utils.py:112:    """Returns true if cls is a _proper_ subclass of BaseModel, and provides proper type-checking,
+.venv\Lib\site-packages\pydantic\_internal\_utils.py:404:    This decorator takes a class method defined on the `BaseModel` class and transforms it into
+.venv\Lib\site-packages\pydantic_settings\main.py:108:class BaseSettings(BaseModel):
+.venv\Lib\site-packages\pydantic_settings\main.py:476:    A utility class for running Pydantic `BaseSettings`, `BaseModel`, or `pydantic.dataclasses.dataclass` as
+.venv\Lib\site-packages\pydantic_settings\main.py:555:            SettingsError: If model_cls is not subclass of `BaseModel` or `pydantic.dataclasses.dataclass`.
+.venv\Lib\site-packages\pydantic_settings\main.py:561:                f'Error: {model_cls.__name__} is not subclass of BaseModel or pydantic.dataclasses.dataclass'
+.venv\Lib\site-packages\pydantic_settings\sources\base.py:370:            class SubSubSub(BaseModel):
+.venv\Lib\site-packages\pydantic_settings\sources\base.py:373:            class SubSub(BaseModel):
+.venv\Lib\site-packages\pydantic_settings\sources\base.py:377:            class Sub(BaseModel):
+.venv\Lib\site-packages\pydantic_settings\sources\utils.py:135:    raise SettingsError(f'Error: {model_cls.__name__} is not subclass of BaseModel or pydantic.dataclasses.dataclass')
+.venv\Lib\site-packages\pydantic_settings\sources\providers\cli.py:77:class CliMutuallyExclusiveGroup(BaseModel):
+rest\mcp_routes.py:21:class MCPToolInfo(BaseModel):
+rest\mcp_routes.py:29:class MCPToolCall(BaseModel):
+rest\mcp_routes.py:36:class MCPToolCallResponse(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\types.py:43:class RequestParams(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\types.py:44:    class Meta(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\types.py:66:class NotificationParams(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\types.py:67:    class Meta(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\types.py:82:class Request(BaseModel, Generic[RequestParamsT, MethodT]):
+scripts\mcp\.venv\Lib\site-packages\mcp\types.py:97:class Notification(BaseModel, Generic[NotificationParamsT, MethodT]):
+scripts\mcp\.venv\Lib\site-packages\mcp\types.py:105:class Result(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\types.py:140:class JSONRPCResponse(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\types.py:161:class ErrorData(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\types.py:182:class JSONRPCError(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\types.py:199:class BaseMetadata(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\types.py:223:class RootsCapability(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\types.py:231:class SamplingCapability(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\types.py:237:class ElicitationCapability(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\types.py:243:class ClientCapabilities(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\types.py:257:class PromptsCapability(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\types.py:265:class ResourcesCapability(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\types.py:275:class ToolsCapability(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\types.py:283:class LoggingCapability(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\types.py:289:class CompletionsCapability(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\types.py:295:class ServerCapabilities(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\types.py:403:class Annotations(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\types.py:494:class ResourceContents(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\types.py:612:class PromptArgument(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\types.py:662:class TextContent(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\types.py:677:class ImageContent(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\types.py:697:class AudioContent(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\types.py:717:class SamplingMessage(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\types.py:725:class EmbeddedResource(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\types.py:761:class PromptMessage(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\types.py:795:class ToolAnnotations(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\types.py:948:class ModelHint(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\types.py:957:class ModelPreferences(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\types.py:1054:class ResourceTemplateReference(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\types.py:1068:class PromptReference(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\types.py:1077:class CompletionArgument(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\types.py:1087:class CompletionContext(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\types.py:1112:class Completion(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\types.py:1151:class Root(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\client\auth.py:49:class PKCEParameters(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\client\session_group.py:30:class SseServerParameters(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\client\session_group.py:46:class StreamableHttpParameters(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\client\session_group.py:86:    class _ComponentNames(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\client\stdio\__init__.py:71:class StdioServerParameters(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\server\elicitation.py:17:class AcceptedElicitation(BaseModel, Generic[ElicitSchemaModelT]):
+scripts\mcp\.venv\Lib\site-packages\mcp\server\elicitation.py:24:class DeclinedElicitation(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\server\elicitation.py:30:class CancelledElicitation(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\server\models.py:13:class InitializationOptions(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\server\transport_security.py:12:class TransportSecuritySettings(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\server\auth\provider.py:10:class AuthorizationParams(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\server\auth\provider.py:19:class AuthorizationCode(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\server\auth\provider.py:30:class RefreshToken(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\server\auth\provider.py:37:class AccessToken(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\server\auth\settings.py:4:class ClientRegistrationOptions(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\server\auth\settings.py:11:class RevocationOptions(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\server\auth\settings.py:15:class AuthSettings(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\server\auth\handlers\authorize.py:24:class AuthorizationRequest(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\server\auth\handlers\authorize.py:44:class AuthorizationErrorResponse(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\server\auth\handlers\register.py:24:class RegistrationErrorResponse(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\server\auth\handlers\revoke.py:17:class RevocationRequest(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\server\auth\handlers\revoke.py:28:class RevocationErrorResponse(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\server\auth\handlers\token.py:17:class AuthorizationCodeRequest(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\server\auth\handlers\token.py:31:class RefreshTokenRequest(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\server\auth\handlers\token.py:57:class TokenErrorResponse(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\server\fastmcp\server.py:1009:class Context(BaseModel, Generic[ServerSessionT, LifespanContextT, RequestT]):
+scripts\mcp\.venv\Lib\site-packages\mcp\server\fastmcp\prompts\base.py:13:class Message(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\server\fastmcp\prompts\base.py:49:class PromptArgument(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\server\fastmcp\prompts\base.py:57:class Prompt(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\server\fastmcp\resources\base.py:17:class Resource(BaseModel, abc.ABC):
+scripts\mcp\.venv\Lib\site-packages\mcp\server\fastmcp\resources\templates.py:15:class ResourceTemplate(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\server\fastmcp\tools\base.py:21:class Tool(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\server\fastmcp\utilities\func_metadata.py:41:class ArgModelBase(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\server\fastmcp\utilities\func_metadata.py:62:class FuncMetadata(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\server\fastmcp\utilities\func_metadata.py:396:    class BaseWithConfig(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\shared\auth.py:6:class OAuthToken(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\shared\auth.py:37:class OAuthClientMetadata(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\shared\auth.py:105:class OAuthMetadata(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\shared\auth.py:134:class ProtectedResourceMetadata(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\mcp\shared\progress.py:20:class Progress(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\config.py:73:      class User(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\config.py:92:      class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\config.py:114:      class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\config.py:129:      class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\config.py:188:        class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\config.py:228:    class SomeModel(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\config.py:257:    class User(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\config.py:276:    class User(BaseModel, validate_assignment=True):  # (1)!
+scripts\mcp\.venv\Lib\site-packages\pydantic\config.py:310:    class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\config.py:378:    class Voice(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\config.py:398:    class Athlete(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\config.py:458:    class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\config.py:486:    class User(BaseModel, revalidate_instances='never'):  # (1)!
+scripts\mcp\.venv\Lib\site-packages\pydantic\config.py:492:    class Transaction(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\config.py:521:    class User(BaseModel, revalidate_instances='always'):  # (1)!
+scripts\mcp\.venv\Lib\site-packages\pydantic\config.py:527:    class Transaction(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\config.py:562:    class User(BaseModel, revalidate_instances='subclass-instances'):  # (1)!
+scripts\mcp\.venv\Lib\site-packages\pydantic\config.py:568:    class Transaction(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\config.py:663:        class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\config.py:686:        class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\config.py:718:        class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\config.py:726:        Field "model_validate" conflicts with member <bound method BaseModel.model_validate of <class 'pydantic.main.BaseModel'>> of protected namespace "model_".
+scripts\mcp\.venv\Lib\site-packages\pydantic\config.py:740:    class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\config.py:759:    class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\config.py:813:    class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\config.py:856:    class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\config.py:904:    class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\config.py:917:    class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\config.py:948:    class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\config.py:990:    class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\config.py:1051:    class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\config.py:1089:    class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\config.py:1126:    class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\fields.py:282:            class MyModel(pydantic.BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\fields.py:299:        class MyModel(pydantic.BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\fields.py:313:        class MyModel(pydantic.BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\fields.py:382:        class MyModel(pydantic.BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\fields.py:1387:    class Rectangle(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\fields.py:1417:    class Square(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\fields.py:1455:    class Parent(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\fields.py:1480:    class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\functional_serializers.py:34:    class StudentModel(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\functional_serializers.py:101:    class EventDatetime(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\functional_serializers.py:118:    class EventModel(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\functional_serializers.py:250:    class StudentModel(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\functional_serializers.py:369:    class TemperatureModel(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\functional_validators.py:45:        class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\functional_validators.py:108:        class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\functional_validators.py:186:        class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\functional_validators.py:283:    class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\functional_validators.py:430:    class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\functional_validators.py:684:    class Square(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\functional_validators.py:747:            class Bar(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\json_schema.py:2410:        raise AttributeError('model_json_schema() must be called on a subclass of BaseModel, not BaseModel itself.')
+scripts\mcp\.venv\Lib\site-packages\pydantic\json_schema.py:2643:            class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\main.py:121:class BaseModel(metaclass=_model_construction.ModelMetaclass):
+scripts\mcp\.venv\Lib\site-packages\pydantic\main.py:867:        # For a model `class Model[T, U, V = int](BaseModel): ...` parametrized with `(str, bool)`,
+scripts\mcp\.venv\Lib\site-packages\pydantic\main.py:1179:            class MyModel(BaseModel, extra='allow'): ...
+scripts\mcp\.venv\Lib\site-packages\pydantic\main.py:1696:    subclass of [`BaseModel`][pydantic.BaseModel].
+scripts\mcp\.venv\Lib\site-packages\pydantic\mypy.py:524:        # Handle `class MyModel(BaseModel, <name>=<expr>, ...):`
+scripts\mcp\.venv\Lib\site-packages\pydantic\mypy.py:1342:    # signature incompatible with the superclass, which causes mypy errors to occur for every subclass of BaseModel.
+scripts\mcp\.venv\Lib\site-packages\pydantic\networks.py:579:    class MyModel(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\networks.py:616:    class MyModel(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\networks.py:709:    class MyModel(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\networks.py:724:    class MyDatabaseModel(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\networks.py:972:        class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\networks.py:1021:    class User(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\networks.py:1108:        class IpModel(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\root_model.py:35:class RootModel(BaseModel, typing.Generic[RootModelRootType], metaclass=_RootModelMetaclass):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:174:            class Foo(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:184:            class Foo(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:204:    class ConstrainedExample(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:244:class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:275:class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:306:class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:337:class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:368:class StrictIntModel(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:435:            class Foo(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:445:            class Foo(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:466:    class ConstrainedExample(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:506:class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:537:class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:568:class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:599:class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:630:class StrictFloatModel(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:650:class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:773:            class Foo(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:783:            class Foo(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:797:    class Foo(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:929:        class ImportThings(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:957:        class ImportThingsDefaultPyObj(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:961:        class ImportThingsDefaultString(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:969:        class ImportThingsMissingValidateDefault(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:981:        class ImportThings(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:1067:            class Foo(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:1078:            class Foo(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:1100:    class ConstrainedExample(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:1191:class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:1205:class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:1219:class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:1233:class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:1247:class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:1261:class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:1275:class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:1352:class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:1394:class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:1453:        class AnyJsonModel(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:1456:        class ConstrainedJsonModel(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:1503:        class ConstrainedJsonModel(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:1590:    class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:1615:    class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:1641:    class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:1815:    class User(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:1838:    class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:1883:    class User(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:2046:    class MyModel(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:2504:    class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:2603:    class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:2726:class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:2773:class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:2812:class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:2833:class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:2865:    class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:2913:    class Pie(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:2928:    class ThanksgivingDinner(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:3000:    class Pie(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:3015:    class ThanksgivingDinner(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:3191:    class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\types.py:3269:    class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\warnings.py:87:class GenericBeforeBaseModelWarning(Warning):
+scripts\mcp\.venv\Lib\site-packages\pydantic\deprecated\decorator.py:243:        class DecoratorBaseModel(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\v1\dataclasses.py:472:    - `_cls` is not a processed pydantic dataclass (with a basemodel attached)
+scripts\mcp\.venv\Lib\site-packages\pydantic\v1\decorator.py:226:        class DecoratorBaseModel(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\v1\env_settings.py:23:class BaseSettings(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\v1\generics.py:64:class GenericModel(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\v1\main.py:316:class BaseModel(Representation, metaclass=ModelMetaclass):
+scripts\mcp\.venv\Lib\site-packages\pydantic\v1\schema.py:172:    :param model: a Pydantic model (a class that inherits from BaseModel)
+scripts\mcp\.venv\Lib\site-packages\pydantic\v1\schema.py:352:    model ``Foo`` (subclass of Pydantic ``BaseModel``) as ``model``, and it has a field of type ``Bar`` (also
+scripts\mcp\.venv\Lib\site-packages\pydantic\v1\schema.py:353:    subclass of ``BaseModel``) and that model ``Bar`` has a field of type ``Baz`` (also subclass of ``BaseModel``),
+scripts\mcp\.venv\Lib\site-packages\pydantic\v1\schema.py:371:    Take a single Pydantic ``ModelField`` (from a model) that could have been declared as a subclass of BaseModel
+scripts\mcp\.venv\Lib\site-packages\pydantic\v1\schema.py:373:    I.e. if you pass a field that was declared to be of type ``Foo`` (subclass of BaseModel) as ``field``, and that
+scripts\mcp\.venv\Lib\site-packages\pydantic\v1\schema.py:374:    model ``Foo`` has a field of type ``Bar`` (also subclass of ``BaseModel``) and that model ``Bar`` has a field of
+scripts\mcp\.venv\Lib\site-packages\pydantic\v1\schema.py:375:    type ``Baz`` (also subclass of ``BaseModel``), the return value will be ``set([Foo, Bar, Baz])``.
+scripts\mcp\.venv\Lib\site-packages\pydantic\v1\schema.py:402:    I.e. if you pass a the fields of a model ``Foo`` (subclass of ``BaseModel``) as ``fields``, and on of them has a
+scripts\mcp\.venv\Lib\site-packages\pydantic\v1\schema.py:403:    field of type ``Bar`` (also subclass of ``BaseModel``) and that model ``Bar`` has a field of type ``Baz`` (also
+scripts\mcp\.venv\Lib\site-packages\pydantic\v1\schema.py:404:    subclass of ``BaseModel``), the return value will be ``set([Foo, Bar, Baz])``.
+scripts\mcp\.venv\Lib\site-packages\pydantic\v1\schema.py:420:    a field of type ``Baz`` (also subclass of ``BaseModel``), the return value will be ``set([Foo, Bar, Baz])``.
+scripts\mcp\.venv\Lib\site-packages\pydantic\_internal\_decorators.py:431:        attributes in the namespace of the class (a BaseModel or dataclass)
+scripts\mcp\.venv\Lib\site-packages\pydantic\_internal\_generate_schema.py:751:                        # class Base[T](BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\_internal\_generate_schema.py:754:                        # class Other(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\_internal\_generate_schema.py:935:        # class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\_internal\_generics.py:351:        class Model[T, U, V = int](BaseModel): ...
+scripts\mcp\.venv\Lib\site-packages\pydantic\_internal\_model_construction.py:258:                    None,  # In case the metaclass is used with a class other than `BaseModel`.
+scripts\mcp\.venv\Lib\site-packages\pydantic\_internal\_namespace_utils.py:173:                class Model(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic\_internal\_utils.py:112:    """Returns true if cls is a _proper_ subclass of BaseModel, and provides proper type-checking,
+scripts\mcp\.venv\Lib\site-packages\pydantic\_internal\_utils.py:404:    This decorator takes a class method defined on the `BaseModel` class and transforms it into
+scripts\mcp\.venv\Lib\site-packages\pydantic_settings\main.py:108:class BaseSettings(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic_settings\main.py:476:    A utility class for running Pydantic `BaseSettings`, `BaseModel`, or `pydantic.dataclasses.dataclass` as
+scripts\mcp\.venv\Lib\site-packages\pydantic_settings\main.py:555:            SettingsError: If model_cls is not subclass of `BaseModel` or `pydantic.dataclasses.dataclass`.
+scripts\mcp\.venv\Lib\site-packages\pydantic_settings\main.py:561:                f'Error: {model_cls.__name__} is not subclass of BaseModel or pydantic.dataclasses.dataclass'
+scripts\mcp\.venv\Lib\site-packages\pydantic_settings\sources\base.py:370:            class SubSubSub(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic_settings\sources\base.py:373:            class SubSub(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic_settings\sources\base.py:377:            class Sub(BaseModel):
+scripts\mcp\.venv\Lib\site-packages\pydantic_settings\sources\utils.py:135:    raise SettingsError(f'Error: {model_cls.__name__} is not subclass of BaseModel or pydantic.dataclasses.dataclass')
+scripts\mcp\.venv\Lib\site-packages\pydantic_settings\sources\providers\cli.py:77:class CliMutuallyExclusiveGroup(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\_compat.py:182:    class GenericModel(pydantic.BaseModel): ...
+scripts\openai_batch\.venv\Lib\site-packages\openai\_compat.py:189:        class GenericModel(pydantic.BaseModel): ...
+scripts\openai_batch\.venv\Lib\site-packages\openai\_compat.py:194:        class GenericModel(pydantic.generics.GenericModel, pydantic.BaseModel): ...
+scripts\openai_batch\.venv\Lib\site-packages\openai\_legacy_response.py:114:        class MyModel(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\_legacy_response.py:291:            raise TypeError("Pydantic models must subclass our base model type, e.g. `from openai import BaseModel`")
+scripts\openai_batch\.venv\Lib\site-packages\openai\_legacy_response.py:301:                f"Unsupported type, expected {cast_to} to be a subclass of {BaseModel}, {dict}, {list}, {Union}, {NoneType}, {str} or {httpx.Response}."
+scripts\openai_batch\.venv\Lib\site-packages\openai\_models.py:86:class BaseModel(pydantic.BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\_models.py:600:    class Foo(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\_models.py:611:    class Foo(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\_models.py:753:    class GenericModel(BaseGenericModel, BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\_models.py:808:class FinalRequestOptions(pydantic.BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\_response.py:224:            raise TypeError("Pydantic models must subclass our base model type, e.g. `from openai import BaseModel`")
+scripts\openai_batch\.venv\Lib\site-packages\openai\_response.py:234:                f"Unsupported type, expected {cast_to} to be a subclass of {BaseModel}, {dict}, {list}, {Union}, {NoneType}, {str} or {httpx.Response}."
+scripts\openai_batch\.venv\Lib\site-packages\openai\_response.py:297:        class MyModel(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\_response.py:406:        class MyModel(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\cli\_cli.py:30:class Arguments(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\cli\_models.py:10:class BaseModel(_models.BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\cli\_api\audio.py:46:class CLITranscribeArgs(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\cli\_api\audio.py:55:class CLITranslationArgs(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\cli\_api\completions.py:93:class CLICompletionCreateArgs(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\cli\_api\files.py:43:class CLIFileIDArgs(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\cli\_api\files.py:47:class CLIFileCreateArgs(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\cli\_api\image.py:61:class CLIImageCreateArgs(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\cli\_api\image.py:69:class CLIImageCreateVariationArgs(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\cli\_api\image.py:77:class CLIImageEditArgs(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\cli\_api\models.py:26:class CLIModelIDArgs(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\cli\_api\chat\completions.py:84:class CLIChatCompletionCreateArgs(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\cli\_api\fine_tuning\jobs.py:105:class CLIFineTuningJobsCreateArgs(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\cli\_api\fine_tuning\jobs.py:113:class CLIFineTuningJobsRetrieveArgs(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\cli\_api\fine_tuning\jobs.py:117:class CLIFineTuningJobsListArgs(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\cli\_api\fine_tuning\jobs.py:122:class CLIFineTuningJobsCancelArgs(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\cli\_api\fine_tuning\jobs.py:126:class CLIFineTuningJobsListEventsArgs(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\cli\_tools\fine_tunes.py:39:class PrepareDataArgs(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\cli\_tools\migrate.py:30:class GritArgs(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\cli\_tools\migrate.py:46:class MigrateArgs(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\lib\streaming\chat\_events.py:10:class ChunkEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\lib\streaming\chat\_events.py:18:class ContentDeltaEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\lib\streaming\chat\_events.py:38:class RefusalDeltaEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\lib\streaming\chat\_events.py:46:class RefusalDoneEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\lib\streaming\chat\_events.py:52:class FunctionToolCallArgumentsDeltaEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\lib\streaming\chat\_events.py:69:class FunctionToolCallArgumentsDoneEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\lib\streaming\chat\_events.py:83:class LogprobsContentDeltaEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\lib\streaming\chat\_events.py:91:class LogprobsContentDoneEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\lib\streaming\chat\_events.py:97:class LogprobsRefusalDeltaEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\lib\streaming\chat\_events.py:105:class LogprobsRefusalDoneEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\resources\chat\completions\completions.py:143:        class Step(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\resources\chat\completions\completions.py:148:        class MathResponse(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\resources\chat\completions\completions.py:1582:        class Step(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\resources\chat\completions\completions.py:1587:        class MathResponse(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\batch.py:14:class Errors(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\batch.py:21:class Batch(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\batch_error.py:10:class BatchError(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\batch_request_counts.py:8:class BatchRequestCounts(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\completion.py:13:class Completion(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\completion_choice.py:11:class Logprobs(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\completion_choice.py:21:class CompletionChoice(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\completion_usage.py:10:class CompletionTokensDetails(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\completion_usage.py:32:class PromptTokensDetails(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\completion_usage.py:40:class CompletionUsage(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\container_create_response.py:11:class ExpiresAfter(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\container_create_response.py:19:class ContainerCreateResponse(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\container_list_response.py:11:class ExpiresAfter(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\container_list_response.py:19:class ContainerListResponse(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\container_retrieve_response.py:11:class ExpiresAfter(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\container_retrieve_response.py:19:class ContainerRetrieveResponse(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\create_embedding_response.py:12:class Usage(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\create_embedding_response.py:20:class CreateEmbeddingResponse(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\embedding.py:11:class Embedding(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\eval_create_response.py:30:class DataSourceConfigLogs(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\eval_create_response.py:84:class EvalCreateResponse(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\eval_custom_data_source_config.py:13:class EvalCustomDataSourceConfig(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\eval_delete_response.py:8:class EvalDeleteResponse(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\eval_list_response.py:30:class DataSourceConfigLogs(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\eval_list_response.py:84:class EvalListResponse(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\eval_retrieve_response.py:30:class DataSourceConfigLogs(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\eval_retrieve_response.py:84:class EvalRetrieveResponse(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\eval_stored_completions_data_source_config.py:14:class EvalStoredCompletionsDataSourceConfig(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\eval_update_response.py:30:class DataSourceConfigLogs(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\eval_update_response.py:84:class EvalUpdateResponse(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\file_deleted.py:10:class FileDeleted(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\file_object.py:11:class FileObject(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\image.py:10:class Image(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\images_response.py:12:class UsageInputTokensDetails(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\images_response.py:20:class Usage(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\images_response.py:34:class ImagesResponse(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\image_edit_completed_event.py:10:class UsageInputTokensDetails(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\image_edit_completed_event.py:18:class Usage(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\image_edit_completed_event.py:32:class ImageEditCompletedEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\image_edit_partial_image_event.py:10:class ImageEditPartialImageEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\image_gen_completed_event.py:10:class UsageInputTokensDetails(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\image_gen_completed_event.py:18:class Usage(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\image_gen_completed_event.py:32:class ImageGenCompletedEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\image_gen_partial_image_event.py:10:class ImageGenPartialImageEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\model.py:10:class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\model_deleted.py:8:class ModelDeleted(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\moderation.py:13:class Categories(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\moderation.py:91:class CategoryAppliedInputTypes(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\moderation.py:132:class CategoryScores(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\moderation.py:173:class Moderation(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\moderation_create_response.py:11:class ModerationCreateResponse(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\other_file_chunking_strategy_object.py:10:class OtherFileChunkingStrategyObject(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\static_file_chunking_strategy.py:8:class StaticFileChunkingStrategy(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\static_file_chunking_strategy_object.py:11:class StaticFileChunkingStrategyObject(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\upload.py:12:class Upload(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\vector_store.py:12:class FileCounts(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\vector_store.py:29:class ExpiresAfter(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\vector_store.py:40:class VectorStore(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\vector_store_deleted.py:10:class VectorStoreDeleted(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\vector_store_search_response.py:11:class Content(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\vector_store_search_response.py:19:class VectorStoreSearchResponse(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\audio\transcription.py:12:class Logprob(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\audio\transcription.py:23:class UsageTokensInputTokenDetails(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\audio\transcription.py:31:class UsageTokens(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\audio\transcription.py:48:class UsageDuration(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\audio\transcription.py:59:class Transcription(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\audio\transcription_segment.py:10:class TranscriptionSegment(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\audio\transcription_text_delta_event.py:11:class Logprob(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\audio\transcription_text_delta_event.py:22:class TranscriptionTextDeltaEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\audio\transcription_text_done_event.py:11:class Logprob(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\audio\transcription_text_done_event.py:22:class UsageInputTokenDetails(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\audio\transcription_text_done_event.py:30:class Usage(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\audio\transcription_text_done_event.py:47:class TranscriptionTextDoneEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\audio\transcription_verbose.py:13:class Usage(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\audio\transcription_verbose.py:21:class TranscriptionVerbose(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\audio\transcription_word.py:8:class TranscriptionWord(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\audio\translation.py:8:class Translation(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\audio\translation_verbose.py:11:class TranslationVerbose(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\assistant.py:14:class ToolResourcesCodeInterpreter(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\assistant.py:23:class ToolResourcesFileSearch(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\assistant.py:33:class ToolResources(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\assistant.py:39:class Assistant(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\assistant_deleted.py:10:class AssistantDeleted(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\assistant_stream_event.py:45:class ThreadCreated(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\assistant_stream_event.py:58:class ThreadRunCreated(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\assistant_stream_event.py:68:class ThreadRunQueued(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\assistant_stream_event.py:78:class ThreadRunInProgress(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\assistant_stream_event.py:88:class ThreadRunRequiresAction(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\assistant_stream_event.py:98:class ThreadRunCompleted(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\assistant_stream_event.py:108:class ThreadRunIncomplete(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\assistant_stream_event.py:118:class ThreadRunFailed(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\assistant_stream_event.py:128:class ThreadRunCancelling(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\assistant_stream_event.py:138:class ThreadRunCancelled(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\assistant_stream_event.py:148:class ThreadRunExpired(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\assistant_stream_event.py:158:class ThreadRunStepCreated(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\assistant_stream_event.py:165:class ThreadRunStepInProgress(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\assistant_stream_event.py:172:class ThreadRunStepDelta(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\assistant_stream_event.py:182:class ThreadRunStepCompleted(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\assistant_stream_event.py:189:class ThreadRunStepFailed(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\assistant_stream_event.py:196:class ThreadRunStepCancelled(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\assistant_stream_event.py:203:class ThreadRunStepExpired(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\assistant_stream_event.py:210:class ThreadMessageCreated(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\assistant_stream_event.py:220:class ThreadMessageInProgress(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\assistant_stream_event.py:230:class ThreadMessageDelta(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\assistant_stream_event.py:240:class ThreadMessageCompleted(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\assistant_stream_event.py:250:class ThreadMessageIncomplete(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\assistant_stream_event.py:260:class ErrorEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\assistant_tool_choice.py:12:class AssistantToolChoice(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\assistant_tool_choice_function.py:8:class AssistantToolChoiceFunction(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\code_interpreter_tool.py:10:class CodeInterpreterTool(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\file_search_tool.py:11:class FileSearchRankingOptions(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\file_search_tool.py:25:class FileSearch(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\file_search_tool.py:50:class FileSearchTool(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\function_tool.py:11:class FunctionTool(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\thread.py:12:class ToolResourcesCodeInterpreter(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\thread.py:21:class ToolResourcesFileSearch(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\thread.py:31:class ToolResources(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\thread.py:37:class Thread(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\thread_deleted.py:10:class ThreadDeleted(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\conversation_created_event.py:11:class Conversation(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\conversation_created_event.py:19:class ConversationCreatedEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\conversation_item.py:12:class ConversationItem(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\conversation_item_content.py:11:class ConversationItemContent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\conversation_item_created_event.py:12:class ConversationItemCreatedEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\conversation_item_create_event.py:12:class ConversationItemCreateEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\conversation_item_deleted_event.py:10:class ConversationItemDeletedEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\conversation_item_delete_event.py:11:class ConversationItemDeleteEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\conversation_item_input_audio_transcription_completed_event.py:18:class UsageTranscriptTextUsageTokensInputTokenDetails(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\conversation_item_input_audio_transcription_completed_event.py:26:class UsageTranscriptTextUsageTokens(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\conversation_item_input_audio_transcription_completed_event.py:43:class UsageTranscriptTextUsageDuration(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\conversation_item_input_audio_transcription_completed_event.py:54:class Logprob(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\conversation_item_input_audio_transcription_completed_event.py:65:class ConversationItemInputAudioTranscriptionCompletedEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\conversation_item_input_audio_transcription_delta_event.py:11:class Logprob(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\conversation_item_input_audio_transcription_delta_event.py:22:class ConversationItemInputAudioTranscriptionDeltaEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\conversation_item_input_audio_transcription_failed_event.py:11:class Error(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\conversation_item_input_audio_transcription_failed_event.py:25:class ConversationItemInputAudioTranscriptionFailedEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\conversation_item_retrieve_event.py:11:class ConversationItemRetrieveEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\conversation_item_truncated_event.py:10:class ConversationItemTruncatedEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\conversation_item_truncate_event.py:11:class ConversationItemTruncateEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\conversation_item_with_reference.py:11:class Content(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\conversation_item_with_reference.py:32:class ConversationItemWithReference(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\error_event.py:11:class Error(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\error_event.py:28:class ErrorEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\input_audio_buffer_append_event.py:11:class InputAudioBufferAppendEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\input_audio_buffer_cleared_event.py:10:class InputAudioBufferClearedEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\input_audio_buffer_clear_event.py:11:class InputAudioBufferClearEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\input_audio_buffer_committed_event.py:11:class InputAudioBufferCommittedEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\input_audio_buffer_commit_event.py:11:class InputAudioBufferCommitEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\input_audio_buffer_speech_started_event.py:10:class InputAudioBufferSpeechStartedEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\input_audio_buffer_speech_stopped_event.py:10:class InputAudioBufferSpeechStoppedEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\rate_limits_updated_event.py:11:class RateLimit(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\rate_limits_updated_event.py:25:class RateLimitsUpdatedEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\realtime_client_event.py:23:class OutputAudioBufferClear(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\realtime_response.py:15:class RealtimeResponse(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\realtime_response_status.py:11:class Error(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\realtime_response_status.py:19:class RealtimeResponseStatus(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\realtime_response_usage.py:10:class InputTokenDetails(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\realtime_response_usage.py:21:class OutputTokenDetails(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\realtime_response_usage.py:29:class RealtimeResponseUsage(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\realtime_server_event.py:51:class ConversationItemRetrieved(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\realtime_server_event.py:62:class OutputAudioBufferStarted(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\realtime_server_event.py:73:class OutputAudioBufferStopped(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\realtime_server_event.py:84:class OutputAudioBufferCleared(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\response_audio_delta_event.py:10:class ResponseAudioDeltaEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\response_audio_done_event.py:10:class ResponseAudioDoneEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\response_audio_transcript_delta_event.py:10:class ResponseAudioTranscriptDeltaEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\response_audio_transcript_done_event.py:10:class ResponseAudioTranscriptDoneEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\response_cancel_event.py:11:class ResponseCancelEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\response_content_part_added_event.py:11:class Part(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\response_content_part_added_event.py:25:class ResponseContentPartAddedEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\response_content_part_done_event.py:11:class Part(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\response_content_part_done_event.py:25:class ResponseContentPartDoneEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\response_created_event.py:11:class ResponseCreatedEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\response_create_event.py:13:class ResponseTool(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\response_create_event.py:30:class Response(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\response_create_event.py:113:class ResponseCreateEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\response_done_event.py:11:class ResponseDoneEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\response_function_call_arguments_delta_event.py:10:class ResponseFunctionCallArgumentsDeltaEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\response_function_call_arguments_done_event.py:10:class ResponseFunctionCallArgumentsDoneEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\response_output_item_added_event.py:11:class ResponseOutputItemAddedEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\response_output_item_done_event.py:11:class ResponseOutputItemDoneEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\response_text_delta_event.py:10:class ResponseTextDeltaEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\response_text_done_event.py:10:class ResponseTextDoneEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\session.py:19:class InputAudioNoiseReduction(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\session.py:28:class InputAudioTranscription(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\session.py:53:class Tool(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\session.py:70:class TracingTracingConfiguration(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\session.py:93:class TurnDetection(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\session.py:142:class Session(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\session_created_event.py:11:class SessionCreatedEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\session_create_response.py:19:class ClientSecret(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\session_create_response.py:34:class InputAudioTranscription(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\session_create_response.py:39:class Tool(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\session_create_response.py:56:class TracingTracingConfiguration(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\session_create_response.py:79:class TurnDetection(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\session_create_response.py:104:class SessionCreateResponse(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\session_updated_event.py:11:class SessionUpdatedEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\session_update_event.py:22:class SessionClientSecretExpiresAfter(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\session_update_event.py:36:class SessionClientSecret(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\session_update_event.py:41:class SessionInputAudioNoiseReduction(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\session_update_event.py:50:class SessionInputAudioTranscription(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\session_update_event.py:75:class SessionTool(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\session_update_event.py:92:class SessionTracingTracingConfiguration(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\session_update_event.py:115:class SessionTurnDetection(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\session_update_event.py:164:class Session(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\session_update_event.py:302:class SessionUpdateEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\transcription_session.py:11:class ClientSecret(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\transcription_session.py:26:class InputAudioTranscription(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\transcription_session.py:50:class TurnDetection(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\transcription_session.py:75:class TranscriptionSession(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\transcription_session_update.py:19:class SessionClientSecretExpiresAt(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\transcription_session_update.py:33:class SessionClientSecret(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\transcription_session_update.py:38:class SessionInputAudioNoiseReduction(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\transcription_session_update.py:47:class SessionInputAudioTranscription(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\transcription_session_update.py:72:class SessionTurnDetection(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\transcription_session_update.py:122:class Session(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\transcription_session_update.py:177:class TranscriptionSessionUpdate(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\transcription_session_updated_event.py:11:class TranscriptionSessionUpdatedEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\file_citation_annotation.py:10:class FileCitation(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\file_citation_annotation.py:15:class FileCitationAnnotation(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\file_citation_delta_annotation.py:11:class FileCitation(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\file_citation_delta_annotation.py:19:class FileCitationDeltaAnnotation(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\file_path_annotation.py:10:class FilePath(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\file_path_annotation.py:15:class FilePathAnnotation(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\file_path_delta_annotation.py:11:class FilePath(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\file_path_delta_annotation.py:16:class FilePathDeltaAnnotation(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\image_file.py:11:class ImageFile(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\image_file_content_block.py:11:class ImageFileContentBlock(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\image_file_delta.py:11:class ImageFileDelta(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\image_file_delta_block.py:12:class ImageFileDeltaBlock(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\image_url.py:11:class ImageURL(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\image_url_content_block.py:11:class ImageURLContentBlock(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\image_url_delta.py:11:class ImageURLDelta(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\image_url_delta_block.py:12:class ImageURLDeltaBlock(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\message.py:20:class AttachmentToolAssistantToolsFileSearchTypeOnly(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\message.py:28:class Attachment(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\message.py:36:class IncompleteDetails(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\message.py:41:class Message(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\message_deleted.py:10:class MessageDeleted(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\message_delta.py:12:class MessageDelta(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\message_delta_event.py:11:class MessageDeltaEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\refusal_content_block.py:10:class RefusalContentBlock(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\refusal_delta_block.py:11:class RefusalDeltaBlock(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\required_action_function_tool_call.py:10:class Function(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\required_action_function_tool_call.py:18:class RequiredActionFunctionToolCall(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\run.py:25:class IncompleteDetails(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\run.py:34:class LastError(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\run.py:42:class RequiredActionSubmitToolOutputs(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\run.py:47:class RequiredAction(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\run.py:55:class TruncationStrategy(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\run.py:72:class Usage(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\run.py:83:class Run(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\text.py:11:class Text(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\text_content_block.py:11:class TextContentBlock(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\text_delta.py:11:class TextDelta(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\text_delta_block.py:12:class TextDeltaBlock(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\runs\code_interpreter_logs.py:11:class CodeInterpreterLogs(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\runs\code_interpreter_output_image.py:11:class Image(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\runs\code_interpreter_output_image.py:19:class CodeInterpreterOutputImage(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\runs\code_interpreter_tool_call.py:19:class CodeInterpreterOutputLogs(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\runs\code_interpreter_tool_call.py:27:class CodeInterpreterOutputImageImage(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\runs\code_interpreter_tool_call.py:35:class CodeInterpreterOutputImage(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\runs\code_interpreter_tool_call.py:47:class CodeInterpreter(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\runs\code_interpreter_tool_call.py:59:class CodeInterpreterToolCall(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\runs\code_interpreter_tool_call_delta.py:18:class CodeInterpreter(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\runs\code_interpreter_tool_call_delta.py:30:class CodeInterpreterToolCallDelta(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\runs\file_search_tool_call.py:17:class FileSearchRankingOptions(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\runs\file_search_tool_call.py:31:class FileSearchResultContent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\runs\file_search_tool_call.py:39:class FileSearchResult(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\runs\file_search_tool_call.py:59:class FileSearch(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\runs\file_search_tool_call.py:67:class FileSearchToolCall(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\runs\file_search_tool_call_delta.py:11:class FileSearchToolCallDelta(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\runs\function_tool_call.py:11:class Function(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\runs\function_tool_call.py:27:class FunctionToolCall(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\runs\function_tool_call_delta.py:11:class Function(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\runs\function_tool_call_delta.py:27:class FunctionToolCallDelta(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\runs\message_creation_step_details.py:10:class MessageCreation(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\runs\message_creation_step_details.py:15:class MessageCreationStepDetails(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\runs\run_step.py:15:class LastError(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\runs\run_step.py:28:class Usage(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\runs\run_step.py:39:class RunStep(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\runs\run_step_delta.py:18:class RunStepDelta(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\runs\run_step_delta_event.py:11:class RunStepDeltaEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\runs\run_step_delta_message_delta.py:11:class MessageCreation(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\runs\run_step_delta_message_delta.py:16:class RunStepDeltaMessageDelta(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\runs\tool_calls_step_details.py:12:class ToolCallsStepDetails(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\runs\tool_call_delta_object.py:12:class ToolCallDeltaObject(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\chat\chat_completion.py:14:class ChoiceLogprobs(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\chat\chat_completion.py:22:class Choice(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\chat\chat_completion.py:43:class ChatCompletion(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\chat\chat_completion_audio.py:8:class ChatCompletionAudio(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\chat\chat_completion_chunk.py:21:class ChoiceDeltaFunctionCall(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\chat\chat_completion_chunk.py:34:class ChoiceDeltaToolCallFunction(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\chat\chat_completion_chunk.py:47:class ChoiceDeltaToolCall(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\chat\chat_completion_chunk.py:59:class ChoiceDelta(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\chat\chat_completion_chunk.py:79:class ChoiceLogprobs(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\chat\chat_completion_chunk.py:87:class Choice(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\chat\chat_completion_chunk.py:108:class ChatCompletionChunk(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\chat\chat_completion_content_part_image.py:11:class ImageURL(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\chat\chat_completion_content_part_image.py:23:class ChatCompletionContentPartImage(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\chat\chat_completion_content_part_text.py:10:class ChatCompletionContentPartText(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\chat\chat_completion_deleted.py:10:class ChatCompletionDeleted(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\chat\chat_completion_function_tool.py:11:class ChatCompletionFunctionTool(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\chat\chat_completion_message.py:13:class AnnotationURLCitation(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\chat\chat_completion_message.py:27:class Annotation(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\chat\chat_completion_message.py:35:class FunctionCall(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\chat\chat_completion_message.py:48:class ChatCompletionMessage(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\chat\chat_completion_message_custom_tool_call.py:10:class Custom(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\chat\chat_completion_message_custom_tool_call.py:18:class ChatCompletionMessageCustomToolCall(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\chat\chat_completion_message_function_tool_call.py:10:class Function(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\chat\chat_completion_message_function_tool_call.py:23:class ChatCompletionMessageFunctionToolCall(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\chat\chat_completion_token_logprob.py:10:class TopLogprob(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\chat\chat_completion_token_logprob.py:31:class ChatCompletionTokenLogprob(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\containers\file_create_response.py:10:class FileCreateResponse(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\containers\file_list_response.py:10:class FileListResponse(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\containers\file_retrieve_response.py:10:class FileRetrieveResponse(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\create_eval_completions_run_data_source.py:36:class SourceFileContentContent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\create_eval_completions_run_data_source.py:42:class SourceFileContent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\create_eval_completions_run_data_source.py:50:class SourceFileID(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\create_eval_completions_run_data_source.py:58:class SourceStoredCompletions(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\create_eval_completions_run_data_source.py:90:class InputMessagesTemplateTemplateMessageContentOutputText(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\create_eval_completions_run_data_source.py:98:class InputMessagesTemplateTemplateMessageContentInputImage(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\create_eval_completions_run_data_source.py:121:class InputMessagesTemplateTemplateMessage(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\create_eval_completions_run_data_source.py:140:class InputMessagesTemplate(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\create_eval_completions_run_data_source.py:151:class InputMessagesItemReference(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\create_eval_completions_run_data_source.py:166:class SamplingParams(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\create_eval_completions_run_data_source.py:201:class CreateEvalCompletionsRunDataSource(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\create_eval_jsonl_run_data_source.py:12:class SourceFileContentContent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\create_eval_jsonl_run_data_source.py:18:class SourceFileContent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\create_eval_jsonl_run_data_source.py:26:class SourceFileID(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\create_eval_jsonl_run_data_source.py:37:class CreateEvalJSONLRunDataSource(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\eval_api_error.py:8:class EvalAPIError(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_cancel_response.py:45:class DataSourceResponsesSourceFileContentContent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_cancel_response.py:51:class DataSourceResponsesSourceFileContent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_cancel_response.py:59:class DataSourceResponsesSourceFileID(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_cancel_response.py:67:class DataSourceResponsesSourceResponses(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_cancel_response.py:126:class DataSourceResponsesInputMessagesTemplateTemplateChatMessage(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_cancel_response.py:134:class DataSourceResponsesInputMessagesTemplateTemplateEvalItemContentOutputText(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_cancel_response.py:142:class DataSourceResponsesInputMessagesTemplateTemplateEvalItemContentInputImage(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_cancel_response.py:165:class DataSourceResponsesInputMessagesTemplateTemplateEvalItem(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_cancel_response.py:185:class DataSourceResponsesInputMessagesTemplate(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_cancel_response.py:196:class DataSourceResponsesInputMessagesItemReference(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_cancel_response.py:210:class DataSourceResponsesSamplingParamsText(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_cancel_response.py:228:class DataSourceResponsesSamplingParams(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_cancel_response.py:269:class DataSourceResponses(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_cancel_response.py:296:class PerModelUsage(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_cancel_response.py:316:class PerTestingCriteriaResult(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_cancel_response.py:327:class ResultCounts(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_cancel_response.py:341:class RunCancelResponse(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_create_response.py:45:class DataSourceResponsesSourceFileContentContent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_create_response.py:51:class DataSourceResponsesSourceFileContent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_create_response.py:59:class DataSourceResponsesSourceFileID(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_create_response.py:67:class DataSourceResponsesSourceResponses(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_create_response.py:126:class DataSourceResponsesInputMessagesTemplateTemplateChatMessage(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_create_response.py:134:class DataSourceResponsesInputMessagesTemplateTemplateEvalItemContentOutputText(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_create_response.py:142:class DataSourceResponsesInputMessagesTemplateTemplateEvalItemContentInputImage(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_create_response.py:165:class DataSourceResponsesInputMessagesTemplateTemplateEvalItem(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_create_response.py:185:class DataSourceResponsesInputMessagesTemplate(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_create_response.py:196:class DataSourceResponsesInputMessagesItemReference(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_create_response.py:210:class DataSourceResponsesSamplingParamsText(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_create_response.py:228:class DataSourceResponsesSamplingParams(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_create_response.py:269:class DataSourceResponses(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_create_response.py:296:class PerModelUsage(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_create_response.py:316:class PerTestingCriteriaResult(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_create_response.py:327:class ResultCounts(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_create_response.py:341:class RunCreateResponse(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_delete_response.py:10:class RunDeleteResponse(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_list_response.py:45:class DataSourceResponsesSourceFileContentContent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_list_response.py:51:class DataSourceResponsesSourceFileContent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_list_response.py:59:class DataSourceResponsesSourceFileID(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_list_response.py:67:class DataSourceResponsesSourceResponses(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_list_response.py:126:class DataSourceResponsesInputMessagesTemplateTemplateChatMessage(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_list_response.py:134:class DataSourceResponsesInputMessagesTemplateTemplateEvalItemContentOutputText(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_list_response.py:142:class DataSourceResponsesInputMessagesTemplateTemplateEvalItemContentInputImage(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_list_response.py:165:class DataSourceResponsesInputMessagesTemplateTemplateEvalItem(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_list_response.py:185:class DataSourceResponsesInputMessagesTemplate(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_list_response.py:196:class DataSourceResponsesInputMessagesItemReference(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_list_response.py:210:class DataSourceResponsesSamplingParamsText(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_list_response.py:228:class DataSourceResponsesSamplingParams(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_list_response.py:269:class DataSourceResponses(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_list_response.py:296:class PerModelUsage(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_list_response.py:316:class PerTestingCriteriaResult(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_list_response.py:327:class ResultCounts(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_list_response.py:341:class RunListResponse(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_retrieve_response.py:45:class DataSourceResponsesSourceFileContentContent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_retrieve_response.py:51:class DataSourceResponsesSourceFileContent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_retrieve_response.py:59:class DataSourceResponsesSourceFileID(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_retrieve_response.py:67:class DataSourceResponsesSourceResponses(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_retrieve_response.py:126:class DataSourceResponsesInputMessagesTemplateTemplateChatMessage(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_retrieve_response.py:134:class DataSourceResponsesInputMessagesTemplateTemplateEvalItemContentOutputText(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_retrieve_response.py:142:class DataSourceResponsesInputMessagesTemplateTemplateEvalItemContentInputImage(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_retrieve_response.py:165:class DataSourceResponsesInputMessagesTemplateTemplateEvalItem(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_retrieve_response.py:185:class DataSourceResponsesInputMessagesTemplate(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_retrieve_response.py:196:class DataSourceResponsesInputMessagesItemReference(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_retrieve_response.py:210:class DataSourceResponsesSamplingParamsText(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_retrieve_response.py:228:class DataSourceResponsesSamplingParams(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_retrieve_response.py:269:class DataSourceResponses(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_retrieve_response.py:296:class PerModelUsage(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_retrieve_response.py:316:class PerTestingCriteriaResult(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_retrieve_response.py:327:class ResultCounts(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\run_retrieve_response.py:341:class RunRetrieveResponse(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\runs\output_item_list_response.py:13:class SampleInput(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\runs\output_item_list_response.py:21:class SampleOutput(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\runs\output_item_list_response.py:29:class SampleUsage(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\runs\output_item_list_response.py:43:class Sample(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\runs\output_item_list_response.py:75:class OutputItemListResponse(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\runs\output_item_retrieve_response.py:13:class SampleInput(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\runs\output_item_retrieve_response.py:21:class SampleOutput(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\runs\output_item_retrieve_response.py:29:class SampleUsage(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\runs\output_item_retrieve_response.py:43:class Sample(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\evals\runs\output_item_retrieve_response.py:75:class OutputItemRetrieveResponse(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\fine_tuning\dpo_hyperparameters.py:11:class DpoHyperparameters(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\fine_tuning\dpo_method.py:11:class DpoMethod(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\fine_tuning\fine_tuning_job.py:16:class Error(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\fine_tuning\fine_tuning_job.py:30:class Hyperparameters(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\fine_tuning\fine_tuning_job.py:51:class Method(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\fine_tuning\fine_tuning_job.py:65:class FineTuningJob(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\fine_tuning\fine_tuning_job_event.py:12:class FineTuningJobEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\fine_tuning\fine_tuning_job_wandb_integration.py:10:class FineTuningJobWandbIntegration(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\fine_tuning\fine_tuning_job_wandb_integration_object.py:11:class FineTuningJobWandbIntegrationObject(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\fine_tuning\reinforcement_hyperparameters.py:11:class ReinforcementHyperparameters(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\fine_tuning\reinforcement_method.py:19:class ReinforcementMethod(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\fine_tuning\supervised_hyperparameters.py:11:class SupervisedHyperparameters(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\fine_tuning\supervised_method.py:11:class SupervisedMethod(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\fine_tuning\alpha\grader_run_response.py:12:class MetadataErrors(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\fine_tuning\alpha\grader_run_response.py:44:class Metadata(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\fine_tuning\alpha\grader_run_response.py:60:class GraderRunResponse(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\fine_tuning\alpha\grader_validate_response.py:18:class GraderValidateResponse(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\fine_tuning\checkpoints\permission_create_response.py:10:class PermissionCreateResponse(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\fine_tuning\checkpoints\permission_delete_response.py:10:class PermissionDeleteResponse(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\fine_tuning\checkpoints\permission_retrieve_response.py:11:class Data(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\fine_tuning\checkpoints\permission_retrieve_response.py:25:class PermissionRetrieveResponse(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\fine_tuning\jobs\fine_tuning_job_checkpoint.py:11:class Metrics(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\fine_tuning\jobs\fine_tuning_job_checkpoint.py:27:class FineTuningJobCheckpoint(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\graders\label_model_grader.py:12:class InputContentOutputText(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\graders\label_model_grader.py:20:class InputContentInputImage(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\graders\label_model_grader.py:37:class Input(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\graders\label_model_grader.py:51:class LabelModelGrader(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\graders\multi_grader.py:18:class MultiGrader(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\graders\python_grader.py:11:class PythonGrader(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\graders\score_model_grader.py:12:class InputContentOutputText(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\graders\score_model_grader.py:20:class InputContentInputImage(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\graders\score_model_grader.py:37:class Input(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\graders\score_model_grader.py:51:class ScoreModelGrader(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\graders\string_check_grader.py:10:class StringCheckGrader(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\graders\text_similarity_grader.py:10:class TextSimilarityGrader(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\computer_tool.py:10:class ComputerTool(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\custom_tool.py:12:class CustomTool(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\easy_input_message.py:12:class EasyInputMessage(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\file_search_tool.py:15:class RankingOptions(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\file_search_tool.py:27:class FileSearchTool(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\function_tool.py:11:class FunctionTool(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response.py:28:class IncompleteDetails(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response.py:38:class Response(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_audio_delta_event.py:10:class ResponseAudioDeltaEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_audio_done_event.py:10:class ResponseAudioDoneEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_audio_transcript_delta_event.py:10:class ResponseAudioTranscriptDeltaEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_audio_transcript_done_event.py:10:class ResponseAudioTranscriptDoneEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_code_interpreter_call_code_delta_event.py:10:class ResponseCodeInterpreterCallCodeDeltaEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_code_interpreter_call_code_done_event.py:10:class ResponseCodeInterpreterCallCodeDoneEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_code_interpreter_call_completed_event.py:10:class ResponseCodeInterpreterCallCompletedEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_code_interpreter_call_interpreting_event.py:10:class ResponseCodeInterpreterCallInterpretingEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_code_interpreter_call_in_progress_event.py:10:class ResponseCodeInterpreterCallInProgressEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_code_interpreter_tool_call.py:12:class OutputLogs(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_code_interpreter_tool_call.py:20:class OutputImage(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_code_interpreter_tool_call.py:31:class ResponseCodeInterpreterToolCall(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_completed_event.py:11:class ResponseCompletedEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_computer_tool_call.py:26:class ActionClick(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_computer_tool_call.py:46:class ActionDoubleClick(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_computer_tool_call.py:60:class ActionDragPath(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_computer_tool_call.py:68:class ActionDrag(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_computer_tool_call.py:89:class ActionKeypress(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_computer_tool_call.py:103:class ActionMove(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_computer_tool_call.py:117:class ActionScreenshot(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_computer_tool_call.py:125:class ActionScroll(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_computer_tool_call.py:145:class ActionType(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_computer_tool_call.py:156:class ActionWait(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_computer_tool_call.py:180:class PendingSafetyCheck(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_computer_tool_call.py:191:class ResponseComputerToolCall(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_computer_tool_call_output_item.py:12:class AcknowledgedSafetyCheck(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_computer_tool_call_output_item.py:23:class ResponseComputerToolCallOutputItem(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_computer_tool_call_output_screenshot.py:11:class ResponseComputerToolCallOutputScreenshot(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_content_part_added_event.py:16:class ResponseContentPartAddedEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_content_part_done_event.py:16:class ResponseContentPartDoneEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_created_event.py:11:class ResponseCreatedEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_custom_tool_call.py:11:class ResponseCustomToolCall(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_custom_tool_call_input_delta_event.py:10:class ResponseCustomToolCallInputDeltaEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_custom_tool_call_input_done_event.py:10:class ResponseCustomToolCallInputDoneEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_custom_tool_call_output.py:11:class ResponseCustomToolCallOutput(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_error.py:10:class ResponseError(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_error_event.py:11:class ResponseErrorEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_failed_event.py:11:class ResponseFailedEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_file_search_call_completed_event.py:10:class ResponseFileSearchCallCompletedEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_file_search_call_in_progress_event.py:10:class ResponseFileSearchCallInProgressEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_file_search_call_searching_event.py:10:class ResponseFileSearchCallSearchingEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_file_search_tool_call.py:11:class Result(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_file_search_tool_call.py:34:class ResponseFileSearchToolCall(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_format_text_json_schema_config.py:13:class ResponseFormatTextJSONSchemaConfig(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_function_call_arguments_delta_event.py:10:class ResponseFunctionCallArgumentsDeltaEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_function_call_arguments_done_event.py:10:class ResponseFunctionCallArgumentsDoneEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_function_tool_call.py:11:class ResponseFunctionToolCall(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_function_tool_call_output_item.py:11:class ResponseFunctionToolCallOutputItem(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_function_web_search.py:12:class ActionSearch(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_function_web_search.py:20:class ActionOpenPage(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_function_web_search.py:28:class ActionFind(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_function_web_search.py:42:class ResponseFunctionWebSearch(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_image_gen_call_completed_event.py:10:class ResponseImageGenCallCompletedEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_image_gen_call_generating_event.py:10:class ResponseImageGenCallGeneratingEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_image_gen_call_in_progress_event.py:10:class ResponseImageGenCallInProgressEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_image_gen_call_partial_image_event.py:10:class ResponseImageGenCallPartialImageEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_incomplete_event.py:11:class ResponseIncompleteEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_input_file.py:11:class ResponseInputFile(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_input_image.py:11:class ResponseInputImage(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_input_item.py:40:class Message(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_input_item.py:61:class ComputerCallOutputAcknowledgedSafetyCheck(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_input_item.py:72:class ComputerCallOutput(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_input_item.py:99:class FunctionCallOutput(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_input_item.py:123:class ImageGenerationCall(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_input_item.py:137:class LocalShellCallAction(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_input_item.py:157:class LocalShellCall(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_input_item.py:174:class LocalShellCallOutput(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_input_item.py:188:class McpListToolsTool(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_input_item.py:202:class McpListTools(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_input_item.py:219:class McpApprovalRequest(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_input_item.py:236:class McpApprovalResponse(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_input_item.py:253:class McpCall(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_input_item.py:276:class ItemReference(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_input_message_item.py:12:class ResponseInputMessageItem(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_input_text.py:10:class ResponseInputText(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_in_progress_event.py:11:class ResponseInProgressEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_item.py:32:class ImageGenerationCall(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_item.py:46:class LocalShellCallAction(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_item.py:66:class LocalShellCall(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_item.py:83:class LocalShellCallOutput(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_item.py:97:class McpListToolsTool(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_item.py:111:class McpListTools(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_item.py:128:class McpApprovalRequest(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_item.py:145:class McpApprovalResponse(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_item.py:162:class McpCall(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_item_list.py:12:class ResponseItemList(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_mcp_call_arguments_delta_event.py:10:class ResponseMcpCallArgumentsDeltaEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_mcp_call_arguments_done_event.py:10:class ResponseMcpCallArgumentsDoneEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_mcp_call_completed_event.py:10:class ResponseMcpCallCompletedEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_mcp_call_failed_event.py:10:class ResponseMcpCallFailedEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_mcp_call_in_progress_event.py:10:class ResponseMcpCallInProgressEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_mcp_list_tools_completed_event.py:10:class ResponseMcpListToolsCompletedEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_mcp_list_tools_failed_event.py:10:class ResponseMcpListToolsFailedEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_mcp_list_tools_in_progress_event.py:10:class ResponseMcpListToolsInProgressEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_output_item.py:29:class ImageGenerationCall(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_output_item.py:43:class LocalShellCallAction(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_output_item.py:63:class LocalShellCall(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_output_item.py:80:class McpCall(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_output_item.py:103:class McpListToolsTool(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_output_item.py:117:class McpListTools(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_output_item.py:134:class McpApprovalRequest(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_output_item_added_event.py:11:class ResponseOutputItemAddedEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_output_item_done_event.py:11:class ResponseOutputItemDoneEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_output_message.py:16:class ResponseOutputMessage(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_output_refusal.py:10:class ResponseOutputRefusal(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_output_text.py:21:class AnnotationFileCitation(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_output_text.py:35:class AnnotationURLCitation(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_output_text.py:52:class AnnotationContainerFileCitation(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_output_text.py:72:class AnnotationFilePath(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_output_text.py:89:class LogprobTopLogprob(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_output_text.py:97:class Logprob(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_output_text.py:107:class ResponseOutputText(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_output_text_annotation_added_event.py:10:class ResponseOutputTextAnnotationAddedEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_prompt.py:16:class ResponsePrompt(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_queued_event.py:11:class ResponseQueuedEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_reasoning_item.py:11:class Summary(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_reasoning_item.py:19:class Content(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_reasoning_item.py:27:class ResponseReasoningItem(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_reasoning_summary_part_added_event.py:10:class Part(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_reasoning_summary_part_added_event.py:18:class ResponseReasoningSummaryPartAddedEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_reasoning_summary_part_done_event.py:10:class Part(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_reasoning_summary_part_done_event.py:18:class ResponseReasoningSummaryPartDoneEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_reasoning_summary_text_delta_event.py:10:class ResponseReasoningSummaryTextDeltaEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_reasoning_summary_text_done_event.py:10:class ResponseReasoningSummaryTextDoneEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_reasoning_text_delta_event.py:10:class ResponseReasoningTextDeltaEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_reasoning_text_done_event.py:10:class ResponseReasoningTextDoneEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_refusal_delta_event.py:10:class ResponseRefusalDeltaEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_refusal_done_event.py:10:class ResponseRefusalDoneEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_text_config.py:12:class ResponseTextConfig(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_text_delta_event.py:11:class LogprobTopLogprob(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_text_delta_event.py:19:class Logprob(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_text_delta_event.py:30:class ResponseTextDeltaEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_text_done_event.py:11:class LogprobTopLogprob(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_text_done_event.py:19:class Logprob(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_text_done_event.py:30:class ResponseTextDoneEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_usage.py:8:class InputTokensDetails(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_usage.py:16:class OutputTokensDetails(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_usage.py:21:class ResponseUsage(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_web_search_call_completed_event.py:10:class ResponseWebSearchCallCompletedEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_web_search_call_in_progress_event.py:10:class ResponseWebSearchCallInProgressEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_web_search_call_searching_event.py:10:class ResponseWebSearchCallSearchingEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\tool.py:32:class McpAllowedToolsMcpAllowedToolsFilter(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\tool.py:40:class McpRequireApprovalMcpToolApprovalFilterAlways(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\tool.py:45:class McpRequireApprovalMcpToolApprovalFilterNever(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\tool.py:50:class McpRequireApprovalMcpToolApprovalFilter(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\tool.py:61:class Mcp(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\tool.py:87:class CodeInterpreterContainerCodeInterpreterToolAuto(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\tool.py:98:class CodeInterpreter(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\tool.py:110:class ImageGenerationInputImageMask(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\tool.py:118:class ImageGeneration(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\tool.py:175:class LocalShell(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\tool_choice_allowed.py:11:class ToolChoiceAllowed(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\tool_choice_custom.py:10:class ToolChoiceCustom(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\tool_choice_function.py:10:class ToolChoiceFunction(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\tool_choice_mcp.py:11:class ToolChoiceMcp(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\tool_choice_types.py:10:class ToolChoiceTypes(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\web_search_tool.py:11:class UserLocation(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\web_search_tool.py:34:class WebSearchTool(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\shared\comparison_filter.py:11:class ComparisonFilter(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\shared\compound_filter.py:14:class CompoundFilter(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\shared\custom_tool_input_format.py:12:class Text(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\shared\custom_tool_input_format.py:17:class Grammar(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\shared\error_object.py:10:class ErrorObject(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\shared\function_definition.py:11:class FunctionDefinition(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\shared\reasoning.py:12:class Reasoning(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\shared\response_format_json_object.py:10:class ResponseFormatJSONObject(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\shared\response_format_json_schema.py:13:class JSONSchema(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\shared\response_format_json_schema.py:43:class ResponseFormatJSONSchema(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\shared\response_format_text.py:10:class ResponseFormatText(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\shared\response_format_text_grammar.py:10:class ResponseFormatTextGrammar(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\shared\response_format_text_python.py:10:class ResponseFormatTextPython(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\uploads\upload_part.py:10:class UploadPart(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\vector_stores\file_content_response.py:10:class FileContentResponse(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\vector_stores\vector_store_file.py:12:class LastError(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\vector_stores\vector_store_file.py:20:class VectorStoreFile(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\vector_stores\vector_store_file_batch.py:10:class FileCounts(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\vector_stores\vector_store_file_batch.py:27:class VectorStoreFileBatch(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\vector_stores\vector_store_file_deleted.py:10:class VectorStoreFileDeleted(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\webhooks\batch_cancelled_webhook_event.py:11:class Data(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\webhooks\batch_cancelled_webhook_event.py:16:class BatchCancelledWebhookEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\webhooks\batch_completed_webhook_event.py:11:class Data(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\webhooks\batch_completed_webhook_event.py:16:class BatchCompletedWebhookEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\webhooks\batch_expired_webhook_event.py:11:class Data(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\webhooks\batch_expired_webhook_event.py:16:class BatchExpiredWebhookEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\webhooks\batch_failed_webhook_event.py:11:class Data(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\webhooks\batch_failed_webhook_event.py:16:class BatchFailedWebhookEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\webhooks\eval_run_canceled_webhook_event.py:11:class Data(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\webhooks\eval_run_canceled_webhook_event.py:16:class EvalRunCanceledWebhookEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\webhooks\eval_run_failed_webhook_event.py:11:class Data(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\webhooks\eval_run_failed_webhook_event.py:16:class EvalRunFailedWebhookEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\webhooks\eval_run_succeeded_webhook_event.py:11:class Data(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\webhooks\eval_run_succeeded_webhook_event.py:16:class EvalRunSucceededWebhookEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\webhooks\fine_tuning_job_cancelled_webhook_event.py:11:class Data(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\webhooks\fine_tuning_job_cancelled_webhook_event.py:16:class FineTuningJobCancelledWebhookEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\webhooks\fine_tuning_job_failed_webhook_event.py:11:class Data(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\webhooks\fine_tuning_job_failed_webhook_event.py:16:class FineTuningJobFailedWebhookEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\webhooks\fine_tuning_job_succeeded_webhook_event.py:11:class Data(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\webhooks\fine_tuning_job_succeeded_webhook_event.py:16:class FineTuningJobSucceededWebhookEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\webhooks\response_cancelled_webhook_event.py:11:class Data(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\webhooks\response_cancelled_webhook_event.py:16:class ResponseCancelledWebhookEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\webhooks\response_completed_webhook_event.py:11:class Data(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\webhooks\response_completed_webhook_event.py:16:class ResponseCompletedWebhookEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\webhooks\response_failed_webhook_event.py:11:class Data(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\webhooks\response_failed_webhook_event.py:16:class ResponseFailedWebhookEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\webhooks\response_incomplete_webhook_event.py:11:class Data(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\webhooks\response_incomplete_webhook_event.py:16:class ResponseIncompleteWebhookEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\config.py:73:      class User(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\config.py:92:      class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\config.py:114:      class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\config.py:129:      class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\config.py:188:        class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\config.py:228:    class SomeModel(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\config.py:257:    class User(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\config.py:276:    class User(BaseModel, validate_assignment=True):  # (1)!
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\config.py:310:    class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\config.py:378:    class Voice(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\config.py:398:    class Athlete(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\config.py:458:    class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\config.py:486:    class User(BaseModel, revalidate_instances='never'):  # (1)!
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\config.py:492:    class Transaction(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\config.py:521:    class User(BaseModel, revalidate_instances='always'):  # (1)!
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\config.py:527:    class Transaction(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\config.py:562:    class User(BaseModel, revalidate_instances='subclass-instances'):  # (1)!
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\config.py:568:    class Transaction(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\config.py:663:        class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\config.py:686:        class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\config.py:718:        class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\config.py:726:        Field "model_validate" conflicts with member <bound method BaseModel.model_validate of <class 'pydantic.main.BaseModel'>> of protected namespace "model_".
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\config.py:740:    class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\config.py:759:    class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\config.py:813:    class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\config.py:856:    class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\config.py:904:    class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\config.py:917:    class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\config.py:948:    class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\config.py:990:    class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\config.py:1051:    class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\config.py:1089:    class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\config.py:1126:    class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\fields.py:282:            class MyModel(pydantic.BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\fields.py:299:        class MyModel(pydantic.BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\fields.py:313:        class MyModel(pydantic.BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\fields.py:382:        class MyModel(pydantic.BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\fields.py:1387:    class Rectangle(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\fields.py:1417:    class Square(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\fields.py:1455:    class Parent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\fields.py:1480:    class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\functional_serializers.py:34:    class StudentModel(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\functional_serializers.py:101:    class EventDatetime(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\functional_serializers.py:118:    class EventModel(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\functional_serializers.py:250:    class StudentModel(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\functional_serializers.py:369:    class TemperatureModel(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\functional_validators.py:45:        class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\functional_validators.py:108:        class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\functional_validators.py:186:        class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\functional_validators.py:283:    class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\functional_validators.py:430:    class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\functional_validators.py:684:    class Square(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\functional_validators.py:747:            class Bar(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\json_schema.py:2410:        raise AttributeError('model_json_schema() must be called on a subclass of BaseModel, not BaseModel itself.')
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\json_schema.py:2643:            class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\main.py:121:class BaseModel(metaclass=_model_construction.ModelMetaclass):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\main.py:867:        # For a model `class Model[T, U, V = int](BaseModel): ...` parametrized with `(str, bool)`,
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\main.py:1179:            class MyModel(BaseModel, extra='allow'): ...
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\main.py:1696:    subclass of [`BaseModel`][pydantic.BaseModel].
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\mypy.py:524:        # Handle `class MyModel(BaseModel, <name>=<expr>, ...):`
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\mypy.py:1342:    # signature incompatible with the superclass, which causes mypy errors to occur for every subclass of BaseModel.
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\networks.py:579:    class MyModel(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\networks.py:616:    class MyModel(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\networks.py:709:    class MyModel(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\networks.py:724:    class MyDatabaseModel(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\networks.py:972:        class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\networks.py:1021:    class User(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\networks.py:1108:        class IpModel(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\root_model.py:35:class RootModel(BaseModel, typing.Generic[RootModelRootType], metaclass=_RootModelMetaclass):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:174:            class Foo(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:184:            class Foo(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:204:    class ConstrainedExample(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:244:class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:275:class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:306:class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:337:class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:368:class StrictIntModel(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:435:            class Foo(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:445:            class Foo(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:466:    class ConstrainedExample(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:506:class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:537:class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:568:class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:599:class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:630:class StrictFloatModel(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:650:class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:773:            class Foo(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:783:            class Foo(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:797:    class Foo(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:929:        class ImportThings(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:957:        class ImportThingsDefaultPyObj(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:961:        class ImportThingsDefaultString(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:969:        class ImportThingsMissingValidateDefault(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:981:        class ImportThings(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:1067:            class Foo(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:1078:            class Foo(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:1100:    class ConstrainedExample(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:1191:class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:1205:class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:1219:class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:1233:class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:1247:class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:1261:class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:1275:class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:1352:class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:1394:class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:1453:        class AnyJsonModel(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:1456:        class ConstrainedJsonModel(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:1503:        class ConstrainedJsonModel(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:1590:    class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:1615:    class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:1641:    class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:1815:    class User(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:1838:    class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:1883:    class User(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:2046:    class MyModel(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:2504:    class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:2603:    class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:2726:class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:2773:class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:2812:class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:2833:class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:2865:    class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:2913:    class Pie(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:2928:    class ThanksgivingDinner(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:3000:    class Pie(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:3015:    class ThanksgivingDinner(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:3191:    class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\types.py:3269:    class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\warnings.py:87:class GenericBeforeBaseModelWarning(Warning):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\deprecated\decorator.py:243:        class DecoratorBaseModel(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\v1\dataclasses.py:472:    - `_cls` is not a processed pydantic dataclass (with a basemodel attached)
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\v1\decorator.py:226:        class DecoratorBaseModel(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\v1\env_settings.py:23:class BaseSettings(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\v1\generics.py:64:class GenericModel(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\v1\main.py:316:class BaseModel(Representation, metaclass=ModelMetaclass):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\v1\schema.py:172:    :param model: a Pydantic model (a class that inherits from BaseModel)
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\v1\schema.py:352:    model ``Foo`` (subclass of Pydantic ``BaseModel``) as ``model``, and it has a field of type ``Bar`` (also
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\v1\schema.py:353:    subclass of ``BaseModel``) and that model ``Bar`` has a field of type ``Baz`` (also subclass of ``BaseModel``),
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\v1\schema.py:371:    Take a single Pydantic ``ModelField`` (from a model) that could have been declared as a subclass of BaseModel
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\v1\schema.py:373:    I.e. if you pass a field that was declared to be of type ``Foo`` (subclass of BaseModel) as ``field``, and that
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\v1\schema.py:374:    model ``Foo`` has a field of type ``Bar`` (also subclass of ``BaseModel``) and that model ``Bar`` has a field of
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\v1\schema.py:375:    type ``Baz`` (also subclass of ``BaseModel``), the return value will be ``set([Foo, Bar, Baz])``.
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\v1\schema.py:402:    I.e. if you pass a the fields of a model ``Foo`` (subclass of ``BaseModel``) as ``fields``, and on of them has a
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\v1\schema.py:403:    field of type ``Bar`` (also subclass of ``BaseModel``) and that model ``Bar`` has a field of type ``Baz`` (also
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\v1\schema.py:404:    subclass of ``BaseModel``), the return value will be ``set([Foo, Bar, Baz])``.
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\v1\schema.py:420:    a field of type ``Baz`` (also subclass of ``BaseModel``), the return value will be ``set([Foo, Bar, Baz])``.
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\_internal\_decorators.py:431:        attributes in the namespace of the class (a BaseModel or dataclass)
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\_internal\_generate_schema.py:751:                        # class Base[T](BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\_internal\_generate_schema.py:754:                        # class Other(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\_internal\_generate_schema.py:935:        # class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\_internal\_generics.py:351:        class Model[T, U, V = int](BaseModel): ...
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\_internal\_model_construction.py:258:                    None,  # In case the metaclass is used with a class other than `BaseModel`.
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\_internal\_namespace_utils.py:173:                class Model(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\_internal\_utils.py:112:    """Returns true if cls is a _proper_ subclass of BaseModel, and provides proper type-checking,
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\_internal\_utils.py:404:    This decorator takes a class method defined on the `BaseModel` class and transforms it into
+services\mcp_client.py:27:class MCPResponse(BaseModel):
+tradingbot-backend\.venv\Lib\site-packages\fastapi\openapi\models.py:28:class Contact(BaseModel):
+tradingbot-backend\.venv\Lib\site-packages\fastapi\openapi\models.py:37:class License(BaseModel):
+tradingbot-backend\.venv\Lib\site-packages\fastapi\openapi\models.py:45:class Info(BaseModel):
+tradingbot-backend\.venv\Lib\site-packages\fastapi\openapi\models.py:57:class ServerVariable(BaseModel):
+tradingbot-backend\.venv\Lib\site-packages\fastapi\openapi\models.py:66:class Server(BaseModel):
+tradingbot-backend\.venv\Lib\site-packages\fastapi\openapi\models.py:75:class Reference(BaseModel):
+tradingbot-backend\.venv\Lib\site-packages\fastapi\openapi\models.py:79:class Discriminator(BaseModel):
+tradingbot-backend\.venv\Lib\site-packages\fastapi\openapi\models.py:84:class XML(BaseModel):
+tradingbot-backend\.venv\Lib\site-packages\fastapi\openapi\models.py:95:class ExternalDocumentation(BaseModel):
+tradingbot-backend\.venv\Lib\site-packages\fastapi\openapi\models.py:103:class Schema(BaseModel):
+tradingbot-backend\.venv\Lib\site-packages\fastapi\openapi\models.py:145:class Example(BaseModel):
+tradingbot-backend\.venv\Lib\site-packages\fastapi\openapi\models.py:162:class Encoding(BaseModel):
+tradingbot-backend\.venv\Lib\site-packages\fastapi\openapi\models.py:173:class MediaType(BaseModel):
+tradingbot-backend\.venv\Lib\site-packages\fastapi\openapi\models.py:183:class ParameterBase(BaseModel):
+tradingbot-backend\.venv\Lib\site-packages\fastapi\openapi\models.py:210:class RequestBody(BaseModel):
+tradingbot-backend\.venv\Lib\site-packages\fastapi\openapi\models.py:219:class Link(BaseModel):
+tradingbot-backend\.venv\Lib\site-packages\fastapi\openapi\models.py:231:class Response(BaseModel):
+tradingbot-backend\.venv\Lib\site-packages\fastapi\openapi\models.py:241:class Operation(BaseModel):
+tradingbot-backend\.venv\Lib\site-packages\fastapi\openapi\models.py:260:class PathItem(BaseModel):
+tradingbot-backend\.venv\Lib\site-packages\fastapi\openapi\models.py:286:class SecurityBase(BaseModel):
+tradingbot-backend\.venv\Lib\site-packages\fastapi\openapi\models.py:316:class OAuthFlow(BaseModel):
+tradingbot-backend\.venv\Lib\site-packages\fastapi\openapi\models.py:341:class OAuthFlows(BaseModel):
+tradingbot-backend\.venv\Lib\site-packages\fastapi\openapi\models.py:364:class Components(BaseModel):
+tradingbot-backend\.venv\Lib\site-packages\fastapi\openapi\models.py:380:class Tag(BaseModel):
+tradingbot-backend\.venv\Lib\site-packages\fastapi\openapi\models.py:389:class OpenAPI(BaseModel):
+tradingbot-backend\.venv\Lib\site-packages\fastapi\security\http.py:15:class HTTPBasicCredentials(BaseModel):
+tradingbot-backend\.venv\Lib\site-packages\fastapi\security\http.py:20:class HTTPAuthorizationCredentials(BaseModel):
+tradingbot-backend\.venv\Lib\site-packages\gotrue\types.py:66:class AMREntry(BaseModel):
+tradingbot-backend\.venv\Lib\site-packages\gotrue\types.py:95:class AuthResponse(BaseModel):
+tradingbot-backend\.venv\Lib\site-packages\gotrue\types.py:100:class AuthOtpResponse(BaseModel):
+tradingbot-backend\.venv\Lib\site-packages\gotrue\types.py:106:class OAuthResponse(BaseModel):
+tradingbot-backend\.venv\Lib\site-packages\gotrue\types.py:111:class SSOResponse(BaseModel):
+tradingbot-backend\.venv\Lib\site-packages\gotrue\types.py:115:class LinkIdentityResponse(BaseModel):
+tradingbot-backend\.venv\Lib\site-packages\gotrue\types.py:119:class IdentitiesResponse(BaseModel):
+tradingbot-backend\.venv\Lib\site-packages\gotrue\types.py:123:class UserResponse(BaseModel):
+tradingbot-backend\.venv\Lib\site-packages\gotrue\types.py:127:class Session(BaseModel):
+tradingbot-backend\.venv\Lib\site-packages\gotrue\types.py:164:class UserIdentity(BaseModel):
+tradingbot-backend\.venv\Lib\site-packages\gotrue\types.py:175:class Factor(BaseModel):
+tradingbot-backend\.venv\Lib\site-packages\gotrue\types.py:201:class User(BaseModel):
+tradingbot-backend\.venv\Lib\site-packages\gotrue\types.py:264:class Subscription(BaseModel):
+tradingbot-backend\.venv\Lib\site-packages\gotrue\types.py:586:class AuthMFAVerifyResponse(BaseModel):
+tradingbot-backend\.venv\Lib\site-packages\gotrue\types.py:609:class AuthMFAEnrollResponseTotp(BaseModel):
+tradingbot-backend\.venv\Lib\site-packages\gotrue\types.py:629:class AuthMFAEnrollResponse(BaseModel):
+tradingbot-backend\.venv\Lib\site-packages\gotrue\types.py:653:class AuthMFAUnenrollResponse(BaseModel):
+tradingbot-backend\.venv\Lib\site-packages\gotrue\types.py:660:class AuthMFAChallengeResponse(BaseModel):
+tradingbot-backend\.venv\Lib\site-packages\gotrue\types.py:675:class AuthMFAListFactorsResponse(BaseModel):
+tradingbot-backend\.venv\Lib\site-packages\gotrue\types.py:693:class AuthMFAGetAuthenticatorAssuranceLevelResponse(BaseModel):
+tradingbot-backend\.venv\Lib\site-packages\gotrue\types.py:711:class AuthMFAAdminDeleteFactorResponse(BaseModel):
+tradingbot-backend\.venv\Lib\site-packages\gotrue\types.py:729:class AuthMFAAdminListFactorsResponse(BaseModel):
+tradingbot-backend\.venv\Lib\site-packages\gotrue\types.py:743:class GenerateLinkProperties(BaseModel):
+tradingbot-backend\.venv\Lib\site-packages\gotrue\types.py:774:class GenerateLinkResponse(BaseModel):
+tradingbot-backend\.venv\Lib\site-packages\pandas\tests\io\test_sql.py:2694:        class Test(BaseModel):
+tradingbot-backend\.venv\Lib\site-packages\postgrest\base_request_builder.py:130:class APIResponse(BaseModel, Generic[_ReturnT]):
+tradingbot-backend\.venv\Lib\site-packages\pydantic\dataclasses.py:472:    - `_cls` is not a processed pydantic dataclass (with a basemodel attached)
+tradingbot-backend\.venv\Lib\site-packages\pydantic\decorator.py:226:        class DecoratorBaseModel(BaseModel):
+tradingbot-backend\.venv\Lib\site-packages\pydantic\env_settings.py:23:class BaseSettings(BaseModel):
+tradingbot-backend\.venv\Lib\site-packages\pydantic\generics.py:64:class GenericModel(BaseModel):
+tradingbot-backend\.venv\Lib\site-packages\pydantic\main.py:310:class BaseModel(Representation, metaclass=ModelMetaclass):
+tradingbot-backend\.venv\Lib\site-packages\pydantic\schema.py:172:    :param model: a Pydantic model (a class that inherits from BaseModel)
+tradingbot-backend\.venv\Lib\site-packages\pydantic\schema.py:352:    model ``Foo`` (subclass of Pydantic ``BaseModel``) as ``model``, and it has a field of type ``Bar`` (also
+tradingbot-backend\.venv\Lib\site-packages\pydantic\schema.py:353:    subclass of ``BaseModel``) and that model ``Bar`` has a field of type ``Baz`` (also subclass of ``BaseModel``),
+tradingbot-backend\.venv\Lib\site-packages\pydantic\schema.py:371:    Take a single Pydantic ``ModelField`` (from a model) that could have been declared as a subclass of BaseModel
+tradingbot-backend\.venv\Lib\site-packages\pydantic\schema.py:373:    I.e. if you pass a field that was declared to be of type ``Foo`` (subclass of BaseModel) as ``field``, and that
+tradingbot-backend\.venv\Lib\site-packages\pydantic\schema.py:374:    model ``Foo`` has a field of type ``Bar`` (also subclass of ``BaseModel``) and that model ``Bar`` has a field of
+tradingbot-backend\.venv\Lib\site-packages\pydantic\schema.py:375:    type ``Baz`` (also subclass of ``BaseModel``), the return value will be ``set([Foo, Bar, Baz])``.
+tradingbot-backend\.venv\Lib\site-packages\pydantic\schema.py:402:    I.e. if you pass a the fields of a model ``Foo`` (subclass of ``BaseModel``) as ``fields``, and on of them has a
+tradingbot-backend\.venv\Lib\site-packages\pydantic\schema.py:403:    field of type ``Bar`` (also subclass of ``BaseModel``) and that model ``Bar`` has a field of type ``Baz`` (also
+tradingbot-backend\.venv\Lib\site-packages\pydantic\schema.py:404:    subclass of ``BaseModel``), the return value will be ``set([Foo, Bar, Baz])``.
+tradingbot-backend\.venv\Lib\site-packages\pydantic\schema.py:420:    a field of type ``Baz`` (also subclass of ``BaseModel``), the return value will be ``set([Foo, Bar, Baz])``.
+tradingbot-backend\models\api_models.py:85:class WalletBalance(BaseModel):
+tradingbot-backend\models\api_models.py:109:class WalletSummary(BaseModel):
+tradingbot-backend\models\api_models.py:119:class MarginLimitInfo(BaseModel):
+tradingbot-backend\models\api_models.py:138:class MarginInfo(BaseModel):
+tradingbot-backend\models\api_models.py:171:class MarginStatus(BaseModel):
+tradingbot-backend\models\api_models.py:185:class Position(BaseModel):
+tradingbot-backend\models\api_models.py:227:class PositionHistory(BaseModel):
+tradingbot-backend\models\api_models.py:286:class ClosePositionResponse(BaseModel):
+tradingbot-backend\models\api_models.py:295:class OrderRequest(BaseModel):
+tradingbot-backend\models\api_models.py:321:class OrderResponse(BaseModel):
+tradingbot-backend\models\api_models.py:361:class OrderHistoryItem(BaseModel):
+tradingbot-backend\models\api_models.py:397:class TradeItem(BaseModel):
+tradingbot-backend\models\api_models.py:427:class LedgerEntry(BaseModel):
+tradingbot-backend\models\api_models.py:466:class Ticker(BaseModel):
+tradingbot-backend\models\api_models.py:502:class Candle(BaseModel):
+tradingbot-backend\models\api_models.py:528:class OrderBookEntry(BaseModel):
+tradingbot-backend\models\api_models.py:554:class OrderBook(BaseModel):
+tradingbot-backend\models\api_models.py:576:class WebSocketAuthRequest(BaseModel):
+tradingbot-backend\models\api_models.py:596:class WebSocketSubscriptionRequest(BaseModel):
+tradingbot-backend\models\api_models.py:606:class ApiResponse(BaseModel):
+tradingbot-backend\models\api_models.py:614:class PaginatedResponse(BaseModel):
+tradingbot-backend\models\signal_models.py:6:class SignalResponse(BaseModel):
+tradingbot-backend\models\signal_models.py:26:class SignalHistory(BaseModel):
+tradingbot-backend\models\signal_models.py:41:class LiveSignalsResponse(BaseModel):
+tradingbot-backend\models\signal_models.py:51:class SignalGenerationRequest(BaseModel):
+tradingbot-backend\models\signal_models.py:59:class SignalExecutionRequest(BaseModel):
+tradingbot-backend\models\signal_models.py:69:class SignalStrength(BaseModel):
+tradingbot-backend\models\signal_models.py:78:class SignalThresholds(BaseModel):
+tradingbot-backend\rest\margin.py:25:class MarginInfo(BaseModel):
+tradingbot-backend\rest\margin.py:58:class MarginLimitInfo(BaseModel):
+tradingbot-backend\rest\order_history.py:30:class OrderHistoryItem(BaseModel):
+tradingbot-backend\rest\order_history.py:76:class TradeItem(BaseModel):
+tradingbot-backend\rest\order_history.py:169:class LedgerEntry(BaseModel):
+tradingbot-backend\rest\positions.py:29:class Position(BaseModel):
+tradingbot-backend\rest\positions_history.py:21:class PositionHistory(BaseModel):
+tradingbot-backend\rest\routes.py:104:class OrderRequest(BaseModel):
+tradingbot-backend\rest\routes.py:117:class CancelOrderRequest(BaseModel):
+tradingbot-backend\rest\routes.py:123:class UpdateOrderRequest(BaseModel):
+tradingbot-backend\rest\routes.py:131:class OrderResponse(BaseModel):
+tradingbot-backend\rest\routes.py:140:class WSOrderUpdateRequest(BaseModel):
+tradingbot-backend\rest\routes.py:147:class WSCancelMultiRequest(BaseModel):
+tradingbot-backend\rest\routes.py:153:class WSOrderOpsRequest(BaseModel):
+tradingbot-backend\rest\routes.py:157:class WSUnsubscribeRequest(BaseModel):
+tradingbot-backend\rest\routes.py:163:class WSSubscribeRequest(BaseModel):
+tradingbot-backend\rest\routes.py:169:class ProbPredictRequest(BaseModel):
+tradingbot-backend\rest\routes.py:178:class ProbPreviewRequest(BaseModel):
+tradingbot-backend\rest\routes.py:260:class BracketOrderRequest(BaseModel):
+tradingbot-backend\rest\routes.py:276:class ProbTradeRequest(BaseModel):
+tradingbot-backend\rest\routes.py:1046:class TransferRequest(BaseModel):
+tradingbot-backend\rest\routes.py:1391:class TokenRequest(BaseModel):
+tradingbot-backend\rest\routes.py:1399:class TokenResponse(BaseModel):
+tradingbot-backend\rest\routes.py:1432:class WeightedStrategyRequest(BaseModel):
+tradingbot-backend\rest\routes.py:1441:class WeightedStrategyResponse(BaseModel):
+tradingbot-backend\rest\routes.py:1491:class StrategySettingsPayload(BaseModel):
+tradingbot-backend\rest\routes.py:1588:class StrategyAutoPayload(BaseModel):
+tradingbot-backend\rest\routes.py:1663:class PositionSizeRequest(BaseModel):
+tradingbot-backend\rest\routes.py:2324:class ProbValidateRequest(BaseModel):
+tradingbot-backend\rest\routes.py:2378:class ProbValidateRunRequest(BaseModel):
+tradingbot-backend\rest\routes.py:2434:class ProbRetrainRunRequest(BaseModel):
+tradingbot-backend\rest\routes.py:2565:class ProbConfigUpdateRequest(BaseModel):
+tradingbot-backend\rest\routes.py:2588:class ProbFeatureLogQuery(BaseModel):
+tradingbot-backend\rest\routes.py:2750:class BacktestRequest(BaseModel):
+tradingbot-backend\rest\routes.py:2770:class AutoStartRequest(BaseModel):
+tradingbot-backend\rest\routes.py:2810:class AutoBatchRequest(BaseModel):
+tradingbot-backend\rest\routes.py:3142:class UpdateMaxTradesRequest(BaseModel):
+tradingbot-backend\rest\routes.py:3179:class RuntimeConfigRequest(BaseModel):
+tradingbot-backend\rest\routes.py:3224:class UpdateMaxTradesSymbolRequest(BaseModel):
+tradingbot-backend\rest\routes.py:3252:class CircuitConfigRequest(BaseModel):
+tradingbot-backend\rest\routes.py:3295:class RiskGuardResetRequest(BaseModel):
+tradingbot-backend\rest\routes.py:3331:class RiskGuardConfigRequest(BaseModel):
+tradingbot-backend\rest\routes.py:3359:class BacktestRequest(BaseModel):
+tradingbot-backend\rest\routes.py:3455:class RegimeConfigRequest(BaseModel):
+tradingbot-backend\rest\routes.py:3514:class AblationTestRequest(BaseModel):
+tradingbot-backend\rest\routes.py:3644:class BenchmarkRequest(BaseModel):
+tradingbot-backend\rest\routes.py:3663:class BracketResetRequest(BaseModel):
+tradingbot-backend\rest\routes.py:3817:class CacheClearRequest(BaseModel):
+tradingbot-backend\rest\routes.py:3823:class MCPExecuteRequest(BaseModel):
+tradingbot-backend\rest\routes.py:4032:class MCPTogglePayload(BaseModel):
+tradingbot-backend\rest\routes.py:4066:class BackfillRequest(BaseModel):
+tradingbot-backend\rest\routes.py:4160:class SaveTemplateRequest(BaseModel):
+tradingbot-backend\rest\routes.py:4171:class TemplatesPayload(BaseModel):
+tradingbot-backend\rest\routes.py:4178:class CoreModeRequest(BaseModel):
+tradingbot-backend\rest\routes.py:4346:class UpdateWindowsRequest(BaseModel):
+tradingbot-backend\rest\wallet.py:26:class WalletBalance(BaseModel):
+
+

@@ -33,7 +33,12 @@ logger = get_logger(__name__)
 class RiskDecision:
     """Resultat från risk-evaluering."""
 
-    def __init__(self, allowed: bool, reason: str | None = None, details: dict[str, Any] | None = None):
+    def __init__(
+        self,
+        allowed: bool,
+        reason: str | None = None,
+        details: dict[str, Any] | None = None,
+    ):
         self.allowed = allowed
         self.reason = reason
         self.details = details or {}
@@ -92,7 +97,12 @@ class UnifiedRiskService:
                         "triggered_at": None,
                         "reason": None,
                     },
-                    "kill_switch": {"enabled": False, "triggered": False, "triggered_at": None, "reason": None},
+                    "kill_switch": {
+                        "enabled": False,
+                        "triggered": False,
+                        "triggered_at": None,
+                        "reason": None,
+                    },
                     "exposure_limits": {
                         "enabled": True,
                         "max_position_size_percentage": 10.0,
@@ -113,13 +123,16 @@ class UnifiedRiskService:
         """Spara riskvakter till fil."""
         try:
             os.makedirs(os.path.dirname(self.guards_file), exist_ok=True)
-            with open(self.guards_file, 'w') as f:
+            with open(self.guards_file, "w") as f:
                 json.dump(guards, f, indent=2, default=str)
         except Exception as e:
             logger.error(f"❌ Fel vid sparande av riskvakter: {e}")
 
     def evaluate_risk(
-        self, symbol: str | None = None, amount: float | None = None, price: float | None = None
+        self,
+        symbol: str | None = None,
+        amount: float | None = None,
+        price: float | None = None,
     ) -> RiskDecision:
         """
         Utför komplett risk-evaluering för en trade.
@@ -164,7 +177,11 @@ class UnifiedRiskService:
             # 5. Kontrollera trade constraints (trading windows, cooldowns, limits)
             constraint_result = self.trade_constraints.check(symbol=symbol)
             if not constraint_result.allowed:
-                return RiskDecision(False, f"trade_constraints:{constraint_result.reason}", constraint_result.details)
+                return RiskDecision(
+                    False,
+                    f"trade_constraints:{constraint_result.reason}",
+                    constraint_result.details,
+                )
 
             return RiskDecision(True)
 
@@ -223,7 +240,10 @@ class UnifiedRiskService:
                 return False, None
 
             if guard.get("triggered", False):
-                return True, f"Max daily loss redan triggad: {guard.get('reason', 'Okänd anledning')}"
+                return (
+                    True,
+                    f"Max daily loss redan triggad: {guard.get('reason', 'Okänd anledning')}",
+                )
 
             # Hämta dagens PnL
             daily_pnl = self._get_daily_pnl()
@@ -253,7 +273,10 @@ class UnifiedRiskService:
                 return False, None
 
             if guard.get("triggered", False):
-                return True, f"Kill-switch aktiv: {guard.get('reason', 'Okänd anledning')}"
+                return (
+                    True,
+                    f"Kill-switch aktiv: {guard.get('reason', 'Okänd anledning')}",
+                )
 
             return False, None
 
@@ -264,12 +287,16 @@ class UnifiedRiskService:
     def _check_exposure_limits(self, symbol: str, amount: float, price: float) -> tuple[bool, str | None]:
         """Kontrollera exposure limits."""
         try:
+            _ = symbol  # parameter finns för framtida användning (etiketter/limits per symbol)
             guard = self.guards.get("exposure_limits", {})
             if not guard.get("enabled", False):
                 return False, None
 
             if guard.get("triggered", False):
-                return True, f"Exposure limits redan triggade: {guard.get('reason', 'Okänd anledning')}"
+                return (
+                    True,
+                    f"Exposure limits redan triggade: {guard.get('reason', 'Okänd anledning')}",
+                )
 
             # Hämta aktuell equity
             equity = self._get_current_equity()
@@ -356,7 +383,7 @@ class UnifiedRiskService:
             # Hämta circuit breaker status
             circuit_breaker_status = {
                 "open": self._is_circuit_breaker_open(),
-                "opened_at": self.circuit_breaker.opened_at.isoformat() if self.circuit_breaker.opened_at else None,
+                "opened_at": (self.circuit_breaker.opened_at.isoformat() if self.circuit_breaker.opened_at else None),
                 "error_count": len(self.circuit_breaker.error_events),
                 "error_threshold": self.circuit_breaker.error_threshold,
             }
@@ -376,7 +403,7 @@ class UnifiedRiskService:
                 "trade_constraints": constraints_status,
                 "circuit_breaker": circuit_breaker_status,
                 "guards": guards_status,
-                "overall_status": "healthy" if not self._is_circuit_breaker_open() else "degraded",
+                "overall_status": ("healthy" if not self._is_circuit_breaker_open() else "degraded"),
             }
 
         except Exception as e:

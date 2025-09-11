@@ -380,7 +380,7 @@ class SchedulerService:
         OPTIMERAD: Ökad från 1 minut till 15 minuter för att minska API-anrop.
         """
         try:
-            from services.symbols import SymbolService
+            from services.coordinator import get_coordinator
 
             # OPTIMERING: Ökad från 1 minut till 15 minuter
             interval_minutes = 15
@@ -388,65 +388,7 @@ class SchedulerService:
                 minutes=max(1, interval_minutes)
             ):
                 return
-
-            # Kontrollera om auto-regim är aktiverat
-            try:
-                import json
-                import os
-
-                cfg_path = os.path.join(
-                    os.path.dirname(os.path.dirname(__file__)),
-                    "config",
-                    "strategy_settings.json",
-                )
-                with open(cfg_path, encoding="utf-8") as f:
-                    data = json.load(f)
-                auto_regime = bool(data.get("AUTO_REGIME_ENABLED", True))
-                auto_weights = bool(data.get("AUTO_WEIGHTS_ENABLED", True))
-                if not (auto_regime and auto_weights):
-                    return
-            except Exception:
-                return
-
-            # Hämta aktiva symboler
-            sym_svc = SymbolService()
-            await sym_svc.refresh()
-
-            # OPTIMERING: Batch-uppdatera regim för alla symboler
-            symbols = sym_svc.get_symbols(test_only=True, fmt="v2")[:5]  # Begränsa till 5 symboler
-
-            try:
-                from services.strategy import update_settings_from_regime_batch
-
-                # Batch-uppdatera alla symboler på en gång
-                all_weights = update_settings_from_regime_batch(symbols)
-
-                for symbol, new_weights in all_weights.items():
-                    logger.info(f"🔄 Automatisk regim-uppdatering för {symbol}: {new_weights}")
-
-                    # Skicka notifikation till UI
-                    try:
-                        from ws.manager import socket_app
-
-                        asyncio.create_task(
-                            socket_app.emit(
-                                "notification",
-                                {
-                                    "type": "info",
-                                    "title": "Regim uppdaterad",
-                                    "payload": {
-                                        "symbol": symbol,
-                                        "weights": new_weights,
-                                        "timestamp": now.isoformat(),
-                                    },
-                                },
-                            )
-                        )
-                    except Exception:
-                        pass
-
-            except Exception as e:
-                logger.warning(f"Kunde inte batch-uppdatera regim: {e}")
+            await get_coordinator().update_regime()
 
             self._last_regime_update_at = now
 

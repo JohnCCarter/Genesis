@@ -272,8 +272,7 @@ export default function DashboardPage() {
             icon={tab.icon}
             color={tab.color}
             isActive={activeTab === tab.id}
-            onClick={() => handleTabClick(tab.id)}
-          />
+            onClick={() => handleTabClick(tab.id)} children={undefined}          />
         ))}
       </div>
 

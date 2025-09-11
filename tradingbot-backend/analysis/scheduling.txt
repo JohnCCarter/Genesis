@@ -1,0 +1,298 @@
+﻿C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\models\signal_models.py:55:     force_refresh: bool = Field(False, description="Tvinga ny signal generation")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\margin.py:353:                 await svc.refresh()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\margin.py:427:                     await svc.refresh()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\order_validator.py:148:             # Använd befintlig cache istället för att köra refresh synkront
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:600:                 await _svc.refresh()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:2427:         # Aggregat hanteras av scheduler/metrics-moduler
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:2453:         await sym_svc.refresh()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:2718:             await svc.refresh()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3805:         await svc.refresh()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4014:             "scheduler_running": False,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4021:             from services.scheduler import scheduler
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4023:             caps["scheduler_running"] = bool(scheduler.is_running())
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4089:         # Enforce retention efter clear (kan även köras via scheduler)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4502: # --- Refresh Manager endpoints ---
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4503: @router.get("/refresh-manager/status")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4504: async def get_refresh_manager_status(_: bool = Depends(require_auth)):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4505:     """Hämta status för RefreshManager."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4507:         from services.refresh_manager import get_refresh_manager
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4509:         manager = get_refresh_manager()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4511:         intervals = manager.get_refresh_intervals_summary()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4519:         logger.exception(f"Fel vid hämtning av refresh manager status: {e}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4523: @router.post("/refresh-manager/force-refresh")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4524: async def force_refresh_panel(request: dict[str, Any], _: bool = Depends(require_auth)):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4525:     """Tvinga refresh för en specifik panel eller alla."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4528:         from services.refresh_manager import get_refresh_manager
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4530:         manager = get_refresh_manager()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4531:         await manager.force_refresh(panel_id)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4534:         return {"success": True, "message": f"Refresh tvingad för {target}"}
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4536:         logger.exception(f"Fel vid force refresh: {e}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4540: @router.post("/refresh-manager/start")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4541: async def start_refresh_manager(_: bool = Depends(require_auth)):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4542:     """Starta RefreshManager."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4544:         from services.refresh_manager import start_refresh_manager
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4546:         await start_refresh_manager()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4547:         return {"success": True, "message": "RefreshManager startad"}
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4549:         logger.exception(f"Fel vid start av refresh manager: {e}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4553: @router.post("/refresh-manager/stop")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4554: async def stop_refresh_manager(_: bool = Depends(require_auth)):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4555:     """Stoppa RefreshManager."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4557:         from services.refresh_manager import stop_refresh_manager
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4559:         await stop_refresh_manager()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4560:         return {"success": True, "message": "RefreshManager stoppad"}
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4562:         logger.exception(f"Fel vid stopp av refresh manager: {e}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4566: # --- Runtime toggles: Scheduler ---
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4567: @router.get("/mode/scheduler")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4568: async def get_scheduler(_: bool = Depends(require_auth)):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4570:         from services.scheduler import scheduler
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4573:         is_running = bool(scheduler.is_running())
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4575:         return {"scheduler_running": is_running}
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4577:         logger.exception(f"Fel vid get scheduler: {e}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4581: @router.post("/mode/scheduler")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4582: async def set_scheduler(payload: CoreModeRequest, _: bool = Depends(require_auth)):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4584:         from services.scheduler import scheduler
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4587:             scheduler.start()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4590:                 await scheduler.stop()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4594:         _emit_notification("info", "Scheduler", {"enabled": bool(payload.enabled)})
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4595:         return {"scheduler_running": bool(scheduler.is_running())}
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4597:         logger.exception(f"Fel vid set scheduler: {e}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5220:     force_refresh: bool = False,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5234:             force_refresh=force_refresh,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5244:     symbol: str | None = None, limit: int = 100, force_refresh: bool = False, _: bool = Depends(require_auth)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5250:         trades = await history_service.get_trade_history(symbol=symbol, limit=limit, force_refresh=force_refresh)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5268:     force_refresh: bool = False,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5276:             wallet_type=wallet_type, currency=currency, limit=limit, force_refresh=force_refresh
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5292: async def get_equity_history(limit: int = 1000, force_refresh: bool = False, _: bool = Depends(require_auth)):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5297:         equity_history = await history_service.get_equity_history(limit=limit, force_refresh=force_refresh)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5317:     force_refresh = request.get("force_refresh", False)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5322:             symbol=symbol, timeframe=timeframe, limit=limit, max_samples=max_samples, force_refresh=force_refresh
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5347:     force_refresh = request.get("force_refresh", False)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5356:             force_refresh=force_refresh,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5383:     force_refresh = request.get("force_refresh", False)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5394:             force_refresh=force_refresh,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5733: @router.post("/signals/refresh")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5734: async def refresh_signals(request: dict, _: bool = Depends(require_auth)):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5736:     Genererar nya signals (force refresh).
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5742:         force_refresh = request.get("force_refresh", True)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5745:         signals = await signal_service.generate_live_signals(symbols, force_refresh)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5751:         logger.error(f"❌ Fel vid refresh av signals: {e}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_data.py:77:                 await sym_svc.refresh()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_data.py:242:             await sym_svc.refresh()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:70:         # Periodisk symbol-refresh (configs) loop-task
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:71:         self._symbol_refresh_task = None
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:72:         self._symbol_refresh_interval = 3600.0
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:414:             # Starta symbol-refresh i bakgrunden (ej under pytest)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:418:                 if not _os.environ.get("PYTEST_CURRENT_TEST") and not self._symbol_refresh_task:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:419:                     self._symbol_refresh_task = self._asyncio.create_task(
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:420:                         self._symbol_refresh_loop(), name="ws-symbol-refresh"
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:609:         # Stoppa symbol-refresh loop först
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:611:             if self._symbol_refresh_task and not self._symbol_refresh_task.done():
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:612:                 self._symbol_refresh_task.cancel()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:613:                 logger.info("✅ Symbol refresh task avbruten")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:615:             logger.warning(f"⚠️ Fel vid avbrytning av symbol refresh: {e}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:617:             self._symbol_refresh_task = None
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:700:                         await self._schedule_reconnect()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:706:     async def _schedule_reconnect(self):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:775:                 await sym_svc.refresh()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:792:             # Registrera önskad symbol (rå) för framtida refresh/resubscribe
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:866:     async def _symbol_refresh_loop(self):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:867:         """Refreshar configs periodiskt och resubscribe:ar saknade listade par för önskade symboler."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:874:                     await sym_svc.refresh()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:888:                     logger.warning("Symbol refresh loop fel: %s", ie)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:889:                 await self._asyncio.sleep(float(self._symbol_refresh_interval))
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:909:                 await sym_svc.refresh()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:987:                 await sym_svc.refresh()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:1061:                 await sym_svc.refresh()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:1271:             await self._schedule_reconnect()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:1274:             await self._schedule_reconnect()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:1610:                 await svc.refresh()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:1673:                     await svc.refresh()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:1743:                 await svc.refresh()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:16: - Olika refresh-intervall för metrics
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\feature_flags_service.py:12: - Scheduler Running
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\feature_flags_service.py:19: - Olika refresh-intervall för toggle-data
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\feature_flags_service.py:149:         # Scheduler Flags
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\feature_flags_service.py:150:         self.flags["scheduler_running"] = FeatureFlag(
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\feature_flags_service.py:151:             "scheduler_running",
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\feature_flags_service.py:152:             self._get_scheduler_running(),
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\feature_flags_service.py:153:             "Scheduler Running - Aktiverar schemalagda uppgifter",
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\feature_flags_service.py:154:             "scheduler",
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\feature_flags_service.py:221:     def _get_scheduler_running(self) -> bool:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\feature_flags_service.py:222:         """Hämta scheduler running från runtime."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\feature_flags_service.py:224:             from services.scheduler import scheduler
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\feature_flags_service.py:226:             return bool(scheduler.is_running())
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\feature_flags_service.py:390:             "scheduler_running": self.get_flag("scheduler_running"),
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\feature_flags_service.py:398:     def refresh_runtime_flags(self) -> None:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\feature_flags_service.py:406:             # Uppdatera scheduler flag
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\feature_flags_service.py:407:             self.flags["scheduler_running"].current_value = self._get_scheduler_running()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\feature_flags_service.py:417:             self.refresh_runtime_flags()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\history_service.py:14: - Olika refresh-intervall för historik-data
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\history_service.py:74:         self, symbol: str | None = None, limit: int = 100, force_refresh: bool = False
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\history_service.py:82:                 not force_refresh
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\history_service.py:111:         self, wallet_type: str | None = None, currency: str | None = None, limit: int = 100, force_refresh: bool = False
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\history_service.py:119:                 not force_refresh
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\history_service.py:149:     async def get_equity_history(self, limit: int = 1000, force_refresh: bool = False) -> list[dict[str, Any]]:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\history_service.py:156:                 not force_refresh
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\history_service.py:190:     async def get_performance_snapshot(self, force_refresh: bool = False) -> dict[str, Any] | None:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\history_service.py:197:                 not force_refresh
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\history_service.py:229:         force_refresh: bool = False,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\history_service.py:234:             trades_task = asyncio.create_task(self.get_trade_history(symbol, trades_limit, force_refresh))
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\history_service.py:236:                 self.get_ledger_history(wallet_type, currency, ledgers_limit, force_refresh)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\history_service.py:238:             equity_task = asyncio.create_task(self.get_equity_history(equity_limit, force_refresh))
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\history_service.py:239:             performance_task = asyncio.create_task(self.get_performance_snapshot(force_refresh))
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\metrics.py:368:                     # Enkelt medel av senaste N (redan trimmas i scheduler)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:2: Refresh Manager - Centraliserad hantering av panel-refresh för dashboard.
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:7: - Inkonsistenta refresh-intervall
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:8: - Svår att debugga refresh-problem
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:24: class RefreshPriority(Enum):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:25:     """Refresh prioritet för olika typer av data."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:34: class RefreshTask:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:35:     """En refresh-uppgift för en specifik panel."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:38:     priority: RefreshPriority
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:65: class RefreshManager:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:66:     """Centraliserad refresh-hantering för dashboard paneler."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:69:         self.tasks: dict[str, RefreshTask] = {}
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:73:         self._refresh_lock = asyncio.Lock()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:75:         # Standard refresh-intervall baserat på prioritet
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:77:             RefreshPriority.CRITICAL: 30,  # Risk guards, circuit breakers
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:78:             RefreshPriority.HIGH: 60,  # Positions, wallets, orders
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:79:             RefreshPriority.MEDIUM: 120,  # Market data, signals
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:80:             RefreshPriority.LOW: 300,  # History, performance stats
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:83:         logger.info("🔄 RefreshManager initialiserad")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:88:         priority: RefreshPriority,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:93:         """Registrera en panel för automatisk refresh."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:99:         self.tasks[panel_id] = RefreshTask(
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:154:         """Starta refresh-managern."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:156:             logger.warning("RefreshManager redan igång")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:162:         logger.info("🚀 RefreshManager startad")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:166:             await self._refresh_loop()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:168:             logger.error(f"❌ RefreshManager fel: {e}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:173:         """Stoppa refresh-managern."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:177:         logger.info("🛑 Stoppar RefreshManager...")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:180:         # Vänta på att alla pågående refresh-operationer slutförs
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:184:         logger.info("✅ RefreshManager stoppad")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:186:     async def force_refresh(self, panel_id: str | None = None) -> None:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:187:         """Tvinga refresh för en specifik panel eller alla."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:188:         async with self._refresh_lock:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:191:                     await self._run_panel_refresh(self.tasks[panel_id])
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:195:                 # Refresh alla paneler
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:197:                     await self._run_panel_refresh(task)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:199:     async def _refresh_loop(self) -> None:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:200:         """Huvudloop för refresh-hantering."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:203:                 await self._process_refresh_cycle()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:206:                 logger.error(f"❌ Refresh loop fel: {e}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:209:     async def _process_refresh_cycle(self) -> None:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:210:         """Processera en refresh-cykel."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:214:         # Hitta paneler som behöver refresh
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:222:         # Kör refresh för alla berättigade paneler
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:224:             await asyncio.gather(*[self._run_panel_refresh(task) for task in tasks_to_run], return_exceptions=True)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:226:     def _check_dependencies(self, task: RefreshTask) -> bool:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:238:     async def _run_panel_refresh(self, task: RefreshTask) -> None:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:239:         """Kör refresh för en specifik panel."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:244:             logger.debug(f"🔄 Refreshar panel: {task.panel_id}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:252:             # Återställ error count vid lyckad refresh
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:255:             logger.debug(f"✅ Panel {task.panel_id} refreshad")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:259:             logger.error(f"❌ Panel {task.panel_id} refresh fel: {e}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:269:     def get_refresh_intervals_summary(self) -> dict[str, int]:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:270:         """Hämta sammanfattning av refresh-intervall."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:278: _refresh_manager: RefreshManager | None = None
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:281: def get_refresh_manager() -> RefreshManager:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:282:     """Hämta global RefreshManager instans."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:283:     global _refresh_manager
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:284:     if _refresh_manager is None:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:285:         _refresh_manager = RefreshManager()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:286:     return _refresh_manager
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:289: async def start_refresh_manager() -> None:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:290:     """Starta global RefreshManager."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:291:     manager = get_refresh_manager()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:295: async def stop_refresh_manager() -> None:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:296:     """Stoppa global RefreshManager."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:297:     manager = get_refresh_manager()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\scheduler.py:2: Scheduler Service - TradingBot Backend
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\scheduler.py:7: Nuvarande jobb:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\scheduler.py:24: class SchedulerService:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\scheduler.py:27:     - Använder en enda bakgrunds-Task som loopar och kör definierade jobb
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\scheduler.py:29:     - Undviker tredjepartsbibliotek (t.ex. aioschedule) för att minska
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\scheduler.py:49:         self._task = asyncio.create_task(self._run_loop(), name="scheduler-loop")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\scheduler.py:50:         logger.info("🗓️ Scheduler startad")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\scheduler.py:62:         logger.info("🛑 Scheduler stoppad")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\scheduler.py:95:         """Huvudloop för periodiska jobb."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\scheduler.py:127:                 logger.error("%s", f"Scheduler-loop fel: {e}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\scheduler.py:338:             await sym_svc.refresh()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\scheduler.py:413:             await sym_svc.refresh()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\scheduler.py:458: scheduler = SchedulerService()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\signal_generator.py:43:         self, symbols: list[str] | None = None, force_refresh: bool = False
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\signal_generator.py:55:             # Kontrollera cache om inte force refresh
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\signal_generator.py:56:             if not force_refresh and self._is_cache_valid():
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\symbols.py:30: _REFRESH_LOCK: asyncio.Lock = asyncio.Lock()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\symbols.py:43:         self._last_refresh_ts: float = _CACHE["ts"]
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\symbols.py:84:     async def refresh(self) -> None:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\symbols.py:96:                 self._last_refresh_ts = _CACHE["ts"]
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\symbols.py:99:             async with _REFRESH_LOCK:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\symbols.py:106:                     self._last_refresh_ts = _CACHE["ts"]
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\symbols.py:123:                 self._last_refresh_ts = _CACHE["ts"]
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\symbols.py:125:                     "SymbolService refresh: pairs=%s aliases=%s",
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\symbols.py:130:             logger.warning("SymbolService refresh misslyckades: %s", e)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:14: - Olika refresh-intervall för risk-data
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_signal_service.py:8: - Olika refresh-intervall för samma data
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_signal_service.py:75:     async def get_regime_data(self, symbol: str, force_refresh: bool = False) -> dict[str, Any] | None:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_signal_service.py:84:         if not force_refresh and cache_key in self._regime_cache:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_signal_service.py:136:     async def generate_signal(self, symbol: str, force_refresh: bool = False) -> SignalResponse | None:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_signal_service.py:145:         if not force_refresh and cache_key in self._signal_cache:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_signal_service.py:153:             regime_data = await self.get_regime_data(symbol, force_refresh)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_signal_service.py:193:     async def generate_all_signals(self, force_refresh: bool = False) -> LiveSignalsResponse:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_signal_service.py:204:             signal_tasks = [self.generate_signal(symbol, force_refresh) for symbol in symbols]
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_signal_service.py:251:     async def get_regime_summary(self, force_refresh: bool = False) -> dict[str, Any]:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_signal_service.py:262:             regime_tasks = [self.get_regime_data(symbol, force_refresh) for symbol in symbols]
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\validation_service.py:82:         force_refresh: bool = False,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\validation_service.py:90:                 not force_refresh
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\validation_service.py:175:         force_refresh: bool = False,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\validation_service.py:183:                 not force_refresh
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\validation_service.py:241:         force_refresh: bool = False,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\validation_service.py:251:                 not force_refresh
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\watchlist_service.py:48:             await svc.refresh()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_prob_retrain_flow.py:7: async def test_scheduler_prob_retrain_mocks_and_reload(monkeypatch, tmp_path):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_prob_retrain_flow.py:16:     from services.scheduler import SchedulerService
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_prob_retrain_flow.py:29:     sch = SchedulerService()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_scheduler_prob_validation.py:11: async def test_scheduler_prob_validation_updates_metrics(monkeypatch):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_scheduler_prob_validation.py:12:     from services.scheduler import SchedulerService
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_scheduler_prob_validation.py:27:     sch = SchedulerService()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_scheduler_prob_windows.py:6: async def test_scheduler_prob_rolling_windows_retention(monkeypatch):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_scheduler_prob_windows.py:12:     from services.scheduler import SchedulerService
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_scheduler_prob_windows.py:22:     sch = SchedulerService()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\utils\logger.py:30:         (re.compile(r"(?i)(refresh_token\"?\s*:\s*)(\"?)[^\",\s]+\2"), r"\1[REDACTED]"),
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\auth.py:37:     Genererar JWT-token med kortare livstid och refresh token för Socket.IO-autentisering.
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\auth.py:45:         dict: JWT access_token, refresh_token och metadata
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\auth.py:52:     refresh_expiry = now + (24 * 60 * 60)  # Refresh token varar 24 timmar
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\auth.py:67:     # Refresh token payload
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\auth.py:68:     refresh_payload = {
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\auth.py:71:         "type": "refresh",
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\auth.py:74:         "exp": refresh_expiry,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\auth.py:79:         refresh_token = jwt.encode(refresh_payload, JWT_SECRET, algorithm="HS256")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\auth.py:83:             "refresh_token": refresh_token,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\auth.py:139: def refresh_access_token(refresh_token: str) -> dict:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\auth.py:141:     Förnyar en access token med hjälp av en giltig refresh token.
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\auth.py:144:         refresh_token: JWT refresh token
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\auth.py:150:         # Validera refresh token
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\auth.py:151:         payload = validate_token(refresh_token)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\auth.py:154:             logger.warning("❌ Ogiltig refresh token")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\auth.py:157:         # Kontrollera att det är en refresh token
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\auth.py:158:         if payload.get("type") != "refresh":
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\manager.py:108:     """Generera och skicka en token med refresh token till klienten."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\manager.py:114:         # Använd ny token-generation med refresh tokens
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\manager.py:130: async def refresh_token(sid, data):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\manager.py:131:     """Förnya en access token med hjälp av refresh token."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\manager.py:133:         refresh_token = data.get("refresh_token")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\manager.py:135:         if not refresh_token:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\manager.py:136:             await socket_app.emit("token_error", {"error": "Refresh token saknas"}, room=sid)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\manager.py:137:             logger.warning("❌ Refresh token saknas i begäran")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\manager.py:140:         # Använd refresh_access_token för att generera ny access token
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\manager.py:141:         token_response = refresh_access_token(refresh_token)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\manager.py:144:             await socket_app.emit("token_refreshed", token_response, room=sid)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\main.py:137:     # Scheduler avstängd för att undvika rate limiting och event loop problem
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\main.py:138:     logger.info("🚫 Scheduler avstängd för att undvika rate limiting")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\main.py:152:     # Stoppa scheduler om den körs
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\main.py:154:         from services.scheduler import scheduler
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\main.py:156:         await scheduler.stop()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\main.py:157:         logger.info("✅ Scheduler stoppad")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\main.py:159:         logger.warning(f"⚠️ Fel vid stopp av scheduler: {e}")

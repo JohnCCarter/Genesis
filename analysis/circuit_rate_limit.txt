@@ -1,0 +1,811 @@
+﻿
+.venv\Lib\site-packages\astroid\nodes\node_classes.py:1673:            # Since the boolean operations are short circuited operations,
+.venv\Lib\site-packages\astroid\nodes\node_classes.py:1931:                break  # short-circuit
+.venv\Lib\site-packages\bs4\dammit.py:589:        # Short-circuit if the data is in Unicode to begin with.
+.venv\Lib\site-packages\cachecontrol\serialize.py:71:        # Short circuit if we've been given an empty set of data
+.venv\Lib\site-packages\distlib\compat.py:244:            # This will allow us to short circuit when given "python.exe".
+.venv\Lib\site-packages\gotrue\errors.py:69:    "over_request_rate_limit",
+.venv\Lib\site-packages\gotrue\errors.py:70:    "over_email_send_rate_limit",
+.venv\Lib\site-packages\gotrue\errors.py:71:    "over_sms_send_rate_limit",
+.venv\Lib\site-packages\mypyc\irbuild\ast_helpers.py:34:            # Short circuit 'and' in a conditional context.
+.venv\Lib\site-packages\mypyc\irbuild\ast_helpers.py:40:            # Short circuit 'or' in a conditional context.
+.venv\Lib\site-packages\mypyc\irbuild\builder.py:1078:    def shortcircuit_expr(self, expr: OpExpr) -> Value:
+.venv\Lib\site-packages\mypyc\irbuild\builder.py:1079:        return self.builder.shortcircuit_helper(
+.venv\Lib\site-packages\mypyc\irbuild\expression.py:503:        return builder.shortcircuit_expr(expr)
+.venv\Lib\site-packages\mypyc\irbuild\expression.py:791:        return builder.builder.shortcircuit_helper(
+.venv\Lib\site-packages\mypyc\irbuild\for_helpers.py:278:            - "conditions" is a list of conditions, evaluated in order with short-circuiting,
+.venv\Lib\site-packages\mypyc\irbuild\for_helpers.py:307:            conds: a list of conditions to be evaluated (in order, with short circuiting)
+.venv\Lib\site-packages\mypyc\irbuild\for_helpers.py:312:        # Check conditions, in order, short circuiting them.
+.venv\Lib\site-packages\mypyc\irbuild\ll_builder.py:637:            ret = self.shortcircuit_helper("or", bool_rprimitive, lambda: ret, other, line)
+.venv\Lib\site-packages\mypyc\irbuild\ll_builder.py:670:            ret = self.shortcircuit_helper("or", bool_rprimitive, lambda: ret, other, line)
+.venv\Lib\site-packages\mypyc\irbuild\ll_builder.py:1765:    def shortcircuit_helper(
+.venv\Lib\site-packages\numpy\core\tests\test_numeric.py:1556:        arr = np.zeros(5, dtype="i1,i8,i8")  # `ones` may short-circuit
+.venv\Lib\site-packages\numpy\ma\core.py:4841:        # short circuit if neither self nor values are masked
+.venv\Lib\site-packages\packaging\specifiers.py:449:        # version. If it's not we can short circuit and just return False now
+.venv\Lib\site-packages\packaging\specifiers.py:473:        # version. If it's not we can short circuit and just return False now
+.venv\Lib\site-packages\packaging\specifiers.py:555:        # or not, if we do not support prereleases than we can short circuit
+.venv\Lib\site-packages\packaging\specifiers.py:927:        # short circuit that here.
+.venv\Lib\site-packages\packaging\tags.py:80:            (self._hash == other._hash)  # Short-circuit ASAP for perf reasons.
+.venv\Lib\site-packages\pandas\core\indexing.py:1828:                                #  we can short-circuit
+.venv\Lib\site-packages\pandas\core\nanops.py:1505:        # nothing to check; short-circuit
+.venv\Lib\site-packages\pandas\core\series.py:404:        # we are called internally, so short-circuit
+.venv\Lib\site-packages\pandas\core\sorting.py:668:        # Short-circuit, lib.indices_fast will return the same
+.venv\Lib\site-packages\pandas\core\arrays\datetimelike.py:428:        # Calling super() before the no_op short-circuit means that we raise
+.venv\Lib\site-packages\pandas\core\arrays\datetimelike.py:2227:            # We must be unique, so can short-circuit (and retain freq)
+.venv\Lib\site-packages\pandas\core\arrays\datetimes.py:463:                    # short-circuit tz_localize_to_utc which would make
+.venv\Lib\site-packages\pandas\core\arrays\string_arrow.py:215:        # short-circuit to return all False array.
+.venv\Lib\site-packages\pandas\core\arrays\arrow\array.py:1020:        # short-circuit to return all False array.
+.venv\Lib\site-packages\pandas\core\array_algos\take.py:88:        will be done.  This short-circuits computation of a mask.  Result is
+.venv\Lib\site-packages\pandas\core\array_algos\take.py:199:        will be done.  This short-circuits computation of a mask. Result is
+.venv\Lib\site-packages\pandas\core\dtypes\common.py:1608:    # short-circuit
+.venv\Lib\site-packages\pandas\core\dtypes\missing.py:209:        # Try to use cached isna, which also short-circuits for integer dtypes
+.venv\Lib\site-packages\pandas\core\indexes\multi.py:2806:                # short circuit
+.venv\Lib\site-packages\pandas\core\internals\blocks.py:1288:            # GH-39595: Always return a copy; short-circuit up/downcasting
+.venv\Lib\site-packages\pandas\core\internals\blocks.py:1391:            # can short-circuit the isna call
+.venv\Lib\site-packages\pandas\core\internals\concat.py:410:                # ideally isna_all would do this short-circuiting
+.venv\Lib\site-packages\pandas\core\internals\concat.py:416:                # ideally isna_all would do this short-circuiting
+.venv\Lib\site-packages\pandas\tests\series\indexing\test_setitem.py:1437:            # the xfail would xpass bc test_slice_key short-circuits
+.venv\Lib\site-packages\pandas\_config\config.py:621:    # short-circuit for exact key
+.venv\Lib\site-packages\pip\_internal\cli\progress_bars.py:22:from pip._internal.cli.spinners import RateLimiter
+.venv\Lib\site-packages\pip\_internal\cli\progress_bars.py:107:    rate_limiter = RateLimiter(0.25)
+.venv\Lib\site-packages\pip\_internal\cli\progress_bars.py:112:        if rate_limiter.ready() or current == total:
+.venv\Lib\site-packages\pip\_internal\cli\progress_bars.py:114:            rate_limiter.reset()
+.venv\Lib\site-packages\pip\_internal\cli\spinners.py:51:        self._rate_limiter = RateLimiter(min_update_interval_seconds)
+.venv\Lib\site-packages\pip\_internal\cli\spinners.py:69:        self._rate_limiter.reset()
+.venv\Lib\site-packages\pip\_internal\cli\spinners.py:74:        if not self._rate_limiter.ready():
+.venv\Lib\site-packages\pip\_internal\cli\spinners.py:95:        self._rate_limiter = RateLimiter(min_update_interval_seconds)
+.venv\Lib\site-packages\pip\_internal\cli\spinners.py:100:        self._rate_limiter.reset()
+.venv\Lib\site-packages\pip\_internal\cli\spinners.py:106:        if not self._rate_limiter.ready():
+.venv\Lib\site-packages\pip\_internal\cli\spinners.py:117:class RateLimiter:
+.venv\Lib\site-packages\pip\_vendor\cachecontrol\serialize.py:71:        # Short circuit if we've been given an empty set of data
+.venv\Lib\site-packages\pip\_vendor\dependency_groups\_implementation.py:126:        # short circuit -- never do the work twice
+.venv\Lib\site-packages\pip\_vendor\distlib\compat.py:244:            # This will allow us to short circuit when given "python.exe".
+.venv\Lib\site-packages\pip\_vendor\packaging\specifiers.py:449:        # version. If it's not we can short circuit and just return False now
+.venv\Lib\site-packages\pip\_vendor\packaging\specifiers.py:473:        # version. If it's not we can short circuit and just return False now
+.venv\Lib\site-packages\pip\_vendor\packaging\specifiers.py:555:        # or not, if we do not support prereleases than we can short circuit
+.venv\Lib\site-packages\pip\_vendor\packaging\specifiers.py:927:        # short circuit that here.
+.venv\Lib\site-packages\pip\_vendor\packaging\tags.py:80:            (self._hash == other._hash)  # Short-circuit ASAP for perf reasons.
+.venv\Lib\site-packages\pip_api\_vendor\packaging\specifiers.py:199:        # or not, if we do not support prereleases than we can short circuit
+.venv\Lib\site-packages\pip_api\_vendor\packaging\specifiers.py:517:        # version. If it's not we can short circuit and just return False now
+.venv\Lib\site-packages\pip_api\_vendor\packaging\specifiers.py:543:        # version. If it's not we can short circuit and just return False now
+.venv\Lib\site-packages\pip_api\_vendor\packaging\specifiers.py:765:        # short circuit that here.
+.venv\Lib\site-packages\pip_api\_vendor\packaging\tags.py:80:            (self._hash == other._hash)  # Short-circuit ASAP for perf reasons.
+.venv\Lib\site-packages\pkg_resources\_vendor\jaraco\functools.py:291:    Rate-limit a function (or other callable)
+.venv\Lib\site-packages\pkg_resources\_vendor\packaging\specifiers.py:181:        # or not, if we do not support prereleases than we can short circuit
+.venv\Lib\site-packages\pkg_resources\_vendor\packaging\specifiers.py:499:        # version. If it's not we can short circuit and just return False now
+.venv\Lib\site-packages\pkg_resources\_vendor\packaging\specifiers.py:525:        # version. If it's not we can short circuit and just return False now
+.venv\Lib\site-packages\pkg_resources\_vendor\packaging\specifiers.py:739:        # short circuit that here.
+.venv\Lib\site-packages\pkg_resources\_vendor\packaging\tags.py:80:            (self._hash == other._hash)  # Short-circuit ASAP for perf reasons.
+.venv\Lib\site-packages\pydantic\json_schema.py:283:        # (e.g. because the CoreSchema that references short circuits is JSON schema generation without needing
+.venv\Lib\site-packages\pydantic\_internal\_generate_schema.py:2725:    short-circuit the normal generation process, as the reference was already in this set.
+.venv\Lib\site-packages\pylint\checkers\refactoring\refactoring_checker.py:1475:        """Removes irrelevant values or returns short-circuiting values.
+.venv\Lib\site-packages\setuptools\command\install_lib.py:54:        # TODO: is it necessary to short-circuit here? i.e. what's the cost
+.venv\Lib\site-packages\setuptools\config\pyprojecttoml.py:449:        # Set `name`, `py_modules` and `packages` in dist to short-circuit
+.venv\Lib\site-packages\setuptools\config\_apply_pyprojecttoml.py:40:        return dist  # short-circuit unrelated pyproject.toml file
+.venv\Lib\site-packages\setuptools\config\_apply_pyprojecttoml.py:61:        return  # short-circuit
+.venv\Lib\site-packages\setuptools\config\_apply_pyprojecttoml.py:78:        return  # short-circuit
+.venv\Lib\site-packages\setuptools\_vendor\jaraco\functools.py:291:    Rate-limit a function (or other callable)
+.venv\Lib\site-packages\setuptools\_vendor\packaging\specifiers.py:181:        # or not, if we do not support prereleases than we can short circuit
+.venv\Lib\site-packages\setuptools\_vendor\packaging\specifiers.py:499:        # version. If it's not we can short circuit and just return False now
+.venv\Lib\site-packages\setuptools\_vendor\packaging\specifiers.py:525:        # version. If it's not we can short circuit and just return False now
+.venv\Lib\site-packages\setuptools\_vendor\packaging\specifiers.py:739:        # short circuit that here.
+.venv\Lib\site-packages\setuptools\_vendor\packaging\tags.py:80:            (self._hash == other._hash)  # Short-circuit ASAP for perf reasons.
+.venv\Lib\site-packages\_pytest\python_api.py:437:        # Short-circuit exact equality.
+.venv\Lib\site-packages\_pytest\python_api.py:459:        # case would have been short circuited above, so here we can just
+.venv\Lib\site-packages\_pytest\assertion\rewrite.py:1010:        # Process each operand, short-circuiting if needed.
+scripts\mcp\.venv\Lib\site-packages\pip\_internal\cli\progress_bars.py:22:from pip._internal.cli.spinners import RateLimiter
+scripts\mcp\.venv\Lib\site-packages\pip\_internal\cli\progress_bars.py:107:    rate_limiter = RateLimiter(0.25)
+scripts\mcp\.venv\Lib\site-packages\pip\_internal\cli\progress_bars.py:112:        if rate_limiter.ready() or current == total:
+scripts\mcp\.venv\Lib\site-packages\pip\_internal\cli\progress_bars.py:114:            rate_limiter.reset()
+scripts\mcp\.venv\Lib\site-packages\pip\_internal\cli\spinners.py:51:        self._rate_limiter = RateLimiter(min_update_interval_seconds)
+scripts\mcp\.venv\Lib\site-packages\pip\_internal\cli\spinners.py:69:        self._rate_limiter.reset()
+scripts\mcp\.venv\Lib\site-packages\pip\_internal\cli\spinners.py:74:        if not self._rate_limiter.ready():
+scripts\mcp\.venv\Lib\site-packages\pip\_internal\cli\spinners.py:95:        self._rate_limiter = RateLimiter(min_update_interval_seconds)
+scripts\mcp\.venv\Lib\site-packages\pip\_internal\cli\spinners.py:100:        self._rate_limiter.reset()
+scripts\mcp\.venv\Lib\site-packages\pip\_internal\cli\spinners.py:106:        if not self._rate_limiter.ready():
+scripts\mcp\.venv\Lib\site-packages\pip\_internal\cli\spinners.py:117:class RateLimiter:
+scripts\mcp\.venv\Lib\site-packages\pip\_vendor\cachecontrol\serialize.py:71:        # Short circuit if we've been given an empty set of data
+scripts\mcp\.venv\Lib\site-packages\pip\_vendor\dependency_groups\_implementation.py:126:        # short circuit -- never do the work twice
+scripts\mcp\.venv\Lib\site-packages\pip\_vendor\distlib\compat.py:244:            # This will allow us to short circuit when given "python.exe".
+scripts\mcp\.venv\Lib\site-packages\pip\_vendor\packaging\specifiers.py:449:        # version. If it's not we can short circuit and just return False now
+scripts\mcp\.venv\Lib\site-packages\pip\_vendor\packaging\specifiers.py:473:        # version. If it's not we can short circuit and just return False now
+scripts\mcp\.venv\Lib\site-packages\pip\_vendor\packaging\specifiers.py:555:        # or not, if we do not support prereleases than we can short circuit
+scripts\mcp\.venv\Lib\site-packages\pip\_vendor\packaging\specifiers.py:927:        # short circuit that here.
+scripts\mcp\.venv\Lib\site-packages\pip\_vendor\packaging\tags.py:80:            (self._hash == other._hash)  # Short-circuit ASAP for perf reasons.
+scripts\mcp\.venv\Lib\site-packages\pkg_resources\_vendor\jaraco\functools.py:291:    Rate-limit a function (or other callable)
+scripts\mcp\.venv\Lib\site-packages\pkg_resources\_vendor\packaging\specifiers.py:181:        # or not, if we do not support prereleases than we can short circuit
+scripts\mcp\.venv\Lib\site-packages\pkg_resources\_vendor\packaging\specifiers.py:499:        # version. If it's not we can short circuit and just return False now
+scripts\mcp\.venv\Lib\site-packages\pkg_resources\_vendor\packaging\specifiers.py:525:        # version. If it's not we can short circuit and just return False now
+scripts\mcp\.venv\Lib\site-packages\pkg_resources\_vendor\packaging\specifiers.py:739:        # short circuit that here.
+scripts\mcp\.venv\Lib\site-packages\pkg_resources\_vendor\packaging\tags.py:80:            (self._hash == other._hash)  # Short-circuit ASAP for perf reasons.
+scripts\mcp\.venv\Lib\site-packages\pydantic\json_schema.py:283:        # (e.g. because the CoreSchema that references short circuits is JSON schema generation without needing
+scripts\mcp\.venv\Lib\site-packages\pydantic\_internal\_generate_schema.py:2725:    short-circuit the normal generation process, as the reference was already in this set.
+scripts\mcp\.venv\Lib\site-packages\referencing\tests\test_core.py:304:        Combining a registry with itself short-circuits.
+scripts\mcp\.venv\Lib\site-packages\setuptools\command\install_lib.py:54:        # TODO: is it necessary to short-circuit here? i.e. what's the cost
+scripts\mcp\.venv\Lib\site-packages\setuptools\config\pyprojecttoml.py:449:        # Set `name`, `py_modules` and `packages` in dist to short-circuit
+scripts\mcp\.venv\Lib\site-packages\setuptools\config\_apply_pyprojecttoml.py:40:        return dist  # short-circuit unrelated pyproject.toml file
+scripts\mcp\.venv\Lib\site-packages\setuptools\config\_apply_pyprojecttoml.py:61:        return  # short-circuit
+scripts\mcp\.venv\Lib\site-packages\setuptools\config\_apply_pyprojecttoml.py:78:        return  # short-circuit
+scripts\mcp\.venv\Lib\site-packages\setuptools\_vendor\jaraco\functools.py:291:    Rate-limit a function (or other callable)
+scripts\mcp\.venv\Lib\site-packages\setuptools\_vendor\packaging\specifiers.py:181:        # or not, if we do not support prereleases than we can short circuit
+scripts\mcp\.venv\Lib\site-packages\setuptools\_vendor\packaging\specifiers.py:499:        # version. If it's not we can short circuit and just return False now
+scripts\mcp\.venv\Lib\site-packages\setuptools\_vendor\packaging\specifiers.py:525:        # version. If it's not we can short circuit and just return False now
+scripts\mcp\.venv\Lib\site-packages\setuptools\_vendor\packaging\specifiers.py:739:        # short circuit that here.
+scripts\mcp\.venv\Lib\site-packages\setuptools\_vendor\packaging\tags.py:80:            (self._hash == other._hash)  # Short-circuit ASAP for perf reasons.
+scripts\mcp\.venv\Lib\site-packages\win32\lib\winerror.py:3045:ERROR_IPSEC_IKE_RATELIMIT_DROP = 13903
+scripts\mcp\.venv\Lib\site-packages\win32\lib\winerror.py:3068:ERROR_IPSEC_DOSP_MAX_PER_IP_RATELIMIT_QUEUES = 13932
+scripts\openai_batch\.venv\Lib\site-packages\openai\_client.py:389:            return _exceptions.RateLimitError(err_msg, response=response, body=data)
+scripts\openai_batch\.venv\Lib\site-packages\openai\_client.py:708:            return _exceptions.RateLimitError(err_msg, response=response, body=data)
+scripts\openai_batch\.venv\Lib\site-packages\openai\_exceptions.py:23:    "RateLimitError",
+scripts\openai_batch\.venv\Lib\site-packages\openai\_exceptions.py:128:class RateLimitError(APIStatusError):
+scripts\openai_batch\.venv\Lib\site-packages\openai\__init__.py:23:    RateLimitError,
+scripts\openai_batch\.venv\Lib\site-packages\openai\__init__.py:62:    "RateLimitError",
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\rate_limits_updated_event.py:8:__all__ = ["RateLimitsUpdatedEvent", "RateLimit"]
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\rate_limits_updated_event.py:11:class RateLimit(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\rate_limits_updated_event.py:25:class RateLimitsUpdatedEvent(BaseModel):
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\rate_limits_updated_event.py:29:    rate_limits: List[RateLimit]
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\rate_limits_updated_event.py:32:    type: Literal["rate_limits.updated"]
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\rate_limits_updated_event.py:33:    """The event type, must be `rate_limits.updated`."""
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\realtime_server_event.py:15:from .rate_limits_updated_event import RateLimitsUpdatedEvent
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\realtime_server_event.py:110:        RateLimitsUpdatedEvent,
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\realtime\__init__.py:27:from .rate_limits_updated_event import RateLimitsUpdatedEvent as RateLimitsUpdatedEvent
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\run.py:35:    code: Literal["server_error", "rate_limit_exceeded", "invalid_prompt"]
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\run.py:36:    """One of `server_error`, `rate_limit_exceeded`, or `invalid_prompt`."""
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\runs\run_step.py:16:    code: Literal["server_error", "rate_limit_exceeded"]
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\beta\threads\runs\run_step.py:17:    """One of `server_error` or `rate_limit_exceeded`."""
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\responses\response_error.py:13:        "rate_limit_exceeded",
+scripts\openai_batch\.venv\Lib\site-packages\openai\types\vector_stores\vector_store_file.py:14:    """One of `server_error` or `rate_limit_exceeded`."""
+scripts\openai_batch\.venv\Lib\site-packages\pip\_internal\cli\spinners.py:35:        self._rate_limiter = RateLimiter(min_update_interval_seconds)
+scripts\openai_batch\.venv\Lib\site-packages\pip\_internal\cli\spinners.py:53:        self._rate_limiter.reset()
+scripts\openai_batch\.venv\Lib\site-packages\pip\_internal\cli\spinners.py:58:        if not self._rate_limiter.ready():
+scripts\openai_batch\.venv\Lib\site-packages\pip\_internal\cli\spinners.py:79:        self._rate_limiter = RateLimiter(min_update_interval_seconds)
+scripts\openai_batch\.venv\Lib\site-packages\pip\_internal\cli\spinners.py:84:        self._rate_limiter.reset()
+scripts\openai_batch\.venv\Lib\site-packages\pip\_internal\cli\spinners.py:90:        if not self._rate_limiter.ready():
+scripts\openai_batch\.venv\Lib\site-packages\pip\_internal\cli\spinners.py:101:class RateLimiter:
+scripts\openai_batch\.venv\Lib\site-packages\pip\_vendor\cachecontrol\serialize.py:71:        # Short circuit if we've been given an empty set of data
+scripts\openai_batch\.venv\Lib\site-packages\pip\_vendor\distlib\compat.py:245:            # This will allow us to short circuit when given "python.exe".
+scripts\openai_batch\.venv\Lib\site-packages\pip\_vendor\packaging\specifiers.py:181:        # or not, if we do not support prereleases than we can short circuit
+scripts\openai_batch\.venv\Lib\site-packages\pip\_vendor\packaging\specifiers.py:499:        # version. If it's not we can short circuit and just return False now
+scripts\openai_batch\.venv\Lib\site-packages\pip\_vendor\packaging\specifiers.py:525:        # version. If it's not we can short circuit and just return False now
+scripts\openai_batch\.venv\Lib\site-packages\pip\_vendor\packaging\specifiers.py:739:        # short circuit that here.
+scripts\openai_batch\.venv\Lib\site-packages\pip\_vendor\packaging\tags.py:80:            (self._hash == other._hash)  # Short-circuit ASAP for perf reasons.
+scripts\openai_batch\.venv\Lib\site-packages\pkg_resources\_vendor\jaraco\functools.py:291:    Rate-limit a function (or other callable)
+scripts\openai_batch\.venv\Lib\site-packages\pkg_resources\_vendor\packaging\specifiers.py:181:        # or not, if we do not support prereleases than we can short circuit
+scripts\openai_batch\.venv\Lib\site-packages\pkg_resources\_vendor\packaging\specifiers.py:499:        # version. If it's not we can short circuit and just return False now
+scripts\openai_batch\.venv\Lib\site-packages\pkg_resources\_vendor\packaging\specifiers.py:525:        # version. If it's not we can short circuit and just return False now
+scripts\openai_batch\.venv\Lib\site-packages\pkg_resources\_vendor\packaging\specifiers.py:739:        # short circuit that here.
+scripts\openai_batch\.venv\Lib\site-packages\pkg_resources\_vendor\packaging\tags.py:80:            (self._hash == other._hash)  # Short-circuit ASAP for perf reasons.
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\json_schema.py:283:        # (e.g. because the CoreSchema that references short circuits is JSON schema generation without needing
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\_internal\_generate_schema.py:2725:    short-circuit the normal generation process, as the reference was already in this set.
+scripts\openai_batch\.venv\Lib\site-packages\setuptools\command\install_lib.py:54:        # TODO: is it necessary to short-circuit here? i.e. what's the cost
+scripts\openai_batch\.venv\Lib\site-packages\setuptools\config\pyprojecttoml.py:449:        # Set `name`, `py_modules` and `packages` in dist to short-circuit
+scripts\openai_batch\.venv\Lib\site-packages\setuptools\config\_apply_pyprojecttoml.py:40:        return dist  # short-circuit unrelated pyproject.toml file
+scripts\openai_batch\.venv\Lib\site-packages\setuptools\config\_apply_pyprojecttoml.py:61:        return  # short-circuit
+scripts\openai_batch\.venv\Lib\site-packages\setuptools\config\_apply_pyprojecttoml.py:78:        return  # short-circuit
+scripts\openai_batch\.venv\Lib\site-packages\setuptools\_vendor\jaraco\functools.py:291:    Rate-limit a function (or other callable)
+scripts\openai_batch\.venv\Lib\site-packages\setuptools\_vendor\packaging\specifiers.py:181:        # or not, if we do not support prereleases than we can short circuit
+scripts\openai_batch\.venv\Lib\site-packages\setuptools\_vendor\packaging\specifiers.py:499:        # version. If it's not we can short circuit and just return False now
+scripts\openai_batch\.venv\Lib\site-packages\setuptools\_vendor\packaging\specifiers.py:525:        # version. If it's not we can short circuit and just return False now
+scripts\openai_batch\.venv\Lib\site-packages\setuptools\_vendor\packaging\specifiers.py:739:        # short circuit that here.
+scripts\openai_batch\.venv\Lib\site-packages\setuptools\_vendor\packaging\tags.py:80:            (self._hash == other._hash)  # Short-circuit ASAP for perf reasons.
+tradingbot-backend\main.py:444:        from utils.advanced_rate_limiter import get_advanced_rate_limiter
+tradingbot-backend\main.py:448:        get_advanced_rate_limiter().export_metrics()
+tradingbot-backend\main.py:466:        from utils.advanced_rate_limiter import get_advanced_rate_limiter
+tradingbot-backend\main.py:468:        get_advanced_rate_limiter().export_metrics()
+tradingbot-backend\.venv\Lib\site-packages\bs4\dammit.py:589:        # Short-circuit if the data is in Unicode to begin with.
+tradingbot-backend\.venv\Lib\site-packages\distlib\compat.py:244:            # This will allow us to short circuit when given "python.exe".
+tradingbot-backend\.venv\Lib\site-packages\gotrue\errors.py:69:    "over_request_rate_limit",
+tradingbot-backend\.venv\Lib\site-packages\gotrue\errors.py:70:    "over_email_send_rate_limit",
+tradingbot-backend\.venv\Lib\site-packages\gotrue\errors.py:71:    "over_sms_send_rate_limit",
+tradingbot-backend\.venv\Lib\site-packages\numpy\core\tests\test_numeric.py:1549:        arr = np.zeros(5, dtype="i1,i8,i8")  # `ones` may short-circuit
+tradingbot-backend\.venv\Lib\site-packages\numpy\ma\core.py:4812:        # short circuit if neither self nor values are masked
+tradingbot-backend\.venv\Lib\site-packages\packaging\specifiers.py:449:        # version. If it's not we can short circuit and just return False now
+tradingbot-backend\.venv\Lib\site-packages\packaging\specifiers.py:473:        # version. If it's not we can short circuit and just return False now
+tradingbot-backend\.venv\Lib\site-packages\packaging\specifiers.py:555:        # or not, if we do not support prereleases than we can short circuit
+tradingbot-backend\.venv\Lib\site-packages\packaging\specifiers.py:927:        # short circuit that here.
+tradingbot-backend\.venv\Lib\site-packages\packaging\tags.py:80:            (self._hash == other._hash)  # Short-circuit ASAP for perf reasons.
+tradingbot-backend\.venv\Lib\site-packages\pandas\core\indexing.py:1770:                                #  we can short-circuit
+tradingbot-backend\.venv\Lib\site-packages\pandas\core\nanops.py:1514:        # nothing to check; short-circuit
+tradingbot-backend\.venv\Lib\site-packages\pandas\core\series.py:401:        # we are called internally, so short-circuit
+tradingbot-backend\.venv\Lib\site-packages\pandas\core\sorting.py:610:        # Short-circuit, lib.indices_fast will return the same
+tradingbot-backend\.venv\Lib\site-packages\pandas\core\arrays\datetimelike.py:422:        # Calling super() before the no_op short-circuit means that we raise
+tradingbot-backend\.venv\Lib\site-packages\pandas\core\arrays\datetimelike.py:2093:            # We must be unique, so can short-circuit (and retain freq)
+tradingbot-backend\.venv\Lib\site-packages\pandas\core\arrays\datetimes.py:457:                    # short-circuit tz_localize_to_utc which would make
+tradingbot-backend\.venv\Lib\site-packages\pandas\core\arrays\string_arrow.py:194:        # short-circuit to return all False array.
+tradingbot-backend\.venv\Lib\site-packages\pandas\core\arrays\arrow\array.py:801:        # short-circuit to return all False array.
+tradingbot-backend\.venv\Lib\site-packages\pandas\core\array_algos\take.py:87:        will be done.  This short-circuits computation of a mask.  Result is
+tradingbot-backend\.venv\Lib\site-packages\pandas\core\array_algos\take.py:198:        will be done.  This short-circuits computation of a mask. Result is
+tradingbot-backend\.venv\Lib\site-packages\pandas\core\dtypes\common.py:1668:    # short-circuit
+tradingbot-backend\.venv\Lib\site-packages\pandas\core\dtypes\missing.py:214:        # Try to use cached isna, which also short-circuits for integer dtypes
+tradingbot-backend\.venv\Lib\site-packages\pandas\core\indexes\multi.py:2692:                # short circuit
+tradingbot-backend\.venv\Lib\site-packages\pandas\core\internals\blocks.py:1173:            # GH-39595: Always return a copy; short-circuit up/downcasting
+tradingbot-backend\.venv\Lib\site-packages\pandas\core\internals\blocks.py:1276:            # can short-circuit the isna call
+tradingbot-backend\.venv\Lib\site-packages\pandas\core\internals\blocks.py:2271:            #  that is fixed, we short-circuit here.
+tradingbot-backend\.venv\Lib\site-packages\pandas\core\internals\concat.py:478:                # ideally isna_all would do this short-circuiting
+tradingbot-backend\.venv\Lib\site-packages\pandas\core\internals\concat.py:484:                # ideally isna_all would do this short-circuiting
+tradingbot-backend\.venv\Lib\site-packages\pandas\tests\series\indexing\test_setitem.py:1317:            # the xfail would xpass bc test_slice_key short-circuits
+tradingbot-backend\.venv\Lib\site-packages\pandas\_config\config.py:584:    # short-circuit for exact key
+tradingbot-backend\.venv\Lib\site-packages\pandas\_testing\_io.py:272:            # Timeout just in case rate-limiting is applied
+tradingbot-backend\.venv\Lib\site-packages\pip\_internal\cli\spinners.py:35:        self._rate_limiter = RateLimiter(min_update_interval_seconds)
+tradingbot-backend\.venv\Lib\site-packages\pip\_internal\cli\spinners.py:53:        self._rate_limiter.reset()
+tradingbot-backend\.venv\Lib\site-packages\pip\_internal\cli\spinners.py:58:        if not self._rate_limiter.ready():
+tradingbot-backend\.venv\Lib\site-packages\pip\_internal\cli\spinners.py:79:        self._rate_limiter = RateLimiter(min_update_interval_seconds)
+tradingbot-backend\.venv\Lib\site-packages\pip\_internal\cli\spinners.py:84:        self._rate_limiter.reset()
+tradingbot-backend\.venv\Lib\site-packages\pip\_internal\cli\spinners.py:90:        if not self._rate_limiter.ready():
+tradingbot-backend\.venv\Lib\site-packages\pip\_internal\cli\spinners.py:101:class RateLimiter:
+tradingbot-backend\.venv\Lib\site-packages\pip\_vendor\cachecontrol\serialize.py:71:        # Short circuit if we've been given an empty set of data
+tradingbot-backend\.venv\Lib\site-packages\pip\_vendor\distlib\compat.py:245:            # This will allow us to short circuit when given "python.exe".
+tradingbot-backend\.venv\Lib\site-packages\pip\_vendor\packaging\specifiers.py:181:        # or not, if we do not support prereleases than we can short circuit
+tradingbot-backend\.venv\Lib\site-packages\pip\_vendor\packaging\specifiers.py:499:        # version. If it's not we can short circuit and just return False now
+tradingbot-backend\.venv\Lib\site-packages\pip\_vendor\packaging\specifiers.py:525:        # version. If it's not we can short circuit and just return False now
+tradingbot-backend\.venv\Lib\site-packages\pip\_vendor\packaging\specifiers.py:739:        # short circuit that here.
+tradingbot-backend\.venv\Lib\site-packages\pip\_vendor\packaging\tags.py:80:            (self._hash == other._hash)  # Short-circuit ASAP for perf reasons.
+tradingbot-backend\.venv\Lib\site-packages\setuptools\command\install_lib.py:62:        # TODO: is it necessary to short-circuit here? i.e. what's the cost
+tradingbot-backend\.venv\Lib\site-packages\setuptools\config\pyprojecttoml.py:432:        # Set `name`, `py_modules` and `packages` in dist to short-circuit
+tradingbot-backend\.venv\Lib\site-packages\setuptools\config\_apply_pyprojecttoml.py:50:        return dist  # short-circuit unrelated pyproject.toml file
+tradingbot-backend\.venv\Lib\site-packages\setuptools\config\_apply_pyprojecttoml.py:72:        return  # short-circuit
+tradingbot-backend\.venv\Lib\site-packages\setuptools\config\_apply_pyprojecttoml.py:90:        return  # short-circuit
+tradingbot-backend\.venv\Lib\site-packages\setuptools\_vendor\jaraco\functools\__init__.py:283:    """Rate-limit a function (or other callable)."""
+tradingbot-backend\.venv\Lib\site-packages\setuptools\_vendor\packaging\specifiers.py:449:        # version. If it's not we can short circuit and just return False now
+tradingbot-backend\.venv\Lib\site-packages\setuptools\_vendor\packaging\specifiers.py:473:        # version. If it's not we can short circuit and just return False now
+tradingbot-backend\.venv\Lib\site-packages\setuptools\_vendor\packaging\specifiers.py:555:        # or not, if we do not support prereleases than we can short circuit
+tradingbot-backend\.venv\Lib\site-packages\setuptools\_vendor\packaging\specifiers.py:928:        # short circuit that here.
+tradingbot-backend\.venv\Lib\site-packages\setuptools\_vendor\packaging\tags.py:80:            (self._hash == other._hash)  # Short-circuit ASAP for perf reasons.
+tradingbot-backend\.venv\Lib\site-packages\setuptools\_vendor\wheel\vendored\packaging\specifiers.py:447:        # version. If it's not we can short circuit and just return False now
+tradingbot-backend\.venv\Lib\site-packages\setuptools\_vendor\wheel\vendored\packaging\specifiers.py:471:        # version. If it's not we can short circuit and just return False now
+tradingbot-backend\.venv\Lib\site-packages\setuptools\_vendor\wheel\vendored\packaging\specifiers.py:555:        # or not, if we do not support prereleases than we can short circuit
+tradingbot-backend\.venv\Lib\site-packages\setuptools\_vendor\wheel\vendored\packaging\specifiers.py:919:        # short circuit that here.
+tradingbot-backend\.venv\Lib\site-packages\setuptools\_vendor\wheel\vendored\packaging\tags.py:83:            (self._hash == other._hash)  # Short-circuit ASAP for perf reasons.
+tradingbot-backend\.venv\Lib\site-packages\_pytest\python_api.py:436:        # Short-circuit exact equality.
+tradingbot-backend\.venv\Lib\site-packages\_pytest\python_api.py:458:        # case would have been short circuited above, so here we can just
+tradingbot-backend\.venv\Lib\site-packages\_pytest\assertion\rewrite.py:980:        # Process each operand, short-circuiting if needed.
+tradingbot-backend\archived\scraper\bitfinex_api_extractor.py:48:    rate_limit: Optional[str] = None
+tradingbot-backend\archived\scraper\bitfinex_api_extractor.py:163:                    "rate_limit": raw.get("rate_limit"),
+tradingbot-backend\archived\scraper\enhanced_json_extractor.py:26:    rate_limit: Optional[str] = None
+tradingbot-backend\config\settings.py:101:    # Circuit Breaker
+tradingbot-backend\config\settings.py:130:    BITFINEX_RATE_LIMIT_REQUESTS_PER_MINUTE: int = 3  # Mycket konservativ
+tradingbot-backend\config\settings.py:131:    BITFINEX_RATE_LIMIT_BURST_SIZE: int = 1  # Undvik bursts
+tradingbot-backend\config\settings.py:132:    BITFINEX_RATE_LIMIT_WINDOW_SECONDS: int = 60
+tradingbot-backend\config\settings.py:133:    BITFINEX_RATE_LIMIT_ENABLED: bool = True
+tradingbot-backend\config\settings.py:142:    RATE_LIMIT_PATTERNS: str | None = (
+tradingbot-backend\rest\debug_routes.py:97:@router.get("/api/v2/debug/rate_limiter")
+tradingbot-backend\rest\debug_routes.py:98:async def dump_rate_limiter() -> dict[str, Any]:
+tradingbot-backend\rest\debug_routes.py:99:    """Dump rate limiter status och circuit breaker state."""
+tradingbot-backend\rest\debug_routes.py:101:        from utils.advanced_rate_limiter import get_advanced_rate_limiter
+tradingbot-backend\rest\debug_routes.py:103:        limiter = get_advanced_rate_limiter()
+tradingbot-backend\rest\debug_routes.py:106:        # Hämta circuit breaker state
+tradingbot-backend\rest\debug_routes.py:116:            "circuit_breakers": cb_state,
+tradingbot-backend\rest\margin.py:18:from utils.bitfinex_rate_limiter import get_bitfinex_rate_limiter
+tradingbot-backend\rest\margin.py:19:from services.transport_circuit_breaker import get_transport_circuit_breaker
+tradingbot-backend\rest\margin.py:83:        self.rate_limiter = get_bitfinex_rate_limiter()
+tradingbot-backend\rest\margin.py:160:                # TransportCircuitBreaker success
+tradingbot-backend\rest\margin.py:161:                tcb = get_transport_circuit_breaker()
+tradingbot-backend\rest\margin.py:188:                            tcb = get_transport_circuit_breaker()
+tradingbot-backend\rest\margin.py:197:                        tcb = get_transport_circuit_breaker()
+tradingbot-backend\rest\margin.py:207:                    tcb = get_transport_circuit_breaker()
+tradingbot-backend\rest\order_history.py:22:from services.transport_circuit_breaker import get_transport_circuit_breaker
+tradingbot-backend\rest\order_history.py:23:from utils.advanced_rate_limiter import get_advanced_rate_limiter
+tradingbot-backend\rest\order_history.py:253:        self.rate_limiter = get_advanced_rate_limiter()
+tradingbot-backend\rest\order_history.py:278:                # Circuit breaker: respektera cooldown
+tradingbot-backend\rest\order_history.py:279:                if hasattr(self.rate_limiter, "can_request") and not self.rate_limiter.can_request(endpoint):
+tradingbot-backend\rest\order_history.py:280:                    wait = self.rate_limiter.time_until_open(endpoint)
+tradingbot-backend\rest\order_history.py:284:                await self.rate_limiter.wait_if_needed(endpoint)
+tradingbot-backend\rest\order_history.py:331:                            # Circuit breaker + Retry-After
+tradingbot-backend\rest\order_history.py:333:                            if hasattr(self.rate_limiter, "note_failure"):
+tradingbot-backend\rest\order_history.py:334:                                cooldown = self.rate_limiter.note_failure(endpoint, response.status_code, retry_after)
+tradingbot-backend\rest\order_history.py:338:                                    metrics_store["transport_circuit_breaker_active"] = 1
+tradingbot-backend\rest\order_history.py:341:                            # Ny: namngiven TransportCircuitBreaker wrapper (parallell markering)
+tradingbot-backend\rest\order_history.py:343:                                tcb = get_transport_circuit_breaker()
+tradingbot-backend\rest\order_history.py:347:                            await self.rate_limiter.handle_server_busy(endpoint)
+tradingbot-backend\rest\order_history.py:353:                        self.rate_limiter.reset_server_busy_count()
+tradingbot-backend\rest\order_history.py:355:                            metrics_store["transport_circuit_breaker_active"] = 0
+tradingbot-backend\rest\order_history.py:361:                        if hasattr(self.rate_limiter, "note_success"):
+tradingbot-backend\rest\order_history.py:362:                            self.rate_limiter.note_success(endpoint)
+tradingbot-backend\rest\order_history.py:365:                    # Ny: parallell success till TransportCircuitBreaker
+tradingbot-backend\rest\order_history.py:367:                        tcb = get_transport_circuit_breaker()
+tradingbot-backend\rest\positions.py:20:from utils.advanced_rate_limiter import get_advanced_rate_limiter
+tradingbot-backend\rest\positions.py:21:from services.transport_circuit_breaker import get_transport_circuit_breaker
+tradingbot-backend\rest\positions.py:77:        self.rate_limiter = get_advanced_rate_limiter()
+tradingbot-backend\rest\positions.py:95:            # Circuit breaker + rate limiter
+tradingbot-backend\rest\positions.py:97:                if hasattr(self.rate_limiter, "can_request") and not self.rate_limiter.can_request(endpoint):
+tradingbot-backend\rest\positions.py:98:                    wait = float(self.rate_limiter.time_until_open(endpoint))
+tradingbot-backend\rest\positions.py:104:                await self.rate_limiter.wait_if_needed(endpoint)
+tradingbot-backend\rest\positions.py:146:                        ) and hasattr(self.rate_limiter, "note_failure"):
+tradingbot-backend\rest\positions.py:147:                            cooldown = self.rate_limiter.note_failure(
+tradingbot-backend\rest\positions.py:154:                                # Namngiven TransportCircuitBreaker
+tradingbot-backend\rest\positions.py:155:                                tcb = get_transport_circuit_breaker()
+tradingbot-backend\rest\positions.py:163:                        await self.rate_limiter.handle_server_busy(endpoint)
+tradingbot-backend\rest\positions.py:172:                    self.rate_limiter.reset_server_busy_count()
+tradingbot-backend\rest\positions.py:176:                    if hasattr(self.rate_limiter, "note_success"):
+tradingbot-backend\rest\positions.py:177:                        self.rate_limiter.note_success(endpoint)
+tradingbot-backend\rest\positions.py:181:                    # TransportCircuitBreaker success
+tradingbot-backend\rest\positions.py:182:                    tcb = get_transport_circuit_breaker()
+tradingbot-backend\rest\routes.py:64:from utils.advanced_rate_limiter import get_advanced_rate_limiter
+tradingbot-backend\rest\routes.py:68:from utils.rate_limiter import get_rate_limiter
+tradingbot-backend\rest\routes.py:82:_rl_adv = get_advanced_rate_limiter()
+tradingbot-backend\rest\routes.py:83:_rl = get_rate_limiter()
+tradingbot-backend\rest\routes.py:526:        # Enkel rate-limit (default avstängd om MAX_REQUESTS <= 0)
+tradingbot-backend\rest\routes.py:528:            max_requests = int(getattr(settings, "ORDER_RATE_LIMIT_MAX", 0) or 0)
+tradingbot-backend\rest\routes.py:529:            window_seconds = int(getattr(settings, "ORDER_RATE_LIMIT_WINDOW", 0) or 0)
+tradingbot-backend\rest\routes.py:534:                        metrics_inc("rate_limited_total")
+tradingbot-backend\rest\routes.py:537:                    return OrderResponse(success=False, error="rate_limited")
+tradingbot-backend\rest\routes.py:767:            max_requests = int(getattr(settings, "ORDER_RATE_LIMIT_MAX", 0) or 0)
+tradingbot-backend\rest\routes.py:768:            window_seconds = int(getattr(settings, "ORDER_RATE_LIMIT_WINDOW", 0) or 0)
+tradingbot-backend\rest\routes.py:772:                        metrics_inc("rate_limited_total")
+tradingbot-backend\rest\routes.py:775:                    return OrderResponse(success=False, error="rate_limited")
+tradingbot-backend\rest\routes.py:914:        # Rate-limit skydd
+tradingbot-backend\rest\routes.py:916:            max_requests = int(getattr(settings, "ORDER_RATE_LIMIT_MAX", 0) or 0)
+tradingbot-backend\rest\routes.py:917:            window_seconds = int(getattr(settings, "ORDER_RATE_LIMIT_WINDOW", 0) or 0)
+tradingbot-backend\rest\routes.py:923:                        _inc("rate_limited_total")
+tradingbot-backend\rest\routes.py:926:                    return OrderResponse(success=False, error="rate_limited")
+tradingbot-backend\rest\routes.py:2851:        # Rate-limit skydd
+tradingbot-backend\rest\routes.py:2853:            max_requests = int(getattr(settings, "ORDER_RATE_LIMIT_MAX", 0) or 0)
+tradingbot-backend\rest\routes.py:2854:            window_seconds = int(getattr(settings, "ORDER_RATE_LIMIT_WINDOW", 0) or 0)
+tradingbot-backend\rest\routes.py:2860:                        _inc("rate_limited_total")
+tradingbot-backend\rest\routes.py:2863:                    return OrderResponse(success=False, error="rate_limited")
+tradingbot-backend\rest\routes.py:3150:    # Utöka med TransportCircuitBreaker state från limiter om tillgängligt
+tradingbot-backend\rest\routes.py:3152:        from utils.advanced_rate_limiter import get_advanced_rate_limiter
+tradingbot-backend\rest\routes.py:3154:        limiter = get_advanced_rate_limiter()
+tradingbot-backend\rest\routes.py:3172:        status["transport_circuit_breaker"] = transport_cb
+tradingbot-backend\rest\routes.py:3198:            get_advanced_rate_limiter().export_metrics()
+tradingbot-backend\rest\routes.py:3251:# --- Circuit Breaker endpoints ---
+tradingbot-backend\rest\routes.py:3252:class CircuitConfigRequest(BaseModel):
+tradingbot-backend\rest\routes.py:3259:@router.get("/risk/circuit")
+tradingbot-backend\rest\routes.py:3260:async def circuit_status(_: bool = Depends(require_auth)):
+tradingbot-backend\rest\routes.py:3263:        return rm.status().get("circuit", {})
+tradingbot-backend\rest\routes.py:3265:        logger.exception(f"Fel vid circuit status: {e}")
+tradingbot-backend\rest\routes.py:3269:@router.post("/risk/circuit/reset")
+tradingbot-backend\rest\routes.py:3270:async def circuit_reset(resume: bool = True, clear_errors: bool = True, _: bool = Depends(require_auth)):
+tradingbot-backend\rest\routes.py:3273:        return rm.circuit_reset(resume=resume, clear_errors=clear_errors)
+tradingbot-backend\rest\routes.py:3275:        logger.exception(f"Fel vid circuit reset: {e}")
+tradingbot-backend\rest\routes.py:3279:@router.post("/risk/circuit/config")
+tradingbot-backend\rest\routes.py:3280:async def circuit_config(req: CircuitConfigRequest, _: bool = Depends(require_auth)):
+tradingbot-backend\rest\routes.py:3283:        return rm.update_circuit_config(
+tradingbot-backend\rest\routes.py:3290:        logger.exception(f"Fel vid circuit config: {e}")
+tradingbot-backend\rest\routes.py:4015:            "rate_limit": {
+tradingbot-backend\rest\routes.py:4016:                "order_max": int(getattr(s, "ORDER_RATE_LIMIT_MAX", 0) or 0),
+tradingbot-backend\rest\routes.py:4017:                "order_window": int(getattr(s, "ORDER_RATE_LIMIT_WINDOW", 0) or 0),
+tradingbot-backend\rest\routes.py:4972:@router.post("/risk/unified/reset-circuit-breaker")
+tradingbot-backend\rest\routes.py:4973:async def reset_circuit_breaker(_: bool = Depends(require_auth)):
+tradingbot-backend\rest\routes.py:4974:    """Återställ circuit breaker."""
+tradingbot-backend\rest\routes.py:4978:        success = unified_risk_service.reset_circuit_breaker()
+tradingbot-backend\rest\routes.py:4981:            "message": "Circuit breaker återställd" if success else "Kunde inte återställa circuit breaker",
+tradingbot-backend\rest\routes.py:4984:        logger.exception(f"Fel vid återställning av circuit breaker: {e}")
+tradingbot-backend\rest\routes.py:5148:@router.get("/observability/rate-limiter")
+tradingbot-backend\rest\routes.py:5149:async def get_rate_limiter_observability(_: bool = Depends(require_auth)):
+tradingbot-backend\rest\routes.py:5154:        metrics = await enhanced_observability_service.get_rate_limiter_metrics()
+tradingbot-backend\rest\routes.py:5179:            "rate_limited_requests": metrics.rate_limited_requests,
+tradingbot-backend\rest\routes.py:5442:# --- Unified Circuit Breaker Service endpoints ---
+tradingbot-backend\rest\routes.py:5443:@router.get("/circuit-breaker/status")
+tradingbot-backend\rest\routes.py:5444:async def get_circuit_breaker_status(name: str | None = None, _: bool = Depends(require_auth)):
+tradingbot-backend\rest\routes.py:5445:    """Hämta status för en eller alla circuit breakers."""
+tradingbot-backend\rest\routes.py:5447:        from services.unified_circuit_breaker_service import unified_circuit_breaker_service
+tradingbot-backend\rest\routes.py:5449:        status = unified_circuit_breaker_service.get_status(name)
+tradingbot-backend\rest\routes.py:5452:        logger.exception(f"Fel vid hämtning av circuit breaker status: {e}")
+tradingbot-backend\rest\routes.py:5456:@router.post("/circuit-breaker/record-success")
+tradingbot-backend\rest\routes.py:5457:async def record_circuit_breaker_success(request: dict[str, Any], _: bool = Depends(require_auth)):
+tradingbot-backend\rest\routes.py:5458:    """Registrera en lyckad operation för en circuit breaker."""
+tradingbot-backend\rest\routes.py:5464:        from services.unified_circuit_breaker_service import unified_circuit_breaker_service
+tradingbot-backend\rest\routes.py:5466:        unified_circuit_breaker_service.record_success(name)
+tradingbot-backend\rest\routes.py:5469:            "message": f"Success registrerad för circuit breaker {name}",
+tradingbot-backend\rest\routes.py:5472:        logger.exception(f"Fel vid registrering av circuit breaker success: {e}")
+tradingbot-backend\rest\routes.py:5476:@router.post("/circuit-breaker/record-failure")
+tradingbot-backend\rest\routes.py:5477:async def record_circuit_breaker_failure(request: dict[str, Any], _: bool = Depends(require_auth)):
+tradingbot-backend\rest\routes.py:5478:    """Registrera en misslyckad operation för en circuit breaker."""
+tradingbot-backend\rest\routes.py:5485:        from services.unified_circuit_breaker_service import unified_circuit_breaker_service
+tradingbot-backend\rest\routes.py:5487:        unified_circuit_breaker_service.record_failure(name, error_type)
+tradingbot-backend\rest\routes.py:5490:            "message": f"Failure registrerad för circuit breaker {name}",
+tradingbot-backend\rest\routes.py:5493:        logger.exception(f"Fel vid registrering av circuit breaker failure: {e}")
+tradingbot-backend\rest\routes.py:5497:@router.post("/circuit-breaker/reset")
+tradingbot-backend\rest\routes.py:5498:async def reset_circuit_breaker(request: dict[str, Any], _: bool = Depends(require_auth)):
+tradingbot-backend\rest\routes.py:5499:    """Återställ en circuit breaker eller alla."""
+tradingbot-backend\rest\routes.py:5502:        from services.unified_circuit_breaker_service import unified_circuit_breaker_service
+tradingbot-backend\rest\routes.py:5505:            success = unified_circuit_breaker_service.reset_circuit_breaker(name)
+tradingbot-backend\rest\routes.py:5508:                "message": f"Circuit breaker {name} {'återställd' if success else 'kunde inte återställas'}",
+tradingbot-backend\rest\routes.py:5511:            success = unified_circuit_breaker_service.reset_all_circuit_breakers()
+tradingbot-backend\rest\routes.py:5515:                    "Alla circuit breakers återställda" if success else "Kunde inte återställa alla circuit breakers"
+tradingbot-backend\rest\routes.py:5519:        logger.exception(f"Fel vid återställning av circuit breaker: {e}")
+tradingbot-backend\rest\routes.py:5523:@router.post("/circuit-breaker/register")
+tradingbot-backend\rest\routes.py:5524:async def register_circuit_breaker(request: dict[str, Any], _: bool = Depends(require_auth)):
+tradingbot-backend\rest\routes.py:5525:    """Registrera en ny circuit breaker."""
+tradingbot-backend\rest\routes.py:5540:        from services.unified_circuit_breaker_service import (
+tradingbot-backend\rest\routes.py:5541:            unified_circuit_breaker_service,
+tradingbot-backend\rest\routes.py:5542:            CircuitBreakerConfig,
+tradingbot-backend\rest\routes.py:5543:            CircuitBreakerType,
+tradingbot-backend\rest\routes.py:5548:            cb_type_enum = CircuitBreakerType(cb_type)
+tradingbot-backend\rest\routes.py:5550:            raise HTTPException(status_code=400, detail=f"Okänd circuit breaker typ: {cb_type}")
+tradingbot-backend\rest\routes.py:5552:        config = CircuitBreakerConfig(
+tradingbot-backend\rest\routes.py:5563:        unified_circuit_breaker_service.register_circuit_breaker(name, config)
+tradingbot-backend\rest\routes.py:5566:            "message": f"Circuit breaker {name} registrerad",
+tradingbot-backend\rest\routes.py:5569:        logger.exception(f"Fel vid registrering av circuit breaker: {e}")
+tradingbot-backend\rest\wallet.py:18:from utils.advanced_rate_limiter import get_advanced_rate_limiter
+tradingbot-backend\rest\wallet.py:19:from services.transport_circuit_breaker import get_transport_circuit_breaker
+tradingbot-backend\rest\wallet.py:56:        self.rate_limiter = get_advanced_rate_limiter()
+tradingbot-backend\rest\wallet.py:75:            # Circuit breaker: respektera ev. cooldown + rate limiter
+tradingbot-backend\rest\wallet.py:77:                if hasattr(self.rate_limiter, "can_request") and not self.rate_limiter.can_request(endpoint):
+tradingbot-backend\rest\wallet.py:78:                    wait = float(self.rate_limiter.time_until_open(endpoint))
+tradingbot-backend\rest\wallet.py:84:                await self.rate_limiter.wait_if_needed(endpoint)
+tradingbot-backend\rest\wallet.py:142:                        ) and hasattr(self.rate_limiter, "note_failure"):
+tradingbot-backend\rest\wallet.py:143:                            cooldown = self.rate_limiter.note_failure(
+tradingbot-backend\rest\wallet.py:150:                                # Namngiven TransportCircuitBreaker
+tradingbot-backend\rest\wallet.py:151:                                tcb = get_transport_circuit_breaker()
+tradingbot-backend\rest\wallet.py:159:                        await self.rate_limiter.handle_server_busy(endpoint)
+tradingbot-backend\rest\wallet.py:169:                        self.rate_limiter.reset_server_busy_count()
+tradingbot-backend\rest\wallet.py:173:                        if hasattr(self.rate_limiter, "note_success"):
+tradingbot-backend\rest\wallet.py:174:                            self.rate_limiter.note_success(endpoint)
+tradingbot-backend\rest\wallet.py:178:                        # TransportCircuitBreaker success
+tradingbot-backend\rest\wallet.py:179:                        tcb = get_transport_circuit_breaker()
+tradingbot-backend\scripts\log_hanging_files.py:35:    "utils/advanced_rate_limiter.py",
+tradingbot-backend\scripts\log_hanging_files.py:107:            if 'rate_limiter' in content:
+tradingbot-backend\scripts\log_hanging_files.py:136:            # 10. Kontrollera för circuit breaker
+tradingbot-backend\scripts\log_hanging_files.py:137:            if 'circuit_breaker' in content:
+tradingbot-backend\scripts\log_hanging_files.py:138:                issues.append("🔌 Circuit breaker logic")
+tradingbot-backend\scripts\log_hanging_files.py:139:            if 'circuit_breaker' in content:
+tradingbot-backend\scripts\log_hanging_files.py:140:                issues.append("🛡️ Circuit breaker protection")
+tradingbot-backend\scripts\log_hanging_files.py:199:        logger.info("🔍 Testar AdvancedRateLimiter...")
+tradingbot-backend\scripts\log_hanging_files.py:200:        from utils.advanced_rate_limiter import get_advanced_rate_limiter
+tradingbot-backend\scripts\log_hanging_files.py:202:        limiter = get_advanced_rate_limiter()
+tradingbot-backend\scripts\log_hanging_files.py:208:        logger.info(f"✅ RateLimiter wait: {duration:.1f}ms")
+tradingbot-backend\scripts\log_hanging_files.py:211:            logger.warning(f"⚠️ RateLimiter wait tog {duration:.1f}ms (långsam)")
+tradingbot-backend\scripts\log_hanging_files.py:214:        logger.error(f"❌ RateLimiter test misslyckades: {e}")
+tradingbot-backend\scripts\start_debug.py:31:        "BITFINEX_RATE_LIMIT_ENABLED": "false",  # Stäng av rate limiting temporärt
+tradingbot-backend\scripts\start_debug.py:63:    print("  - GET /api/v2/debug/rate_limiter - Rate limiter status")
+tradingbot-backend\scripts\test_hanging_fixes.py:100:async def test_rate_limiter_no_deadlock():
+tradingbot-backend\scripts\test_hanging_fixes.py:105:        from utils.advanced_rate_limiter import get_advanced_rate_limiter
+tradingbot-backend\scripts\test_hanging_fixes.py:107:        limiter = get_advanced_rate_limiter()
+tradingbot-backend\scripts\test_hanging_fixes.py:144:        ("Rate Limiter Deadlock", test_rate_limiter_no_deadlock),
+tradingbot-backend\scripts\test_isolation.py:48:async def test_rate_limiter_status():
+tradingbot-backend\scripts\test_isolation.py:53:        from utils.advanced_rate_limiter import get_advanced_rate_limiter
+tradingbot-backend\scripts\test_isolation.py:55:        limiter = get_advanced_rate_limiter()
+tradingbot-backend\scripts\test_isolation.py:126:            response = await client.get(f"{base_url}/api/v2/debug/rate_limiter", timeout=5.0)
+tradingbot-backend\scripts\test_isolation.py:145:        ("Rate Limiter Status", test_rate_limiter_status),
+tradingbot-backend\services\bitfinex_data.py:17:from utils.advanced_rate_limiter import get_advanced_rate_limiter
+tradingbot-backend\services\bitfinex_data.py:55:        # Advanced limiter (token-bucket + circuit breaker)
+tradingbot-backend\services\bitfinex_data.py:56:        self.rate_limiter = get_advanced_rate_limiter()
+tradingbot-backend\services\bitfinex_data.py:113:                    # Circuit breaker + limiter
+tradingbot-backend\services\bitfinex_data.py:116:                        if hasattr(self.rate_limiter, "can_request") and not self.rate_limiter.can_request(
+tradingbot-backend\services\bitfinex_data.py:119:                            wait = float(self.rate_limiter.time_until_open(endpoint_label))
+tradingbot-backend\services\bitfinex_data.py:121:                        await self.rate_limiter.wait_if_needed("candles")
+tradingbot-backend\services\bitfinex_data.py:147:                        # Circuit breaker + server busy pacing
+tradingbot-backend\services\bitfinex_data.py:150:                            if hasattr(self.rate_limiter, "note_failure"):
+tradingbot-backend\services\bitfinex_data.py:151:                                cooldown = self.rate_limiter.note_failure(
+tradingbot-backend\services\bitfinex_data.py:159:                                metrics_store["transport_circuit_breaker_active"] = 1
+tradingbot-backend\services\bitfinex_data.py:162:                            await self.rate_limiter.handle_server_busy("candles")
+tradingbot-backend\services\bitfinex_data.py:178:                        self.rate_limiter.reset_server_busy_count()
+tradingbot-backend\services\bitfinex_data.py:179:                        if hasattr(self.rate_limiter, "note_success"):
+tradingbot-backend\services\bitfinex_data.py:180:                            self.rate_limiter.note_success("candles")
+tradingbot-backend\services\bitfinex_data.py:185:                            metrics_store["transport_circuit_breaker_active"] = 0
+tradingbot-backend\services\bitfinex_data.py:417:                            # Circuit breaker + limiter
+tradingbot-backend\services\bitfinex_data.py:419:                                if hasattr(self.rate_limiter, "can_request") and not self.rate_limiter.can_request(
+tradingbot-backend\services\bitfinex_data.py:422:                                    wait = float(self.rate_limiter.time_until_open("ticker"))
+tradingbot-backend\services\bitfinex_data.py:424:                                await self.rate_limiter.wait_if_needed("ticker")
+tradingbot-backend\services\bitfinex_data.py:452:                                    if hasattr(self.rate_limiter, "note_failure"):
+tradingbot-backend\services\bitfinex_data.py:453:                                        cooldown = self.rate_limiter.note_failure(
+tradingbot-backend\services\bitfinex_data.py:463:                                        metrics_store["transport_circuit_breaker_active"] = 1
+tradingbot-backend\services\bitfinex_data.py:466:                                    await self.rate_limiter.handle_server_busy("ticker")
+tradingbot-backend\services\bitfinex_data.py:503:                                self.rate_limiter.reset_server_busy_count()
+tradingbot-backend\services\bitfinex_data.py:504:                                if hasattr(self.rate_limiter, "note_success"):
+tradingbot-backend\services\bitfinex_data.py:505:                                    self.rate_limiter.note_success("ticker")
+tradingbot-backend\services\bitfinex_data.py:510:                                    metrics_store["transport_circuit_breaker_active"] = 0
+tradingbot-backend\services\bitfinex_data.py:568:                            if hasattr(self.rate_limiter, "can_request") and not self.rate_limiter.can_request(
+tradingbot-backend\services\bitfinex_data.py:571:                                wait = float(self.rate_limiter.time_until_open("tickers"))
+tradingbot-backend\services\bitfinex_data.py:573:                            await self.rate_limiter.wait_if_needed("tickers")
+tradingbot-backend\services\bitfinex_data.py:581:                                if hasattr(self.rate_limiter, "note_failure"):
+tradingbot-backend\services\bitfinex_data.py:582:                                    cooldown = self.rate_limiter.note_failure(
+tradingbot-backend\services\bitfinex_data.py:586:                                await self.rate_limiter.handle_server_busy("tickers")
+tradingbot-backend\services\bitfinex_data.py:621:                            self.rate_limiter.reset_server_busy_count()
+tradingbot-backend\services\bitfinex_data.py:622:                            if hasattr(self.rate_limiter, "note_success"):
+tradingbot-backend\services\bitfinex_data.py:623:                                self.rate_limiter.note_success("tickers")
+tradingbot-backend\services\enhanced_observability_service.py:8:- Circuit breaker status
+tradingbot-backend\services\enhanced_observability_service.py:28:from utils.advanced_rate_limiter import get_advanced_rate_limiter
+tradingbot-backend\services\enhanced_observability_service.py:49:class RateLimiterMetrics:
+tradingbot-backend\services\enhanced_observability_service.py:68:        self.rate_limited_requests = 0
+tradingbot-backend\services\enhanced_observability_service.py:76:class CircuitBreakerMetrics:
+tradingbot-backend\services\enhanced_observability_service.py:77:    """Circuit breaker metrics."""
+tradingbot-backend\services\enhanced_observability_service.py:81:        self.trading_circuit_breaker_open = False
+tradingbot-backend\services\enhanced_observability_service.py:82:        self.transport_circuit_breaker_open = False
+tradingbot-backend\services\enhanced_observability_service.py:126:    - Circuit breakers
+tradingbot-backend\services\enhanced_observability_service.py:133:        self.rate_limiter = get_advanced_rate_limiter()
+tradingbot-backend\services\enhanced_observability_service.py:175:    async def get_rate_limiter_metrics(self) -> RateLimiterMetrics:
+tradingbot-backend\services\enhanced_observability_service.py:178:            metrics = RateLimiterMetrics()
+tradingbot-backend\services\enhanced_observability_service.py:181:            if hasattr(self.rate_limiter, 'get_status'):
+tradingbot-backend\services\enhanced_observability_service.py:182:                status = self.rate_limiter.get_status()
+tradingbot-backend\services\enhanced_observability_service.py:194:            return RateLimiterMetrics()
+tradingbot-backend\services\enhanced_observability_service.py:204:            metrics.rate_limited_requests = metrics_store.get('rate_limited_total', 0)
+tradingbot-backend\services\enhanced_observability_service.py:231:    async def get_circuit_breaker_metrics(self) -> CircuitBreakerMetrics:
+tradingbot-backend\services\enhanced_observability_service.py:232:        """Hämta circuit breaker metrics."""
+tradingbot-backend\services\enhanced_observability_service.py:234:            metrics = CircuitBreakerMetrics()
+tradingbot-backend\services\enhanced_observability_service.py:238:            # hämta från de faktiska circuit breaker services
+tradingbot-backend\services\enhanced_observability_service.py:240:            # Simulera circuit breaker status
+tradingbot-backend\services\enhanced_observability_service.py:241:            metrics.trading_circuit_breaker_open = False
+tradingbot-backend\services\enhanced_observability_service.py:242:            metrics.transport_circuit_breaker_open = False
+tradingbot-backend\services\enhanced_observability_service.py:246:            logger.debug("📊 Circuit breaker metrics: Alla stängda")
+tradingbot-backend\services\enhanced_observability_service.py:250:            logger.error(f"❌ Fel vid hämtning av circuit breaker metrics: {e}")
+tradingbot-backend\services\enhanced_observability_service.py:251:            return CircuitBreakerMetrics()
+tradingbot-backend\services\enhanced_observability_service.py:316:            rate_limiter_task = asyncio.create_task(self.get_rate_limiter_metrics())
+tradingbot-backend\services\enhanced_observability_service.py:318:            circuit_breaker_task = asyncio.create_task(self.get_circuit_breaker_metrics())
+tradingbot-backend\services\enhanced_observability_service.py:325:                rate_limiter_task,
+tradingbot-backend\services\enhanced_observability_service.py:327:                circuit_breaker_task,
+tradingbot-backend\services\enhanced_observability_service.py:335:            rate_limiter_metrics = results[1] if not isinstance(results[1], Exception) else RateLimiterMetrics()
+tradingbot-backend\services\enhanced_observability_service.py:337:            circuit_breaker_metrics = results[3] if not isinstance(results[3], Exception) else CircuitBreakerMetrics()
+tradingbot-backend\services\enhanced_observability_service.py:354:                "rate_limiter": {
+tradingbot-backend\services\enhanced_observability_service.py:355:                    "tokens_available": rate_limiter_metrics.tokens_available,
+tradingbot-backend\services\enhanced_observability_service.py:356:                    "utilization_percent": rate_limiter_metrics.utilization_percent,
+tradingbot-backend\services\enhanced_observability_service.py:357:                    "requests_per_second": rate_limiter_metrics.requests_per_second,
+tradingbot-backend\services\enhanced_observability_service.py:358:                    "blocked_requests": rate_limiter_metrics.blocked_requests,
+tradingbot-backend\services\enhanced_observability_service.py:359:                    "endpoint_patterns": rate_limiter_metrics.endpoint_patterns,
+tradingbot-backend\services\enhanced_observability_service.py:364:                    "rate_limited_requests": exchange_metrics.rate_limited_requests,
+tradingbot-backend\services\enhanced_observability_service.py:370:                "circuit_breaker": {
+tradingbot-backend\services\enhanced_observability_service.py:371:                    "trading_open": circuit_breaker_metrics.trading_circuit_breaker_open,
+tradingbot-backend\services\enhanced_observability_service.py:372:                    "transport_open": circuit_breaker_metrics.transport_circuit_breaker_open,
+tradingbot-backend\services\enhanced_observability_service.py:373:                    "trading_errors_count": circuit_breaker_metrics.trading_errors_count,
+tradingbot-backend\services\enhanced_observability_service.py:374:                    "transport_errors_count": circuit_breaker_metrics.transport_errors_count,
+tradingbot-backend\services\enhanced_observability_service.py:394:                        system_metrics, exchange_metrics, circuit_breaker_metrics, trading_metrics
+tradingbot-backend\services\enhanced_observability_service.py:397:                        system_metrics, exchange_metrics, circuit_breaker_metrics
+tradingbot-backend\services\enhanced_observability_service.py:421:        circuit_breaker: CircuitBreakerMetrics,
+tradingbot-backend\services\enhanced_observability_service.py:427:            if circuit_breaker.trading_circuit_breaker_open or circuit_breaker.transport_circuit_breaker_open:
+tradingbot-backend\services\enhanced_observability_service.py:445:        self, system: SystemMetrics, exchange: ExchangeMetrics, circuit_breaker: CircuitBreakerMetrics
+tradingbot-backend\services\enhanced_observability_service.py:451:            if circuit_breaker.trading_circuit_breaker_open:
+tradingbot-backend\services\enhanced_observability_service.py:452:                alerts.append("Trading circuit breaker är öppen")
+tradingbot-backend\services\enhanced_observability_service.py:454:            if circuit_breaker.transport_circuit_breaker_open:
+tradingbot-backend\services\enhanced_observability_service.py:455:                alerts.append("Transport circuit breaker är öppen")
+tradingbot-backend\services\exchange_client.py:106:        - Respekterar rate limiter/circuit breaker via anroparen (call site)
+tradingbot-backend\services\feature_flags_service.py:186:        self.flags["rate_limit_enabled"] = FeatureFlag(
+tradingbot-backend\services\feature_flags_service.py:187:            "rate_limit_enabled",
+tradingbot-backend\services\feature_flags_service.py:188:            bool(getattr(self.settings, "ORDER_RATE_LIMIT_MAX", 0)),
+tradingbot-backend\services\feature_flags_service.py:190:            "rate_limit",
+tradingbot-backend\services\feature_flags_service.py:391:            "rate_limit": {
+tradingbot-backend\services\feature_flags_service.py:392:                "enabled": self.get_flag("rate_limit_enabled"),
+tradingbot-backend\services\feature_flags_service.py:393:                "order_max": getattr(self.settings, "ORDER_RATE_LIMIT_MAX", 0),
+tradingbot-backend\services\feature_flags_service.py:394:                "order_window": getattr(self.settings, "ORDER_RATE_LIMIT_WINDOW", 0),
+tradingbot-backend\services\market_data_facade.py:111:            from utils.advanced_rate_limiter import get_advanced_rate_limiter
+tradingbot-backend\services\market_data_facade.py:113:            get_advanced_rate_limiter().export_metrics()
+tradingbot-backend\services\metrics.py:17:    "rate_limited_total": 0,
+tradingbot-backend\services\metrics.py:163:    rate_limited = metrics_store.get("rate_limited_total", 0)
+tradingbot-backend\services\metrics.py:164:    lines.append(f"tradingbot_rate_limited_total {rate_limited}")
+tradingbot-backend\services\metrics.py:167:    cb_active = 1 if metrics_store.get("circuit_breaker_active") else 0
+tradingbot-backend\services\metrics.py:168:    lines.append(f"tradingbot_circuit_breaker_active {cb_active}")
+tradingbot-backend\services\metrics.py:169:    # Ny: separerad export för Trading vs Transport circuit breakers
+tradingbot-backend\services\metrics.py:170:    tcb = 1 if metrics_store.get("trading_circuit_breaker_active") else 0
+tradingbot-backend\services\metrics.py:171:    lines.append(f"tradingbot_trading_circuit_breaker_active {tcb}")
+tradingbot-backend\services\metrics.py:172:    xcb = 1 if metrics_store.get("transport_circuit_breaker_active") else 0
+tradingbot-backend\services\metrics.py:173:    lines.append(f"tradingbot_transport_circuit_breaker_active {xcb}")
+tradingbot-backend\services\refresh_manager.py:27:    CRITICAL = 1  # 30s - Risk guards, circuit breakers
+tradingbot-backend\services\refresh_manager.py:59:    circuit_breaker_status: dict[str, Any] | None = None
+tradingbot-backend\services\refresh_manager.py:77:            RefreshPriority.CRITICAL: 30,  # Risk guards, circuit breakers
+tradingbot-backend\services\refresh_manager.py:121:        elif data_type == "circuit_breaker_status":
+tradingbot-backend\services\refresh_manager.py:122:            self.shared_data.circuit_breaker_status = data
+tradingbot-backend\services\risk_manager.py:31:        # Circuit breaker state (global per process)
+tradingbot-backend\services\risk_manager.py:33:        self._circuit_opened_at_ref = lambda: _CB_OPENED_AT
+tradingbot-backend\services\risk_manager.py:51:    # --- Circuit Breaker ---
+tradingbot-backend\services\risk_manager.py:53:        """Registrera ett fel för circuit breaker-spårning."""
+tradingbot-backend\services\risk_manager.py:59:        if self._should_open_circuit(now):
+tradingbot-backend\services\risk_manager.py:60:            self._open_circuit()
+tradingbot-backend\services\risk_manager.py:67:    def _should_open_circuit(self, now: datetime) -> bool:  # noqa: ARG002
+tradingbot-backend\services\risk_manager.py:74:    def _open_circuit(self) -> None:
+tradingbot-backend\services\risk_manager.py:79:            logger.warning("🚨 TradingCircuitBreaker aktiverad: pausar handel pga felspikar")
+tradingbot-backend\services\risk_manager.py:82:                metrics_store["circuit_breaker_active"] = 1
+tradingbot-backend\services\risk_manager.py:83:                metrics_store["trading_circuit_breaker_active"] = 1
+tradingbot-backend\services\risk_manager.py:103:                            "Circuit breaker aktiverad",
+tradingbot-backend\services\risk_manager.py:114:            logger.error(f"Kunde inte aktivera TradingCircuitBreaker: {e}")
+tradingbot-backend\services\risk_manager.py:134:            "circuit": {
+tradingbot-backend\services\risk_manager.py:145:    # --- Circuit Breaker controls ---
+tradingbot-backend\services\risk_manager.py:146:    def circuit_reset(self, *, resume: bool = True, clear_errors: bool = True, notify: bool = True) -> dict[str, Any]:
+tradingbot-backend\services\risk_manager.py:147:        """Återställ circuit breaker: rensa fel och återuppta handel om så önskas."""
+tradingbot-backend\services\risk_manager.py:154:                metrics_store["circuit_breaker_active"] = 0
+tradingbot-backend\services\risk_manager.py:155:                metrics_store["trading_circuit_breaker_active"] = 0
+tradingbot-backend\services\risk_manager.py:173:                                "title": "Circuit breaker återställd",
+tradingbot-backend\services\risk_manager.py:181:            logger.error(f"Fel vid circuit reset: {e}")
+tradingbot-backend\services\risk_manager.py:184:    def update_circuit_config(
+tradingbot-backend\services\risk_manager.py:192:        """Uppdatera runtime-konfiguration för circuit breaker (påverkar nya instanser via os.environ)."""
+tradingbot-backend\services\transport_circuit_breaker.py:2:Transport Circuit Breaker
+tradingbot-backend\services\transport_circuit_breaker.py:4:Namngiven wrapper runt AdvancedRateLimiter:s inbyggda circuit breaker för
+tradingbot-backend\services\transport_circuit_breaker.py:13:from utils.advanced_rate_limiter import get_advanced_rate_limiter
+tradingbot-backend\services\transport_circuit_breaker.py:19:class TransportCircuitBreaker:
+tradingbot-backend\services\transport_circuit_breaker.py:21:        self._limiter = get_advanced_rate_limiter()
+tradingbot-backend\services\transport_circuit_breaker.py:36:                metrics_store["transport_circuit_breaker_active"] = 0
+tradingbot-backend\services\transport_circuit_breaker.py:48:            metrics_store["transport_circuit_breaker_active"] = 1
+tradingbot-backend\services\transport_circuit_breaker.py:54:_cb_singleton: TransportCircuitBreaker | None = None
+tradingbot-backend\services\transport_circuit_breaker.py:57:def get_transport_circuit_breaker() -> TransportCircuitBreaker:
+tradingbot-backend\services\transport_circuit_breaker.py:60:        _cb_singleton = TransportCircuitBreaker()
+tradingbot-backend\services\unified_circuit_breaker_service.py:2:Unified Circuit Breaker Service - Enhetlig circuit breaker-hantering för TradingBot.
+tradingbot-backend\services\unified_circuit_breaker_service.py:5:- Transport Circuit Breaker (REST/HTTP endpoints)
+tradingbot-backend\services\unified_circuit_breaker_service.py:6:- Trading Circuit Breaker (trading-fel)
+tradingbot-backend\services\unified_circuit_breaker_service.py:7:- Rate Limiter Circuit Breaker
+tradingbot-backend\services\unified_circuit_breaker_service.py:8:- Custom Circuit Breakers
+tradingbot-backend\services\unified_circuit_breaker_service.py:11:- Spridda circuit breaker-implementationer
+tradingbot-backend\services\unified_circuit_breaker_service.py:12:- Inkonsistenta circuit breaker-logik
+tradingbot-backend\services\unified_circuit_breaker_service.py:13:- Svår att debugga circuit breaker-problem
+tradingbot-backend\services\unified_circuit_breaker_service.py:32:class CircuitBreakerState(Enum):
+tradingbot-backend\services\unified_circuit_breaker_service.py:33:    """Circuit Breaker states."""
+tradingbot-backend\services\unified_circuit_breaker_service.py:36:    OPEN = "open"  # Circuit is open, blocking requests
+tradingbot-backend\services\unified_circuit_breaker_service.py:40:class CircuitBreakerType(Enum):
+tradingbot-backend\services\unified_circuit_breaker_service.py:41:    """Types of circuit breakers."""
+tradingbot-backend\services\unified_circuit_breaker_service.py:45:    RATE_LIMITER = "rate_limiter"  # Rate limiting
+tradingbot-backend\services\unified_circuit_breaker_service.py:46:    CUSTOM = "custom"  # Custom circuit breakers
+tradingbot-backend\services\unified_circuit_breaker_service.py:49:class CircuitBreakerConfig:
+tradingbot-backend\services\unified_circuit_breaker_service.py:50:    """Configuration for a circuit breaker."""
+tradingbot-backend\services\unified_circuit_breaker_service.py:55:        cb_type: CircuitBreakerType,
+tradingbot-backend\services\unified_circuit_breaker_service.py:73:class CircuitBreakerStatus:
+tradingbot-backend\services\unified_circuit_breaker_service.py:74:    """Status of a circuit breaker."""
+tradingbot-backend\services\unified_circuit_breaker_service.py:78:        self.cb_type = CircuitBreakerType.CUSTOM
+tradingbot-backend\services\unified_circuit_breaker_service.py:79:        self.state = CircuitBreakerState.CLOSED
+tradingbot-backend\services\unified_circuit_breaker_service.py:92:class UnifiedCircuitBreakerService:
+tradingbot-backend\services\unified_circuit_breaker_service.py:94:    Enhetlig service för all circuit breaker-hantering i systemet.
+tradingbot-backend\services\unified_circuit_breaker_service.py:96:    Konsoliderar circuit breakers från:
+tradingbot-backend\services\unified_circuit_breaker_service.py:106:        # Circuit breaker configurations
+tradingbot-backend\services\unified_circuit_breaker_service.py:107:        self.configs: dict[str, CircuitBreakerConfig] = {}
+tradingbot-backend\services\unified_circuit_breaker_service.py:109:        # Circuit breaker states
+tradingbot-backend\services\unified_circuit_breaker_service.py:110:        self.states: dict[str, CircuitBreakerStatus] = {}
+tradingbot-backend\services\unified_circuit_breaker_service.py:115:        # Initialize default circuit breakers
+tradingbot-backend\services\unified_circuit_breaker_service.py:116:        self._initialize_default_circuit_breakers()
+tradingbot-backend\services\unified_circuit_breaker_service.py:118:        logger.info("⚡ UnifiedCircuitBreakerService initialiserad - enhetlig circuit breaker-hantering")
+tradingbot-backend\services\unified_circuit_breaker_service.py:120:    def _initialize_default_circuit_breakers(self) -> None:
+tradingbot-backend\services\unified_circuit_breaker_service.py:121:        """Initialisera standard circuit breakers."""
+tradingbot-backend\services\unified_circuit_breaker_service.py:123:        # Transport Circuit Breaker
+tradingbot-backend\services\unified_circuit_breaker_service.py:124:        self.configs["transport"] = CircuitBreakerConfig(
+tradingbot-backend\services\unified_circuit_breaker_service.py:126:            cb_type=CircuitBreakerType.TRANSPORT,
+tradingbot-backend\services\unified_circuit_breaker_service.py:135:        # Trading Circuit Breaker
+tradingbot-backend\services\unified_circuit_breaker_service.py:136:        self.configs["trading"] = CircuitBreakerConfig(
+tradingbot-backend\services\unified_circuit_breaker_service.py:138:            cb_type=CircuitBreakerType.TRADING,
+tradingbot-backend\services\unified_circuit_breaker_service.py:147:        # Rate Limiter Circuit Breaker
+tradingbot-backend\services\unified_circuit_breaker_service.py:148:        self.configs["rate_limiter"] = CircuitBreakerConfig(
+tradingbot-backend\services\unified_circuit_breaker_service.py:149:            name="rate_limiter",
+tradingbot-backend\services\unified_circuit_breaker_service.py:150:            cb_type=CircuitBreakerType.RATE_LIMITER,
+tradingbot-backend\services\unified_circuit_breaker_service.py:161:            self.states[name] = CircuitBreakerStatus()
+tradingbot-backend\services\unified_circuit_breaker_service.py:166:    def register_circuit_breaker(self, name: str, config: CircuitBreakerConfig) -> None:
+tradingbot-backend\services\unified_circuit_breaker_service.py:167:        """Registrera en ny circuit breaker."""
+tradingbot-backend\services\unified_circuit_breaker_service.py:169:        self.states[name] = CircuitBreakerStatus()
+tradingbot-backend\services\unified_circuit_breaker_service.py:173:        logger.info(f"⚡ Circuit breaker registrerad: {name} ({config.cb_type.value})")
+tradingbot-backend\services\unified_circuit_breaker_service.py:178:            logger.warning(f"⚠️ Okänd circuit breaker: {name}")
+tradingbot-backend\services\unified_circuit_breaker_service.py:187:        # Kontrollera om circuit breaker är öppen
+tradingbot-backend\services\unified_circuit_breaker_service.py:188:        if state.state == CircuitBreakerState.OPEN:
+tradingbot-backend\services\unified_circuit_breaker_service.py:193:                state.state = CircuitBreakerState.HALF_OPEN
+tradingbot-backend\services\unified_circuit_breaker_service.py:195:                logger.info(f"⚡ Circuit breaker {name} går till half-open state")
+tradingbot-backend\services\unified_circuit_breaker_service.py:198:        if state.state == CircuitBreakerState.HALF_OPEN:
+tradingbot-backend\services\unified_circuit_breaker_service.py:219:        if state.state == CircuitBreakerState.HALF_OPEN:
+tradingbot-backend\services\unified_circuit_breaker_service.py:221:            state.state = CircuitBreakerState.CLOSED
+tradingbot-backend\services\unified_circuit_breaker_service.py:226:            logger.info(f"⚡ Circuit breaker {name} återställd till closed state")
+tradingbot-backend\services\unified_circuit_breaker_service.py:227:        elif state.state == CircuitBreakerState.CLOSED:
+tradingbot-backend\services\unified_circuit_breaker_service.py:251:        # Kontrollera om circuit breaker ska öppnas
+tradingbot-backend\services\unified_circuit_breaker_service.py:252:        if self._should_open_circuit(name):
+tradingbot-backend\services\unified_circuit_breaker_service.py:253:            self._open_circuit(name, error_type)
+tradingbot-backend\services\unified_circuit_breaker_service.py:258:        """Uppdatera circuit breaker state baserat på tid."""
+tradingbot-backend\services\unified_circuit_breaker_service.py:265:        if state.state == CircuitBreakerState.OPEN:
+tradingbot-backend\services\unified_circuit_breaker_service.py:267:                state.state = CircuitBreakerState.HALF_OPEN
+tradingbot-backend\services\unified_circuit_breaker_service.py:269:                logger.info(f"⚡ Circuit breaker {name} går till half-open state")
+tradingbot-backend\services\unified_circuit_breaker_service.py:271:    def _should_open_circuit(self, name: str) -> bool:
+tradingbot-backend\services\unified_circuit_breaker_service.py:272:        """Kontrollera om circuit breaker ska öppnas."""
+tradingbot-backend\services\unified_circuit_breaker_service.py:292:    def _open_circuit(self, name: str, error_type: str) -> None:
+tradingbot-backend\services\unified_circuit_breaker_service.py:293:        """Öppna circuit breaker."""
+tradingbot-backend\services\unified_circuit_breaker_service.py:300:        state.state = CircuitBreakerState.OPEN
+tradingbot-backend\services\unified_circuit_breaker_service.py:314:        logger.warning(f"⚡ Circuit breaker {name} öppnad: {error_type}, cooldown: {backoff}s")
+tradingbot-backend\services\unified_circuit_breaker_service.py:333:        """Uppdatera metrics för circuit breaker."""
+tradingbot-backend\services\unified_circuit_breaker_service.py:336:            metrics_store[f"{name}_circuit_breaker_active"] = is_open
+tradingbot-backend\services\unified_circuit_breaker_service.py:340:                metrics_store["circuit_breaker_active"] = is_open
+tradingbot-backend\services\unified_circuit_breaker_service.py:341:                metrics_store["trading_circuit_breaker_active"] = is_open
+tradingbot-backend\services\unified_circuit_breaker_service.py:343:                metrics_store["transport_circuit_breaker_active"] = is_open
+tradingbot-backend\services\unified_circuit_breaker_service.py:347:            labeled = counters.get("circuit_breaker_reasons_total", {})
+tradingbot-backend\services\unified_circuit_breaker_service.py:350:            counters["circuit_breaker_reasons_total"] = labeled
+tradingbot-backend\services\unified_circuit_breaker_service.py:354:            logger.error(f"❌ Fel vid uppdatering av circuit breaker metrics: {e}")
+tradingbot-backend\services\unified_circuit_breaker_service.py:357:        """Skicka notifikation om circuit breaker-aktivitet."""
+tradingbot-backend\services\unified_circuit_breaker_service.py:365:                    f"Circuit Breaker {name} aktiverad",
+tradingbot-backend\services\unified_circuit_breaker_service.py:375:            logger.error(f"❌ Fel vid skickande av circuit breaker notifikation: {e}")
+tradingbot-backend\services\unified_circuit_breaker_service.py:378:        """Hämta status för en eller alla circuit breakers."""
+tradingbot-backend\services\unified_circuit_breaker_service.py:381:                return {"error": f"Okänd circuit breaker: {name}"}
+tradingbot-backend\services\unified_circuit_breaker_service.py:410:            # Returnera status för alla circuit breakers
+tradingbot-backend\services\unified_circuit_breaker_service.py:413:                "circuit_breakers": {name: self.get_status(name) for name in self.states.keys()},
+tradingbot-backend\services\unified_circuit_breaker_service.py:414:                "total_circuit_breakers": len(self.states),
+tradingbot-backend\services\unified_circuit_breaker_service.py:415:                "open_circuit_breakers": sum(
+tradingbot-backend\services\unified_circuit_breaker_service.py:416:                    1 for state in self.states.values() if state.state == CircuitBreakerState.OPEN
+tradingbot-backend\services\unified_circuit_breaker_service.py:420:    def reset_circuit_breaker(self, name: str) -> bool:
+tradingbot-backend\services\unified_circuit_breaker_service.py:421:        """Återställ en circuit breaker till closed state."""
+tradingbot-backend\services\unified_circuit_breaker_service.py:423:            logger.error(f"❌ Okänd circuit breaker: {name}")
+tradingbot-backend\services\unified_circuit_breaker_service.py:427:        state.state = CircuitBreakerState.CLOSED
+tradingbot-backend\services\unified_circuit_breaker_service.py:439:        logger.info(f"⚡ Circuit breaker {name} återställd")
+tradingbot-backend\services\unified_circuit_breaker_service.py:442:    def reset_all_circuit_breakers(self) -> bool:
+tradingbot-backend\services\unified_circuit_breaker_service.py:443:        """Återställ alla circuit breakers."""
+tradingbot-backend\services\unified_circuit_breaker_service.py:446:                self.reset_circuit_breaker(name)
+tradingbot-backend\services\unified_circuit_breaker_service.py:447:            logger.info("⚡ Alla circuit breakers återställda")
+tradingbot-backend\services\unified_circuit_breaker_service.py:450:            logger.error(f"❌ Fel vid återställning av alla circuit breakers: {e}")
+tradingbot-backend\services\unified_circuit_breaker_service.py:455:unified_circuit_breaker_service = UnifiedCircuitBreakerService()
+tradingbot-backend\services\unified_risk_service.py:8:- Circuit Breaker functionality
+tradingbot-backend\services\unified_risk_service.py:42:class CircuitBreakerState:
+tradingbot-backend\services\unified_risk_service.py:43:    """Circuit Breaker tillstånd."""
+tradingbot-backend\services\unified_risk_service.py:48:        self.error_threshold = 5  # Antal fel innan circuit breaker öppnas
+tradingbot-backend\services\unified_risk_service.py:49:        self.timeout_minutes = 5  # Minuter innan circuit breaker stängs
+tradingbot-backend\services\unified_risk_service.py:62:    - Circuit breaker
+tradingbot-backend\services\unified_risk_service.py:69:        self.circuit_breaker = CircuitBreakerState()
+tradingbot-backend\services\unified_risk_service.py:136:            # 1. Kontrollera circuit breaker
+tradingbot-backend\services\unified_risk_service.py:137:            if self._is_circuit_breaker_open():
+tradingbot-backend\services\unified_risk_service.py:140:                    "circuit_breaker_open",
+tradingbot-backend\services\unified_risk_service.py:143:                            self.circuit_breaker.opened_at.isoformat() if self.circuit_breaker.opened_at else None
+tradingbot-backend\services\unified_risk_service.py:184:        """Registrera ett fel för circuit breaker."""
+tradingbot-backend\services\unified_risk_service.py:187:            self.circuit_breaker.error_events.append(now)
+tradingbot-backend\services\unified_risk_service.py:191:            while self.circuit_breaker.error_events and self.circuit_breaker.error_events[0] < cutoff:
+tradingbot-backend\services\unified_risk_service.py:192:                self.circuit_breaker.error_events.popleft()
+tradingbot-backend\services\unified_risk_service.py:194:            # Kontrollera om circuit breaker ska öppnas
+tradingbot-backend\services\unified_risk_service.py:195:            if len(self.circuit_breaker.error_events) >= self.circuit_breaker.error_threshold:
+tradingbot-backend\services\unified_risk_service.py:196:                if not self.circuit_breaker.opened_at:
+tradingbot-backend\services\unified_risk_service.py:197:                    self.circuit_breaker.opened_at = now
+tradingbot-backend\services\unified_risk_service.py:198:                    logger.warning(f"🚨 Circuit breaker öppnad efter {len(self.circuit_breaker.error_events)} fel")
+tradingbot-backend\services\unified_risk_service.py:200:            logger.debug(f"📊 Fel registrerat. Totalt: {len(self.circuit_breaker.error_events)}")
+tradingbot-backend\services\unified_risk_service.py:204:    def _is_circuit_breaker_open(self) -> bool:
+tradingbot-backend\services\unified_risk_service.py:205:        """Kontrollera om circuit breaker är öppen."""
+tradingbot-backend\services\unified_risk_service.py:206:        if not self.circuit_breaker.opened_at:
+tradingbot-backend\services\unified_risk_service.py:209:        # Stäng circuit breaker efter timeout
+tradingbot-backend\services\unified_risk_service.py:210:        timeout = timedelta(minutes=self.circuit_breaker.timeout_minutes)
+tradingbot-backend\services\unified_risk_service.py:211:        if datetime.now() - self.circuit_breaker.opened_at > timeout:
+tradingbot-backend\services\unified_risk_service.py:212:            self.circuit_breaker.opened_at = None
+tradingbot-backend\services\unified_risk_service.py:213:            logger.info("✅ Circuit breaker stängd efter timeout")
+tradingbot-backend\services\unified_risk_service.py:339:    def reset_circuit_breaker(self) -> bool:
+tradingbot-backend\services\unified_risk_service.py:340:        """Återställ circuit breaker."""
+tradingbot-backend\services\unified_risk_service.py:342:            self.circuit_breaker.opened_at = None
+tradingbot-backend\services\unified_risk_service.py:343:            self.circuit_breaker.error_events.clear()
+tradingbot-backend\services\unified_risk_service.py:344:            logger.info("🔄 Circuit breaker återställd")
+tradingbot-backend\services\unified_risk_service.py:347:            logger.error(f"❌ Kunde inte återställa circuit breaker: {e}")
+tradingbot-backend\services\unified_risk_service.py:356:            # Hämta circuit breaker status
+tradingbot-backend\services\unified_risk_service.py:357:            circuit_breaker_status = {
+tradingbot-backend\services\unified_risk_service.py:358:                "open": self._is_circuit_breaker_open(),
+tradingbot-backend\services\unified_risk_service.py:359:                "opened_at": self.circuit_breaker.opened_at.isoformat() if self.circuit_breaker.opened_at else None,
+tradingbot-backend\services\unified_risk_service.py:360:                "error_count": len(self.circuit_breaker.error_events),
+tradingbot-backend\services\unified_risk_service.py:361:                "error_threshold": self.circuit_breaker.error_threshold,
+tradingbot-backend\services\unified_risk_service.py:377:                "circuit_breaker": circuit_breaker_status,
+tradingbot-backend\services\unified_risk_service.py:379:                "overall_status": "healthy" if not self._is_circuit_breaker_open() else "degraded",
+tradingbot-backend\services\ws_first_data_service.py:19:from utils.advanced_rate_limiter import get_advanced_rate_limiter
+tradingbot-backend\services\ws_first_data_service.py:50:        self.rate_limiter = get_advanced_rate_limiter()
+tradingbot-backend\services\ws_first_data_service.py:345:            await self.rate_limiter.wait_if_needed(f"ticker/{symbol}")
+tradingbot-backend\services\ws_first_data_service.py:444:            await self.rate_limiter.wait_if_needed(f"candles/{symbol}")
+tradingbot-backend\services\ws_first_data_service.py:514:            "rate_limiter_stats": self.rate_limiter.get_stats(),
+tradingbot-backend\tests\test_advanced_rate_limiter_patterns.py:6:from utils.advanced_rate_limiter import AdvancedRateLimiter, EndpointType
+tradingbot-backend\tests\test_advanced_rate_limiter_patterns.py:9:def test_rate_limit_patterns_classification(monkeypatch):
+tradingbot-backend\tests\test_advanced_rate_limiter_patterns.py:11:        "RATE_LIMIT_PATTERNS",
+tradingbot-backend\tests\test_advanced_rate_limiter_patterns.py:16:    limiter = AdvancedRateLimiter(settings=s)
+tradingbot-backend\tests\test_advanced_rate_limiter_patterns.py:28:def test_rate_limit_export_metrics(monkeypatch):
+tradingbot-backend\tests\test_advanced_rate_limiter_patterns.py:29:    monkeypatch.setenv("RATE_LIMIT_PATTERNS", "^(ticker|candles)=>PUBLIC_MARKET")
+tradingbot-backend\tests\test_advanced_rate_limiter_patterns.py:31:    limiter = AdvancedRateLimiter(settings=s)
+tradingbot-backend\tests\test_risk_manager.py:51:async def test_circuit_breaker_opens_and_notifies(tmp_path, monkeypatch):
+tradingbot-backend\tests\test_risk_manager.py:85:    assert st["circuit"]["opened_at"] is not None
+tradingbot-backend\tests\test_risk_manager.py:88:    assert any(c.get("title") == "Circuit breaker aktiverad" for c in calls)
+tradingbot-backend\tests\test_risk_manager.py:91:def test_circuit_breaker_reset_resumes(tmp_path):
+tradingbot-backend\tests\test_risk_manager.py:111:    out = rm.circuit_reset(resume=True, clear_errors=True, notify=False)
+tradingbot-backend\tests\test_risk_manager.py:113:    assert out["circuit"]["opened_at"] is None
+tradingbot-backend\tests\test_risk_manager.py:114:    assert out["circuit"]["errors_in_window"] == 0
+tradingbot-backend\tests\test_routes_order.py:8:async def test_place_order_rate_limited(monkeypatch):
+tradingbot-backend\tests\test_routes_order.py:9:    # Aktivera rate-limit via settings-monkeypatch (återställs automatiskt)
+tradingbot-backend\tests\test_routes_order.py:12:    monkeypatch.setattr(routes_module.settings, "ORDER_RATE_LIMIT_MAX", 1, raising=False)
+tradingbot-backend\tests\test_routes_order.py:13:    monkeypatch.setattr(routes_module.settings, "ORDER_RATE_LIMIT_WINDOW", 60, raising=False)
+tradingbot-backend\tests\test_routes_order.py:35:    # Andra direkt efter ska rate-limita
+tradingbot-backend\tests\test_routes_order.py:39:    assert resp2.success is False and resp2.error == "rate_limited"
+tradingbot-backend\utils\advanced_rate_limiter.py:69:class AdvancedRateLimiter:
+tradingbot-backend\utils\advanced_rate_limiter.py:83:        # Circuit breaker per endpoint
+tradingbot-backend\utils\advanced_rate_limiter.py:151:        patterns = getattr(self.settings, "RATE_LIMIT_PATTERNS", None)
+tradingbot-backend\utils\advanced_rate_limiter.py:213:        if not self.settings.BITFINEX_RATE_LIMIT_ENABLED:
+tradingbot-backend\utils\advanced_rate_limiter.py:310:    # --- Circuit breaker helpers ---
+tradingbot-backend\utils\advanced_rate_limiter.py:353:        # Namngiven loggning för transport/circuit breaker (REST-transportnivå)
+tradingbot-backend\utils\advanced_rate_limiter.py:356:                "🚦 TransportCircuitBreaker: %s status=%s cooldown=%.1fs",
+tradingbot-backend\utils\advanced_rate_limiter.py:367:_advanced_rate_limiter: AdvancedRateLimiter | None = None
+tradingbot-backend\utils\advanced_rate_limiter.py:370:def get_advanced_rate_limiter() -> AdvancedRateLimiter:
+tradingbot-backend\utils\advanced_rate_limiter.py:372:    global _advanced_rate_limiter
+tradingbot-backend\utils\advanced_rate_limiter.py:373:    if _advanced_rate_limiter is None:
+tradingbot-backend\utils\advanced_rate_limiter.py:374:        _advanced_rate_limiter = AdvancedRateLimiter()
+tradingbot-backend\utils\advanced_rate_limiter.py:375:    return _advanced_rate_limiter
+tradingbot-backend\utils\advanced_rate_limiter.py:390:            limiter = get_advanced_rate_limiter()
+tradingbot-backend\utils\bitfinex_rate_limiter.py:19:class BitfinexRateLimiter:
+tradingbot-backend\utils\bitfinex_rate_limiter.py:37:        if not self.settings.BITFINEX_RATE_LIMIT_ENABLED:
+tradingbot-backend\utils\bitfinex_rate_limiter.py:42:            window_start = now - self.settings.BITFINEX_RATE_LIMIT_WINDOW_SECONDS
+tradingbot-backend\utils\bitfinex_rate_limiter.py:49:            max_requests = self.settings.BITFINEX_RATE_LIMIT_REQUESTS_PER_MINUTE
+tradingbot-backend\utils\bitfinex_rate_limiter.py:111:            "max_requests_per_minute": self.settings.BITFINEX_RATE_LIMIT_REQUESTS_PER_MINUTE,
+tradingbot-backend\utils\bitfinex_rate_limiter.py:119:_bitfinex_rate_limiter: BitfinexRateLimiter | None = None
+tradingbot-backend\utils\bitfinex_rate_limiter.py:122:def get_bitfinex_rate_limiter() -> BitfinexRateLimiter:
+tradingbot-backend\utils\bitfinex_rate_limiter.py:124:    global _bitfinex_rate_limiter
+tradingbot-backend\utils\bitfinex_rate_limiter.py:125:    if _bitfinex_rate_limiter is None:
+tradingbot-backend\utils\bitfinex_rate_limiter.py:126:        _bitfinex_rate_limiter = BitfinexRateLimiter()
+tradingbot-backend\utils\bitfinex_rate_limiter.py:127:    return _bitfinex_rate_limiter
+tradingbot-backend\utils\rate_limiter.py:5:Används av testerna (ORDER_RATE_LIMIT_MAX/WINDOW) för att validera att andra
+tradingbot-backend\utils\rate_limiter.py:16:class _RateLimiter:
+tradingbot-backend\utils\rate_limiter.py:38:_singleton: _RateLimiter | None = None
+tradingbot-backend\utils\rate_limiter.py:42:def get_rate_limiter() -> _RateLimiter:
+tradingbot-backend\utils\rate_limiter.py:47:                _singleton = _RateLimiter()
+
+

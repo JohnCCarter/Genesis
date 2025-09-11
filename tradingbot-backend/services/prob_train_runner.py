@@ -11,12 +11,12 @@ from __future__ import annotations
 import asyncio
 import os
 
-from services.bitfinex_data import BitfinexDataService
+from services.market_data_facade import get_market_data
 from services.prob_train import train_and_export
 
 
 async def _fetch_candles(symbol: str, timeframe: str, limit: int) -> list[list[float]]:
-    svc = BitfinexDataService()
+    svc = get_market_data()
     candles = await svc.get_candles(symbol, timeframe, limit=limit)
     return candles or []
 

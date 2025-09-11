@@ -97,7 +97,7 @@ def mask_tokens_in_string(text: str) -> str:
         return str(text)
 
     # Regex för JWT-tokens (eyJ + base64-encoded data)
-    jwt_pattern = r'eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+'
+    jwt_pattern = r"eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+"
 
     def replace_token(match):
         token = match.group(0)

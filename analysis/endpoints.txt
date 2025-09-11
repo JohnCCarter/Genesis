@@ -1,0 +1,37 @@
+﻿
+.venv\Lib\site-packages\fastapi\applications.py:100:                like `app.get()`, `app.post()`, etc.
+.venv\Lib\site-packages\fastapi\applications.py:238:                * `@app.get("/users/", tags=["users"])`
+.venv\Lib\site-packages\fastapi\applications.py:239:                * `@app.get("/items/", tags=["items"])`
+.venv\Lib\site-packages\fastapi\applications.py:391:                @app.get("/items/")
+.venv\Lib\site-packages\fastapi\applications.py:1854:        @app.get("/items/")
+.venv\Lib\site-packages\fastapi\applications.py:2232:        @app.put("/items/{item_id}")
+.venv\Lib\site-packages\fastapi\applications.py:2610:        @app.post("/items/")
+.venv\Lib\site-packages\fastapi\applications.py:2983:        @app.delete("/items/{item_id}")
+.venv\Lib\site-packages\fastapi\applications.py:4480:        @app.put("/items/{item_id}")
+.venv\Lib\site-packages\fastapi\background.py:31:    @app.post("/send-notification/{email}")
+.venv\Lib\site-packages\fastapi\datastructures.py:53:    @app.post("/files/")
+.venv\Lib\site-packages\fastapi\datastructures.py:58:    @app.post("/uploadfile/")
+.venv\Lib\site-packages\fastapi\exceptions.py:29:    @app.get("/items/{item_id}")
+.venv\Lib\site-packages\fastapi\param_functions.py:299:    @app.get("/items/{item_id}")
+.venv\Lib\site-packages\fastapi\param_functions.py:2272:    @app.get("/items/")
+.venv\Lib\site-packages\fastapi\param_functions.py:2353:    @app.get("/users/me/items/")
+.venv\Lib\site-packages\fastapi\security\api_key.py:41:    @app.get("/items/")
+.venv\Lib\site-packages\fastapi\security\api_key.py:140:    @app.get("/items/")
+.venv\Lib\site-packages\fastapi\security\api_key.py:235:    @app.get("/items/")
+.venv\Lib\site-packages\fastapi\security\http.py:124:    @app.get("/users/me")
+.venv\Lib\site-packages\fastapi\security\http.py:244:    @app.get("/users/me")
+.venv\Lib\site-packages\fastapi\security\http.py:348:    @app.get("/users/me")
+.venv\Lib\site-packages\fastapi\security\oauth2.py:41:    @app.post("/login")
+.venv\Lib\site-packages\fastapi\security\oauth2.py:183:    @app.post("/login")
+tradingbot-backend\main.py:279:    @app.get("/docs", include_in_schema=False)
+tradingbot-backend\main.py:289:    @app.get("/docs/oauth2-redirect", include_in_schema=False)
+tradingbot-backend\main.py:299:@app.get("/")
+tradingbot-backend\main.py:313:@app.get("/health")
+tradingbot-backend\main.py:319:@app.get("/time")
+tradingbot-backend\main.py:343:@app.get("/prob-test")
+tradingbot-backend\main.py:353:@app.get("/metrics")
+tradingbot-backend\main.py:461:@app.get("/metrics/summary")
+tradingbot-backend\.venv\Lib\site-packages\fastapi\security\oauth2.py:17:        @app.post("/login")
+tradingbot-backend\.venv\Lib\site-packages\fastapi\security\oauth2.py:67:        @app.post("/login")
+
+

@@ -15,7 +15,9 @@ from typing import Any, Awaitable, Callable, ParamSpec, TypeVar
 
 from config.settings import Settings
 from services.metrics import _labels_to_str, metrics_store
+from services.metrics_client import get_metrics_client
 from utils.logger import get_logger
+from services.unified_circuit_breaker_service import unified_circuit_breaker_service
 
 logger = get_logger(__name__)
 
@@ -282,7 +284,7 @@ class AdvancedRateLimiter:
             bucket.tokens = bucket.capacity
             bucket.last_refill = time.time()
 
-    async def handle_server_busy(self, endpoint: str = "default") -> float:  # noqa: ARG002
+    async def handle_server_busy(self, _endpoint: str = "default") -> float:
         """Kompatibilitets-API: hantera server busy med adaptiv backoff."""
         now = time.time()
         self._server_busy_count += 1
@@ -328,6 +330,11 @@ class AdvancedRateLimiter:
             st["open_until"] = 0.0
             st["last_failure"] = 0.0
             self._cb_state[key] = st
+        # Signalera unified CB
+        try:
+            unified_circuit_breaker_service.on_event(source="transport", endpoint=endpoint, success=True)
+        except Exception:
+            pass
 
     def note_failure(self, endpoint: str, status_code: int, retry_after: str | None = None) -> float:
         key = self._cb_key(endpoint)
@@ -357,6 +364,17 @@ class AdvancedRateLimiter:
                 endpoint,
                 status_code,
                 cooldown,
+            )
+        except Exception:
+            pass
+        # Signalera unified CB
+        try:
+            unified_circuit_breaker_service.on_event(
+                source="transport",
+                endpoint=endpoint,
+                status_code=status_code,
+                success=False,
+                retry_after=retry_after,
             )
         except Exception:
             pass

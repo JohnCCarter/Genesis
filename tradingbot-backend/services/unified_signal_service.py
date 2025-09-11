@@ -363,6 +363,7 @@ class UnifiedSignalService:
 
     def _generate_reason(self, sc: SignalScore, regime_data: dict[str, Any]) -> str:
         """Generera förklaring baserat på SignalService.score() och regime data."""
+        _ = sc  # sc används inte direkt här (informationen hämtas från regime_data)
         regime = regime_data.get("regime", "unknown")
         adx = regime_data.get("adx_value", 0)
         ema_z = regime_data.get("ema_z_value", 0)
@@ -391,8 +392,8 @@ class UnifiedSignalService:
             "signal_cache_size": len(self._signal_cache),
             "regime_cache_size": len(self._regime_cache),
             "last_updates": len(self._last_update),
-            "oldest_cache": min(self._last_update.values()) if self._last_update else None,
-            "newest_cache": max(self._last_update.values()) if self._last_update else None,
+            "oldest_cache": (min(self._last_update.values()) if self._last_update else None),
+            "newest_cache": (max(self._last_update.values()) if self._last_update else None),
         }
 
     def clear_cache(self) -> None:

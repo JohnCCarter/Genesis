@@ -254,6 +254,34 @@ class UnifiedCircuitBreakerService:
 
         logger.warning(f"⚡ Failure registrerad för {name}: {state.failure_count} failures")
 
+    def on_event(
+        self,
+        *,
+        source: str,
+        endpoint: str | None = None,
+        status_code: int | None = None,
+        success: bool | None = None,
+        retry_after: str | None = None,
+    ) -> None:
+        """Normaliserad event‑ingest från transport/rate‑limiter eller trading.
+
+        Args:
+            source: "transport" | "rate_limiter" | "trading" | <custom>
+            endpoint: valfritt identifierare för endpoint
+            status_code: HTTP status vid transport
+            success: True/False
+            retry_after: ev. Retry‑After header
+        """
+        _ = (endpoint, status_code, retry_after)
+        name = "transport" if source in ("transport", "rate_limiter") else source
+        try:
+            if bool(success):
+                self.record_success(name)
+            else:
+                self.record_failure(name)
+        except Exception:
+            pass
+
     def _update_state(self, name: str) -> None:
         """Uppdatera circuit breaker state baserat på tid."""
         if name not in self.states:
@@ -302,7 +330,10 @@ class UnifiedCircuitBreakerService:
 
         # Beräkna cooldown
         if config.exponential_backoff:
-            backoff = min(config.recovery_timeout * (2 ** min(state.failure_count, 6)), config.max_backoff)
+            backoff = min(
+                config.recovery_timeout * (2 ** min(state.failure_count, 6)),
+                config.max_backoff,
+            )
         else:
             backoff = config.recovery_timeout
 
@@ -314,7 +345,7 @@ class UnifiedCircuitBreakerService:
         logger.warning(f"⚡ Circuit breaker {name} öppnad: {error_type}, cooldown: {backoff}s")
 
         # Skicka notifikation om aktiverat
-        if hasattr(self.settings, 'CB_NOTIFY') and self.settings.CB_NOTIFY:
+        if hasattr(self.settings, "CB_NOTIFY") and self.settings.CB_NOTIFY:
             self._send_notification(name, error_type, backoff)
 
     def _cleanup_failure_events(self, name: str) -> None:
@@ -389,10 +420,10 @@ class UnifiedCircuitBreakerService:
                 "state": state.state.value,
                 "failure_count": state.failure_count,
                 "success_count": state.success_count,
-                "last_failure_time": state.last_failure_time.isoformat() if state.last_failure_time else None,
-                "last_success_time": state.last_success_time.isoformat() if state.last_success_time else None,
+                "last_failure_time": (state.last_failure_time.isoformat() if state.last_failure_time else None),
+                "last_success_time": (state.last_success_time.isoformat() if state.last_success_time else None),
                 "opened_at": state.opened_at.isoformat() if state.opened_at else None,
-                "next_attempt_time": state.next_attempt_time.isoformat() if state.next_attempt_time else None,
+                "next_attempt_time": (state.next_attempt_time.isoformat() if state.next_attempt_time else None),
                 "half_open_calls": state.half_open_calls,
                 "total_requests": state.total_requests,
                 "total_failures": state.total_failures,

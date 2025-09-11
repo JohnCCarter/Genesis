@@ -52,7 +52,8 @@ class MarketDataFacade:
             timeout = 0.5  # 500ms timeout för WS
             try:
                 data = await asyncio.wait_for(
-                    self.ws_first.get_ticker(symbol, force_fresh=force_fresh), timeout=timeout
+                    self.ws_first.get_ticker(symbol, force_fresh=force_fresh),
+                    timeout=timeout,
                 )
                 lag_ms = (time.perf_counter() - start_time) * 1000
                 logger.info(f"marketdata.source=ws symbol={symbol} lag_ms={lag_ms:.1f}")

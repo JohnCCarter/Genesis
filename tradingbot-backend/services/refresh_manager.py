@@ -135,7 +135,11 @@ class RefreshManager:
 
     def get_panel_status(self) -> dict[str, Any]:
         """Hämta status för alla registrerade paneler."""
-        status = {"total_panels": len(self.tasks), "running": self.is_running, "panels": {}}
+        status = {
+            "total_panels": len(self.tasks),
+            "running": self.is_running,
+            "panels": {},
+        }
 
         for panel_id, task in self.tasks.items():
             status["panels"][panel_id] = {
@@ -221,7 +225,10 @@ class RefreshManager:
 
         # Kör refresh för alla berättigade paneler
         if tasks_to_run:
-            await asyncio.gather(*[self._run_panel_refresh(task) for task in tasks_to_run], return_exceptions=True)
+            await asyncio.gather(
+                *[self._run_panel_refresh(task) for task in tasks_to_run],
+                return_exceptions=True,
+            )
 
     def _check_dependencies(self, task: RefreshTask) -> bool:
         """Kontrollera om alla dependencies är uppfyllda."""

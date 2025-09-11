@@ -286,6 +286,7 @@ def _serialize_groups(groups: dict[str, BracketGroup]) -> dict[str, dict]:
             "sl_id": _coerce_int(g.sl_id),
             "tp_id": _coerce_int(g.tp_id),
             "active": bool(g.active),
+            "entry_filled": float(g.entry_filled or 0.0),
         }
     return out
 
@@ -298,6 +299,7 @@ def _deserialize_groups(raw: dict[str, dict]) -> dict[str, BracketGroup]:
             sl_id=_coerce_int(v.get("sl_id")),
             tp_id=_coerce_int(v.get("tp_id")),
             active=bool(v.get("active", True)),
+            entry_filled=float(v.get("entry_filled", 0.0) or 0.0),
         )
     return out
 
@@ -321,9 +323,19 @@ def _safe_read_json(path: str) -> dict | None:
         with open(path, encoding="utf-8") as f:
             return json.load(f)
     except FileNotFoundError:
-        return None
+        # Prova backup
+        try:
+            with open(f"{path}.bak", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return None
     except Exception:
-        return None
+        # Prova backup
+        try:
+            with open(f"{path}.bak", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return None
 
 
 def _safe_write_json(path: str, payload: dict) -> None:
@@ -332,6 +344,13 @@ def _safe_write_json(path: str, payload: dict) -> None:
         tmp = f"{path}.tmp"
         with open(tmp, "w", encoding="utf-8") as f:
             json.dump(payload, f, ensure_ascii=False, indent=2)
+        # Skriv backup innan atomisk replace
+        try:
+            if os.path.exists(path):
+                with open(f"{path}.bak", "w", encoding="utf-8") as bf:
+                    json.dump(_safe_read_json(path) or {}, bf, ensure_ascii=False, indent=2)
+        except Exception:
+            pass
         os.replace(tmp, path)
     except Exception as e:
         logger.warning(f"Kunde inte skriva bracket-state: {e}")

@@ -105,7 +105,7 @@ class TestRiskGuardsService:
     @patch("services.risk_guards.RiskGuardsService._get_current_equity")
     def test_check_max_daily_loss_triggered(self, mock_equity):
         """Test max daily loss när triggad."""
-        mock_equity.return_value = 9400.0  # 6% förlust
+        mock_equity.return_value = 9400.0  # 5% förlust
 
         # Sätt start equity
         self.service.guards["max_daily_loss"]["daily_start_equity"] = 10000.0
@@ -136,7 +136,7 @@ class TestRiskGuardsService:
     @patch("services.risk_guards.RiskGuardsService._get_current_equity")
     def test_check_kill_switch_triggered(self, mock_equity):
         """Test kill switch när triggad."""
-        mock_equity.return_value = 8500.0  # 15% drawdown
+        mock_equity.return_value = 8500.0  # 5% drawdown
 
         # Sätt start equity
         self.service.guards["max_daily_loss"]["daily_start_equity"] = 10000.0

@@ -35,7 +35,7 @@ class SignalService:
         return round(base * (confidence / 100.0) * 100.0, 1)
 
     @staticmethod
-    def recommend(regime: str | None, confidence: float, probability: float) -> str:  # noqa: ARG004
+    def recommend(_regime: str | None, confidence: float, probability: float) -> str:
         if confidence < 30:
             return "hold"
         if probability > 70:
@@ -94,7 +94,6 @@ from datetime import datetime, timedelta
 from typing import Any as _Any
 
 from models.signal_models import LiveSignalsResponse, SignalResponse
-from services.bitfinex_websocket import BitfinexWebSocketService
 from services.enhanced_auto_trader import EnhancedAutoTrader
 
 # from services.signal_generator import SignalGeneratorService  # Removed to avoid circular import
@@ -116,7 +115,7 @@ class UnifiedSignalService:
     def __init__(self):
         # self._signal_generator = SignalGeneratorService()  # Removed to avoid circular import
         self._enhanced_trader = EnhancedAutoTrader()
-        self._ws_service: BitfinexWebSocketService | None = None
+        self._ws_service: _Any | None = None
 
         # Enhetlig cache för alla signaler
         self._signal_cache: dict[str, SignalResponse] = {}
@@ -125,7 +124,7 @@ class UnifiedSignalService:
 
         logger.info("🚀 SignalService initialiserad - enhetlig signal-hantering")
 
-    def set_websocket_service(self, ws_service: BitfinexWebSocketService):
+    def set_websocket_service(self, ws_service: _Any):
         """Sätt WebSocket service för realtids-signaler"""
         self._ws_service = ws_service
         logger.info("🔗 WebSocket service kopplad till SignalService")

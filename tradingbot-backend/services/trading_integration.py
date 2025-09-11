@@ -17,7 +17,7 @@ from rest.wallet import get_total_balance_usd, get_wallets
 from services.market_data_facade import get_market_data
 from services.metrics import inc
 from services.realtime_strategy import realtime_strategy
-from services.risk_manager import RiskManager
+from services.unified_risk_service import unified_risk_service
 from services.strategy import evaluate_strategy
 from utils.logger import get_logger
 
@@ -177,8 +177,6 @@ class TradingIntegrationService:
                 return {"high": highs, "low": lows, "close": closes}
 
             strategy_data = _parse(candles)
-            # bädda in symbol för per-symbol viktning
-            strategy_data["symbol"] = symbol
 
             # Utvärdera strategi
             result = evaluate_strategy(strategy_data)
@@ -302,19 +300,18 @@ class TradingIntegrationService:
                     "order": None,
                 }
 
-            # Centrala riskkontroller (TradingWindow, dagliga limits, cooldown, CB)
+            # Enhetliga riskkontroller (Trade constraints, guards, CB)
             try:
-                risk = RiskManager()
-                ok, reason = risk.pre_trade_checks()
-                if not ok:
-                    logger.warning(f"🚫 RiskManager block: {reason}")
+                decision = unified_risk_service.evaluate_risk(symbol=symbol)
+                if not decision.allowed:
+                    logger.warning(f"🚫 Risk block: {decision.reason}")
                     return {
                         "success": False,
-                        "message": f"risk_blocked:{reason}",
+                        "message": f"risk_blocked:{decision.reason}",
                         "order": None,
                     }
             except Exception as e:
-                logger.warning(f"RiskManager-kontroll misslyckades: {e}")
+                logger.warning(f"Unified risk-kontroll misslyckades: {e}")
 
             # Kontrollera om vi ska handla
             if signal not in ["BUY", "SELL"]:
@@ -345,7 +342,7 @@ class TradingIntegrationService:
                 try:
                     inc("orders_total")
                     inc("orders_failed_total")
-                    RiskManager().record_error()
+                    unified_risk_service.record_error()
                 except Exception:
                     pass
                 return {
@@ -357,7 +354,7 @@ class TradingIntegrationService:
             logger.info(f"✅ Order lagd för {symbol}: {result}")
             try:
                 inc("orders_total")
-                RiskManager().record_trade()
+                unified_risk_service.record_trade(symbol=symbol)
             except Exception:
                 pass
 

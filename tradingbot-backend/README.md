@@ -15,8 +15,7 @@ Detta är backend-delen av Genesis Trading Bot, en plattform för automatiserad 
 9. [Orderflaggor (Reduce-Only/Post-Only)](#orderflaggor-reduce-onlypost-only)
 10. [Backtest & Heatmap](#backtest--heatmap)
 11. [CI (GitHub Actions)](#ci-github-actions)
-12. [CodeQL](#codeql)
-13. [Arkitektur: MarketDataFacade, SignalService, RiskPolicyEngine, Circuit Breakers](#arkitektur-marketdatafacade-signalservice-riskpolicyengine-circuit-breakers)
+12. [Arkitektur: MarketDataFacade, SignalService, RiskPolicyEngine, Circuit Breakers](#arkitektur-marketdatafacade-signalservice-riskpolicyengine-circuit-breakers)
 
 ## Översikt
 
@@ -446,9 +445,6 @@ jobs:
 
 Notera att `AUTH_REQUIRED=False` under test förenklar körningen. Justera vid behov.
 
-## CodeQL
-
-CodeQL-körning är aktiverad via en separat job i samma workflow. Den analyserar Python-koden vid push/PR och rapporterar säkerhetsfynd under "Security" i GitHub.
 
 ## Orderflaggor (Reduce-Only/Post-Only)
 

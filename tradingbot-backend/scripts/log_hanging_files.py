@@ -21,8 +21,8 @@ logger = get_logger(__name__)
 # Konfigurera detaljerad logging
 logging.basicConfig(
     level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[logging.StreamHandler(), logging.FileHandler('hanging_files_debug.log')],
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.StreamHandler(), logging.FileHandler("hanging_files_debug.log")],
 )
 
 # Lista över kritiska filer som kan orsaka hängningar
@@ -58,85 +58,85 @@ async def log_file_analysis():
         logger.info(f"📁 Analyserar: {file_path}")
 
         try:
-            with open(full_path, encoding='utf-8') as f:
+            with open(full_path, encoding="utf-8") as f:
                 content = f.read()
 
             # Analysera potentiella problem
             issues = []
 
             # 1. Kontrollera för oändliga loopar
-            if 'while True:' in content:
+            if "while True:" in content:
                 issues.append("🔄 Oändlig while-loop")
-            if 'while 1:' in content:
+            if "while 1:" in content:
                 issues.append("🔄 Oändlig while-loop (while 1)")
 
             # 2. Kontrollera för blocking calls utan timeout
             blocking_patterns = [
-                'requests.get(',
-                'requests.post(',
-                'requests.put(',
-                'requests.delete(',
-                'time.sleep(',
-                'asyncio.sleep(',
-                'await asyncio.sleep(',
-                'await websocket.recv()',
-                'websocket.recv()',
-                'await websocket.send(',
-                'websocket.send(',
+                "requests.get(",
+                "requests.post(",
+                "requests.put(",
+                "requests.delete(",
+                "time.sleep(",
+                "asyncio.sleep(",
+                "await asyncio.sleep(",
+                "await websocket.recv()",
+                "websocket.recv()",
+                "await websocket.send(",
+                "websocket.send(",
             ]
 
             for pattern in blocking_patterns:
-                if pattern in content and 'timeout=' not in content:
+                if pattern in content and "timeout=" not in content:
                     issues.append(f"⏰ Potentiell blocking call utan timeout: {pattern}")
 
             # 3. Kontrollera för WebSocket race conditions
-            if 'listen_for_messages' in content:
+            if "listen_for_messages" in content:
                 issues.append("🔌 WebSocket message listener")
-            if 'websocket.recv()' in content:
+            if "websocket.recv()" in content:
                 issues.append("📡 WebSocket recv() call")
-            if 'asyncio.create_task' in content:
+            if "asyncio.create_task" in content:
                 issues.append("🚀 AsyncIO task creation")
 
             # 4. Kontrollera för equity/performance calls
-            if 'compute_current_equity' in content:
+            if "compute_current_equity" in content:
                 issues.append("💰 Equity computation")
-            if 'get_current_equity' in content:
+            if "get_current_equity" in content:
                 issues.append("💵 Current equity retrieval")
 
             # 5. Kontrollera för rate limiting
-            if 'rate_limiter' in content:
+            if "rate_limiter" in content:
                 issues.append("🚦 Rate limiter usage")
-            if 'semaphore' in content:
+            if "semaphore" in content:
                 issues.append("🔒 Semaphore usage")
 
             # 6. Kontrollera för authentication
-            if 'authenticate' in content:
+            if "authenticate" in content:
                 issues.append("🔐 Authentication logic")
-            if 'auth' in content:
+            if "auth" in content:
                 issues.append("🔑 Auth handling")
 
             # 7. Kontrollera för market data
-            if 'get_ticker' in content:
+            if "get_ticker" in content:
                 issues.append("📊 Ticker data retrieval")
-            if 'get_candles' in content:
+            if "get_candles" in content:
                 issues.append("🕯️ Candle data retrieval")
 
             # 8. Kontrollera för error handling
-            if 'except Exception:' in content:
+            if "except Exception:" in content:
                 issues.append("⚠️ Generic exception handling")
-            if 'except:' in content:
+            if "except:" in content:
                 issues.append("❌ Bare except clause")
 
             # 9. Kontrollera för timeout handling
-            if 'timeout=' in content:
+            if "timeout=" in content:
                 issues.append("⏱️ Timeout handling present")
-            if 'asyncio.wait_for' in content:
+            if "asyncio.wait_for" in content:
                 issues.append("⏳ AsyncIO wait_for usage")
 
             # 10. Kontrollera för circuit breaker
-            if 'circuit_breaker' in content:
+            if "circuit_breaker" in content:
                 issues.append("🔌 Circuit breaker logic")
-            if 'circuit_breaker' in content:
+            if "circuit_breaker" in content:
                 issues.append("🛡️ Circuit breaker protection")
 
             # Logga resultat

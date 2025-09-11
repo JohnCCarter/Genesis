@@ -53,7 +53,7 @@ try:
     from rest.routes import router as rest_router
     from rest.debug_routes import router as debug_router
     from services.bitfinex_websocket import bitfinex_ws
-    from services.metrics import observe_latency, render_prometheus_text
+    from services.metrics_client import get_metrics_client
     from services.metrics import get_metrics_summary
     from services.runtime_mode import get_validation_on_start, get_ws_connect_on_start
     from services.signal_service import signal_service
@@ -177,15 +177,19 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"⚠️ Fel vid task cleanup: {e}")
 
-    # Stäng HTTP-klienter
+    # Stäng HTTP-klienter via facade (respektera WS-first design)
     try:
-        from services.bitfinex_data import BitfinexDataService
+        from services.market_data_facade import get_market_data
 
-        if hasattr(BitfinexDataService, "_client") and BitfinexDataService._client:
-            await BitfinexDataService._client.aclose()
-            logger.info("✅ HTTP-klient stängd")
+        facade = get_market_data()
+        # Om underliggande REST-klient existerar, stäng den säkert
+        rest = getattr(facade.ws_first, "rest_service", None)
+        client = getattr(rest, "_client", None)
+        if client is not None:
+            await client.aclose()
+            logger.info("✅ HTTP-klient stängd (via MarketDataFacade)")
     except Exception as e:
-        logger.warning(f"⚠️ Fel vid stängning av HTTP-klient: {e}")
+        logger.warning(f"⚠️ Fel vid stängning av HTTP-klient (via facade): {e}")
 
     logger.info("✅ Shutdown komplett")
 
@@ -451,7 +455,7 @@ async def metrics(request: Request) -> Response:
     except Exception:
         pass
 
-    txt = render_prometheus_text()
+    txt = get_metrics_client().render_prometheus_text()
     return Response(
         content=txt,
         media_type="text/plain; version=0.0.4",
@@ -514,7 +518,10 @@ async def latency_middleware(request: Request, call_next):
             route = request.scope.get("route")
             if route is not None:
                 path_template = getattr(route, "path", path_template)
-            observe_latency(
+            # AI Change: use MetricsClient.observe_latency (Agent: Codex, Date: 2025-09-11)
+            from services.metrics_client import get_metrics_client
+
+            get_metrics_client().observe_latency(
                 path=path_template or request.url.path,
                 method=request.method,
                 status_code=getattr(response, "status_code", 0),

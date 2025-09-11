@@ -13,7 +13,7 @@ import time
 from contextvars import ContextVar
 from typing import Any
 
-_server_timing: ContextVar[list[str]] = ContextVar("_server_timing", default=[])
+_server_timing: ContextVar[list[str] | None] = ContextVar("_server_timing", default=None)
 
 
 def reset() -> None:
@@ -27,7 +27,7 @@ def reset() -> None:
 def add(metric: str, duration_ms: float | int) -> None:
     """Add a Server-Timing metric entry."""
     try:
-        lst = list(_server_timing.get())
+        lst = list(_server_timing.get() or [])
         lst.append(f"{metric};dur={float(duration_ms):.1f}")
         _server_timing.set(lst)
     except Exception:

@@ -54,7 +54,15 @@ class LedgerService:
                 out.append(
                     {
                         k: getattr(e, k)
-                        for k in ("id", "currency", "amount", "balance", "description", "created_at", "wallet_type")
+                        for k in (
+                            "id",
+                            "currency",
+                            "amount",
+                            "balance",
+                            "description",
+                            "created_at",
+                            "wallet_type",
+                        )
                         if hasattr(e, k)
                     }
                 )

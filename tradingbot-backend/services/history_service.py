@@ -108,7 +108,11 @@ class HistoryService:
             return []
 
     async def get_ledger_history(
-        self, wallet_type: str | None = None, currency: str | None = None, limit: int = 100, force_refresh: bool = False
+        self,
+        wallet_type: str | None = None,
+        currency: str | None = None,
+        limit: int = 100,
+        force_refresh: bool = False,
     ) -> list[dict[str, Any]]:
         """Hämta ledger history för en wallet/currency eller alla."""
         try:
@@ -129,9 +133,9 @@ class HistoryService:
 
             # Filtrera på wallet_type och currency om specificerat
             if wallet_type:
-                ledgers = [l for l in ledgers if l.wallet_type == wallet_type]
+                ledgers = [ledger for ledger in ledgers if ledger.wallet_type == wallet_type]
             if currency:
-                ledgers = [l for l in ledgers if l.currency == currency]
+                ledgers = [ledger for ledger in ledgers if ledger.currency == currency]
 
             # Spara i cache
             if cache_key not in self._history_cache:
@@ -240,7 +244,11 @@ class HistoryService:
 
             # Vänta på alla tasks
             results = await asyncio.gather(
-                trades_task, ledgers_task, equity_task, performance_task, return_exceptions=True
+                trades_task,
+                ledgers_task,
+                equity_task,
+                performance_task,
+                return_exceptions=True,
             )
 
             # Hantera exceptions
@@ -354,7 +362,7 @@ class HistoryService:
             if not equity_history:
                 return {}
 
-            equity_values = [float(e.get('equity', 0)) for e in equity_history]
+            equity_values = [float(e.get("equity", 0)) for e in equity_history]
             min_equity = min(equity_values) if equity_values else 0
             max_equity = max(equity_values) if equity_values else 0
             latest_equity = equity_values[-1] if equity_values else 0

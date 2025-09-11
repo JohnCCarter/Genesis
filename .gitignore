@@ -290,13 +290,9 @@ tradingbot.log # kommentera ut om du vill se loggarna
 
 # OpenAI Batch local artifacts (removed)
 
-# CodeQL Security Analysis artifacts
-genesis-python-*/
-genesis-python-new*/
+# CodeQL Security Analysis artifacts (handled by GitHub)
 *.sarif
 *.csv
-Genesis-CodeQL.code-workspace
-codeql-custom-queries-python/
 
 # Supabase/Edge Functions local artifacts
 supabase/.temp/

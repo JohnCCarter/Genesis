@@ -146,7 +146,8 @@ def evaluate_strategy(data: dict[str, list[float]]) -> dict[str, Any]:
 
         from services.strategy_settings import StrategySettingsService
 
-        sym = data.get("symbol") if isinstance(data, dict) else None
+        sym_raw = data.get("symbol") if isinstance(data, dict) else None
+        sym = sym_raw if isinstance(sym_raw, str) else None
         ssvc = StrategySettingsService()
         s = ssvc.get_settings(symbol=sym)
 
@@ -218,7 +219,9 @@ def evaluate_strategy(data: dict[str, list[float]]) -> dict[str, Any]:
                     from strategy.weights import PRESETS, clamp_simplex
 
                     # Läs auto-flaggor/trösklar från strategy_settings.json (baseline)
-                    base = ssvc.get_settings(symbol=(data.get("symbol") if isinstance(data, dict) else None))
+                    _sym_raw = data.get("symbol") if isinstance(data, dict) else None
+                    _sym = _sym_raw if isinstance(_sym_raw, str) else None
+                    base = ssvc.get_settings(symbol=_sym)
                     # Default thresholds
                     cfg = {
                         "ADX_PERIOD": 14,
@@ -500,7 +503,7 @@ def update_settings_from_regime_batch(
         import asyncio
 
         from indicators.regime import detect_regime
-        from services.bitfinex_data import BitfinexDataService
+        from services.market_data_facade import get_market_data
         from services.strategy_settings import StrategySettingsService
         from strategy.weights import PRESETS, clamp_simplex
 
@@ -581,10 +584,20 @@ def update_settings_from_regime_batch(
         # Bearbeta varje symbol
         for i, symbol in enumerate(symbols):
             try:
-                candles = all_candles[i]
+                result_i = all_candles[i]
 
                 # Hantera exceptions från batch-hämtning
-                if isinstance(candles, Exception) or not candles or len(candles) < 20:
+                if isinstance(result_i, Exception):
+                    current_settings = settings_service.get_settings(symbol=symbol)
+                    results[symbol] = {
+                        "ema_weight": current_settings.ema_weight,
+                        "rsi_weight": current_settings.rsi_weight,
+                        "atr_weight": current_settings.atr_weight,
+                    }
+                    continue
+
+                candles = result_i if isinstance(result_i, list) else []
+                if not candles or len(candles) < 20:
                     # Använd nuvarande settings
                     current_settings = settings_service.get_settings(symbol=symbol)
                     results[symbol] = {
@@ -609,16 +622,24 @@ def update_settings_from_regime_batch(
                     continue
 
                 # Detektera regim och applicera preset
-                regime = detect_regime(closes, highs, lows, cfg)
+                regime = detect_regime(highs, lows, closes, cfg)
                 preset_weights = PRESETS.get(regime, PRESETS["balanced"])
 
                 # Applicera nya vikter
                 new_weights = clamp_simplex(preset_weights)
-                settings_service.update_settings(
+                # StrategySettingsService saknar update_settings; spara via save_settings med overrides
+                from services.strategy_settings import StrategySettings
+
+                settings_service.save_settings(
+                    StrategySettings(
+                        ema_weight=new_weights["ema"],
+                        rsi_weight=new_weights["rsi"],
+                        atr_weight=new_weights["atr"],
+                        ema_period=current_settings.ema_period,
+                        rsi_period=current_settings.rsi_period,
+                        atr_period=current_settings.atr_period,
+                    ),
                     symbol=symbol,
-                    ema_weight=new_weights["ema"],
-                    rsi_weight=new_weights["rsi"],
-                    atr_weight=new_weights["atr"],
                 )
 
                 results[symbol] = new_weights

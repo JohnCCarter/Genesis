@@ -154,7 +154,7 @@ class EnhancedObservabilityService:
             metrics.memory_total_gb = memory.total / (1024**3)
 
             # Disk usage
-            disk = psutil.disk_usage('/')
+            disk = psutil.disk_usage("/")
             metrics.disk_percent = (disk.used / disk.total) * 100
             metrics.disk_used_gb = disk.used / (1024**3)
             metrics.disk_total_gb = disk.total / (1024**3)
@@ -178,13 +178,13 @@ class EnhancedObservabilityService:
             metrics = RateLimiterMetrics()
 
             # Hämta rate limiter status
-            if hasattr(self.rate_limiter, 'get_status'):
+            if hasattr(self.rate_limiter, "get_status"):
                 status = self.rate_limiter.get_status()
-                metrics.tokens_available = status.get('tokens_available', {})
-                metrics.utilization_percent = status.get('utilization_percent', {})
-                metrics.requests_per_second = status.get('requests_per_second', {})
-                metrics.blocked_requests = status.get('blocked_requests', {})
-                metrics.endpoint_patterns = status.get('endpoint_patterns', {})
+                metrics.tokens_available = status.get("tokens_available", {})
+                metrics.utilization_percent = status.get("utilization_percent", {})
+                metrics.requests_per_second = status.get("requests_per_second", {})
+                metrics.blocked_requests = status.get("blocked_requests", {})
+                metrics.endpoint_patterns = status.get("endpoint_patterns", {})
 
             logger.debug(f"📊 Rate limiter metrics: {len(metrics.tokens_available)} patterns")
             return metrics
@@ -199,12 +199,12 @@ class EnhancedObservabilityService:
             metrics = ExchangeMetrics()
 
             # Hämta från metrics store
-            metrics.total_requests = metrics_store.get('orders_total', 0)
-            metrics.failed_requests = metrics_store.get('orders_failed_total', 0)
-            metrics.rate_limited_requests = metrics_store.get('rate_limited_total', 0)
+            metrics.total_requests = metrics_store.get("orders_total", 0)
+            metrics.failed_requests = metrics_store.get("orders_failed_total", 0)
+            metrics.rate_limited_requests = metrics_store.get("rate_limited_total", 0)
 
             # Beräkna latens-metrics från request_latency_samples
-            latency_samples = metrics_store.get('request_latency_samples', {})
+            latency_samples = metrics_store.get("request_latency_samples", {})
             all_latencies = []
             for samples in latency_samples.values():
                 all_latencies.extend(samples)
@@ -256,11 +256,11 @@ class EnhancedObservabilityService:
             metrics = WebSocketMetrics()
 
             # Hämta från metrics store
-            ws_pool = metrics_store.get('ws_pool', {})
-            metrics.connected_sockets = len(ws_pool.get('sockets', []))
-            metrics.max_sockets = ws_pool.get('max_sockets', 0)
-            metrics.active_subscriptions = sum(s.get('subs', 0) for s in ws_pool.get('sockets', []))
-            metrics.max_subscriptions = ws_pool.get('max_subs', 0)
+            ws_pool = metrics_store.get("ws_pool", {})
+            metrics.connected_sockets = len(ws_pool.get("sockets", []))
+            metrics.max_sockets = ws_pool.get("max_sockets", 0)
+            metrics.active_subscriptions = sum(s.get("subs", 0) for s in ws_pool.get("sockets", []))
+            metrics.max_subscriptions = ws_pool.get("max_subs", 0)
 
             logger.debug(
                 f"📊 WebSocket metrics: {metrics.connected_sockets} sockets, {metrics.active_subscriptions} subs"
@@ -277,16 +277,16 @@ class EnhancedObservabilityService:
             metrics = TradingMetrics()
 
             # Hämta från metrics store
-            metrics.total_orders = metrics_store.get('orders_total', 0)
-            metrics.successful_orders = metrics.total_orders - metrics_store.get('orders_failed_total', 0)
-            metrics.failed_orders = metrics_store.get('orders_failed_total', 0)
+            metrics.total_orders = metrics_store.get("orders_total", 0)
+            metrics.successful_orders = metrics.total_orders - metrics_store.get("orders_failed_total", 0)
+            metrics.failed_orders = metrics_store.get("orders_failed_total", 0)
 
             # Beräkna success rate
             if metrics.total_orders > 0:
                 metrics.order_success_rate = (metrics.successful_orders / metrics.total_orders) * 100
 
             # Beräkna genomsnittlig latens
-            order_submit_ms = metrics_store.get('order_submit_ms', 0)
+            order_submit_ms = metrics_store.get("order_submit_ms", 0)
             if metrics.total_orders > 0:
                 metrics.average_order_latency_ms = order_submit_ms / metrics.total_orders
 
@@ -306,10 +306,10 @@ class EnhancedObservabilityService:
             if (
                 self._last_update
                 and datetime.now() - self._last_update < self._cache_ttl
-                and 'comprehensive_metrics' in self._metrics_cache
+                and "comprehensive_metrics" in self._metrics_cache
             ):
                 logger.debug("📋 Använder cached comprehensive metrics")
-                return self._metrics_cache['comprehensive_metrics']
+                return self._metrics_cache["comprehensive_metrics"]
 
             # Hämta alla metrics parallellt
             system_task = asyncio.create_task(self.get_system_metrics())
@@ -391,7 +391,10 @@ class EnhancedObservabilityService:
                 },
                 "summary": {
                     "overall_health": self._calculate_overall_health(
-                        system_metrics, exchange_metrics, circuit_breaker_metrics, trading_metrics
+                        system_metrics,
+                        exchange_metrics,
+                        circuit_breaker_metrics,
+                        trading_metrics,
                     ),
                     "critical_alerts": self._get_critical_alerts(
                         system_metrics, exchange_metrics, circuit_breaker_metrics
@@ -400,7 +403,7 @@ class EnhancedObservabilityService:
             }
 
             # Spara i cache
-            self._metrics_cache['comprehensive_metrics'] = comprehensive_metrics
+            self._metrics_cache["comprehensive_metrics"] = comprehensive_metrics
             self._last_update = datetime.now()
 
             logger.info("📊 Comprehensive metrics genererade")
@@ -442,7 +445,10 @@ class EnhancedObservabilityService:
             return "unknown"
 
     def _get_critical_alerts(
-        self, system: SystemMetrics, exchange: ExchangeMetrics, circuit_breaker: CircuitBreakerMetrics
+        self,
+        system: SystemMetrics,
+        exchange: ExchangeMetrics,
+        circuit_breaker: CircuitBreakerMetrics,
     ) -> list[str]:
         """Hämta kritiska alerts."""
         alerts = []
