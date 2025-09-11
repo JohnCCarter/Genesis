@@ -9,7 +9,7 @@ def test_socketio_polling_handshake(monkeypatch):
 
     base = os.environ.get("API_BASE", "http://127.0.0.1:8000")
     url = f"{base}/ws/socket.io/?EIO=4&transport=polling"
-    
+
     try:
         with httpx.Client(timeout=3.0) as client:
             r = client.get(url)
