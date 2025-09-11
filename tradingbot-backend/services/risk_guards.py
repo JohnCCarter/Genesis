@@ -149,6 +149,13 @@ class RiskGuardsService:
         Returns:
             Tuple[bool, Optional[str]]: (blocked, reason)
         """
+        # Respektera global RISK_ENABLED via Settings
+        try:
+            if not rc.get_bool("RISK_ENABLED", getattr(self.settings, "RISK_ENABLED", True)):
+                return False, None
+        except Exception:
+            pass
+
         guard = self.guards["max_daily_loss"]
         # Om klienten sÃ¤tter daily_start_equity manuellt i runtime utan datum â€“ behandla som ny baseline
         # och rensa tidigare trigger/cooldown fÃ¶r daglig vakt.
