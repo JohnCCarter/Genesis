@@ -224,22 +224,153 @@ class BracketManager:
         return os.path.join(cfg_dir, os.path.basename(path))
 
     def _load_state(self) -> None:
+        """Ladda bracket-state med förbättrad recovery."""
         raw = _safe_read_json(self._state_path)
         if not raw:
+            logger.info("Ingen befintlig bracket-state hittades")
             return
+
         if not _is_valid_state(raw):
             logger.warning("Ogiltig bracket-state, ignorerar")
             return
-        groups = _deserialize_groups(raw.get("groups", {}))
-        # Filtrera bort inaktiva grupper direkt
-        groups = {gid: g for gid, g in groups.items() if g.active}
-        self.groups = groups
-        self.child_to_group = _child_index(groups)
-        logger.info(f"Laddade {len(self.groups)} bracket-grupper från state")
+
+        try:
+            groups = _deserialize_groups(raw.get("groups", {}))
+
+            # Validera och rensa grupper
+            valid_groups = {}
+            for gid, group in groups.items():
+                if self._validate_group(group):
+                    valid_groups[gid] = group
+                else:
+                    logger.warning(f"Ogiltig bracket-grupp {gid}, hoppar över")
+
+            # Filtrera bort inaktiva grupper
+            active_groups = {gid: g for gid, g in valid_groups.items() if g.active}
+
+            self.groups = active_groups
+            self.child_to_group = _child_index(active_groups)
+
+            logger.info(f"Laddade {len(self.groups)} aktiva bracket-grupper från state")
+
+            # Kör recovery för partial fills
+            if self.groups:
+                logger.info("Kör bracket recovery för partial fills...")
+                # Recovery kommer att köras asynkront när systemet startar
+
+        except Exception as e:
+            logger.error(f"Fel vid laddning av bracket-state: {e}")
+            # Skapa backup av korrupt state
+            self._backup_corrupt_state()
 
     def _save_state_safe(self) -> None:
-        payload = {"groups": _serialize_groups(self.groups)}
-        _safe_write_json(self._state_path, payload)
+        """Spara bracket-state med atomic write."""
+        try:
+            payload = {"groups": _serialize_groups(self.groups)}
+            _safe_write_json(self._state_path, payload)
+        except Exception as e:
+            logger.error(f"Fel vid sparande av bracket-state: {e}")
+
+    def _validate_group(self, group: BracketGroup) -> bool:
+        """Validera en bracket-grupp."""
+        try:
+            # Kontrollera att gruppen har minst en order
+            if not any([group.entry_id, group.sl_id, group.tp_id]):
+                return False
+
+            # Kontrollera att order-ID:n är positiva heltal
+            for order_id in [group.entry_id, group.sl_id, group.tp_id]:
+                if order_id is not None and (not isinstance(order_id, int) or order_id <= 0):
+                    return False
+
+            # Kontrollera att entry_filled är ett giltigt tal
+            if not isinstance(group.entry_filled, (int, float)) or group.entry_filled < 0:
+                return False
+
+            return True
+        except Exception:
+            return False
+
+    def _backup_corrupt_state(self) -> None:
+        """Skapa backup av korrupt state-fil."""
+        try:
+            import shutil
+            from datetime import datetime
+
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            backup_path = f"{self._state_path}.corrupt_{timestamp}"
+
+            if os.path.exists(self._state_path):
+                shutil.copy2(self._state_path, backup_path)
+                logger.info(f"Skapade backup av korrupt state: {backup_path}")
+        except Exception as e:
+            logger.error(f"Kunde inte skapa backup av korrupt state: {e}")
+
+    async def recover_partial_fills(self) -> None:
+        """Recovery-rutin för partial fills vid omstart."""
+        if not self.groups:
+            return
+
+        logger.info("Kör bracket recovery för partial fills...")
+
+        try:
+            # Använd en säkrare import-metod
+            try:
+                from rest.auth import get_order_status  # type: ignore
+            except ImportError:
+                # Fallback om get_order_status inte finns
+                logger.warning("get_order_status inte tillgänglig, hoppar över recovery")
+                return
+
+            for gid, group in self.groups.items():
+                if not group.active:
+                    continue
+
+                # Kontrollera entry order status
+                if group.entry_id:
+                    try:
+                        entry_status = await get_order_status(group.entry_id)
+                        if entry_status and entry_status.get("status") == "EXECUTED":
+                            # Entry är fylld, kontrollera om vi behöver justera skyddsordrar
+                            executed_amount = float(entry_status.get("executed_amount", 0))
+                            if executed_amount > 0 and executed_amount != group.entry_filled:
+                                logger.info(f"Recovery: Entry {group.entry_id} har fylld {executed_amount}")
+                                group.entry_filled = executed_amount
+                                await self._adjust_sibling_on_partial(gid, "entry", executed_amount)
+                    except Exception as e:
+                        logger.warning(f"Kunde inte kontrollera entry {group.entry_id}: {e}")
+
+                # Kontrollera skyddsordrar
+                for role, order_id in [("sl", group.sl_id), ("tp", group.tp_id)]:
+                    if order_id:
+                        try:
+                            status = await get_order_status(order_id)
+                            if status and status.get("status") == "EXECUTED":
+                                # Skyddsorder är fylld, avbryt syskon
+                                logger.info(f"Recovery: {role.upper()} {order_id} är fylld, avbryter syskon")
+                                await self._cancel_sibling(order_id)
+                        except Exception as e:
+                            logger.warning(f"Kunde inte kontrollera {role} {order_id}: {e}")
+
+            # Spara uppdaterad state
+            self._save_state_safe()
+            logger.info("Bracket recovery slutförd")
+
+        except Exception as e:
+            logger.error(f"Fel vid bracket recovery: {e}")
+
+    def get_recovery_status(self) -> dict[str, Any]:
+        """Hämta status för bracket recovery."""
+        return {
+            "total_groups": len(self.groups),
+            "active_groups": sum(1 for g in self.groups.values() if g.active),
+            "groups_with_entry": sum(1 for g in self.groups.values() if g.entry_id),
+            "groups_with_sl": sum(1 for g in self.groups.values() if g.sl_id),
+            "groups_with_tp": sum(1 for g in self.groups.values() if g.tp_id),
+            "partial_fills": sum(1 for g in self.groups.values() if g.entry_filled > 0),
+            "state_file_exists": os.path.exists(self._state_path),
+            "state_file_path": self._state_path,
+        }
 
     def reset(self, delete_file: bool = True) -> int:
         """Töm alla grupper och nollställ state.

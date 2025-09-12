@@ -25,7 +25,21 @@ class BitfinexRateLimiter:
         self._server_busy_count = 0
         self._last_server_busy_time = 0
         self._adaptive_backoff_multiplier = 1.0
-        self._lock = asyncio.Lock()
+        # Skapa lock lazily per event loop för att undvika loop‑bindningsproblem
+        self._lock: asyncio.Lock | None = None
+
+    def _get_lock(self) -> asyncio.Lock:
+        """Hämta ett asyncio.Lock bundet till aktuell event loop."""
+        try:
+            _ = asyncio.get_running_loop()
+            if self._lock is None:
+                self._lock = asyncio.Lock()
+            return self._lock
+        except RuntimeError:
+            # Ingen loop körs, skapa ett lock ändå (kommer bindas när loop finns)
+            if self._lock is None:
+                self._lock = asyncio.Lock()
+            return self._lock
 
     async def wait_if_needed(self, endpoint: str = "default") -> None:
         """
@@ -37,7 +51,7 @@ class BitfinexRateLimiter:
         if not self.settings.BITFINEX_RATE_LIMIT_ENABLED:
             return
 
-        async with self._lock:
+        async with self._get_lock():
             now = time.time()
             window_start = now - self.settings.BITFINEX_RATE_LIMIT_WINDOW_SECONDS
 
@@ -69,7 +83,7 @@ class BitfinexRateLimiter:
         Returns:
             Väntetid i sekunder
         """
-        async with self._lock:
+        async with self._get_lock():
             now = time.time()
             self._server_busy_count += 1
 

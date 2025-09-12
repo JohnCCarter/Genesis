@@ -8,6 +8,7 @@ import json
 import os
 import re
 from dataclasses import dataclass
+from typing import Any
 from datetime import datetime, time, timedelta
 
 from config.settings import Settings
@@ -144,6 +145,30 @@ class TradingWindowService:
     def is_paused(self) -> bool:
         return self.rules.paused
 
+    def set_paused(self, paused: bool) -> None:
+        """Sätt paused status."""
+        self.save_rules(paused=paused)
+
+    def set_windows(self, windows: dict[str, list[tuple[str, str]]]) -> None:
+        """Sätt trading windows."""
+        self.save_rules(windows=windows)
+
+    def set_timezone(self, timezone: str) -> None:
+        """Sätt timezone."""
+        self.save_rules(timezone=timezone)
+
+    def get_status(self) -> dict[str, Any]:
+        """Hämta komplett status."""
+        _next = self.next_open()
+        return {
+            "paused": self.rules.paused,
+            "open": self.is_open(),
+            "next_open": _next.isoformat() if _next is not None else None,
+            "windows": self.rules.windows,
+            "timezone": self.rules.timezone,
+            "limits": self.get_limits(),
+        }
+
     # --- Dynamiska uppdateringar/persistens ---
     def save_rules(
         self,
@@ -200,8 +225,7 @@ class TradingWindowService:
     def reload(self) -> None:
         self.rules = self._load_rules()
 
-    def set_paused(self, paused: bool) -> None:
-        self.save_rules(paused=paused)
+    # removed duplicate set_paused (defined earlier)
 
     # --- Validering ---
     @staticmethod

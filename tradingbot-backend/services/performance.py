@@ -133,44 +133,38 @@ class PerformanceService:
         if cur in self._fx_cache:
             return self._fx_cache[cur]
 
-        # Test-mynt: försök med TESTUSD som quote (korrekt form: t{ASSET}:TESTUSD)
+        # Begränsa FX‑tickerförsök: endast USD‑quote eller whitelist av direkta FX
+        # Tillåt ett litet set av baser för snabb dev: BTC, ETH, ADA, DOT
+        FX_BASE_WHITELIST = {"BTC", "ETH", "ADA", "DOT"}
+        # Produktion: endast direkta {CUR}USD eller USD:{CUR}
+        # Om cur inte är i whitelist (för bas) eller USD‑stablecoin, försök inte
+        # externa TEST‑par (minska brus/timeouts)
         if cur.startswith("TEST"):
-            try:
-                sym_test = f"t{cur}:TESTUSD"
-                t = await self.data_service.get_ticker(sym_test)
+            # Testvalutor hanteras som 0.0 om inte explicit USD/USDT ovan
+            self._fx_cache[cur] = 0.0
+            return 0.0
+
+        # Produktion: försök direkt USD-quote, därefter inverse
+        try:
+            # Om cur är i whitelist, försök direkt {CUR}USD
+            if cur in FX_BASE_WHITELIST:
+                sym = f"t{cur}USD"
+                t = await self.data_service.get_ticker(sym)
                 if t and float(t.get("last_price", 0)) > 0:
-                    rate = float(t.get("last_price"))  # 1 TESTUSD = 1 USD
+                    rate = float(t.get("last_price"))
                     self._fx_cache[cur] = rate
                     return rate
-            except Exception:
-                pass
-            try:
-                sym_test_inv = f"tTESTUSD:{cur}"
-                t = await self.data_service.get_ticker(sym_test_inv)
+        except Exception:
+            pass
+        try:
+            # Inverse USD:{CUR} endast om whitelisted
+            if cur in FX_BASE_WHITELIST:
+                sym_inv = f"tUSD:{cur}"
+                t = await self.data_service.get_ticker(sym_inv)
                 if t and float(t.get("last_price", 0)) > 0:
                     rate = 1.0 / float(t.get("last_price"))
                     self._fx_cache[cur] = rate
                     return rate
-            except Exception:
-                pass
-
-        # Produktion: försök direkt USD-quote, därefter inverse
-        try:
-            sym = f"t{cur}USD"
-            t = await self.data_service.get_ticker(sym)
-            if t and float(t.get("last_price", 0)) > 0:
-                rate = float(t.get("last_price"))
-                self._fx_cache[cur] = rate
-                return rate
-        except Exception:
-            pass
-        try:
-            sym_inv = f"tUSD:{cur}"
-            t = await self.data_service.get_ticker(sym_inv)
-            if t and float(t.get("last_price", 0)) > 0:
-                rate = 1.0 / float(t.get("last_price"))
-                self._fx_cache[cur] = rate
-                return rate
         except Exception:
             pass
         # Unavailable

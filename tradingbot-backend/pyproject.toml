@@ -36,8 +36,6 @@ ignore = [
     "PLC0415",          # import at top-level (tillåts tills vidare)
     "I001",             # import block unsorted/unstyled (tills vidare)
     "ARG001",           # unused function arg (tills vidare)
-    "RUF022",           # __all__ sort (tills vidare)
-    "PLC0206",          # dict iteration without .items (legacy kod)
     "RUF015",           # prefer next(...) (legacy kod)
     "RUF100",           # unused noqa (tills vidare)
     "ANN003",           # **kwargs typning (tills vidare)

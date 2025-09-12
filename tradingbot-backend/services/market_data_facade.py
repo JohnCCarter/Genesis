@@ -16,7 +16,9 @@ logger = get_logger(__name__)
 
 
 class IMarketDataProvider(Protocol):
-    async def get_ticker(self, symbol: str, *, force_fresh: bool = False) -> dict[str, Any] | None: ...
+    async def get_ticker(self, symbol: str, *, force_fresh: bool = False) -> dict[str, Any] | None:
+        ...
+
     async def get_candles(
         self,
         symbol: str,
@@ -24,8 +26,11 @@ class IMarketDataProvider(Protocol):
         limit: int = 100,
         *,
         force_fresh: bool = False,
-    ) -> list | None: ...
-    def get_indicator_snapshot(self, symbol: str, timeframe: str) -> dict | None: ...
+    ) -> list | None:
+        ...
+
+    def get_indicator_snapshot(self, symbol: str, timeframe: str) -> dict | None:
+        ...
 
 
 class MarketDataFacade:
@@ -96,6 +101,26 @@ class MarketDataFacade:
             return await self.ws_first.rest_service.get_currency_symbol_map()
         except Exception:
             return {}, {}
+
+    async def get_platform_status(self) -> list[int] | None:
+        """Proxy: Bitfinex plattformstatus (public REST)."""
+        try:
+            return await self.ws_first.rest_service.get_platform_status()
+        except Exception:
+            return None
+
+    async def backfill_history(
+        self,
+        symbol: str,
+        timeframe: str,
+        max_batches: int = 20,
+        batch_limit: int = 1000,
+    ) -> int:
+        """Proxy: backfill via REST-service."""
+        try:
+            return await self.ws_first.rest_service.backfill_history(symbol, timeframe, max_batches, batch_limit)
+        except Exception:
+            return 0
 
     def parse_candles_to_strategy_data(self, candles: list[list]) -> dict[str, list[float]]:
         """Hjälpare: centralisera candle-parsning till strategi-format."""

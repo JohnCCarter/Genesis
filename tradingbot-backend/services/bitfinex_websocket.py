@@ -415,9 +415,9 @@ class BitfinexWebSocketService:
             await self.authenticate()
             # Starta symbol-refresh i bakgrunden (ej under pytest)
             try:
-                import os as _os
+                from utils.feature_flags import is_pytest_mode
 
-                if not _os.environ.get("PYTEST_CURRENT_TEST") and not self._symbol_refresh_task:
+                if not is_pytest_mode() and not self._symbol_refresh_task:
                     self._symbol_refresh_task = self._asyncio.create_task(
                         self._symbol_refresh_loop(), name="ws-symbol-refresh"
                     )

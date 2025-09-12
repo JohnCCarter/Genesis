@@ -24,7 +24,33 @@ logger = get_logger(__name__)
 # Global TTL-cache för ticker
 _TICKER_CACHE: dict[str, dict] = {}
 # In-flight lås per symbol för att samköra REST-förfrågningar
-_TICKER_LOCKS: dict[str, asyncio.Lock] = {}
+# OBS: Spara inte asyncio.Lock direkt (loop-bundet). Spara en factory som ger per-loop lock.
+_TICKER_LOCKS: dict[str, dict] = {}
+
+
+def _get_ticker_lock(symbol: str) -> asyncio.Lock:
+    """Hämta ett per-event-loop asyncio.Lock för given symbol.
+
+    asyncio.Lock är bundet till den event loop där det skapats.
+    För att undvika "is bound to a different event loop", håller vi
+    en karta: symbol -> { loop: lock } där loop identifieras via id(loop).
+    """
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        # Skapa en temporär loop-bunden lock ändå; används bara i async-sammanhang
+        loop = None  # type: ignore
+    loop_id = id(loop)
+    entry = _TICKER_LOCKS.get(symbol)
+    if entry is None:
+        entry = {}
+        _TICKER_LOCKS[symbol] = entry
+    lock = entry.get(loop_id)
+    if lock is None:
+        lock = asyncio.Lock()
+        entry[loop_id] = lock
+    return lock
+
 
 # Config caches (enkla TTL-cacher i process)
 _CONFIG_PAIRS_CACHE: dict[str, object] = {}
@@ -49,11 +75,25 @@ class BitfinexDataService:
             conc = int(getattr(self.settings, "PUBLIC_REST_CONCURRENCY", 4) or 4)
         except Exception:
             conc = 4
-        import asyncio as _asyncio
-
-        self._public_sem = _asyncio.Semaphore(max(1, conc))
+        # Spara endast ett heltal; skapa semaphore per event loop vid behov
+        self._public_concurrency = max(1, conc)
         # Advanced limiter (token-bucket + circuit breaker)
         self.rate_limiter = get_advanced_rate_limiter()
+
+        # Per-event-loop semaforer
+        self._public_sems: dict[int, asyncio.Semaphore] = {}
+
+    def _get_public_sem(self) -> asyncio.Semaphore:
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None  # type: ignore
+        loop_id = id(loop)
+        sem = self._public_sems.get(loop_id)
+        if sem is None:
+            sem = asyncio.Semaphore(self._public_concurrency)
+            self._public_sems[loop_id] = sem
+        return sem
 
     async def get_candles(self, symbol: str = "tBTCUSD", timeframe: str = "1m", limit: int = 100) -> list[list] | None:
         """
@@ -122,16 +162,16 @@ class BitfinexDataService:
                     except Exception:
                         pass
                     _t0 = time.perf_counter()
-                    async with self._public_sem:
+                    async with self._get_public_sem():
                         response = await self._client.get(url, params=params)
                     _t1 = time.perf_counter()
                     try:
+                        # Notera Retry-After separat, record_http_result har inte denna parameter
                         record_http_result(
                             path=f"/{endpoint}",
                             method="GET",
                             status_code=int(response.status_code),
                             duration_ms=int((_t1 - _t0) * 1000),
-                            retry_after=response.headers.get("Retry-After"),
                         )
                         if response.status_code in (429, 500, 502, 503, 504):
                             ra = response.headers.get("Retry-After")
@@ -388,12 +428,8 @@ class BitfinexDataService:
             backoff_max = max(int(self.settings.DATA_BACKOFF_MAX_MS), 0) / 1000.0
             last_exc = None
 
-            # In-flight lås per symbol så endast ett REST-anrop sker åt gången
-            lock = _TICKER_LOCKS.get(eff_symbol)
-            if lock is None:
-                lock = asyncio.Lock()
-                _TICKER_LOCKS[eff_symbol] = lock
-
+            # In-flight lås per symbol och per event loop så endast ett REST-anrop sker åt gången
+            lock = _get_ticker_lock(eff_symbol)
             async with lock:
                 # Re-check cache under lås (kan ha fyllts av parallell request)
                 now = time.time()
@@ -425,7 +461,7 @@ class BitfinexDataService:
                             except Exception:
                                 pass
                             _t0 = time.perf_counter()
-                            async with self._public_sem:
+                            async with self._get_public_sem():
                                 response = await client.get(url)
                             _t1 = time.perf_counter()
                             try:
@@ -434,7 +470,6 @@ class BitfinexDataService:
                                     method="GET",
                                     status_code=int(response.status_code),
                                     duration_ms=int((_t1 - _t0) * 1000),
-                                    retry_after=response.headers.get("Retry-After"),
                                 )
                                 if response.status_code in (429, 500, 502, 503, 504):
                                     ra = response.headers.get("Retry-After")
@@ -573,7 +608,7 @@ class BitfinexDataService:
                             await self.rate_limiter.wait_if_needed("tickers")
                         except Exception:
                             pass
-                        async with self._public_sem:
+                        async with self._get_public_sem():
                             resp = await client.get(url)
                         if resp.status_code in (429, 500, 502, 503, 504):
                             try:
@@ -653,7 +688,7 @@ class BitfinexDataService:
         try:
             url = f"{self.base_url}/platform/status"
             async with httpx.AsyncClient(timeout=self.settings.DATA_HTTP_TIMEOUT) as client:
-                async with self._public_sem:
+                async with self._get_public_sem():
                     resp = await client.get(url)
                 resp.raise_for_status()
                 return resp.json()
@@ -671,12 +706,22 @@ class BitfinexDataService:
 
             ttl = 3600.0
             now = _t.time()
-            # TTL‑cache
+            # TTL‑cache (robust typer)
             if _CONFIG_PAIRS_CACHE:
-                ts = float(_CONFIG_PAIRS_CACHE.get("ts", 0) or 0)
-                pairs = _CONFIG_PAIRS_CACHE.get("pairs")
-                if pairs and (now - ts) <= ttl:
-                    return list(pairs)  # type: ignore[return-value]
+                ts_any = _CONFIG_PAIRS_CACHE.get("ts")
+                try:
+                    ts = float(ts_any if ts_any is not None else 0.0)
+                except Exception:
+                    ts = 0.0
+                pairs_any = _CONFIG_PAIRS_CACHE.get("pairs")
+                pairs_list: list[str] = []
+                try:
+                    for p in pairs_any or []:
+                        pairs_list.append(str(p))
+                except Exception:
+                    pairs_list = []
+                if pairs_list and (now - ts) <= ttl:
+                    return list(pairs_list)
 
             # Multi-request för exchange + margin
             url = f"{self.base_url}/conf/pub:list:pair:exchange,pub:list:pair:margin"
@@ -720,11 +765,30 @@ class BitfinexDataService:
             ttl = 3600.0
             now = _t.time()
             if _CURRENCY_MAP_CACHE:
-                ts = float(_CURRENCY_MAP_CACHE.get("ts", 0) or 0)
-                fwd = _CURRENCY_MAP_CACHE.get("fwd")
-                rev = _CURRENCY_MAP_CACHE.get("rev")
-                if fwd and rev and (now - ts) <= ttl:
-                    return fwd, rev  # type: ignore[return-value]
+                ts_any = _CURRENCY_MAP_CACHE.get("ts")
+                try:
+                    ts = float(ts_any if ts_any is not None else 0.0)
+                except Exception:
+                    ts = 0.0
+                fwd_any = _CURRENCY_MAP_CACHE.get("fwd") or {}
+                rev_any = _CURRENCY_MAP_CACHE.get("rev") or {}
+                # Defensiv cast
+                fwd_cache: dict[str, str] = {}
+                rev_cache: dict[str, str] = {}
+                try:
+                    for k, v in dict(fwd_any).items():
+                        if isinstance(k, str) and isinstance(v, str):
+                            fwd_cache[k] = v
+                except Exception:
+                    fwd_cache = {}
+                try:
+                    for k, v in dict(rev_any).items():
+                        if isinstance(k, str) and isinstance(v, str):
+                            rev_cache[k] = v
+                except Exception:
+                    rev_cache = {}
+                if fwd_cache and rev_cache and (now - ts) <= ttl:
+                    return fwd_cache, rev_cache
 
             url = f"{self.base_url}/conf/pub:map:currency:sym"
             _t0 = _t.perf_counter()

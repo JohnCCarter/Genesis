@@ -12,7 +12,7 @@ from typing import Optional
 
 from utils.advanced_rate_limiter import get_advanced_rate_limiter
 from utils.logger import get_logger
-from services.unified_circuit_breaker_service import UnifiedCircuitBreakerService
+from services.unified_circuit_breaker_service import unified_circuit_breaker_service
 
 logger = get_logger(__name__)
 
@@ -20,8 +20,9 @@ logger = get_logger(__name__)
 class TransportCircuitBreaker:
     def __init__(self) -> None:
         self._limiter = get_advanced_rate_limiter()
+        # Använd global singleton för unified CB
         try:
-            self._ucb = UnifiedCircuitBreakerService()
+            self._ucb = unified_circuit_breaker_service
         except Exception:
             self._ucb = None
 

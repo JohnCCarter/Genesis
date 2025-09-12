@@ -14,6 +14,8 @@ from typing import Any
 from indicators.atr import calculate_atr
 from indicators.ema import calculate_ema
 from indicators.rsi import calculate_rsi
+
+# Importera get_market_data en gång i modulen för att undvika F811 vid lokala imports
 from services.market_data_facade import get_market_data
 from utils.logger import get_logger
 
@@ -58,7 +60,9 @@ def evaluate_weighted_strategy(data: dict[str, str]) -> dict[str, Any]:
 
     # Hämta dynamiska vikter om tillgängligt
     # Under pytest, använd deterministiska balanserade vikter så att enhetstester inte påverkas av fil/override
-    if os.environ.get("PYTEST_CURRENT_TEST"):
+    from utils.feature_flags import is_pytest_mode
+
+    if is_pytest_mode():
         weights = {"ema": 0.5, "rsi": 0.5, "atr": 0.0}
     else:
         try:
@@ -233,7 +237,6 @@ def evaluate_strategy(data: dict[str, list[float]]) -> dict[str, Any]:
                     # Försök läsa extra fält från settings-filen om de finns
                     try:
                         import json
-                        import os
 
                         cfg_path = os.path.join(
                             os.path.dirname(os.path.dirname(__file__)),
@@ -331,7 +334,8 @@ def update_settings_from_regime(symbol: str | None = None) -> dict[str, float]:
     """
     try:
         from indicators.regime import detect_regime
-        from services.market_data_facade import get_market_data
+
+        # get_market_data importeras modulärt; undvik lokal reimport som orsakar F811
         from services.strategy_settings import StrategySettingsService
         from strategy.weights import PRESETS
 
@@ -342,7 +346,6 @@ def update_settings_from_regime(symbol: str | None = None) -> dict[str, float]:
         # Läs auto-flaggor från strategy_settings.json
         try:
             import json
-            import os
 
             cfg_path = os.path.join(
                 os.path.dirname(os.path.dirname(__file__)),
@@ -450,7 +453,6 @@ def update_settings_from_regime(symbol: str | None = None) -> dict[str, float]:
         # Uppdatera också strategy_settings.json med nya vikter
         try:
             import json
-            import os
 
             cfg_path = os.path.join(
                 os.path.dirname(os.path.dirname(__file__)),
@@ -503,7 +505,8 @@ def update_settings_from_regime_batch(
         import asyncio
 
         from indicators.regime import detect_regime
-        from services.market_data_facade import get_market_data
+
+        # get_market_data importeras modulärt; undvik lokal reimport som orsakar F811
         from services.strategy_settings import StrategySettingsService
         from strategy.weights import PRESETS, clamp_simplex
 
@@ -513,7 +516,6 @@ def update_settings_from_regime_batch(
         # Läs auto-flaggor från strategy_settings.json
         try:
             import json
-            import os
 
             cfg_path = os.path.join(
                 os.path.dirname(os.path.dirname(__file__)),

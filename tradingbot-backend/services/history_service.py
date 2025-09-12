@@ -338,9 +338,18 @@ class HistoryService:
             by_wallet: dict[str, int] = {}
 
             for ledger in ledgers:
-                currency = ledger.currency
-                wallet_type = ledger.wallet_type
-                amount = float(ledger.amount)
+                # ledger kan vara dict eller objekt; hantera båda
+                try:
+                    currency = ledger.get("currency") if isinstance(ledger, dict) else getattr(ledger, "currency", None)
+                    wallet_type = (
+                        ledger.get("wallet_type") if isinstance(ledger, dict) else getattr(ledger, "wallet_type", None)
+                    )
+                    amount_raw = ledger.get("amount") if isinstance(ledger, dict) else getattr(ledger, "amount", 0)
+                    amount = float(amount_raw or 0)
+                except Exception:
+                    currency = None
+                    wallet_type = None
+                    amount = 0.0
 
                 if currency:
                     by_currency[currency] = by_currency.get(currency, 0) + amount

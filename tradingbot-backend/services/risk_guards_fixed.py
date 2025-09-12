@@ -8,10 +8,10 @@ import json
 import os
 from datetime import datetime, timedelta
 from typing import Any
+import services.runtime_config as rc
 
 from config.settings import Settings
 from utils.logger import get_logger
-import services.runtime_config as rc
 
 logger = get_logger(__name__)
 
@@ -160,21 +160,12 @@ class RiskGuardsService:
 
         self._initialize_daily_tracking()
 
-        # Compute daily loss early och hantera cooldown
+        # Compute daily loss early and allow if below threshold
         start_equity_early = guard.get("daily_start_equity")
         daily_loss_pct_early: float | None = None
         if start_equity_early and start_equity_early > 0:
             current_equity_early = self._get_current_equity()
             daily_loss_pct_early = ((start_equity_early - current_equity_early) / start_equity_early) * 100
-        # Om triggad tidigare: respektera cooldown
-        if guard.get("triggered") and guard.get("triggered_at"):
-            try:
-                ts = datetime.fromisoformat(str(guard.get("triggered_at")))
-                cooldown_h = float(guard.get("cooldown_hours", 0) or 0)
-                if cooldown_h > 0 and datetime.now() < ts + timedelta(hours=cooldown_h):
-                    return True, "Max daily loss överskriden – cooldown aktiv"
-            except Exception:
-                pass
         if daily_loss_pct_early is not None and daily_loss_pct_early < guard.get("percentage", 0):
             if guard.get("triggered"):
                 guard["triggered"] = False
@@ -187,7 +178,9 @@ class RiskGuardsService:
             if not guard.get("triggered"):
                 guard["triggered"] = True
                 guard["triggered_at"] = datetime.now().isoformat()
-                guard["reason"] = "Max daily loss överskriden"
+                guard[
+                    "reason"
+                ] = f"Daglig förlust {daily_loss_pct_early:.2f}% över threshold {guard.get('percentage', 0)}%"
                 self._save_guards(self.guards)
                 logger.warning(f"🚨 Max daily loss aktiverat: {guard['reason']}")
             return True, guard["reason"]
@@ -215,7 +208,9 @@ class RiskGuardsService:
             if not guard.get("triggered"):
                 guard["triggered"] = True
                 guard["triggered_at"] = datetime.now().isoformat()
-                guard["reason"] = "Max drawdown överskriden"
+                guard[
+                    "reason"
+                ] = f"Drawdown {drawdown_pct:.2f}% över threshold {guard.get('max_drawdown_percentage', 0)}%"
                 self._save_guards(self.guards)
                 logger.warning(f"🚨 Kill switch aktiverat: {guard['reason']}")
             return True, guard["reason"]
@@ -223,7 +218,7 @@ class RiskGuardsService:
         return False, None
 
     def check_exposure_limits(self, symbol: str, amount: float, price: float) -> tuple[bool, str | None]:
-        _ = symbol  # markerar användning för lint
+        _ = symbol  # markera användning för lint
         """Kontrollera exposure limits."""
         try:
             if not rc.get_bool("RISK_ENABLED", getattr(self.settings, "RISK_ENABLED", True)):
@@ -236,30 +231,21 @@ class RiskGuardsService:
             return False, None
 
         # Enkel kontroll - i verkligheten skulle vi kontrollera öppna positioner
+        position_value = amount * price
         current_equity = self._get_current_equity()
 
-        position_pct: float = 0.0
-        try:
-            amt = float(amount)
-            prc = float(price)
-            if abs(amt) <= 1.0 and current_equity > 0:
-                # Fraktionsbaserad sizing: 0.1 => 10% av equity
-                position_pct = abs(amt) * 100.0
-            else:
-                notional = abs(amt) * prc
-                if current_equity > 0:
-                    position_pct = (notional / current_equity) * 100.0
-        except Exception:
-            position_pct = 0.0
-
-        # strikt > för block, <= är ok
-        if position_pct > float(guard.get("max_position_size_percentage", 0) or 0):
-            return True, "Position size för stor"
+        if current_equity > 0:
+            position_pct = (position_value / current_equity) * 100
+            if position_pct > guard.get("max_position_size_percentage", 0):
+                return (
+                    True,
+                    f"Position storlek {position_pct:.2f}% över limit {guard.get('max_position_size_percentage', 0)}%",
+                )
 
         return False, None
 
     def check_volatility_guards(self, symbol: str) -> tuple[bool, str | None]:
-        _ = symbol  # markerar användning för lint
+        _ = symbol  # markera användning för lint
         """Kontrollera volatility guards."""
         try:
             if not rc.get_bool("RISK_ENABLED", getattr(self.settings, "RISK_ENABLED", True)):

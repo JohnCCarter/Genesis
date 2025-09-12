@@ -218,7 +218,6 @@ class RefreshManager:
         # Hitta paneler som behöver refresh
         for task in self.tasks.values():
             if task.next_run and task.next_run <= now and not task.is_running and task.error_count < task.max_errors:
-
                 # Kontrollera dependencies
                 if self._check_dependencies(task):
                     tasks_to_run.append(task)

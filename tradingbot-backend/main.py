@@ -134,8 +134,40 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"⚠️ WebSocket-anslutning block misslyckades: {e}")
 
-    # Scheduler avstängd för att undvika rate limiting och event loop problem
-    logger.info("🚫 Scheduler avstängd för att undvika rate limiting")
+    # Aktivera komponenter baserat på miljövariabler
+    try:
+        from config.startup_config import (
+            enable_components_on_startup,
+            log_startup_status,
+        )
+
+        enable_components_on_startup()
+        log_startup_status()
+    except Exception as e:
+        logger.warning(f"⚠️ Kunde inte aktivera komponenter vid startup: {e}")
+
+    # Starta scheduler om aktiverat
+    try:
+        from services.scheduler import scheduler
+        from utils.feature_flags import is_scheduler_enabled
+
+        if is_scheduler_enabled():
+            scheduler.start()
+            logger.info("🗓️ Scheduler startad")
+        else:
+            logger.info("🚫 Scheduler inaktiverat (aktivera med ENABLE_SCHEDULER=true eller DEV_MODE=true)")
+    except Exception as e:
+        logger.warning(f"⚠️ Kunde inte starta scheduler: {e}")
+
+    # Starta circuit breaker recovery service
+    try:
+        from services.circuit_breaker_recovery import get_circuit_breaker_recovery
+
+        recovery_service = get_circuit_breaker_recovery()
+        await recovery_service.start()
+        logger.info("🔄 Circuit breaker recovery service startad")
+    except Exception as e:
+        logger.warning(f"⚠️ Kunde inte starta circuit breaker recovery: {e}")
 
     yield
 
@@ -157,6 +189,16 @@ async def lifespan(app: FastAPI):
         logger.info("✅ Scheduler stoppad")
     except Exception as e:
         logger.warning(f"⚠️ Fel vid stopp av scheduler: {e}")
+
+    # Stoppa circuit breaker recovery service
+    try:
+        from services.circuit_breaker_recovery import get_circuit_breaker_recovery
+
+        recovery_service = get_circuit_breaker_recovery()
+        await recovery_service.stop()
+        logger.info("✅ Circuit breaker recovery service stoppad")
+    except Exception as e:
+        logger.warning(f"⚠️ Fel vid stopp av circuit breaker recovery: {e}")
 
     # Rensa alla aktiva tasks
     try:

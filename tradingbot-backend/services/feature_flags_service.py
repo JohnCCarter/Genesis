@@ -21,7 +21,7 @@ Löser problem med:
 
 from __future__ import annotations
 
-import os
+import os as _os
 import services.runtime_config as rc
 import asyncio
 from datetime import datetime, timedelta
@@ -132,11 +132,49 @@ class FeatureFlagsService:
 
         self.flags["ws_connect_on_start"] = FeatureFlag(
             "ws_connect_on_start",
-            self._get_ws_connect_on_start(),
-            "WebSocket Connect on Start - Ansluter automatiskt vid start",
+            getattr(self.settings, "WS_CONNECT_ON_START", True),
+            "WebSocket Connect on Start - Anslut till WebSocket vid startup",
             "websocket",
+            True,
+        )
+
+        # Test Environment Flags
+        self.flags["pytest_mode"] = FeatureFlag(
+            "pytest_mode",
+            self._is_pytest_mode(),
+            "Pytest Mode - Aktiverar test-isolering och deterministiska beteenden",
+            "testing",
             False,
         )
+
+        # Runtime Configuration Flags
+        self.flags["runtime_config_enabled"] = FeatureFlag(
+            "runtime_config_enabled",
+            True,
+            "Runtime Config - Aktiverar runtime-konfiguration via API",
+            "configuration",
+            False,
+        )
+
+        # Scheduler Flags
+        self.flags["scheduler_enabled"] = FeatureFlag(
+            "scheduler_enabled",
+            getattr(self.settings, "SCHEDULER_ENABLED", True),
+            "Scheduler - Aktiverar schemalagda jobb",
+            "scheduling",
+            False,
+        )
+
+        # Health Monitoring Flags
+        self.flags["health_monitoring_enabled"] = FeatureFlag(
+            "health_monitoring_enabled",
+            getattr(self.settings, "HEALTH_MONITORING_ENABLED", True),
+            "Health Monitoring - Aktiverar systemövervakning",
+            "monitoring",
+            False,
+        )
+
+        logger.info(f"🚩 {len(self.flags)} feature flags initialiserade")
 
         # Validation Flags
         self.flags["validation_on_start"] = FeatureFlag(
@@ -225,6 +263,13 @@ class FeatureFlagsService:
             from services.scheduler import scheduler
 
             return bool(scheduler.is_running())
+        except Exception:
+            return False
+
+    def _is_pytest_mode(self) -> bool:
+        """Kontrollera om vi kör i pytest-läge."""
+        try:
+            return bool(_os.environ.get("PYTEST_CURRENT_TEST"))
         except Exception:
             return False
 

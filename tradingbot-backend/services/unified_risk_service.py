@@ -337,15 +337,39 @@ class UnifiedRiskService:
             return 0.0
 
     def _get_current_equity(self) -> float:
-        """Hämta aktuell equity."""
+        """Hämta aktuell equity från Bitfinex."""
         try:
-            # Enkel fallback - returnera 10000 för att undvika hängningar
-            # I en riktig implementation skulle vi använda PerformanceService
-            logger.debug("⚠️ Equity computation disabled to prevent hanging")
-            return 10000.0
+            import asyncio
+            from services.performance import PerformanceService
+
+            # Använd PerformanceService för att hämta verklig equity
+            async def _get_equity_async():
+                try:
+                    perf_service = PerformanceService()
+                    equity_data = await perf_service.compute_current_equity()
+                    return equity_data.get("total_usd", 0.0)
+                except Exception as e:
+                    logger.warning(f"⚠️ Kunde inte hämta equity från PerformanceService: {e}")
+                    return 0.0
+
+            # Kör async funktion med timeout
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    import concurrent.futures
+
+                    with concurrent.futures.ThreadPoolExecutor() as executor:
+                        future = executor.submit(asyncio.run, _get_equity_async())
+                        return future.result(timeout=5.0)
+                else:
+                    return asyncio.run(_get_equity_async())
+            except Exception as e:
+                logger.warning(f"⚠️ Timeout eller fel vid equity-hämtning: {e}")
+                return 0.0
+
         except Exception as e:
             logger.error(f"❌ Kunde inte hämta aktuell equity: {e}")
-            return 10000.0
+            return 0.0
 
     def reset_guard(self, guard_name: str) -> bool:
         """Återställ en specifik riskvakt."""
@@ -388,7 +412,26 @@ class UnifiedRiskService:
                 "error_threshold": self.circuit_breaker.error_threshold,
             }
 
-            # Hämta guards status
+            # Hämta guards status från RiskGuardsService för komplett data
+            try:
+                from services.risk_guards import risk_guards
+
+                guards_full_status = risk_guards.get_guards_status()
+
+                # Extrahera equity och loss data
+                current_equity = guards_full_status.get("current_equity", 0)
+                daily_loss_percentage = guards_full_status.get("daily_loss_percentage", 0)
+                drawdown_percentage = guards_full_status.get("drawdown_percentage", 0)
+                guards_full_data = guards_full_status.get("guards", {})
+
+            except Exception as e:
+                logger.warning(f"⚠️ Kunde inte hämta full guards status: {e}")
+                current_equity = 0
+                daily_loss_percentage = 0
+                drawdown_percentage = 0
+                guards_full_data = {}
+
+            # Hämta guards status (enkel version)
             guards_status = {}
             for guard_name, guard_data in self.guards.items():
                 guards_status[guard_name] = {
@@ -400,9 +443,13 @@ class UnifiedRiskService:
 
             return {
                 "timestamp": datetime.now().isoformat(),
+                "current_equity": current_equity,
+                "daily_loss_percentage": daily_loss_percentage,
+                "drawdown_percentage": drawdown_percentage,
                 "trade_constraints": constraints_status,
                 "circuit_breaker": circuit_breaker_status,
                 "guards": guards_status,
+                "guards_full": guards_full_data,  # Komplett guards data
                 "overall_status": ("healthy" if not self._is_circuit_breaker_open() else "degraded"),
             }
 

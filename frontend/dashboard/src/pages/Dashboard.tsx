@@ -13,7 +13,6 @@ import { SystemPanel } from '../components/SystemPanel';
 import { ValidationPanel } from '../components/ValidationPanel';
 import { WalletsPanel } from '../components/WalletsPanel';
 import { PerformancePanel } from '../components/PerformancePanel';
-import { MCPDashboard } from '../components/MCPDashboard';
 import { RefreshManagerPanel } from '../components/RefreshManagerPanel';
 import { UnifiedRiskPanel } from '../components/UnifiedRiskPanel';
 import { FeatureFlagsPanel } from '../components/FeatureFlagsPanel';
@@ -624,26 +623,7 @@ export default function DashboardPage() {
             style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}
           >
             <div>
-              <div
-                style={{
-                  background: '#e2e3e5',
-                  padding: 16,
-                  borderRadius: 12,
-                  marginBottom: 20,
-                  border: '1px solid #d6d8db',
-                }}
-              >
-                <h2
-                  style={{
-                    margin: '0 0 12px 0',
-                    color: '#383d41',
-                    fontSize: '20px',
-                  }}
-                >
-                  🔧 MCP Integration
-                </h2>
-                <MCPDashboard />
-              </div>
+              {/* MCP Integration removed */}
 
               <div
                 style={{

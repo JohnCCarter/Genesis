@@ -75,9 +75,11 @@ class AdvancedRateLimiter:
         self.settings = settings or Settings()
         self._buckets: dict[EndpointType, TokenBucket] = {}
         self._endpoint_mapping: dict[str, EndpointType] = {}
-        self._lock = asyncio.Lock()
+        # Per-event-loop locks: asyncio.Lock är loop-bundet
+        self._locks_by_loop: dict[int, asyncio.Lock] = {}
         # Concurrency caps per endpoint-typ
-        self._semaphores: dict[EndpointType, asyncio.Semaphore] = {}
+        # OBS: asyncio.Semaphore är loop-bundet. Håll per-loop map.
+        self._semaphores: dict[int, dict[EndpointType, asyncio.Semaphore]] = {}
         # Server busy tracking (för kompatibilitet med äldre anrop)
         self._server_busy_count: int = 0
         self._last_server_busy_time: float = 0.0
@@ -86,7 +88,19 @@ class AdvancedRateLimiter:
         self._cb_state: dict[str, dict] = {}
         self._setup_buckets()
         self._setup_endpoint_mapping()
-        self._setup_semaphores()
+
+    def _get_lock(self) -> asyncio.Lock:
+        """Hämta ett asyncio.Lock bundet till aktuell event loop."""
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None  # type: ignore[assignment]
+        loop_id = id(loop)
+        lock = self._locks_by_loop.get(loop_id)
+        if lock is None:
+            lock = asyncio.Lock()
+            self._locks_by_loop[loop_id] = lock
+        return lock
 
     def _setup_buckets(self) -> None:
         """Sätt upp token buckets för olika endpoint-typer"""
@@ -116,15 +130,9 @@ class AdvancedRateLimiter:
             )
 
     def _setup_semaphores(self) -> None:
-        """Sätt upp concurrency-semaforer för endpoint-typer."""
-        pub = max(1, int(getattr(self.settings, "PUBLIC_REST_CONCURRENCY", 2) or 1))
-        prv = max(1, int(getattr(self.settings, "PRIVATE_REST_CONCURRENCY", 1) or 1))
-        self._semaphores = {
-            EndpointType.PUBLIC_MARKET: asyncio.Semaphore(pub),
-            EndpointType.PRIVATE_ACCOUNT: asyncio.Semaphore(prv),
-            EndpointType.PRIVATE_TRADING: asyncio.Semaphore(prv),
-            EndpointType.PRIVATE_MARGIN: asyncio.Semaphore(prv),
-        }
+        """Init default-konfig; faktiska semaforer skapas per event loop vid behov."""
+        # Inget att göra här längre; behåll metoden för bakåtkompatibilitet
+        pass
 
     def _setup_endpoint_mapping(self) -> None:
         """Mappa API endpoints till endpoint-typer"""
@@ -157,7 +165,7 @@ class AdvancedRateLimiter:
                 mapping_part_stripped = mapping_part.strip()
                 if not mapping_part_stripped or "=>" not in mapping_part_stripped:
                     continue
-                rx, typ = [x.strip() for x in mapping_part_stripped.split("=>", 1)]
+                rx, typ = (x.strip() for x in mapping_part_stripped.split("=>", 1))
                 try:
                     et = EndpointType[typ]
                 except Exception:
@@ -199,7 +207,23 @@ class AdvancedRateLimiter:
 
     def _get_semaphore(self, endpoint: str) -> asyncio.Semaphore:
         et = self._classify_endpoint(endpoint)
-        return self._semaphores[et]
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None  # type: ignore
+        loop_id = id(loop)
+        semaphores = self._semaphores.get(loop_id)
+        if semaphores is None:
+            pub = max(1, int(getattr(self.settings, "PUBLIC_REST_CONCURRENCY", 2) or 1))
+            prv = max(1, int(getattr(self.settings, "PRIVATE_REST_CONCURRENCY", 1) or 1))
+            semaphores = {
+                EndpointType.PUBLIC_MARKET: asyncio.Semaphore(pub),
+                EndpointType.PRIVATE_ACCOUNT: asyncio.Semaphore(prv),
+                EndpointType.PRIVATE_TRADING: asyncio.Semaphore(prv),
+                EndpointType.PRIVATE_MARGIN: asyncio.Semaphore(prv),
+            }
+            self._semaphores[loop_id] = semaphores
+        return semaphores[et]
 
     async def wait_if_needed(self, endpoint: str, tokens: int = 1) -> float:
         """
@@ -218,7 +242,7 @@ class AdvancedRateLimiter:
         endpoint_type = self._classify_endpoint(endpoint)
         bucket = self._buckets[endpoint_type]
 
-        async with self._lock:
+        async with self._get_lock():
             if bucket.consume(tokens):
                 # Tokens tillgängliga, ingen väntan
                 return 0.0
@@ -414,3 +438,6 @@ def limit_endpoint(
         return _wrapper
 
     return _decorator
+
+
+# (duplikat borttaget; se tidigare global instans och funktion ovan)

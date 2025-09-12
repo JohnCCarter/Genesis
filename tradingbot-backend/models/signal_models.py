@@ -21,6 +21,7 @@ class SignalResponse(BaseModel):
     adx_value: float | None = Field(None, description="ADX värde")
     ema_z_value: float | None = Field(None, description="EMA Z-score")
     regime: str | None = Field(None, description="Marknadsregim: trend, balanced, range")
+    status: str = Field("ACTIVE", description="Status: ACTIVE, EXECUTED, CANCELLED, EXPIRED")
 
 
 class SignalHistory(BaseModel):

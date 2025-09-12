@@ -3,6 +3,9 @@ import { get, post } from '@lib/api';
 
 interface RiskStatus {
     timestamp: string;
+    current_equity: number;
+    daily_loss_percentage: number;
+    drawdown_percentage: number;
     trade_constraints: {
         trading_window_open: boolean;
         daily_trades_remaining: number;
@@ -21,6 +24,7 @@ interface RiskStatus {
         triggered_at: string | null;
         reason: string | null;
     }>;
+    guards_full: Record<string, any>; // Komplett guards data
     overall_status: 'healthy' | 'degraded' | 'error';
 }
 
@@ -107,8 +111,8 @@ export function UnifiedRiskPanel() {
                         {loading ? 'Laddar...' : '🔄 Uppdatera'}
                     </button>
                     {status?.circuit_breaker.open && (
-                        <button 
-                            onClick={resetCircuitBreaker} 
+                        <button
+                            onClick={resetCircuitBreaker}
                             disabled={loading}
                             style={{ background: '#dc3545', color: 'white' }}
                         >
@@ -127,10 +131,10 @@ export function UnifiedRiskPanel() {
             {status && (
                 <>
                     {/* Översikt */}
-                    <div style={{ 
-                        display: 'grid', 
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
-                        gap: 12, 
+                    <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                        gap: 12,
                         marginBottom: 16,
                         padding: 12,
                         background: '#f6f8fa',
@@ -138,19 +142,45 @@ export function UnifiedRiskPanel() {
                     }}>
                         <div>
                             <div style={{ fontSize: 12, color: '#555' }}>Övergripande Status</div>
-                            <div style={{ 
-                                fontSize: 16, 
+                            <div style={{
+                                fontSize: 16,
                                 fontWeight: 'bold',
                                 color: getStatusColor(status.overall_status)
                             }}>
-                                {status.overall_status === 'healthy' ? '🟢 Friskt' : 
+                                {status.overall_status === 'healthy' ? '🟢 Friskt' :
                                  status.overall_status === 'degraded' ? '🟡 Försämrat' : '🔴 Fel'}
                             </div>
                         </div>
                         <div>
+                            <div style={{ fontSize: 12, color: '#555' }}>Aktuell Equity</div>
+                            <div style={{ fontSize: 16, fontWeight: 'bold', color: '#0366d6' }}>
+                                ${status.current_equity.toLocaleString()}
+                            </div>
+                        </div>
+                        <div>
+                            <div style={{ fontSize: 12, color: '#555' }}>Daglig Förlust</div>
+                            <div style={{
+                                fontSize: 16,
+                                fontWeight: 'bold',
+                                color: status.daily_loss_percentage > 0 ? '#dc3545' : '#28a745'
+                            }}>
+                                {status.daily_loss_percentage.toFixed(2)}%
+                            </div>
+                        </div>
+                        <div>
+                            <div style={{ fontSize: 12, color: '#555' }}>Drawdown</div>
+                            <div style={{
+                                fontSize: 16,
+                                fontWeight: 'bold',
+                                color: status.drawdown_percentage > 0 ? '#dc3545' : '#28a745'
+                            }}>
+                                {status.drawdown_percentage.toFixed(2)}%
+                            </div>
+                        </div>
+                        <div>
                             <div style={{ fontSize: 12, color: '#555' }}>Circuit Breaker</div>
-                            <div style={{ 
-                                fontSize: 16, 
+                            <div style={{
+                                fontSize: 16,
                                 fontWeight: 'bold',
                                 color: status.circuit_breaker.open ? '#dc3545' : '#28a745'
                             }}>
@@ -159,8 +189,8 @@ export function UnifiedRiskPanel() {
                         </div>
                         <div>
                             <div style={{ fontSize: 12, color: '#555' }}>Trading Window</div>
-                            <div style={{ 
-                                fontSize: 16, 
+                            <div style={{
+                                fontSize: 16,
                                 fontWeight: 'bold',
                                 color: status.trade_constraints.trading_window_open ? '#28a745' : '#dc3545'
                             }}>
@@ -178,15 +208,15 @@ export function UnifiedRiskPanel() {
                     {/* Trade Constraints */}
                     <div style={{ marginBottom: 16 }}>
                         <h4 style={{ margin: '0 0 8px' }}>Trade Constraints</h4>
-                        <div style={{ 
-                            display: 'grid', 
-                            gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', 
+                        <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
                             gap: 8,
                             fontSize: 12
                         }}>
-                            <div style={{ 
-                                padding: 8, 
-                                background: '#f6f8fa', 
+                            <div style={{
+                                padding: 8,
+                                background: '#f6f8fa',
                                 borderRadius: 4,
                                 border: '1px solid #e1e4e8'
                             }}>
@@ -195,16 +225,16 @@ export function UnifiedRiskPanel() {
                                     {status.trade_constraints.daily_trades_remaining} kvar
                                 </div>
                             </div>
-                            <div style={{ 
-                                padding: 8, 
-                                background: '#f6f8fa', 
+                            <div style={{
+                                padding: 8,
+                                background: '#f6f8fa',
                                 borderRadius: 4,
                                 border: '1px solid #e1e4e8'
                             }}>
                                 <div style={{ fontWeight: 'bold' }}>Cooldown</div>
                                 <div style={{ color: '#555' }}>
-                                    {status.trade_constraints.cooldown_active ? 
-                                        formatDuration(status.trade_constraints.cooldown_remaining_seconds) : 
+                                    {status.trade_constraints.cooldown_active ?
+                                        formatDuration(status.trade_constraints.cooldown_remaining_seconds) :
                                         'Inaktiv'}
                                 </div>
                             </div>
@@ -214,9 +244,9 @@ export function UnifiedRiskPanel() {
                     {/* Circuit Breaker */}
                     <div style={{ marginBottom: 16 }}>
                         <h4 style={{ margin: '0 0 8px' }}>Circuit Breaker</h4>
-                        <div style={{ 
-                            padding: 12, 
-                            background: status.circuit_breaker.open ? '#ffebe9' : '#f6f8fa', 
+                        <div style={{
+                            padding: 12,
+                            background: status.circuit_breaker.open ? '#ffebe9' : '#f6f8fa',
                             borderRadius: 6,
                             border: `1px solid ${status.circuit_breaker.open ? '#dc3545' : '#e1e4e8'}`
                         }}>
@@ -235,11 +265,11 @@ export function UnifiedRiskPanel() {
                                     )}
                                 </div>
                                 {status.circuit_breaker.open && (
-                                    <button 
+                                    <button
                                         onClick={resetCircuitBreaker}
                                         disabled={loading}
-                                        style={{ 
-                                            padding: '4px 8px', 
+                                        style={{
+                                            padding: '4px 8px',
                                             fontSize: 12,
                                             background: '#dc3545',
                                             color: 'white',
@@ -259,9 +289,9 @@ export function UnifiedRiskPanel() {
                         <h4 style={{ margin: '0 0 8px' }}>Risk Guards</h4>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                             {Object.entries(status.guards).map(([guardName, guard]) => (
-                                <div key={guardName} style={{ 
-                                    padding: 12, 
-                                    background: guard.triggered ? '#ffebe9' : '#f6f8fa', 
+                                <div key={guardName} style={{
+                                    padding: 12,
+                                    background: guard.triggered ? '#ffebe9' : '#f6f8fa',
                                     borderRadius: 6,
                                     border: `1px solid ${guard.triggered ? '#dc3545' : '#e1e4e8'}`
                                 }}>
@@ -271,8 +301,8 @@ export function UnifiedRiskPanel() {
                                                 {guardName.replace('_', ' ')}
                                             </div>
                                             <div style={{ fontSize: 12, color: '#555' }}>
-                                                Status: {guard.enabled ? 
-                                                    (guard.triggered ? '🔴 Triggad' : '🟢 Aktiv') : 
+                                                Status: {guard.enabled ?
+                                                    (guard.triggered ? '🔴 Triggad' : '🟢 Aktiv') :
                                                     '⚪ Inaktiverad'}
                                             </div>
                                             {guard.triggered && guard.reason && (
@@ -287,11 +317,11 @@ export function UnifiedRiskPanel() {
                                             )}
                                         </div>
                                         {guard.triggered && (
-                                            <button 
+                                            <button
                                                 onClick={() => resetGuard(guardName)}
                                                 disabled={loading}
-                                                style={{ 
-                                                    padding: '4px 8px', 
+                                                style={{
+                                                    padding: '4px 8px',
                                                     fontSize: 12,
                                                     background: '#28a745',
                                                     color: 'white',

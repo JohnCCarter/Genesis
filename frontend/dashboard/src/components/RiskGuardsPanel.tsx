@@ -38,8 +38,16 @@ export function RiskGuardsPanel() {
         try {
             setLoading(true);
             setError(null);
-            const data = await get('/api/v2/risk/guards/status');
-            setStatus(data);
+            const raw = await get('/api/v2/risk/unified/status');
+            const mapped: RiskGuardsStatus = {
+                current_equity: raw?.current_equity ?? 0,
+                daily_loss_percentage: raw?.daily_loss_percentage ?? 0,
+                drawdown_percentage: raw?.drawdown_percentage ?? 0,
+                // Använd full guards-konfiguration från unified endpoint
+                guards: (raw?.guards_full ?? raw?.guards ?? {}) as any,
+                last_updated: raw?.timestamp ?? new Date().toISOString(),
+            };
+            setStatus(mapped);
         } catch (e: any) {
             setError(e?.message || 'Kunde inte hämta risk guards status');
         } finally {
@@ -56,7 +64,7 @@ export function RiskGuardsPanel() {
     const resetGuard = async (guardName: string) => {
         try {
             setLoading(true);
-            await post('/api/v2/risk/guards/reset', { guard_name: guardName });
+            await post('/api/v2/risk/unified/reset-guard', { guard_name: guardName });
             await refresh();
         } catch (e: any) {
             setError(e?.message || `Kunde inte återställa ${guardName}`);
@@ -68,7 +76,7 @@ export function RiskGuardsPanel() {
     const updateGuardConfig = async (guardName: string, config: Partial<RiskGuard>) => {
         try {
             setLoading(true);
-            await post('/api/v2/risk/guards/config', { guard_name: guardName, config });
+            await post('/api/v2/risk/unified/update-guard', { guard_name: guardName, config });
             await refresh();
         } catch (e: any) {
             setError(e?.message || `Kunde inte uppdatera ${guardName}`);
