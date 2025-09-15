@@ -1,7 +1,7 @@
-import React from 'react';
 import { post } from '@lib/api';
-import { Sparkline } from './Sparkline';
+import React from 'react';
 import { JsonTree } from './JsonTree';
+import { Sparkline } from './Sparkline';
 
 export function ValidationPanel() {
     const [symbol, setSymbol] = React.useState('tBTCUSD');

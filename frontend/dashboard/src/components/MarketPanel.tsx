@@ -600,25 +600,7 @@ export function MarketPanel() {
                                     )
                                         payload[k] = settings[k];
                                 }
-                                const base =
-                                    (import.meta as any).env?.VITE_API_BASE ||
-                                    'http://127.0.0.1:8000';
-                                const res = await fetch(`${base}/api/v2/strategy/settings`, {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                        ...(localStorage.getItem('jwt')
-                                            ? {
-                                                Authorization: `Bearer ${localStorage.getItem(
-                                                    'jwt'
-                                                )}`,
-                                            }
-                                            : {}),
-                                    },
-                                    body: JSON.stringify(payload),
-                                });
-                                if (!res.ok) throw new Error(await res.text());
-                                const savedData = await res.json();
+                                const savedData = await post(`/api/v2/strategy/settings`, payload);
                                 console.log('Settings sparade:', savedData);
                                 console.log(
                                     'Sparade periods - EMA:',
