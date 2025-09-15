@@ -9,6 +9,14 @@ from utils.feature_flags import (
     get_feature_flag as _get_flag,
     set_feature_flag as _set_flag,
 )
+from services.runtime_mode import (
+    get_ws_strategy_enabled as _rt_get_ws_strategy_enabled,
+    set_ws_strategy_enabled as _rt_set_ws_strategy_enabled,
+    get_ws_connect_on_start as _rt_get_ws_connect_on_start,
+    set_ws_connect_on_start as _rt_set_ws_connect_on_start,
+    get_validation_on_start as _rt_get_validation_on_start,
+    set_validation_on_start as _rt_set_validation_on_start,
+)
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -48,6 +56,33 @@ class WSStrategyService:
 
 # Skapa global instans
 ws_strategy_service = WSStrategyService()
+
+
+# --- Re-exports for FeatureFlagsService runtime updates ---
+
+
+def get_ws_strategy_enabled() -> bool:
+    return _rt_get_ws_strategy_enabled()
+
+
+def set_ws_strategy_enabled(value: bool) -> None:
+    _rt_set_ws_strategy_enabled(bool(value))
+
+
+def get_ws_connect_on_start() -> bool:
+    return _rt_get_ws_connect_on_start()
+
+
+def set_ws_connect_on_start(value: bool) -> None:
+    _rt_set_ws_connect_on_start(bool(value))
+
+
+def get_validation_on_start() -> bool:
+    return _rt_get_validation_on_start()
+
+
+def set_validation_on_start(value: bool) -> None:
+    _rt_set_validation_on_start(bool(value))
 
 
 # Ta bort wrapper-dubletter som skuggar runtime_mode (inte nödvändiga)
