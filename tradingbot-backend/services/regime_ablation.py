@@ -160,8 +160,8 @@ class RegimeAblationService:
             os.makedirs(os.path.dirname(self.performance_file), exist_ok=True)
             data = {name: perf.__dict__ for name, perf in performance.items()}
             # Konvertera datetime till string för JSON serialisering
-            for name in data:
-                data[name]["last_updated"] = data[name]["last_updated"].isoformat()
+            for _, vals in data.items():
+                vals["last_updated"] = vals["last_updated"].isoformat()
 
             with open(self.performance_file, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2)

@@ -16,8 +16,7 @@ logger = get_logger(__name__)
 
 
 class IMarketDataProvider(Protocol):
-    async def get_ticker(self, symbol: str, *, force_fresh: bool = False) -> dict[str, Any] | None:
-        ...
+    async def get_ticker(self, symbol: str, *, force_fresh: bool = False) -> dict[str, Any] | None: ...
 
     async def get_candles(
         self,
@@ -26,11 +25,9 @@ class IMarketDataProvider(Protocol):
         limit: int = 100,
         *,
         force_fresh: bool = False,
-    ) -> list | None:
-        ...
+    ) -> list | None: ...
 
-    def get_indicator_snapshot(self, symbol: str, timeframe: str) -> dict | None:
-        ...
+    def get_indicator_snapshot(self, symbol: str, timeframe: str) -> dict | None: ...
 
 
 class MarketDataFacade:

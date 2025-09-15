@@ -55,7 +55,7 @@ try:
     from services.bitfinex_websocket import bitfinex_ws
     from services.metrics_client import get_metrics_client
     from services.metrics import get_metrics_summary
-    from services.runtime_mode import get_validation_on_start, get_ws_connect_on_start
+    from utils.feature_flags import is_ws_connect_on_start
     from services.signal_service import signal_service
     from services.trading_service import trading_service
 except Exception as e:
@@ -82,15 +82,7 @@ try:
 except Exception as e:
     logger.warning(f"⚠️ Could not configure asyncio debug: {e}")
 
-# Read env toggle for WS_CONNECT_ON_START into runtime flags
-try:
-    from services.runtime_mode import set_ws_connect_on_start as _set_ws_connect
-
-    _env_ws = os.environ.get("WS_CONNECT_ON_START")
-    if _env_ws is not None:
-        _set_ws_connect(str(_env_ws).strip().lower() not in ("0", "false", "no"))
-except Exception:
-    pass
+# WS_CONNECT_ON_START hanteras via FeatureFlagsService; env fallback sker i utils/feature_flags
 
 
 @asynccontextmanager
@@ -101,7 +93,7 @@ async def lifespan(app: FastAPI):
 
     # Starta Bitfinex WebSocket-anslutning endast om flagga är på
     try:
-        if bool(get_ws_connect_on_start()):
+        if bool(is_ws_connect_on_start()):
             import time as _t
 
             _t0 = _t.perf_counter()
@@ -265,9 +257,31 @@ app = FastAPI(
 
 
 # CORS middleware
+try:
+    import json as _json
+
+    _raw_origins = getattr(settings, "ALLOWED_ORIGINS", "[]")
+    if isinstance(_raw_origins, str):
+        try:
+            _origins = _json.loads(_raw_origins)
+        except Exception:
+            _origins = [_raw_origins]
+    else:
+        _origins = list(_raw_origins) if _raw_origins else []
+    if not _origins:
+        _origins = [
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+        ]
+except Exception:
+    _origins = [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # I produktion, specificera dina domäner
+    allow_origins=_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -275,6 +289,49 @@ app.add_middleware(
 
 # Mitigera DoS-relaterade risker i multipart/stora svar
 app.add_middleware(GZipMiddleware, minimum_size=1024)
+
+
+# HTTP-protokollfelhantering middleware
+@app.middleware("http")
+async def http_protocol_error_handler(request: Request, call_next):
+    """Hantera HTTP-protokollfel och connection errors gracefully."""
+    try:
+        response = await call_next(request)
+        return response
+    except Exception as e:
+        # Logga HTTP-protokollfel utan att krascha applikationen
+        error_msg = str(e)
+        if "ConnectionClosed" in error_msg or "LocalProtocolError" in error_msg:
+            logger.warning(f"⚠️ HTTP-protokollfel hanterat: {error_msg}")
+            return Response(status_code=499, content="Connection closed by client")  # Client Closed Request
+        elif "timeout" in error_msg.lower():
+            logger.warning(f"⚠️ HTTP-timeout hanterat: {error_msg}")
+            return Response(status_code=504, content="Request timeout")  # Gateway Timeout
+        else:
+            # Logga andra fel men låt dem propagera
+            logger.error(f"❌ Ohanterat HTTP-fel: {error_msg}")
+            raise
+
+
+# Förbättrad uvicorn-konfiguration för att minska HTTP-protokollfel
+@app.on_event("startup")
+async def startup_event():
+    """Startup event för att konfigurera servern."""
+    try:
+        host = getattr(settings, "HOST", "127.0.0.1")
+        port = getattr(settings, "PORT", 8000)
+    except Exception:
+        host = "127.0.0.1"
+        port = 8000
+    logger.info("🚀 Genesis Trading Bot Backend startar...")
+    logger.info(f"📡 Server körs på http://{host}:{port}")
+    logger.info("🔧 HTTP-protokollfelhantering aktiverad")
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Shutdown event för att stänga servern gracefully."""
+    logger.info("🛑 Genesis Trading Bot Backend stänger...")
 
 
 # Enkel RequestGuard: blockera multipart och cap Content-Length
@@ -623,7 +680,12 @@ if __name__ == "__main__":
             port=_s.PORT,
             reload=True,
             log_level="info",
+            timeout_keep_alive=15,  # 15s keep-alive timeout (minskat från 30s)
+            timeout_graceful_shutdown=5,  # 5s graceful shutdown (minskat från 10s)
+            limit_max_requests=500,  # Begränsa antal requests per worker (minskat från 1000)
+            limit_concurrency=100,  # Begränsa samtidiga anslutningar
+            backlog=50,  # Begränsa backlog för nya anslutningar
         )
     except Exception as e:
-        logger.error(f"❌ Critical startup error - cannot start uvicorn: {e}")
+        logger.error(f"❌ Kritiskt startfel - kan inte starta uvicorn: {e}", exc_info=True)
         raise

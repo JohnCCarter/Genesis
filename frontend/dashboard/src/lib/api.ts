@@ -127,7 +127,20 @@ function sleep(ms: number) {
 async function fetchWithRetry<T>(
   url: string,
   options: RequestInit,
-  { maxRetries = MAX_RETRIES, timeout = API_TIMEOUT, ignoreCircuitBreaker = false, refreshOn401 = true } = {}
+  {
+    maxRetries = MAX_RETRIES,
+    timeout = API_TIMEOUT,
+    ignoreCircuitBreaker = false,
+    refreshOn401 = true,
+    // När vi hämtar token ska inte CB triggas av dessa anrop
+    doNotRecordCB = false,
+  }: {
+    maxRetries?: number;
+    timeout?: number;
+    ignoreCircuitBreaker?: boolean;
+    refreshOn401?: boolean;
+    doNotRecordCB?: boolean;
+  } = {}
 ): Promise<T> {
   if (!ignoreCircuitBreaker && isCircuitBreakerOpen()) {
     // Add a small delay before throwing error to prevent rapid retries
@@ -177,7 +190,7 @@ async function fetchWithRetry<T>(
       const retryable = shouldRetry(status, e);
       const countsForCB = shouldCountAsCBFailure(status);
 
-      if (countsForCB && !cbFailureRecorded) {
+      if (countsForCB && !cbFailureRecorded && !doNotRecordCB) {
         recordFailureOnce();
         cbFailureRecorded = true;
       }
@@ -227,12 +240,13 @@ export async function ensureToken(ignoreCB: boolean = false): Promise<string> {
   if (existing && !isTokenExpiredStrict(existing)) return existing;
 
   // call auth endpoint WITHOUT involving the breaker (to recover when OPEN)
+  // MCP är avvecklat → använd officiell auth endpoint
   const url = `${BASE}/api/v2/auth/ws-token`;
   const body = JSON.stringify({ user_id: "frontend_user", scope: "read", expiry_hours: 1 });
   const res = await fetchWithRetry<{ token?: string; success?: boolean; error?: string }>(
     url,
     { method: "POST", headers: { "Content-Type": "application/json" }, body },
-    { ignoreCircuitBreaker: ignoreCB, refreshOn401: false }
+    { ignoreCircuitBreaker: ignoreCB, refreshOn401: false, doNotRecordCB: true }
   );
 
   if (res && res.token) {

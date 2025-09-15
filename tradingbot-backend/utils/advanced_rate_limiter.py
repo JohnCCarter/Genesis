@@ -69,7 +69,31 @@ class TokenBucket:
 
 
 class AdvancedRateLimiter:
-    """Advanced rate limiter med token-bucket och endpoint-specifika limits"""
+    """
+    Advanced rate limiter med token-bucket, concurrency‑semaforer och enkel
+    transport‑nivå circuit breaker per endpoint.
+
+    _cb_state struktur per endpoint‑nyckel (str):
+      {
+        "fail_count": int,      # antal på varandra följande fel (ökar i note_failure, nollas i note_success)
+        "open_until": float,    # epoch‑sek tills breaker är öppen (can_request==False om now < open_until)
+        "last_failure": float,  # epoch‑sek för senaste felet (observationsvärde)
+      }
+
+    Semantik:
+      - can_request(endpoint): True om nuvarande tid >= open_until
+      - time_until_open(endpoint): sekunder kvar tills closed/half‑open
+      - note_failure(endpoint, status_code, retry_after):
+          * ökar fail_count och sätter open_until enligt Retry‑After om finns,
+            annars exponentiell backoff (2^min(6, fail_count)).
+          * signalerar även UnifiedCircuitBreakerService (transport‑källa)
+      - note_success(endpoint): nollar fail_count/open_until/last_failure och
+            signalerar UnifiedCircuitBreakerService om återhämtning.
+
+    Användning: Exponeras via get_advanced_rate_limiter().
+    För felsökning: se `/api/v2/debug/rate_limiter` som visar nyckelvärden samt
+    `time_until_open` för utvalda endpoints.
+    """
 
     def __init__(self, settings: Settings | None = None):
         self.settings = settings or Settings()
@@ -338,15 +362,24 @@ class AdvancedRateLimiter:
         return str(endpoint or "default")
 
     def time_until_open(self, endpoint: str) -> float:
+        """Sekunder kvar tills circuit för endpoint är closed.
+
+        Returnerar 0 när closed (eller ej öppnad). Bygger på `open_until` i
+        `_cb_state` (epoch‑sek)."""
         st = self._cb_state.get(self._cb_key(endpoint)) or {}
         open_until = float(st.get("open_until", 0.0) or 0.0)
         now = time.time()
         return max(0.0, open_until - now)
 
     def can_request(self, endpoint: str) -> bool:
+        """True om endpoint‑circuit är closed (dvs `time_until_open` är 0)."""
         return self.time_until_open(endpoint) <= 0.0
 
     def note_success(self, endpoint: str) -> None:
+        """Notera framgång och återställ transport‑CB för endpoint.
+
+        Nollställer fail_count/open_until/last_failure och signalerar Unified
+        CB om återhämtning. Idempotent om state saknas."""
         key = self._cb_key(endpoint)
         st = self._cb_state.get(key)
         if st:
@@ -361,6 +394,12 @@ class AdvancedRateLimiter:
             pass
 
     def note_failure(self, endpoint: str, status_code: int, retry_after: str | None = None) -> float:
+        """Notera fel och öppna transport‑CB för endpoint enligt backoff.
+
+        - Om `retry_after` kan tolkas som sekunder används det som minsta
+          cooldown. Annars används exponentiell backoff 2^min(6, fail_count).
+        - Uppdaterar `_cb_state` och returnerar aktuell cooldown i sekunder.
+        - Signal skickas till UnifiedCircuitBreakerService (source="transport")."""
         key = self._cb_key(endpoint)
         st = self._cb_state.get(key) or {
             "fail_count": 0,

@@ -188,6 +188,8 @@ class Settings(_BaseSettings):
     PROB_MODEL_CONFIDENCE_MIN: float = 0.15
     PROB_MODEL_EV_THRESHOLD: float = 0.0005
     PROB_MODEL_TIME_HORIZON: int = 20
+    # Hybrid vikt för probabilistisk vs heuristisk sannolikhet (1.0 = prob-only)
+    PROB_HYBRID_WEIGHT: float = 1.0
 
     # Probability Validation (rolling drift/quality monitoring)
     PROB_VALIDATE_ENABLED: bool = True

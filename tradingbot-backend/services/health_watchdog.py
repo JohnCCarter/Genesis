@@ -179,12 +179,12 @@ class HealthWatchdogService:
         """Spara health status till fil."""
         try:
             os.makedirs(os.path.dirname(self.status_file), exist_ok=True)
-            data = {name: status.__dict__ for name, status in status.items()}
+            data = {name: st.__dict__ for name, st in status.items()}
             # Konvertera datetime till string för JSON serialisering
-            for name in data:
-                data[name]["last_check"] = data[name]["last_check"].isoformat()
-                if data[name].get("last_success"):
-                    data[name]["last_success"] = data[name]["last_success"].isoformat()
+            for _, vals in data.items():
+                vals["last_check"] = vals["last_check"].isoformat()
+                if vals.get("last_success"):
+                    vals["last_success"] = vals["last_success"].isoformat()
 
             with open(self.status_file, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2)

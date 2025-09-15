@@ -16,7 +16,6 @@ from services.exchange_client import get_exchange_client
 from services.symbols import SymbolService
 from services.bitfinex_websocket import bitfinex_ws
 from utils.bitfinex_rate_limiter import get_bitfinex_rate_limiter
-from services.transport_circuit_breaker import get_transport_circuit_breaker
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -156,12 +155,7 @@ class MarginService:
                 data = [0, 0, 0, 0, 0]
             margin_data = [data[2], data[0], data[1], data[3], data[4]]
             logger.info("✅ REST API: Hämtade margin-information (base) från v2 API")
-            try:
-                # TransportCircuitBreaker success
-                tcb = get_transport_circuit_breaker()
-                tcb.note_success(endpoint)
-            except Exception:
-                pass
+            # Transport‑CB hanteras av AdvancedRateLimiter; explicit success-märkning borttagen
         except httpx.HTTPStatusError as e:
             # Om v2 API misslyckas, försök med v1 API endpoint
             if e.response.status_code in (404, 400, 500):
@@ -184,31 +178,17 @@ class MarginService:
                         v1_data = v1_response.json()
                         margin_data = self._convert_v1_to_v2_format(v1_data)
                         logger.info("✅ REST API: Hämtade margin-information från v1 API")
-                        try:
-                            tcb = get_transport_circuit_breaker()
-                            tcb.note_success(v1_endpoint)
-                        except Exception:
-                            pass
+                        # Transport‑CB hanteras av AdvancedRateLimiter
                 except Exception as e1:
                     logger.error(f"❌ v1 margin API misslyckades: {e1}")
                     # Fallback – returnera neutral struktur så flödet inte kraschar
                     margin_data = [0, 0, 0, 0, 0]
-                    try:
-                        tcb = get_transport_circuit_breaker()
-                        status = getattr(getattr(e1, "response", None), "status_code", 500) or 500
-                        tcb.note_failure(v1_endpoint, int(status), None)
-                    except Exception:
-                        pass
+                    # Transport‑CB hanteras av AdvancedRateLimiter
             else:
                 # Okänt fel – fallback med neutral struktur
                 logger.error(f"❌ v2 margin API fel: {e}")
                 margin_data = [0, 0, 0, 0, 0]
-                try:
-                    tcb = get_transport_circuit_breaker()
-                    status = getattr(getattr(e, "response", None), "status_code", 500) or 500
-                    tcb.note_failure(endpoint, int(status), None)
-                except Exception:
-                    pass
+                # Transport‑CB hanteras av AdvancedRateLimiter
 
         margin_info = MarginInfo.from_bitfinex_data(margin_data)
         return margin_info

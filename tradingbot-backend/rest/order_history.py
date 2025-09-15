@@ -19,7 +19,6 @@ from pydantic import BaseModel
 from config.settings import Settings
 from rest.auth import build_auth_headers
 from services.metrics import record_http_result, metrics_store
-from services.transport_circuit_breaker import get_transport_circuit_breaker
 from utils.advanced_rate_limiter import get_advanced_rate_limiter
 from utils.logger import get_logger
 from utils.private_concurrency import get_private_rest_semaphore
@@ -339,11 +338,7 @@ class OrderHistoryService:
                                 except Exception:
                                     pass
                             # Ny: namngiven TransportCircuitBreaker wrapper (parallell markering)
-                            try:
-                                tcb = get_transport_circuit_breaker()
-                                tcb.note_failure(endpoint, response.status_code, retry_after)
-                            except Exception:
-                                pass
+                            # Transport‑CB hanteras av AdvancedRateLimiter
                             await self.rate_limiter.handle_server_busy(endpoint)
                         raise httpx.HTTPError("server busy")
 
@@ -363,11 +358,7 @@ class OrderHistoryService:
                     except Exception:
                         pass
                     # Ny: parallell success till TransportCircuitBreaker
-                    try:
-                        tcb = get_transport_circuit_breaker()
-                        tcb.note_success(endpoint)
-                    except Exception:
-                        pass
+                    # Transport‑CB hanteras av AdvancedRateLimiter
                     return response
 
             except Exception as e:

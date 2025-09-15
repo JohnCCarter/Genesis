@@ -18,7 +18,6 @@ from config.settings import Settings
 from rest.auth import build_auth_headers
 from services.metrics import record_http_result
 from utils.advanced_rate_limiter import get_advanced_rate_limiter
-from services.transport_circuit_breaker import get_transport_circuit_breaker
 from utils.logger import get_logger
 from utils.private_concurrency import get_private_rest_semaphore
 from services.exchange_client import get_exchange_client
@@ -150,16 +149,7 @@ class PositionsService:
                                 response.headers.get("Retry-After"),
                             )
                             logger.warning(f"CB öppnad för {endpoint} i {cooldown:.1f}s")
-                            try:
-                                # Namngiven TransportCircuitBreaker
-                                tcb = get_transport_circuit_breaker()
-                                tcb.note_failure(
-                                    endpoint,
-                                    int(response.status_code),
-                                    response.headers.get("Retry-After"),
-                                )
-                            except Exception:
-                                pass
+                            # Transport‑CB hanteras av AdvancedRateLimiter
                         await self.rate_limiter.handle_server_busy(endpoint)
                     except Exception:
                         pass
@@ -177,12 +167,7 @@ class PositionsService:
                         self.rate_limiter.note_success(endpoint)
                 except Exception:
                     pass
-                try:
-                    # TransportCircuitBreaker success
-                    tcb = get_transport_circuit_breaker()
-                    tcb.note_success(endpoint)
-                except Exception:
-                    pass
+                # Transport‑CB hanteras av AdvancedRateLimiter
                 positions_data = response.json()
             except httpx.HTTPStatusError as e:
                 # Vid temporära serverfel – returnera tom lista istället för att krascha flöden

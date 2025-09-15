@@ -183,7 +183,15 @@ class PerformanceService:
         """
         # Hämta trades – var robust mot tillfälliga Bitfinex-fel (t.ex. 5xx)
         try:
-            trades: list[TradeItem] = await self.order_history_service.get_trades_history(symbol=None, limit=limit)
+            import asyncio
+
+            trades: list[TradeItem] = await asyncio.wait_for(
+                self.order_history_service.get_trades_history(symbol=None, limit=limit),
+                timeout=5.0,  # 5 sekunder timeout för trades-hämtning
+            )
+        except TimeoutError:
+            logger.warning("⚠️ Timeout vid hämtning av trades för realized PnL")
+            trades = []
         except Exception as e:
             logger.warning(f"Kunde inte hämta trades för realized PnL (fortsätter med tom lista): {e}")
             trades = []

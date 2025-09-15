@@ -109,6 +109,21 @@ class BitfinexWebSocketService:
                 if not self.is_connected:
                     await self.connect()
                 return self.websocket
+            # Hård cap: respektera WS_PUBLIC_SOCKETS_MAX och dedupe
+            try:
+                max_socks = int(self._pool_max_sockets)
+                if max_socks <= 0:
+                    max_socks = 1
+                # Trimma bort extra sockets om vi av misstag har fler än cap
+                while len(self._pool_public) > max_socks:
+                    try:
+                        ws_extra = self._pool_public.pop()
+                        if ws_extra and not getattr(ws_extra, "closed", True):
+                            await ws_extra.close()
+                    except Exception:
+                        pass
+            except Exception:
+                pass
             # Rensa döda sockets
             self._pool_public = [ws for ws in self._pool_public if ws and not ws.closed]
             # Välj socket med minst subs
@@ -128,6 +143,23 @@ class BitfinexWebSocketService:
                     self._pool_sub_counts[ws] = 0
                     best = ws
                     best_cnt = 0
+            # Efter ev. nyöppning, säkerställ cap igen
+            try:
+                max_socks = int(self._pool_max_sockets)
+                if max_socks <= 0:
+                    max_socks = 1
+                if len(self._pool_public) > max_socks:
+                    # Stäng sist öppnade tills vi är inom cap
+                    overflow = len(self._pool_public) - max_socks
+                    for _ in range(overflow):
+                        try:
+                            ws_extra = self._pool_public.pop()
+                            if ws_extra and not getattr(ws_extra, "closed", True):
+                                await ws_extra.close()
+                        except Exception:
+                            pass
+            except Exception:
+                pass
             # Säkerställ minst en socket
             if best is None:
                 ws = await self._open_public_socket()

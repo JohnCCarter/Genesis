@@ -42,12 +42,7 @@ class TransportCircuitBreaker:
                 metrics_store["transport_circuit_breaker_active"] = 0
             except Exception:
                 pass
-            # Signalera till unified CB
-            try:
-                if self._ucb:
-                    self._ucb.on_event(source="transport", endpoint=endpoint, success=True)
-            except Exception:
-                pass
+            # Unified CB signalering hanteras i advanced_rate_limiter.note_success
         except Exception:
             pass
 
@@ -60,18 +55,7 @@ class TransportCircuitBreaker:
             metrics_store["transport_circuit_breaker_active"] = 1
         except Exception:
             pass
-        # Signalera till unified CB
-        try:
-            if self._ucb:
-                self._ucb.on_event(
-                    source="transport",
-                    endpoint=endpoint,
-                    status_code=status_code,
-                    success=False,
-                    retry_after=retry_after,
-                )
-        except Exception:
-            pass
+        # Unified CB signalering hanteras i advanced_rate_limiter.note_failure
         return cooldown
 
 

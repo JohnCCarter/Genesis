@@ -5,13 +5,9 @@ Denna modul hanterar WebSocket-strategiinställningar och runtime-flaggorna.
 Integrerar med runtime_mode för att hantera strategiaktivering.
 """
 
-from services.runtime_mode import (
-    get_ws_strategy_enabled,
-    set_ws_strategy_enabled,
-    get_ws_connect_on_start,
-    set_ws_connect_on_start,
-    get_validation_on_start,
-    set_validation_on_start,
+from utils.feature_flags import (
+    get_feature_flag as _get_flag,
+    set_feature_flag as _set_flag,
 )
 from utils.logger import get_logger
 
@@ -27,27 +23,17 @@ class WSStrategyService:
 
     def get_strategy_status(self) -> dict[str, bool]:
         """Hämtar aktuell strategistatus."""
-        from services.runtime_mode import (
-            get_ws_strategy_enabled as _get_ws_strategy_enabled,
-            get_ws_connect_on_start as _get_ws_connect_on_start,
-            get_validation_on_start as _get_validation_on_start,
-        )
-
         return {
-            "ws_strategy_enabled": _get_ws_strategy_enabled(),
-            "ws_connect_on_start": _get_ws_connect_on_start(),
-            "validation_on_start": _get_validation_on_start(),
+            "ws_strategy_enabled": bool(_get_flag("ws_strategy_enabled", False)),
+            "ws_connect_on_start": bool(_get_flag("ws_connect_on_start", True)),
+            "validation_on_start": bool(_get_flag("validation_on_start", False)),
         }
 
     def update_strategy_flag(self, flag_name: str, value: bool) -> bool:
         """Uppdaterar en strategiflagga."""
         try:
-            if flag_name == "ws_strategy_enabled":
-                set_ws_strategy_enabled(value)
-            elif flag_name == "ws_connect_on_start":
-                set_ws_connect_on_start(value)
-            elif flag_name == "validation_on_start":
-                set_validation_on_start(value)
+            if flag_name in ("ws_strategy_enabled", "ws_connect_on_start", "validation_on_start"):
+                _set_flag(flag_name, bool(value))
             else:
                 self.logger.warning(f"⚠️ Okänd strategiflagga: {flag_name}")
                 return False

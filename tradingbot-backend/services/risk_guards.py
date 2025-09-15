@@ -331,14 +331,19 @@ class RiskGuardsService:
         try:
             current_equity = self._get_current_equity()
 
-            # Beräkna daglig förlust
+            # Beräkna daglig förlust – skydda mot start_equity<=0 samt equity=0 (visa 0% istället för 100%)
             daily_loss_pct = 0.0
             start_equity = self.guards["max_daily_loss"].get("daily_start_equity")
             if start_equity and start_equity > 0:
-                daily_loss_pct = ((start_equity - current_equity) / start_equity) * 100
+                try:
+                    raw = ((start_equity - current_equity) / start_equity) * 100
+                    # Om equity saknas (0.0) ska vi inte visa 100% – behandla som okänd→0%
+                    daily_loss_pct = 0.0 if current_equity <= 0 else raw
+                except Exception:
+                    daily_loss_pct = 0.0
 
-            # Beräkna drawdown
-            drawdown_pct = daily_loss_pct  # Förenklad - i verkligheten skulle detta vara från peak
+            # Beräkna drawdown – samma skydd
+            drawdown_pct = daily_loss_pct  # Förenklad – i verkligheten från peak
 
             status = {
                 "current_equity": current_equity,

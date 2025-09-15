@@ -221,6 +221,32 @@ class TestRiskGuardsService:
         assert status["daily_loss_percentage"] == 5.0  # (10000-9500)/10000 * 100
         assert status["drawdown_percentage"] == 5.0
 
+    @patch("services.risk_guards.RiskGuardsService._get_current_equity")
+    def test_get_guards_status_equity_zero_with_positive_start(self, mock_equity):
+        """Equity=0 ska inte visa 100% daily loss om start_equity>0 – ska bli 0%."""
+        mock_equity.return_value = 0.0
+
+        # Sätt positiv start_equity
+        self.service.guards["max_daily_loss"]["daily_start_equity"] = 10000.0
+
+        status = self.service.get_guards_status()
+        assert status["current_equity"] == 0.0
+        assert status["daily_loss_percentage"] == 0.0
+        assert status["drawdown_percentage"] == 0.0
+
+    @patch("services.risk_guards.RiskGuardsService._get_current_equity")
+    def test_get_guards_status_equity_zero_with_zero_start(self, mock_equity):
+        """Equity=0 och start_equity=0 ska vara 0% (ingen division)."""
+        mock_equity.return_value = 0.0
+
+        # Sätt start_equity=0
+        self.service.guards["max_daily_loss"]["daily_start_equity"] = 0.0
+
+        status = self.service.get_guards_status()
+        assert status["current_equity"] == 0.0
+        assert status["daily_loss_percentage"] == 0.0
+        assert status["drawdown_percentage"] == 0.0
+
 
 if __name__ == "__main__":
     pytest.main([__file__])

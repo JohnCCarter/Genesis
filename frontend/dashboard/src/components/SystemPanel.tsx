@@ -1,6 +1,6 @@
+import { ensureToken, get, getApiBase, post } from '@lib/api';
 import React from 'react';
 import { io } from 'socket.io-client';
-import { ensureToken, get, getText, post, getApiBase } from '@lib/api';
 
 export function SystemPanel() {
     const [health, setHealth] = React.useState<any>(null);
@@ -46,14 +46,14 @@ export function SystemPanel() {
         };
     }, [refresh, refreshSubs]);
 
-    const [metrics, setMetrics] = React.useState<string | null>(null);
+    const [metricsSummary, setMetricsSummary] = React.useState<any | null>(null);
     async function loadMetrics() {
         try {
             setError(null);
-            const txt = await getText('/metrics');
-            setMetrics(txt);
+            const js = await get('/api/v2/metrics/summary');
+            setMetricsSummary(js);
         } catch (e: any) {
-            setError(e?.message || 'Kunde inte hämta metrics');
+            setError(e?.message || 'Kunde inte hämta metrics summary');
         }
     }
 
@@ -72,11 +72,11 @@ export function SystemPanel() {
             <pre style={{ background: '#f6f8fa', padding: 12, borderRadius: 6 }}>
                 {JSON.stringify(health, null, 2)}
             </pre>
-            {metrics && (
+            {metricsSummary && (
                 <details style={{ marginTop: 12 }}>
-                    <summary>Metrics (Prometheus text)</summary>
+                    <summary>Metrics Summary (JSON)</summary>
                     <pre style={{ background: '#0b1021', color: '#d6deeb', padding: 12, borderRadius: 6, overflow: 'auto', maxHeight: 300 }}>
-                        {metrics}
+                        {JSON.stringify(metricsSummary, null, 2)}
                     </pre>
                 </details>
             )}

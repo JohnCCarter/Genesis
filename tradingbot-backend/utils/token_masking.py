@@ -154,7 +154,7 @@ def safe_log_data(data: Any, message: str = "") -> str:
 # Exempel på användning:
 if __name__ == "__main__":
     # Test token-masking
-    test_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJmcm9udGVuZF91c2VyIiwic2NvcGUiOiJyZWFkIiwidHlwZSI6ImFjY2VzcyIsImp0aSI6IjAyNTM2Yzk1LWZkODMtNGQ3NS05ZTYzLTViZjVkNzAxNGIyMyIsImlhdCI6MTc1NzQwODc3OCwiZXhwIjoxNzU3NDEyMzc4fQ.Ww1tueGu"
+    test_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJmcm9udGVuZF91c2VyIiwic2NvcGUiOiJyZWFkIiwidHlwZSI6ImFjY2VzcyIsImp0aSI6IjAyNTM2Yzk1LWZkODMtNGQ3NS05ZTYzLTViZjVkNzAxNGIyMyIsImlhdCI6MTc1NzQwODc3OCwiZXhwIjoxNzU3NDEyMzc4fQ.Ww1tueGu"  # nosec B105: test token for masking demo
 
     print(f"Original token: {test_token}")
     print(f"Masked token: {mask_token(test_token)}")
