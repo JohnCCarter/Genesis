@@ -1,5 +1,5 @@
-import React from 'react';
 import { get, post } from '@lib/api';
+import React from 'react';
 
 export function MarketPanel() {
     const [watchlist, setWatchlist] = React.useState<any[]>([]);
