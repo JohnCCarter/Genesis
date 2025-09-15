@@ -1,7 +1,7 @@
-import React from 'react';
 import { getWith } from '@lib/api';
-import { Sparkline } from './Sparkline';
+import React from 'react';
 import { JsonTree } from './JsonTree';
+import { Sparkline } from './Sparkline';
 
 type TabKey = 'trades' | 'ledgers' | 'equity';
 

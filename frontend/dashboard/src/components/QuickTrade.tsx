@@ -1,6 +1,6 @@
-import React from 'react';
 import { getWith, post } from '@lib/api';
 import { TEST_SYMBOLS } from '@lib/testSymbols';
+import React from 'react';
 
 export function QuickTrade() {
     const [symbol, setSymbol] = React.useState<string>(localStorage.getItem('qt_symbol') || 'TESTBTC:TESTUSD');

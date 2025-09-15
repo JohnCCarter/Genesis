@@ -3788,6 +3788,7 @@ async def ui_capabilities(_: bool = Depends(require_auth)):
     try:
         s = Settings()
         from utils.feature_flags import get_feature_flag as _ff
+
         caps = {
             "ws": {
                 "connect_on_start": bool(_ff("ws_connect_on_start", True)),

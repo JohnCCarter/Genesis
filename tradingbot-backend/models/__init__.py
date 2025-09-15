@@ -34,33 +34,37 @@ from models.api_models import (  # Enums; Wallet-modeller; Margin-modeller; Posi
     WebSocketSubscriptionRequest,
 )
 
-__all__ = tuple(sorted([
-    # Enums
-    "ApiResponse",
-    "Candle",
-    "ClosePositionResponse",
-    "LedgerEntry",
-    "MarginInfo",
-    "MarginLimitInfo",
-    "MarginStatus",
-    "OrderBook",
-    "OrderBookEntry",
-    "OrderHistoryItem",
-    "OrderRequest",
-    "OrderResponse",
-    "OrderSide",
-    "OrderStatus",
-    "OrderType",
-    "PaginatedResponse",
-    "Position",
-    "PositionHistory",
-    "PositionStatus",
-    "Ticker",
-    "TimeFrame",
-    "TradeItem",
-    "WalletBalance",
-    "WalletSummary",
-    "WalletType",
-    "WebSocketAuthRequest",
-    "WebSocketSubscriptionRequest",
-]))
+__all__ = tuple(
+    sorted(
+        [
+            # Enums
+            "ApiResponse",
+            "Candle",
+            "ClosePositionResponse",
+            "LedgerEntry",
+            "MarginInfo",
+            "MarginLimitInfo",
+            "MarginStatus",
+            "OrderBook",
+            "OrderBookEntry",
+            "OrderHistoryItem",
+            "OrderRequest",
+            "OrderResponse",
+            "OrderSide",
+            "OrderStatus",
+            "OrderType",
+            "PaginatedResponse",
+            "Position",
+            "PositionHistory",
+            "PositionStatus",
+            "Ticker",
+            "TimeFrame",
+            "TradeItem",
+            "WalletBalance",
+            "WalletSummary",
+            "WalletType",
+            "WebSocketAuthRequest",
+            "WebSocketSubscriptionRequest",
+        ]
+    )
+)

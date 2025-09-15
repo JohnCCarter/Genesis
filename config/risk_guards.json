@@ -1,7 +1,7 @@
 {
   "max_daily_loss": {
     "enabled": true,
-    "percentage": 5.0,
+    "percentage": 25.0,
     "triggered": true,
     "triggered_at": "2025-09-11T15:14:24.371641",
     "daily_start_equity": 10000.0,
@@ -10,8 +10,8 @@
   },
   "kill_switch": {
     "enabled": true,
-    "max_consecutive_losses": 3,
-    "max_drawdown_percentage": 10.0,
+    "max_consecutive_losses": 10,
+    "max_drawdown_percentage": 50.0,
     "triggered": false,
     "triggered_at": null,
     "reason": null,
@@ -19,13 +19,13 @@
   },
   "exposure_limits": {
     "enabled": true,
-    "max_open_positions": 5,
+    "max_open_positions": 50,
     "max_position_size_percentage": 20.0,
     "max_total_exposure_percentage": 50.0
   },
   "volatility_guards": {
     "enabled": true,
-    "max_daily_volatility": 15.0,
+    "max_daily_volatility": 25.0,
     "pause_on_high_volatility": true
   }
 }

@@ -1,5 +1,5 @@
-import React from 'react';
 import { getWith, post } from '@lib/api';
+import React from 'react';
 
 interface CircuitBreakerStatus {
     name: string;
