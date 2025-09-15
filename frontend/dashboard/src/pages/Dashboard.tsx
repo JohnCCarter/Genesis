@@ -98,11 +98,15 @@ export default function DashboardPage() {
       ].slice(0, 50)
     );
     await ensureToken(true);
+    // Probe health to auto-close CB if open
+    try {
+      await getWith('/health', { timeout: 3000, maxRetries: 0, ignoreCircuitBreaker: true, doNotRecordCB: true });
+    } catch {}
     try {
       // Batcha API-anrop för bättre prestanda
       const [s, c, dry, paused, pm, at, sch, wsst, warm, auto, acc] =
         await Promise.all([
-          getWith('/api/v2/ws/pool/status', { timeout: 12000, maxRetries: 1 }),
+          getWith('/api/v2/ws/pool/status', { timeout: 12000, maxRetries: 1, ignoreCircuitBreaker: true, doNotRecordCB: true }),
           getWith('/api/v2/ui/capabilities', { timeout: 10000, maxRetries: 1 }).catch(() => null),
           getWith('/api/v2/mode/dry-run', { timeout: 8000, maxRetries: 0 }).catch(() => null),
           getWith('/api/v2/mode/trading-paused', { timeout: 8000, maxRetries: 0 }).catch(() => null),

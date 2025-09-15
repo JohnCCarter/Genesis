@@ -29,9 +29,9 @@ export function MarketPanel() {
             if (symbols.trim()) qs.set('symbols', symbols.trim());
             if (prob) qs.set('prob', 'true');
             const [res, st, au] = await Promise.all([
-                getWith(`/api/v2/market/watchlist${qs.toString() ? `?${qs}` : ''}`, { timeout: 12000, maxRetries: 1 }),
-                getWith(`/api/v2/strategy/settings`, { timeout: 8000, maxRetries: 0 }).catch(() => null),
-                getWith(`/api/v2/strategy/auto`, { timeout: 8000, maxRetries: 0 }).catch(() => null),
+                getWith(`/api/v2/market/watchlist${qs.toString() ? `?${qs}` : ''}`, { timeout: 12000, maxRetries: 1, ignoreCircuitBreaker: true, doNotRecordCB: false }),
+                getWith(`/api/v2/strategy/settings`, { timeout: 8000, maxRetries: 0, ignoreCircuitBreaker: true, doNotRecordCB: true }).catch(() => null),
+                getWith(`/api/v2/strategy/auto`, { timeout: 8000, maxRetries: 0, ignoreCircuitBreaker: true, doNotRecordCB: true }).catch(() => null),
             ]);
             const items = Array.isArray(res)
                 ? res
