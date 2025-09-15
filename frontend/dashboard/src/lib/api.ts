@@ -223,6 +223,19 @@ export async function get<T = any>(path: string): Promise<T> {
   return fetchWithRetry<T>(`${BASE}${path}`, { method: "GET", headers: headers() });
 }
 
+// Per-request override: timeout/retries/CB
+export async function getWith<T = any>(
+  path: string,
+  opts: { timeout?: number; maxRetries?: number; ignoreCircuitBreaker?: boolean; doNotRecordCB?: boolean } = {}
+): Promise<T> {
+  const t = token();
+  if (!t || isTokenExpiredStrict(t)) {
+    try { await ensureToken(true); } catch {}
+  }
+  const { timeout, maxRetries, ignoreCircuitBreaker, doNotRecordCB } = opts;
+  return fetchWithRetry<T>(`${BASE}${path}`, { method: "GET", headers: headers() }, { timeout, maxRetries, ignoreCircuitBreaker, doNotRecordCB });
+}
+
 export async function post<T = any>(path: string, body?: unknown): Promise<T> {
   const t = token();
   if (!t || isTokenExpiredStrict(t)) {
@@ -233,6 +246,19 @@ export async function post<T = any>(path: string, body?: unknown): Promise<T> {
     headers: headers(),
     body: JSON.stringify(body ?? {}),
   });
+}
+
+export async function postWith<T = any>(
+  path: string,
+  body?: unknown,
+  opts: { timeout?: number; maxRetries?: number; ignoreCircuitBreaker?: boolean; doNotRecordCB?: boolean } = {}
+): Promise<T> {
+  const t = token();
+  if (!t || isTokenExpiredStrict(t)) {
+    await ensureToken(true);
+  }
+  const { timeout, maxRetries, ignoreCircuitBreaker, doNotRecordCB } = opts;
+  return fetchWithRetry<T>(`${BASE}${path}`, { method: "POST", headers: headers(), body: JSON.stringify(body ?? {}) }, { timeout, maxRetries, ignoreCircuitBreaker, doNotRecordCB });
 }
 
 export async function ensureToken(ignoreCB: boolean = false): Promise<string> {
@@ -293,7 +319,9 @@ export async function checkBackendHealth(): Promise<boolean> {
 
 const api = {
   get,
+  getWith,
   post,
+  postWith,
   getText,
   ensureToken,
   getApiBase,

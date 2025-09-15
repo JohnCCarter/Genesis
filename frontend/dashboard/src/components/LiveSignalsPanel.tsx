@@ -1,5 +1,5 @@
+import { getWith, postWith } from '@lib/api';
 import React from 'react';
-import { get, post } from '@lib/api';
 
 type LiveSignal = {
     symbol: string;
@@ -27,7 +27,7 @@ export function LiveSignalsPanel() {
     const fetchSignals = React.useCallback(async () => {
         try {
             setLoading(true);
-            const res = await get('/api/v2/signals/live');
+            const res = await getWith('/api/v2/signals/live', { timeout: 20000, maxRetries: 1, ignoreCircuitBreaker: false });
             setData(res);
         } finally {
             setLoading(false);
@@ -37,7 +37,7 @@ export function LiveSignalsPanel() {
     const refreshSignals = React.useCallback(async () => {
         try {
             setLoading(true);
-            const res = await post('/api/v2/signals/refresh', { force_refresh: true });
+            const res = await postWith('/api/v2/signals/refresh', { force_refresh: true }, { timeout: 25000, maxRetries: 1, ignoreCircuitBreaker: true });
             setData(res);
         } finally {
             setLoading(false);
