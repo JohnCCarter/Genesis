@@ -7,10 +7,21 @@ interface RiskStatus {
     daily_loss_percentage: number;
     drawdown_percentage: number;
     trade_constraints: {
-        trading_window_open: boolean;
-        daily_trades_remaining: number;
-        cooldown_active: boolean;
-        cooldown_remaining_seconds: number;
+        open: boolean;
+        paused: boolean;
+        next_open: string | null;
+        limits: {
+            max_trades_per_day: number;
+            trade_cooldown_seconds: number;
+            max_trades_per_symbol_per_day: number;
+        };
+        trades: {
+            day: string;
+            count: number;
+            max_per_day: number;
+            cooldown_seconds: number;
+            cooldown_active: boolean;
+        };
     };
     circuit_breaker: {
         open: boolean;
@@ -192,9 +203,9 @@ export function UnifiedRiskPanel() {
                             <div style={{
                                 fontSize: 16,
                                 fontWeight: 'bold',
-                                color: status.trade_constraints.trading_window_open ? '#28a745' : '#dc3545'
+                                color: status.trade_constraints.open ? '#28a745' : '#dc3545'
                             }}>
-                                {status.trade_constraints.trading_window_open ? '🟢 Öppen' : '🔴 Stängd'}
+                                {status.trade_constraints.open ? '🟢 Öppen' : '🔴 Stängd'}
                             </div>
                         </div>
                         <div>
@@ -222,7 +233,14 @@ export function UnifiedRiskPanel() {
                             }}>
                                 <div style={{ fontWeight: 'bold' }}>Dagliga Trades</div>
                                 <div style={{ color: '#555' }}>
-                                    {status.trade_constraints.daily_trades_remaining} kvar
+                                    {(() => {
+                                        const t = (status as any).trade_constraints?.trades;
+                                        if (!t) return '—';
+                                        const max = Number(t.max_per_day ?? 0);
+                                        const cnt = Number(t.count ?? 0);
+                                        const rem = Math.max(0, max - cnt);
+                                        return `${rem} kvar (${cnt}/${max})`;
+                                    })()}
                                 </div>
                             </div>
                             <div style={{
@@ -233,8 +251,8 @@ export function UnifiedRiskPanel() {
                             }}>
                                 <div style={{ fontWeight: 'bold' }}>Cooldown</div>
                                 <div style={{ color: '#555' }}>
-                                    {status.trade_constraints.cooldown_active ?
-                                        formatDuration(status.trade_constraints.cooldown_remaining_seconds) :
+                                    {(status as any).trade_constraints?.trades?.cooldown_active ?
+                                        formatDuration((status as any).trade_constraints?.trades?.cooldown_seconds ?? 0) :
                                         'Inaktiv'}
                                 </div>
                             </div>
