@@ -5,25 +5,25 @@ import { LiveSignalsPanel } from '../components/LiveSignalsPanel';
 import { MarketPanel } from '../components/MarketPanel';
 import { PositionsPanel } from '../components/PositionsPanel';
 import { QuickTrade } from '../components/QuickTrade';
-import { RiskPanel } from '../components/RiskPanel';
 import { RiskGuardsPanel } from '../components/RiskGuardsPanel';
+import { RiskPanel } from '../components/RiskPanel';
 import { StatusCard } from '../components/StatusCard';
 import { SystemPanel } from '../components/SystemPanel';
 // import { Toggles } from '../components/Toggles'; // Removed - replaced with Feature Flags
-import { ValidationPanel } from '../components/ValidationPanel';
-import { WalletsPanel } from '../components/WalletsPanel';
-import { PerformancePanel } from '../components/PerformancePanel';
-import { RefreshManagerPanel } from '../components/RefreshManagerPanel';
-import { UnifiedRiskPanel } from '../components/UnifiedRiskPanel';
-import { FeatureFlagsPanel } from '../components/FeatureFlagsPanel';
-import { EnhancedObservabilityPanel } from '../components/EnhancedObservabilityPanel';
-import { ReadOnlyHistoryPanel } from '../components/ReadOnlyHistoryPanel';
-import { TestValidationPanel } from '../components/TestValidationPanel';
-import { UnifiedCircuitBreakerPanel } from '../components/UnifiedCircuitBreakerPanel';
-import { ensureToken, get, getApiBase } from '@lib/api';
+import { ensureToken, getApiBase, getWith } from '@lib/api';
 import { useThrottledValue } from '@lib/useThrottledValue';
 import { AcceptanceBadge } from '../components/AcceptanceBadge';
 import { AuthStatus } from '../components/AuthStatus';
+import { EnhancedObservabilityPanel } from '../components/EnhancedObservabilityPanel';
+import { FeatureFlagsPanel } from '../components/FeatureFlagsPanel';
+import { PerformancePanel } from '../components/PerformancePanel';
+import { ReadOnlyHistoryPanel } from '../components/ReadOnlyHistoryPanel';
+import { RefreshManagerPanel } from '../components/RefreshManagerPanel';
+import { TestValidationPanel } from '../components/TestValidationPanel';
+import { UnifiedCircuitBreakerPanel } from '../components/UnifiedCircuitBreakerPanel';
+import { UnifiedRiskPanel } from '../components/UnifiedRiskPanel';
+import { ValidationPanel } from '../components/ValidationPanel';
+import { WalletsPanel } from '../components/WalletsPanel';
 
 // Tab component for better organization
 interface TabProps {
@@ -97,22 +97,22 @@ export default function DashboardPage() {
         ...l,
       ].slice(0, 50)
     );
-    await ensureToken();
+    await ensureToken(true);
     try {
       // Batcha API-anrop för bättre prestanda
       const [s, c, dry, paused, pm, at, sch, wsst, warm, auto, acc] =
         await Promise.all([
-          get('/api/v2/ws/pool/status'),
-          get('/api/v2/ui/capabilities').catch(() => null),
-          get('/api/v2/mode/dry-run').catch(() => null),
-          get('/api/v2/mode/trading-paused').catch(() => null),
-          get('/api/v2/mode/prob-model').catch(() => null),
-          get('/api/v2/mode/autotrade').catch(() => null),
-          get('/api/v2/mode/scheduler').catch(() => null),
-          get('/api/v2/mode/ws-strategy').catch(() => null),
-          get('/api/v2/mode/validation-warmup').catch(() => null),
-          get('/api/v2/strategy/auto').catch(() => null),
-          get('/api/v2/metrics/acceptance').catch(() => null),
+          getWith('/api/v2/ws/pool/status', { timeout: 12000, maxRetries: 1 }),
+          getWith('/api/v2/ui/capabilities', { timeout: 10000, maxRetries: 1 }).catch(() => null),
+          getWith('/api/v2/mode/dry-run', { timeout: 8000, maxRetries: 0 }).catch(() => null),
+          getWith('/api/v2/mode/trading-paused', { timeout: 8000, maxRetries: 0 }).catch(() => null),
+          getWith('/api/v2/mode/prob-model', { timeout: 8000, maxRetries: 0 }).catch(() => null),
+          getWith('/api/v2/mode/autotrade', { timeout: 8000, maxRetries: 0 }).catch(() => null),
+          getWith('/api/v2/mode/scheduler', { timeout: 8000, maxRetries: 0 }).catch(() => null),
+          getWith('/api/v2/mode/ws-strategy', { timeout: 8000, maxRetries: 0 }).catch(() => null),
+          getWith('/api/v2/mode/validation-warmup', { timeout: 8000, maxRetries: 0 }).catch(() => null),
+          getWith('/api/v2/strategy/auto', { timeout: 10000, maxRetries: 1 }).catch(() => null),
+          getWith('/api/v2/metrics/acceptance', { timeout: 8000, maxRetries: 0, doNotRecordCB: true }).catch(() => null),
         ]);
 
       setStatus(s);
