@@ -278,6 +278,7 @@ export default function DashboardPage() {
       {/* Tab Content */}
       <div style={{ minHeight: '600px' }}>
         {/* 🚀 TRADING TAB */}
+        {activeTab === 'trading' && (
         <Tab id="trading" label="Trading" icon="🚀" color="#28a745">
           <div
             style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}
@@ -385,8 +386,10 @@ export default function DashboardPage() {
             </div>
           </div>
         </Tab>
+        )}
 
         {/* 🛡️ RISK MANAGEMENT TAB */}
+        {activeTab === 'risk' && (
         <Tab id="risk" label="Risk Management" icon="🛡️" color="#dc3545">
           <div
             style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}
@@ -462,8 +465,10 @@ export default function DashboardPage() {
             </div>
           </div>
         </Tab>
+        )}
 
         {/* 📈 ANALYTICS TAB */}
+        {activeTab === 'analytics' && (
         <Tab id="analytics" label="Analytics" icon="📈" color="#007bff">
           <div
             style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}
@@ -539,8 +544,10 @@ export default function DashboardPage() {
             </div>
           </div>
         </Tab>
+        )}
 
         {/* ⚙️ SYSTEM TAB */}
+        {activeTab === 'system' && (
         <Tab id="system" label="System" icon="⚙️" color="#ffc107">
           <div
             style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}
@@ -616,8 +623,10 @@ export default function DashboardPage() {
             </div>
           </div>
         </Tab>
+        )}
 
         {/* 🔧 ADMIN TAB */}
+        {activeTab === 'admin' && (
         <Tab id="admin" label="Admin" icon="🔧" color="#6c757d">
           <div
             style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}
@@ -674,6 +683,7 @@ export default function DashboardPage() {
             </div>
           </div>
         </Tab>
+        )}
       </div>
     </div>
   );

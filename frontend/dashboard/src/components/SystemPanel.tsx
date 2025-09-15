@@ -1,4 +1,4 @@
-import { ensureToken, get, getApiBase, post } from '@lib/api';
+import { ensureToken, getWith, getApiBase, post } from '@lib/api';
 import React from 'react';
 import { io } from 'socket.io-client';
 
@@ -18,7 +18,7 @@ export function SystemPanel() {
     const refresh = React.useCallback(async () => {
         try {
             setError(null);
-            const h = await get('/health');
+            const h = await getWith('/health', { timeout: 5000, maxRetries: 0, doNotRecordCB: true });
             setHealth(h);
         } catch (e: any) {
             setError(e?.message || 'Kunde inte hämta health');
@@ -27,7 +27,7 @@ export function SystemPanel() {
 
     const refreshSubs = React.useCallback(async () => {
         try {
-            const s = await get('/api/v2/ws/pool/status');
+            const s = await getWith('/api/v2/ws/pool/status', { timeout: 8000, maxRetries: 1 });
             const arr = (s && s.subscriptions) || [];
             setSubs(Array.isArray(arr) ? arr : []);
         } catch (e) {
@@ -50,7 +50,7 @@ export function SystemPanel() {
     async function loadMetrics() {
         try {
             setError(null);
-            const js = await get('/api/v2/metrics/summary');
+            const js = await getWith('/api/v2/metrics/summary', { timeout: 8000, maxRetries: 0, doNotRecordCB: true });
             setMetricsSummary(js);
         } catch (e: any) {
             setError(e?.message || 'Kunde inte hämta metrics summary');
