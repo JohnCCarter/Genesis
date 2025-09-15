@@ -2,39 +2,56 @@
 
 Enkel guide för att starta boten lokalt på en hemdator.
 
+## 🏠 **Lokal Utvecklingsmiljö**
+
+Detta är en **lokal utvecklingsmiljö** som körs endast på din dator:
+
+- **Backend:** `http://localhost:8000` (lokalt)
+- **Frontend:** `http://localhost:5173` (lokalt)
+- **Ingen extern åtkomst** - endast från din dator
+- **Säker konfiguration** - WebSocket och scheduler är avstängda
+
 ---
 
 ### 1. Förberedelser (engångsinstallation)
 
 #### a. Miljö
 
--   Windows 10/11 med PowerShell
--   Python 3.11+
--   Node.js v18+
+- Windows 10/11 med PowerShell
+- Python 3.11+
+- Node.js v18+ (npm 11.4.2+)
 
-#### b. Skapa virtuell miljö och installera paket
+#### b. Installera paket
 
 ```powershell
 # Navigera till din projektmapp
 cd "[DIN_HEMDATOR_SÖKVÄG]"
 
-# Skapa och aktivera virtuell miljö
-python -m venv .venv_clean
-& ".\.venv_clean\Scripts\Activate.ps1"
-
-# Uppdatera pip och installera Python-paket
+# Installera Python-paket (ingen virtuell miljö behövs)
 python -m pip install -U pip
 python -m pip install -r tradingbot-backend\requirements.txt
+
+# Installera Frontend-paket
+cd frontend\dashboard
+npm install
+cd ..\..
 ```
 
-#### c. Konfigurera Backend (`.env`-fil)
+---
 
-Skapa en fil med namnet `.env` i mappen `tradingbot-backend/` och klistra in följande. **Byt ut dina Bitfinex API-nycklar.**
+### 2. Konfiguration
+
+#### a. Backend (`.env`-fil)
+
+Filen `tradingbot-backend/.env` finns redan konfigurerad med:
 
 ```
-# tradingbot-backend/.env
+# Server & Frontend
+HOST=127.0.0.1
+PORT=8000
+VITE_API_BASE=http://127.0.0.1:8000
 
-# --- Autentisering (för utveckling) ---
+# Autentisering (för utveckling)
 AUTH_REQUIRED=True
 JWT_SECRET_KEY=dev-jwt-secret
 SOCKETIO_JWT_SECRET=dev-jwt-secret
@@ -49,45 +66,42 @@ SCHEDULER_ENABLED=False
 MCP_ENABLED=False
 ```
 
-#### d. Konfigurera Frontend (`.env`-fil)
+#### b. Frontend (`.env`-fil)
 
-Skapa en fil med namnet `.env` i mappen `frontend/dashboard/` och klistra in följande:
+Filen `frontend/.env` finns redan konfigurerad med:
 
 ```
-# frontend/dashboard/.env
-
 VITE_API_BASE=http://127.0.0.1:8000
-```
-
-#### e. Installera Frontend-paket
-
-```powershell
-# Navigera till frontend-mappen
-cd "[DIN_HEMDATOR_SÖKVÄG]\frontend\dashboard"
-
-# Installera Node.js-paket
-npm install
 ```
 
 ---
 
-### 2. Starta programmet
+### 3. Starta programmet
 
-Du behöver två separata terminalfönster.
+#### 🚀 **Enkel start (rekommenderat)**
 
-#### a. Starta Backend
+Kör detta kommando från projektets rotmapp:
 
-I det **första** terminalfönstret:
 ```powershell
 cd "[DIN_HEMDATOR_SÖKVÄG]"
-& ".\.venv_clean\Scripts\Activate.ps1"
-cd tradingbot-backend
+.\scripts\start_normal.ps1
+```
+
+Detta startar automatiskt både backend och frontend i separata terminalfönster med **säker lokal konfiguration**.
+
+#### 🔧 **Manuell start (alternativ)**
+
+Om du föredrar att starta manuellt:
+
+**Terminal 1 (Backend):**
+
+```powershell
+cd "[DIN_HEMDATOR_SÖKVÄG]\tradingbot-backend"
 uvicorn main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-#### b. Starta Frontend
+**Terminal 2 (Frontend):**
 
-I det **andra** terminalfönstret:
 ```powershell
 cd "[DIN_HEMDATOR_SÖKVÄG]\frontend\dashboard"
 npm run dev
@@ -95,9 +109,32 @@ npm run dev
 
 ---
 
-### 3. Öppna i webbläsaren
+### 4. Öppna i webbläsaren
 
--   **Dashboard:** [http://localhost:5173](http://localhost:5173)
--   **API-dokumentation:** [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+- **Dashboard:** [http://localhost:5173](http://localhost:5173)
+- **Backend API:** [http://127.0.0.1:8000](http://127.0.0.1:8000)
+- **API-dokumentation:** [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 
-*Ersätt `[DIN_HEMDATOR_SÖKVÄG]` med din faktiska sökväg.*
+---
+
+### 5. Felsökning
+
+#### Om backend inte startar:
+
+- Kontrollera att Python är installerat: `python --version`
+- Kontrollera att alla paket är installerade: `pip list`
+
+#### Om frontend inte startar:
+
+- Kontrollera att Node.js är installerat: `node --version`
+- Kontrollera att npm är installerat: `npm --version`
+- Installera om paket: `npm install`
+
+#### Om API-anrop misslyckas:
+
+- Kontrollera att backend körs på port 8000
+- Kontrollera att `AUTH_REQUIRED=False` i `.env` för utveckling
+
+_Ersätt `[DIN_HEMDATOR_SÖKVÄG]` med din faktiska sökväg._
+
+Kolla start_normal.ps1 för mer detaljerad information.

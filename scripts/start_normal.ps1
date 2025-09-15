@@ -16,7 +16,15 @@ Write-Host ""
 
 # Starta backend i bakgrunden
 Write-Host "Startar backend..." -ForegroundColor Blue
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd 'tradingbot-backend'; uvicorn main:app --host 127.0.0.1 --port 8000 --reload"
+# AI Change: Auto-activate root .venv om den finns innan backend start (Agent: Cursor, Date: 2025-09-15)
+$backendCommand = @(
+    "if (Test-Path '..\\.venv\\Scripts\\Activate.ps1') {",
+    "  & '..\\.venv\\Scripts\\Activate.ps1'",
+    "}",
+    "cd 'tradingbot-backend'",
+    "uvicorn main:app --host 127.0.0.1 --port 8000 --reload"
+) -join "; "
+Start-Process powershell -ArgumentList "-NoExit", "-Command", $backendCommand
 
 # Vanta lite for att backend ska starta
 Start-Sleep -Seconds 3

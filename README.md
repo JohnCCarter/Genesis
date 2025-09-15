@@ -15,6 +15,7 @@ git checkout Genesis
 ### 2. Konfigurera environment
 
 **Windows PowerShell:**
+
 ```powershell
 # Skapa virtual environment
 python -m venv .venv
@@ -26,6 +27,7 @@ pip-sync tradingbot-backend/requirements.txt
 ```
 
 **Windows Command Prompt:**
+
 ```cmd
 # Skapa virtual environment
 python -m venv .venv
@@ -55,6 +57,7 @@ BITFINEX_API_SECRET=din_api_secret
 ### 5. Starta systemet
 
 **Windows PowerShell:**
+
 ```powershell
 # Backend (förhindra WebSocket-hängning vid start)
 cd tradingbot-backend
@@ -68,6 +71,7 @@ npm run dev
 ```
 
 **Windows Command Prompt:**
+
 ```cmd
 # Backend (förhindra WebSocket-hängning vid start)
 cd tradingbot-backend
@@ -106,9 +110,11 @@ Efter setup skapas följande config-filer från templates:
 ## 🔧 Felsökning
 
 ### Backend hänger sig vid start
+
 Om backend hänger sig vid start, kontrollera:
 
 **Windows PowerShell:**
+
 ```powershell
 # Stoppa alla Python-processer
 taskkill /F /IM python.exe
@@ -120,6 +126,7 @@ uvicorn main:app --reload
 ```
 
 **Windows Command Prompt:**
+
 ```cmd
 # Stoppa alla Python-processer
 taskkill /F /IM python.exe
@@ -131,9 +138,11 @@ uvicorn main:app --reload
 ```
 
 ### Frontend får inte token
+
 Om frontend inte kan få JWT-token:
 
 **Windows PowerShell:**
+
 ```powershell
 # Kontrollera att backend körs
 curl http://127.0.0.1:8000/health
@@ -143,6 +152,7 @@ curl -X POST http://127.0.0.1:8000/api/v2/auth/ws-token -H "Content-Type: applic
 ```
 
 **Windows Command Prompt:**
+
 ```cmd
 # Kontrollera att backend körs
 curl http://127.0.0.1:8000/health
@@ -154,9 +164,11 @@ curl -X POST http://127.0.0.1:8000/api/v2/auth/ws-token -H "Content-Type: applic
 3. Kontrollera CORS-inställningar i backend
 
 ### Dependencies-konflikter
+
 Om du får dependency-konflikter:
 
 **Windows PowerShell/Command Prompt:**
+
 ```powershell
 # Använd pip-tools för kontrollerad installation
 pip install pip-tools
