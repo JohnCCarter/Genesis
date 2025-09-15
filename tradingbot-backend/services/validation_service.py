@@ -134,12 +134,23 @@ class ValidationService:
                     regimes.append("unknown")
                     continue
 
+                # Skapa config för regime detection
+                regime_cfg = {
+                    "ADX_PERIOD": 14,
+                    "ADX_HIGH": 30,
+                    "ADX_LOW": 15,
+                    "EMA_FAST": 3,
+                    "EMA_SLOW": 7,
+                    "Z_WIN": 200,
+                    "SLOPE_Z_HIGH": 1.0,
+                    "SLOPE_Z_LOW": 0.5,
+                }
+
                 regime_data = detect_regime(
-                    closes[: i + 1],
                     highs[: i + 1],
                     lows[: i + 1],
-                    adx_values[: i + 1] if len(adx_values) > i else [],
-                    ema_z_values[: i + 1] if len(ema_z_values) > i else [],
+                    closes[: i + 1],
+                    regime_cfg,
                 )
                 regimes.append(regime_data)
 
@@ -276,7 +287,7 @@ class ValidationService:
                 force_fresh=True,  # Större limit för backtest
             )
 
-            if not candles or len(candles) < 200:
+            if not candles or len(candles) < 50:
                 result.error_message = f"Otillräcklig data för backtest: {len(candles) if candles else 0} candles"
                 logger.warning(f"⚠️ {result.error_message}")
                 return result
