@@ -1,5 +1,5 @@
 import React from 'react';
-import { get, post } from '@lib/api';
+import { getWith, post } from '@lib/api';
 
 interface CircuitBreakerStatus {
     name: string;
@@ -43,7 +43,7 @@ export function UnifiedCircuitBreakerPanel() {
         try {
             setLoading(true);
             setError(null);
-            const data = await get('/api/v2/circuit-breaker/status');
+            const data = await getWith('/api/v2/circuit-breaker/status', { timeout: 8000, maxRetries: 0, doNotRecordCB: true });
             setOverview(data);
             setLastUpdate(new Date());
         } catch (e: any) {

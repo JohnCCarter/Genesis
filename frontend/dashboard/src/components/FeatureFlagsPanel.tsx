@@ -1,5 +1,5 @@
 import React from 'react';
-import { get, post } from '@lib/api';
+import { getWith, post } from '@lib/api';
 
 interface FeatureFlag {
     value: any;
@@ -29,7 +29,7 @@ export function FeatureFlagsPanel() {
         try {
             setLoading(true);
             setError(null);
-            const data = await get('/api/v2/feature-flags/status');
+            const data = await getWith('/api/v2/feature-flags/status', { timeout: 8000, maxRetries: 0, doNotRecordCB: true });
             setStatus(data);
             setLastUpdate(new Date());
         } catch (e: any) {

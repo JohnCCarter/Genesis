@@ -1,5 +1,5 @@
 import React from 'react';
-import { get } from '@lib/api';
+import { getWith } from '@lib/api';
 
 interface ComprehensiveMetrics {
     timestamp: string;
@@ -67,7 +67,7 @@ export function EnhancedObservabilityPanel() {
         try {
             setLoading(true);
             setError(null);
-            const data = await get('/api/v2/observability/comprehensive');
+            const data = await getWith('/api/v2/observability/comprehensive', { timeout: 12000, maxRetries: 1 });
             setMetrics(data);
             setLastUpdate(new Date());
         } catch (e: any) {

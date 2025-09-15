@@ -1,4 +1,4 @@
-import { get, post } from '@lib/api';
+import { getWith, post } from '@lib/api';
 import React from 'react';
 
 export function MarketPanel() {
@@ -29,9 +29,9 @@ export function MarketPanel() {
             if (symbols.trim()) qs.set('symbols', symbols.trim());
             if (prob) qs.set('prob', 'true');
             const [res, st, au] = await Promise.all([
-                get(`/api/v2/market/watchlist${qs.toString() ? `?${qs}` : ''}`),
-                get(`/api/v2/strategy/settings`).catch(() => null),
-                get(`/api/v2/strategy/auto`).catch(() => null),
+                getWith(`/api/v2/market/watchlist${qs.toString() ? `?${qs}` : ''}`, { timeout: 12000, maxRetries: 1 }),
+                getWith(`/api/v2/strategy/settings`, { timeout: 8000, maxRetries: 0 }).catch(() => null),
+                getWith(`/api/v2/strategy/auto`, { timeout: 8000, maxRetries: 0 }).catch(() => null),
             ]);
             const items = Array.isArray(res)
                 ? res
@@ -67,9 +67,9 @@ export function MarketPanel() {
                 // Lägg till i nästa batch istället för separat anrop
                 setTimeout(async () => {
                     try {
-                        const regimeRes = await get(
+                        const regimeRes = await getWith(
                             `/api/v2/strategy/regime/${firstSymbol}`
-                        );
+                        , { timeout: 8000, maxRetries: 0 });
                         console.log('Regim response:', regimeRes);
                         setCurrentRegime(regimeRes);
                     } catch (e) {
@@ -204,7 +204,7 @@ export function MarketPanel() {
                                 );
                                 console.log('Auto-regim result:', result);
                                 // Explicit refresh settings
-                                const newSettings = await get(`/api/v2/strategy/settings`);
+                                const newSettings = await getWith(`/api/v2/strategy/settings`, { timeout: 8000, maxRetries: 0 });
                                 console.log('New settings after update:', newSettings);
                                 setSettings(newSettings);
                                 refresh();
@@ -235,7 +235,7 @@ export function MarketPanel() {
                         type="button"
                         onClick={async () => {
                             try {
-                                const regimeRes = await get(`/api/v2/strategy/regime/tBTCUSD`);
+                                const regimeRes = await getWith(`/api/v2/strategy/regime/tBTCUSD`, { timeout: 8000, maxRetries: 0 });
                                 console.log('Manual regim fetch:', regimeRes);
                                 setCurrentRegime(regimeRes);
                             } catch (e) {
@@ -501,7 +501,7 @@ export function MarketPanel() {
                                 settings?.atr_period
                             );
                             try {
-                                const backendSettings = await get(`/api/v2/strategy/settings`);
+                                const backendSettings = await getWith(`/api/v2/strategy/settings`, { timeout: 8000, maxRetries: 0 });
                                 console.log('Backend settings:', backendSettings);
                                 console.log(
                                     'Backend periods - EMA:',
@@ -540,7 +540,7 @@ export function MarketPanel() {
                         onClick={async () => {
                             try {
                                 console.log('=== HÄMTAR ALLA REGIMER ===');
-                                const allRegimes = await get(`/api/v2/strategy/regime/all`);
+                                const allRegimes = await getWith(`/api/v2/strategy/regime/all`, { timeout: 10000, maxRetries: 0 });
                                 console.log('Alla regimen:', allRegimes);
 
                                 if (allRegimes?.regimes) {

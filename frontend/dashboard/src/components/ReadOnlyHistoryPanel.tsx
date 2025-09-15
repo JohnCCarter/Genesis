@@ -1,5 +1,5 @@
 import React from 'react';
-import { get } from '@lib/api';
+import { getWith } from '@lib/api';
 import { Sparkline } from './Sparkline';
 import { JsonTree } from './JsonTree';
 
@@ -78,7 +78,7 @@ export function ReadOnlyHistoryPanel() {
       params.append('ledgers_limit', limit.toString());
       params.append('equity_limit', Math.min(1000, Math.max(100, limit)).toString());
       
-      const data = await get(`/api/v2/history/comprehensive?${params.toString()}`);
+      const data = await getWith(`/api/v2/history/comprehensive?${params.toString()}`, { timeout: 15000, maxRetries: 1 });
 
       setHistoryData(data);
     } catch (e: any) {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { get, post } from '@lib/api';
+import { getWith, post } from '@lib/api';
 
 interface RiskStatus {
     timestamp: string;
@@ -38,7 +38,7 @@ export function UnifiedRiskPanel() {
         try {
             setLoading(true);
             setError(null);
-            const data = await get('/api/v2/risk/unified/status');
+            const data = await getWith('/api/v2/risk/unified/status', { timeout: 10000, maxRetries: 0 });
             setStatus(data);
             setLastUpdate(new Date());
         } catch (e: any) {

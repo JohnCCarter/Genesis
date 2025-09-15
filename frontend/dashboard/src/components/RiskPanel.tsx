@@ -1,4 +1,4 @@
-import { get, post } from '@lib/api';
+import { getWith, post } from '@lib/api';
 import React from 'react';
 
 type DayKey = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
@@ -39,7 +39,7 @@ export function RiskPanel() {
         try {
             setError(null);
             const [s] = await Promise.all([
-                get('/api/v2/risk/unified/status').catch(() => null),
+                getWith('/api/v2/risk/unified/status', { timeout: 10000, maxRetries: 0 }).catch(() => null),
             ]);
             if (s) setStatus(s);
             if (s && s.trading_window) {

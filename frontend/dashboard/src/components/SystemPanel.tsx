@@ -1,4 +1,4 @@
-import { ensureToken, getWith, getApiBase, post } from '@lib/api';
+import { ensureToken, getApiBase, getWith, post } from '@lib/api';
 import React from 'react';
 import { io } from 'socket.io-client';
 

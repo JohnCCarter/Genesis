@@ -1,5 +1,5 @@
 import React from 'react';
-import { get, post } from '@lib/api';
+import { getWith, post } from '@lib/api';
 import { TEST_SYMBOLS } from '@lib/testSymbols';
 
 export function QuickTrade() {
@@ -27,7 +27,7 @@ export function QuickTrade() {
         try {
             setLoading(true);
             setErr(null);
-            const t = await get(`/api/v2/market/ticker/${encodeURIComponent(symbol)}`);
+            const t = await getWith(`/api/v2/market/ticker/${encodeURIComponent(symbol)}`, { timeout: 8000, maxRetries: 0 });
             setMsg(`Ticker: ${JSON.stringify(t)}`);
         } catch (e: any) {
             setErr(e?.message || 'preview_failed');

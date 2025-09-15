@@ -1,5 +1,5 @@
 import React from 'react';
-import { get } from '@lib/api';
+import { getWith } from '@lib/api';
 
 type Wallet = any;
 
@@ -12,7 +12,7 @@ export function WalletsPanel() {
         try {
             setLoading(true);
             setError(null);
-            const res = await get('/api/v2/wallets');
+            const res = await getWith('/api/v2/wallets', { timeout: 15000, maxRetries: 1 });
             setWallets(Array.isArray(res) ? res : []);
         } catch (e: any) {
             setError(e?.message || 'Kunde inte hämta wallets');
