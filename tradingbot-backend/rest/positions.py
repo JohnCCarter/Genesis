@@ -14,8 +14,7 @@ from typing import Any
 import httpx
 from pydantic import BaseModel
 
-from config.settings import Settings
-from rest.auth import build_auth_headers
+from config.settings import settings
 from services.metrics import record_http_result
 from utils.advanced_rate_limiter import get_advanced_rate_limiter
 from utils.logger import get_logger
@@ -71,7 +70,7 @@ class PositionsService:
     """Service för att hämta och hantera positionsinformation från Bitfinex."""
 
     def __init__(self):
-        self.settings = Settings()
+        self.settings = settings
         self.base_url = getattr(self.settings, "BITFINEX_AUTH_API_URL", None) or self.settings.BITFINEX_API_URL
         self.rate_limiter = get_advanced_rate_limiter()
         # Global semafor för alla privata REST-klasser
@@ -108,13 +107,8 @@ class PositionsService:
             try:
                 _t0 = time.perf_counter()
                 async with self._sem:
-                    try:
-                        ec = get_exchange_client()
-                        response = await ec.signed_request(method="post", endpoint=endpoint, body=None, timeout=15.0)
-                    except Exception:
-                        async with httpx.AsyncClient(timeout=httpx.Timeout(15.0)) as client:
-                            headers = build_auth_headers(endpoint)
-                            response = await client.post(f"{self.base_url}/{endpoint}", headers=headers)
+                    ec = get_exchange_client()
+                    response = await ec.signed_request(method="post", endpoint=endpoint, body=None, timeout=15.0)
                 _t1 = time.perf_counter()
                 try:
                     record_http_result(
@@ -244,30 +238,30 @@ class PositionsService:
                 "amount": str(close_amount),
                 "reduce_only": True,
             }
-            headers = build_auth_headers(order_endpoint, order_payload)
-
-            timeout = Settings().ORDER_HTTP_TIMEOUT
-            retries = max(int(Settings().ORDER_MAX_RETRIES), 0)
-            backoff_base = max(int(Settings().ORDER_BACKOFF_BASE_MS), 0) / 1000.0
-            backoff_max = max(int(Settings().ORDER_BACKOFF_MAX_MS), 0) / 1000.0
+            
+            ec = get_exchange_client()
+            timeout = self.settings.ORDER_HTTP_TIMEOUT
+            retries = max(int(self.settings.ORDER_MAX_RETRIES), 0)
+            backoff_base = max(int(self.settings.ORDER_BACKOFF_BASE_MS), 0) / 1000.0
+            backoff_max = max(int(self.settings.ORDER_BACKOFF_MAX_MS), 0) / 1000.0
             last_exc = None
             result = None
             for attempt in range(retries + 1):
                 try:
-                    async with httpx.AsyncClient(timeout=timeout) as client:
-                        logger.info(
-                            f"🌐 REST API: Stänger position via reduce-only MARKET för {symbol} ({close_amount})"
-                        )
-                        response = await client.post(
-                            f"{self.base_url}/{order_endpoint}",
-                            headers=headers,
-                            json=order_payload,
-                        )
-                        if response.status_code in (429, 500, 502, 503, 504):
-                            raise httpx.HTTPStatusError("server busy", request=None, response=response)
-                        response.raise_for_status()
-                        result = response.json()
-                        break
+                    logger.info(
+                        f"🌐 REST API: Stänger position via reduce-only MARKET för {symbol} ({close_amount})"
+                    )
+                    response = await ec.signed_request(
+                        method="post", 
+                        endpoint=order_endpoint, 
+                        body=order_payload, 
+                        timeout=timeout
+                    )
+                    if response.status_code in (429, 500, 502, 503, 504):
+                        raise httpx.HTTPStatusError("server busy", request=response.request, response=response)
+                    response.raise_for_status()
+                    result = response.json()
+                    break
                 except Exception as e:
                     last_exc = e
                     if attempt < retries:

@@ -23,7 +23,7 @@ from enum import Enum
 from typing import Any, Callable, Dict, List, Optional
 from dataclasses import dataclass, field
 
-from config.settings import Settings
+from config.settings import settings
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -81,8 +81,8 @@ class UnifiedSchedulerService:
     - Ad-hoc jobb från services
     """
 
-    def __init__(self, settings: Settings | None = None):
-        self.settings = settings or Settings()
+    def __init__(self, settings_override: Settings | None = None):
+        self.settings = settings_override or settings
         self.jobs: dict[str, ScheduledJob] = {}
         self.is_running = False
         self._stop_event = asyncio.Event()
@@ -529,7 +529,7 @@ def get_unified_scheduler() -> UnifiedSchedulerService:
     """Hämta global instans av UnifiedSchedulerService."""
     global _unified_scheduler
     if _unified_scheduler is None:
-        _unified_scheduler = UnifiedSchedulerService()
+        _unified_scheduler = UnifiedSchedulerService(settings)
     return _unified_scheduler
 
 

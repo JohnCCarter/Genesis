@@ -10,14 +10,14 @@ from typing import Any, Dict
 
 import jwt
 
-from config.settings import Settings
+from config.settings import settings
 from services.exchange_client import get_exchange_client
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
 # Bitfinex WebSocket API credentials - separata nycklar för WebSocket
-settings = Settings()
+# settings = Settings() # Remove this line
 # Logga status (utan att visa nycklarna)
 logger.info(f"WebSocket API Key status: {'✅ Konfigurerad' if settings.BITFINEX_WS_API_KEY else '❌ Saknas'}")
 logger.info(f"WebSocket API Secret status: {'✅ Konfigurerad' if settings.BITFINEX_WS_API_SECRET else '❌ Saknas'}")

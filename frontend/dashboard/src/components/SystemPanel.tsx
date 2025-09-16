@@ -1,6 +1,6 @@
-import { ensureToken, getApiBase, getWith, post } from '@lib/api';
+import { getApiBase, getWith, post } from '@lib/api';
+import { ensureUiSocketConnected, getUiSocket } from '@lib/uiSocket';
 import React from 'react';
-import { io } from 'socket.io-client';
 
 export function SystemPanel() {
     const [health, setHealth] = React.useState<any>(null);
@@ -86,20 +86,16 @@ export function SystemPanel() {
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 8 }}>
                     <span style={{ padding: '2px 8px', borderRadius: 12, background: wsStatus === 'connected' ? '#d7f5dd' : '#ffdada' }}>{wsStatus}</span>
                     <button onClick={async () => {
-                        if (socketRef.current) return;
                         try {
-                            await ensureToken();
-                        } catch { }
-                        const tk = localStorage.getItem('jwt') || localStorage.getItem('genesis_access_token');
-                        const base = String(WS_BASE);
-                        const url = tk ? `${base}${base.includes('?') ? '&' : '?'}token=${encodeURIComponent(tk)}` : base;
-                        const s = io(url, { path: '/ws/socket.io' });
-                        socketRef.current = s;
-                        s.on('connect', () => { setWsStatus('connected'); setWsLog((v) => v + `\n[${new Date().toISOString()}] connected`); });
-                        s.on('disconnect', () => { setWsStatus('disconnected'); setWsLog((v) => v + `\n[${new Date().toISOString()}] disconnected`); socketRef.current = null; });
-                        s.on('message', (m: any) => setWsLog((v) => v + `\n[${new Date().toISOString()}] message ${JSON.stringify(m)}`));
+                            const s = await ensureUiSocketConnected();
+                            socketRef.current = s;
+                            setWsStatus(s.connected ? 'connected' : 'disconnected');
+                            s.on('connect', () => { setWsStatus('connected'); setWsLog((v) => v + `\n[${new Date().toISOString()}] connected`); });
+                            s.on('disconnect', () => { setWsStatus('disconnected'); setWsLog((v) => v + `\n[${new Date().toISOString()}] disconnected`); });
+                            s.on('message', (m: any) => setWsLog((v) => v + `\n[${new Date().toISOString()}] message ${JSON.stringify(m)}`));
+                        } catch {}
                     }}>Connect</button>
-                    <button onClick={() => { if (socketRef.current) socketRef.current.close(); }}>Disconnect</button>
+                    <button onClick={() => { const s = getUiSocket(); try { s.close(); } catch {}; setWsStatus('disconnected'); }}>Disconnect</button>
                 </div>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 8 }}>
                     <select value={chan} onChange={(e) => setChan(e.target.value)}>

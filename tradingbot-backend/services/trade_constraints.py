@@ -7,7 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from config.settings import Settings
+from config.settings import settings, Settings
 from services.trade_counter import TradeCounterService
 from services.trading_window import TradingWindowService
 from services.metrics import inc, inc_labeled
@@ -21,8 +21,8 @@ class ConstraintResult:
 
 
 class TradeConstraintsService:
-    def __init__(self, settings: Settings | None = None) -> None:
-        self.settings = settings or Settings()
+    def __init__(self, settings_override: Settings | None = None) -> None:
+        self.settings = settings_override or settings
         self.trading_window = TradingWindowService(self.settings)
         self.trade_counter = TradeCounterService(self.settings)
 

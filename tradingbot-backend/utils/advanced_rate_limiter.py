@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Awaitable, Callable, ParamSpec, TypeVar
 
-from config.settings import Settings
+from config.settings import settings
 from services.metrics import _labels_to_str, metrics_store
 from services.metrics_client import get_metrics_client
 from utils.logger import get_logger
@@ -95,8 +95,8 @@ class AdvancedRateLimiter:
     `time_until_open` för utvalda endpoints.
     """
 
-    def __init__(self, settings: Settings | None = None):
-        self.settings = settings or Settings()
+    def __init__(self, settings_override: Settings | None = None):
+        self.settings = settings_override or settings
         self._buckets: dict[EndpointType, TokenBucket] = {}
         self._endpoint_mapping: dict[str, EndpointType] = {}
         # Per-event-loop locks: asyncio.Lock är loop-bundet
@@ -452,7 +452,7 @@ def get_advanced_rate_limiter() -> AdvancedRateLimiter:
     """Returnerar global advanced rate limiter instans"""
     global _advanced_rate_limiter
     if _advanced_rate_limiter is None:
-        _advanced_rate_limiter = AdvancedRateLimiter()
+        _advanced_rate_limiter = AdvancedRateLimiter(settings)
     return _advanced_rate_limiter
 
 

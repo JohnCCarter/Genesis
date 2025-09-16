@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from utils.logger import get_logger
+from config.settings import settings
 
 logger = get_logger(__name__)
 
@@ -29,10 +30,9 @@ class CoordinatorService:
         }
 
     async def enforce_candle_cache_retention(self) -> dict[str, Any]:
-        from config.settings import Settings
         from utils.candle_cache import candle_cache
 
-        s = Settings()
+        s = settings
         days = int(getattr(s, "CANDLE_CACHE_RETENTION_DAYS", 0) or 0)
         max_rows = int(getattr(s, "CANDLE_CACHE_MAX_ROWS_PER_PAIR", 0) or 0)
         if days <= 0 and max_rows <= 0:
@@ -41,12 +41,11 @@ class CoordinatorService:
         return {"ok": True, "removed": int(removed)}
 
     async def prob_validation(self) -> dict[str, Any]:
-        from config.settings import Settings
         from services.market_data_facade import get_market_data
         from services.metrics import metrics_store
         from services.prob_validation import validate_on_candles
 
-        s = Settings()
+        s = settings
         if not bool(getattr(s, "PROB_VALIDATE_ENABLED", True)):
             return {"ok": False, "disabled": True}
         raw_syms = (getattr(s, "PROB_VALIDATE_SYMBOLS", None) or "").strip()
@@ -95,7 +94,6 @@ class CoordinatorService:
         return {"ok": True, "symbols": len(symbols)}
 
     async def prob_retrain(self) -> dict[str, Any]:
-        from config.settings import Settings
         from services.market_data_facade import get_market_data
         from services.metrics import metrics_store
         from services.prob_model import prob_model
@@ -104,7 +102,7 @@ class CoordinatorService:
         import os
         import re
 
-        s = Settings()
+        s = settings
         if not bool(getattr(s, "PROB_RETRAIN_ENABLED", False)):
             return {"ok": False, "disabled": True}
         raw_syms = (getattr(s, "PROB_RETRAIN_SYMBOLS", None) or "").strip()
@@ -149,10 +147,9 @@ class CoordinatorService:
         return {"ok": True, "events": events}
 
     async def update_regime(self) -> dict[str, Any]:
-        from config.settings import Settings
         from services.strategy import update_settings_from_regime_batch
 
-        s = Settings()
+        s = settings
         raw_syms = (getattr(s, "WS_SUBSCRIBE_SYMBOLS", None) or "").strip()
         symbols = [x.strip() for x in raw_syms.split(",") if x.strip()] if raw_syms else []
         if not symbols:

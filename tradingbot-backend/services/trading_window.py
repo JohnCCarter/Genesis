@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from typing import Any
 from datetime import datetime, time, timedelta
 
-from config.settings import Settings
+from config.settings import settings
 from utils.logger import get_logger
 
 try:
@@ -41,8 +41,8 @@ class TradingRules:
 
 
 class TradingWindowService:
-    def __init__(self, settings: Settings | None = None):
-        self.settings = settings or Settings()
+    def __init__(self, settings_override: Settings | None = None):
+        self.settings = settings_override or settings
         self.rules = self._load_rules()
 
     def _load_rules(self) -> TradingRules:

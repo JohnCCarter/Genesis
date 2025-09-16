@@ -22,6 +22,7 @@ from services.symbols import SymbolService
 from indicators.regime import detect_regime, ema_z
 from indicators.adx import adx as adx_series
 from utils.logger import get_logger
+from config.settings import settings
 
 logger = get_logger(__name__)
 
@@ -55,10 +56,6 @@ class UnifiedSignalService:
     async def get_symbols(self) -> list[str]:
         """Hämta aktiva symboler från samma källa som alla paneler."""
         try:
-            from config.settings import Settings
-
-            settings = Settings()
-
             # Hämta symboler från samma källa som Live Signals
             raw_symbols = (settings.WS_SUBSCRIBE_SYMBOLS or "").strip()
             if raw_symbols:

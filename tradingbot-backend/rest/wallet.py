@@ -12,8 +12,7 @@ import httpx
 from services.exchange_client import get_exchange_client
 from pydantic import BaseModel
 
-from config.settings import Settings
-from rest.auth import build_auth_headers
+from config.settings import settings
 from services.metrics import record_http_result
 from utils.advanced_rate_limiter import get_advanced_rate_limiter
 from utils.logger import get_logger
@@ -50,7 +49,7 @@ class WalletService:
     """Service för att hämta och hantera plånboksinformation från Bitfinex."""
 
     def __init__(self):
-        self.settings = Settings()
+        self.settings = settings
         self.base_url = getattr(self.settings, "BITFINEX_AUTH_API_URL", None) or self.settings.BITFINEX_API_URL
         self.rate_limiter = get_advanced_rate_limiter()
         # Concurrency cap för privata REST
@@ -87,13 +86,8 @@ class WalletService:
             logger.info(f"🌐 REST API: Hämtar plånböcker från {self.base_url}/{endpoint}")
             _t0 = time.perf_counter()
             async with self._sem:
-                try:
-                    ec = get_exchange_client()
-                    response = await ec.signed_request(method="post", endpoint=endpoint, body=None, timeout=15.0)
-                except Exception:
-                    async with httpx.AsyncClient(timeout=httpx.Timeout(15.0)) as client:
-                        headers = build_auth_headers(endpoint)
-                        response = await client.post(f"{self.base_url}/{endpoint}", headers=headers)
+                ec = get_exchange_client()
+                response = await ec.signed_request(method="post", endpoint=endpoint, body=None, timeout=15.0)
                 _t1 = time.perf_counter()
                 try:
                     record_http_result(

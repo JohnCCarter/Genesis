@@ -15,8 +15,9 @@ from dataclasses import dataclass
 from typing import Any
 
 import httpx
+from services.http import async_client
 
-from config.settings import Settings
+from config.settings import settings
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -99,6 +100,7 @@ class ExchangeClient:
         endpoint: str,
         body: dict[str, Any] | None = None,
         timeout: float | None = None,
+        v1: bool = False,
     ) -> httpx.Response:
         """Centraliserad signerad REST-anropare med nonce‑bump och enkel retry.
 
@@ -109,38 +111,39 @@ class ExchangeClient:
         body = body or {}
         body_json = json.dumps(body, separators=(",", ":"), ensure_ascii=False)
 
-        headers = self.build_rest_headers(endpoint=endpoint, payload_str=body_json)
+        headers = self.build_rest_headers(endpoint=endpoint, payload_str=body_json, v1=v1)
         base_url = getattr(self.settings, "BITFINEX_AUTH_API_URL", None) or self.settings.BITFINEX_API_URL
-        to = float(timeout or getattr(self.settings, "ORDER_HTTP_TIMEOUT", 15.0))
+        if v1:
+            base_url = "https://api.bitfinex.com/v1"
 
-        async with httpx.AsyncClient(timeout=to) as client:
-            req = getattr(client, method.lower())
-            response = await req(
-                f"{base_url}/{endpoint}",
-                content=body_json.encode("utf-8"),
-                headers=headers,
-            )
+        # Notera: timeout hanteras nu av den globala klienten, `to` ignoreras här men kan användas för per-request overrides i framtiden
+        req = getattr(async_client, method.lower())
+        response = await req(
+            f"{base_url}/{endpoint}",
+            content=body_json.encode("utf-8"),
+            headers=headers,
+        )
 
-            # Nonce‑fel (Bitfinex returnerar 500 med feltextlista där index 2 brukar innehålla meddelandet)
-            if response.status_code == 500:
-                try:
-                    data = response.json()
-                    if isinstance(data, list) and len(data) >= 3 and "nonce" in str(data[2]).lower():
-                        from utils.nonce_manager import bump_nonce
+        # Nonce‑fel (Bitfinex returnerar 500 med feltextlista där index 2 brukar innehålla meddelandet)
+        if response.status_code == 500:
+            try:
+                data = response.json()
+                if isinstance(data, list) and len(data) >= 3 and "nonce" in str(data[2]).lower():
+                    from utils.nonce_manager import bump_nonce
 
-                        api_key = self.settings.BITFINEX_API_KEY or "default_key"
-                        bump_nonce(api_key)
-                        # Bygg om headers och försök en gång till
-                        headers = self.build_rest_headers(endpoint=endpoint, payload_str=body_json)
-                        response = await req(
-                            f"{base_url}/{endpoint}",
-                            content=body_json.encode("utf-8"),
-                            headers=headers,
-                        )
-                except Exception:
-                    pass
+                    api_key = self.settings.BITFINEX_API_KEY or "default_key"
+                    bump_nonce(api_key)
+                    # Bygg om headers och försök en gång till
+                    headers = self.build_rest_headers(endpoint=endpoint, payload_str=body_json)
+                    response = await req(
+                        f"{base_url}/{endpoint}",
+                        content=body_json.encode("utf-8"),
+                        headers=headers,
+                    )
+            except Exception:
+                pass
 
-            return response
+        return response
 
 
 _client_singleton: ExchangeClient | None = None
@@ -149,5 +152,5 @@ _client_singleton: ExchangeClient | None = None
 def get_exchange_client() -> ExchangeClient:
     global _client_singleton
     if _client_singleton is None:
-        _client_singleton = ExchangeClient(settings=Settings())
+        _client_singleton = ExchangeClient(settings=settings)
     return _client_singleton

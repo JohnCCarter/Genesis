@@ -5,9 +5,11 @@ Denna modul demonstrerar hur Bitfinex-autentisering används
 för REST och WebSocket-anrop.
 """
 
+from __future__ import annotations
+
 from typing import Any
 
-import httpx
+from services.http import apost
 
 from rest.auth import build_auth_headers
 from utils.logger import get_logger
@@ -33,9 +35,8 @@ class BitfinexClient:
         endpoint = "auth/r/orders/active"
         headers = build_auth_headers(endpoint)
 
-        async with httpx.AsyncClient() as client:
-            response = await client.post(f"{self.rest_url}/v2/{endpoint}", headers=headers)
-            return response.json()
+        response = await apost(f"{self.rest_url}/v2/{endpoint}", headers=headers)
+        return response.json()
 
     def get_ws_auth_message(self) -> str:
         """

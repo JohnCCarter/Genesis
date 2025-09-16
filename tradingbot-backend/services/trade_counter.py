@@ -9,7 +9,7 @@ import os
 from dataclasses import dataclass
 from datetime import date, datetime
 
-from config.settings import Settings
+from config.settings import settings, Settings
 from services.trading_window import TradingWindowService
 from utils.logger import get_logger
 
@@ -29,8 +29,8 @@ class TradeCounterState:
 
 
 class TradeCounterService:
-    def __init__(self, settings: Settings | None = None):
-        self.settings = settings or Settings()
+    def __init__(self, settings_override: Settings | None = None):
+        self.settings = settings_override or settings
         has_zoneinfo = ZoneInfo is not None
         self.tz = ZoneInfo(self.settings.TIMEZONE) if has_zoneinfo else None
         self.state = TradeCounterState(day=self._today())

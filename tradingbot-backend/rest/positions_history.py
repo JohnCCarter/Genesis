@@ -11,8 +11,8 @@ from typing import Any
 import httpx
 from pydantic import BaseModel
 
-from config.settings import Settings
-from rest.auth import build_auth_headers
+from services.exchange_client import get_exchange_client
+from config.settings import settings
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -81,7 +81,7 @@ class PositionsHistoryService:
     """Service för att hämta och hantera positionshistorik från Bitfinex."""
 
     def __init__(self):
-        self.settings = Settings()
+        self.settings = settings
         self.base_url = getattr(self.settings, "BITFINEX_AUTH_API_URL", None) or self.settings.BITFINEX_API_URL
 
     async def get_positions_history(
@@ -110,18 +110,16 @@ class PositionsHistoryService:
             if limit:
                 payload["limit"] = limit
 
-            headers = build_auth_headers(endpoint, payload)
+            ec = get_exchange_client()
+            logger.info(f"🌐 REST API: Hämtar positionshistorik från {self.base_url}/{endpoint}")
+            response = await ec.signed_request(method="post", endpoint=endpoint, body=payload)
+            response.raise_for_status()
 
-            async with httpx.AsyncClient() as client:
-                logger.info(f"🌐 REST API: Hämtar positionshistorik från {self.base_url}/{endpoint}")
-                response = await client.post(f"{self.base_url}/{endpoint}", headers=headers, json=payload)
-                response.raise_for_status()
+            positions_data = response.json()
+            logger.info(f"✅ REST API: Hämtade {len(positions_data)} historiska positioner")
 
-                positions_data = response.json()
-                logger.info(f"✅ REST API: Hämtade {len(positions_data)} historiska positioner")
-
-                positions = [PositionHistory.from_bitfinex_data(position) for position in positions_data]
-                return positions
+            positions = [PositionHistory.from_bitfinex_data(position) for position in positions_data]
+            return positions
 
         except Exception as e:
             logger.error(f"Fel vid hämtning av positionshistorik: {e}")
@@ -136,18 +134,16 @@ class PositionsHistoryService:
         """
         try:
             endpoint = "auth/r/positions/snap"
-            headers = build_auth_headers(endpoint)
+            ec = get_exchange_client()
+            logger.info(f"🌐 REST API: Hämtar positionsögonblicksbild från {self.base_url}/{endpoint}")
+            response = await ec.signed_request(method="post", endpoint=endpoint, body={})
+            response.raise_for_status()
 
-            async with httpx.AsyncClient() as client:
-                logger.info(f"🌐 REST API: Hämtar positionsögonblicksbild från {self.base_url}/{endpoint}")
-                response = await client.post(f"{self.base_url}/{endpoint}", headers=headers)
-                response.raise_for_status()
+            positions_data = response.json()
+            logger.info(f"✅ REST API: Hämtade {len(positions_data)} positioner i ögonblicksbilden")
 
-                positions_data = response.json()
-                logger.info(f"✅ REST API: Hämtade {len(positions_data)} positioner i ögonblicksbilden")
-
-                positions = [PositionHistory.from_bitfinex_data(position) for position in positions_data]
-                return positions
+            positions = [PositionHistory.from_bitfinex_data(position) for position in positions_data]
+            return positions
 
         except Exception as e:
             logger.error(f"Fel vid hämtning av positionsögonblicksbild: {e}")
@@ -184,18 +180,16 @@ class PositionsHistoryService:
             if limit:
                 payload["limit"] = limit
 
-            headers = build_auth_headers(endpoint, payload)
+            ec = get_exchange_client()
+            logger.info(f"🌐 REST API: Hämtar positionsrevision för {symbol} från {self.base_url}/{endpoint}")
+            response = await ec.signed_request(method="post", endpoint=endpoint, body=payload)
+            response.raise_for_status()
 
-            async with httpx.AsyncClient() as client:
-                logger.info(f"🌐 REST API: Hämtar positionsrevision för {symbol} från {self.base_url}/{endpoint}")
-                response = await client.post(f"{self.base_url}/{endpoint}", headers=headers, json=payload)
-                response.raise_for_status()
+            positions_data = response.json()
+            logger.info(f"✅ REST API: Hämtade {len(positions_data)} positionsrevisioner")
 
-                positions_data = response.json()
-                logger.info(f"✅ REST API: Hämtade {len(positions_data)} positionsrevisioner")
-
-                positions = [PositionHistory.from_bitfinex_data(position) for position in positions_data]
-                return positions
+            positions = [PositionHistory.from_bitfinex_data(position) for position in positions_data]
+            return positions
 
         except Exception as e:
             logger.error(f"Fel vid hämtning av positionsrevision: {e}")
@@ -214,17 +208,15 @@ class PositionsHistoryService:
         try:
             endpoint = "auth/w/position/claim"
             payload = {"id": position_id}
-            headers = build_auth_headers(endpoint, payload)
+            ec = get_exchange_client()
+            logger.info(f"🌐 REST API: Gör anspråk på position {position_id}")
+            response = await ec.signed_request(method="post", endpoint=endpoint, body=payload)
+            response.raise_for_status()
 
-            async with httpx.AsyncClient() as client:
-                logger.info(f"🌐 REST API: Gör anspråk på position {position_id}")
-                response = await client.post(f"{self.base_url}/{endpoint}", headers=headers, json=payload)
-                response.raise_for_status()
+            result = response.json()
+            logger.info(f"✅ REST API: Anspråk på position {position_id} framgångsrikt")
 
-                result = response.json()
-                logger.info(f"✅ REST API: Anspråk på position {position_id} framgångsrikt")
-
-                return result
+            return result
 
         except Exception as e:
             logger.error(f"Fel vid anspråk på position: {e}")
@@ -244,17 +236,15 @@ class PositionsHistoryService:
         try:
             endpoint = "auth/w/position/funding/type"
             payload = {"id": symbol, "type": funding_type}
-            headers = build_auth_headers(endpoint, payload)
+            ec = get_exchange_client()
+            logger.info(f"🌐 REST API: Uppdaterar finansieringstyp för position {symbol} till {funding_type}")
+            response = await ec.signed_request(method="post", endpoint=endpoint, body=payload)
+            response.raise_for_status()
 
-            async with httpx.AsyncClient() as client:
-                logger.info(f"🌐 REST API: Uppdaterar finansieringstyp för position {symbol} till {funding_type}")
-                response = await client.post(f"{self.base_url}/{endpoint}", headers=headers, json=payload)
-                response.raise_for_status()
+            result = response.json()
+            logger.info(f"✅ REST API: Finansieringstyp för position {symbol} uppdaterad framgångsrikt")
 
-                result = response.json()
-                logger.info(f"✅ REST API: Finansieringstyp för position {symbol} uppdaterad framgångsrikt")
-
-                return result
+            return result
 
         except Exception as e:
             logger.error(f"Fel vid uppdatering av finansieringstyp: {e}")

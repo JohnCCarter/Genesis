@@ -23,7 +23,7 @@ import psutil
 from datetime import datetime, timedelta
 from typing import Any
 
-from config.settings import Settings
+from config.settings import settings, Settings
 from services.metrics import metrics_store
 from utils.advanced_rate_limiter import get_advanced_rate_limiter
 from utils.logger import get_logger
@@ -128,8 +128,8 @@ class EnhancedObservabilityService:
     - Trading operations
     """
 
-    def __init__(self, settings: Settings | None = None):
-        self.settings = settings or Settings()
+    def __init__(self, settings_override: Settings | None = None):
+        self.settings = settings_override or settings
         self.rate_limiter = get_advanced_rate_limiter()
 
         # Cache för metrics

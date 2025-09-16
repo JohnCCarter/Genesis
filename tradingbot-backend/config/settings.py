@@ -20,6 +20,8 @@ except ImportError:  # Fall tillbaka till v1
     except ImportError:
         raise ImportError("Neither pydantic-settings nor pydantic BaseSettings found") from None
 
+_settings_instance = None
+
 
 class Settings(_BaseSettings):
     """Konfigurationsklass för applikationsinställningar."""
@@ -247,3 +249,20 @@ class Settings(_BaseSettings):
         )
         case_sensitive = False
         extra = "allow"  # Tillåt extra fält från .env
+
+
+def get_settings() -> Settings:
+    """Returnerar en singleton instans av Settings."""
+    global _settings_instance
+    if _settings_instance is None:
+        try:
+            from utils.logger import get_logger
+            logger = get_logger(__name__)
+            logger.info("⚙️  Creating and caching Settings instance...")
+        except Exception:
+            print("⚙️  Creating and caching Settings instance...")
+        _settings_instance = Settings()
+    return _settings_instance
+
+# Exponera en singleton instans för enkel import
+settings = get_settings()

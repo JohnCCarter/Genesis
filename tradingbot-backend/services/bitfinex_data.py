@@ -9,9 +9,9 @@ import asyncio
 import random
 import time
 
-import httpx
+from services.http import aget
 
-from config.settings import Settings
+from config.settings import settings
 from services.bitfinex_websocket import bitfinex_ws
 from services.metrics import record_http_result
 from utils.advanced_rate_limiter import get_advanced_rate_limiter
@@ -65,11 +65,10 @@ class BitfinexDataService:
     """Service för att hämta marknadsdata från Bitfinex."""
 
     def __init__(self):
-        self.settings = Settings()
+        self.settings = settings
         # Använd publik bas-URL för public endpoints
         self.base_url = getattr(self.settings, "BITFINEX_PUBLIC_API_URL", None) or self.settings.BITFINEX_API_URL
-        # Delad HTTP-klient för bättre prestanda
-        self._client: httpx.AsyncClient | None = None
+        # Delad HTTP-klient för bättre prestanda - ANVÄNDER NU GLOBAL KLIENT
         # Global concurrency cap för publika REST-anrop
         try:
             conc = int(getattr(self.settings, "PUBLIC_REST_CONCURRENCY", 4) or 4)
@@ -134,18 +133,10 @@ class BitfinexDataService:
             endpoint = f"candles/trade:{timeframe}:{symbol}/hist"
             url = f"{self.base_url}/{endpoint}"
             params = {"limit": limit}
-            timeout = self.settings.DATA_HTTP_TIMEOUT
             retries = max(int(self.settings.DATA_MAX_RETRIES), 0)
             backoff_base = max(int(self.settings.DATA_BACKOFF_BASE_MS), 0) / 1000.0
             backoff_max = max(int(self.settings.DATA_BACKOFF_MAX_MS), 0) / 1000.0
             last_exc = None
-
-            # Använd delad klient för bättre prestanda med connection pooling
-            if self._client is None:
-                self._client = httpx.AsyncClient(
-                    timeout=timeout,
-                    limits=httpx.Limits(max_keepalive_connections=20, max_connections=100),
-                )
 
             for attempt in range(retries + 1):
                 try:
@@ -163,7 +154,7 @@ class BitfinexDataService:
                         pass
                     _t0 = time.perf_counter()
                     async with self._get_public_sem():
-                        response = await self._client.get(url, params=params)
+                        response = await aget(url, params=params)
                     _t1 = time.perf_counter()
                     try:
                         # Notera Retry-After separat, record_http_result har inte denna parameter
@@ -254,12 +245,6 @@ class BitfinexDataService:
         except Exception as e:
             logger.error("Fel vid hämtning av candles: %s", e)
             return None
-
-    async def close(self):
-        """Stäng HTTP-klienten."""
-        if self._client:
-            await self._client.aclose()
-            self._client = None
 
     async def get_ticker(self, symbol: str = "tBTCUSD") -> dict | None:
         """
@@ -448,106 +433,105 @@ class BitfinexDataService:
 
                 for attempt in range(retries + 1):
                     try:
-                        async with httpx.AsyncClient(timeout=timeout) as client:
-                            logger.info(f"🌐 REST API: Hämtar ticker från {url} (WS-fallback för {symbol})")
-                            # Circuit breaker + limiter
-                            try:
-                                if hasattr(self.rate_limiter, "can_request") and not self.rate_limiter.can_request(
-                                    "ticker"
-                                ):
-                                    wait = float(self.rate_limiter.time_until_open("ticker"))
-                                    await asyncio.sleep(max(0.0, wait))
-                                await self.rate_limiter.wait_if_needed("ticker")
-                            except Exception:
-                                pass
-                            _t0 = time.perf_counter()
-                            async with self._get_public_sem():
-                                response = await client.get(url)
-                            _t1 = time.perf_counter()
-                            try:
-                                record_http_result(
-                                    path=f"/{endpoint}",
-                                    method="GET",
-                                    status_code=int(response.status_code),
-                                    duration_ms=int((_t1 - _t0) * 1000),
-                                )
-                                if response.status_code in (429, 500, 502, 503, 504):
-                                    ra = response.headers.get("Retry-After")
-                                    logger.warning(
-                                        "HTTP %s %s Retry-After=%s",
-                                        response.status_code,
-                                        endpoint,
-                                        ra if ra is not None else "-",
-                                    )
-                            except Exception:
-                                pass
+                        logger.info(f"🌐 REST API: Hämtar ticker från {url} (WS-fallback för {symbol})")
+                        # Circuit breaker + limiter
+                        try:
+                            if hasattr(self.rate_limiter, "can_request") and not self.rate_limiter.can_request(
+                                "ticker"
+                            ):
+                                wait = float(self.rate_limiter.time_until_open("ticker"))
+                                await asyncio.sleep(max(0.0, wait))
+                            await self.rate_limiter.wait_if_needed("ticker")
+                        except Exception:
+                            pass
+                        _t0 = time.perf_counter()
+                        async with self._get_public_sem():
+                            response = await aget(url)
+                        _t1 = time.perf_counter()
+                        try:
+                            record_http_result(
+                                path=f"/{endpoint}",
+                                method="GET",
+                                status_code=int(response.status_code),
+                                duration_ms=int((_t1 - _t0) * 1000),
+                            )
                             if response.status_code in (429, 500, 502, 503, 504):
-                                try:
-                                    retry_after = response.headers.get("Retry-After")
-                                    if hasattr(self.rate_limiter, "note_failure"):
-                                        cooldown = self.rate_limiter.note_failure(
-                                            "ticker",
-                                            int(response.status_code),
-                                            retry_after,
-                                        )
-                                        logger.warning(f"CB öppnad för ticker i {cooldown:.1f}s")
-                                    # Toggle transport CB metric on failure
-                                    try:
-                                        from services.metrics import metrics_store
-
-                                        metrics_store["transport_circuit_breaker_active"] = 1
-                                    except Exception:
-                                        pass
-                                    await self.rate_limiter.handle_server_busy("ticker")
-                                except Exception:
-                                    pass
-                                raise httpx.HTTPError("server busy")
-                            response.raise_for_status()
-                            ticker = response.json()
-                            logger.info(
-                                "✅ REST API: Hämtade ticker för %s: %s",
-                                eff_symbol,
-                                ticker[6],
-                            )  # Last price
-                            out = {
-                                "symbol": symbol,
-                                "last_price": ticker[6],
-                                "bid": ticker[0],
-                                "ask": ticker[2],
-                                "high": ticker[8],
-                                "low": ticker[9],
-                                "volume": ticker[7],
-                            }
-                            # Cacha värden (utan symbolbindning) med kort TTL
+                                ra = response.headers.get("Retry-After")
+                                logger.warning(
+                                    "HTTP %s %s Retry-After=%s",
+                                    response.status_code,
+                                    endpoint,
+                                    ra if ra is not None else "-",
+                                )
+                        except Exception:
+                            pass
+                        if response.status_code in (429, 500, 502, 503, 504):
                             try:
-                                now = time.time()
-                                _TICKER_CACHE[cache_key] = {
-                                    "ts": now,
-                                    "values": {
-                                        "last_price": out["last_price"],
-                                        "bid": out["bid"],
-                                        "ask": out["ask"],
-                                        "high": out["high"],
-                                        "low": out["low"],
-                                        "volume": out["volume"],
-                                    },
-                                }
-                            except Exception:
-                                pass
-                            try:
-                                self.rate_limiter.reset_server_busy_count()
-                                if hasattr(self.rate_limiter, "note_success"):
-                                    self.rate_limiter.note_success("ticker")
-                                # Reset transport CB metric on success
+                                retry_after = response.headers.get("Retry-After")
+                                if hasattr(self.rate_limiter, "note_failure"):
+                                    cooldown = self.rate_limiter.note_failure(
+                                        "ticker",
+                                        int(response.status_code),
+                                        retry_after,
+                                    )
+                                    logger.warning(f"CB öppnad för ticker i {cooldown:.1f}s")
+                                # Toggle transport CB metric on failure
                                 try:
                                     from services.metrics import metrics_store
 
-                                    metrics_store["transport_circuit_breaker_active"] = 0
+                                    metrics_store["transport_circuit_breaker_active"] = 1
                                 except Exception:
                                     pass
+                                await self.rate_limiter.handle_server_busy("ticker")
                             except Exception:
                                 pass
-                            return out
+                            raise httpx.HTTPError("server busy")
+                        response.raise_for_status()
+                        ticker = response.json()
+                        logger.info(
+                            "✅ REST API: Hämtade ticker för %s: %s",
+                            eff_symbol,
+                            ticker[6],
+                        )  # Last price
+                        out = {
+                            "symbol": symbol,
+                            "last_price": ticker[6],
+                            "bid": ticker[0],
+                            "ask": ticker[2],
+                            "high": ticker[8],
+                            "low": ticker[9],
+                            "volume": ticker[7],
+                        }
+                        # Cacha värden (utan symbolbindning) med kort TTL
+                        try:
+                            now = time.time()
+                            _TICKER_CACHE[cache_key] = {
+                                "ts": now,
+                                "values": {
+                                    "last_price": out["last_price"],
+                                    "bid": out["bid"],
+                                    "ask": out["ask"],
+                                    "high": out["high"],
+                                    "low": out["low"],
+                                    "volume": out["volume"],
+                                },
+                            }
+                        except Exception:
+                            pass
+                        try:
+                            self.rate_limiter.reset_server_busy_count()
+                            if hasattr(self.rate_limiter, "note_success"):
+                                self.rate_limiter.note_success("ticker")
+                            # Reset transport CB metric on success
+                            try:
+                                from services.metrics import metrics_store
+
+                                metrics_store["transport_circuit_breaker_active"] = 0
+                            except Exception:
+                                pass
+                        except Exception:
+                            pass
+                        return out
                     except Exception as e:
                         last_exc = e
                         if attempt < retries:
@@ -597,68 +581,67 @@ class BitfinexDataService:
             last_exc = None
             for attempt in range(retries + 1):
                 try:
-                    async with httpx.AsyncClient(timeout=timeout) as client:
-                        logger.info("🌐 REST API: Hämtar tickers (batch)")
+                    logger.info("🌐 REST API: Hämtar tickers (batch)")
+                    try:
+                        if hasattr(self.rate_limiter, "can_request") and not self.rate_limiter.can_request(
+                            "tickers"
+                        ):
+                            wait = float(self.rate_limiter.time_until_open("tickers"))
+                            await asyncio.sleep(max(0.0, wait))
+                        await self.rate_limiter.wait_if_needed("tickers")
+                    except Exception:
+                        pass
+                    async with self._get_public_sem():
+                        resp = await aget(url)
+                    if resp.status_code in (429, 500, 502, 503, 504):
                         try:
-                            if hasattr(self.rate_limiter, "can_request") and not self.rate_limiter.can_request(
-                                "tickers"
-                            ):
-                                wait = float(self.rate_limiter.time_until_open("tickers"))
-                                await asyncio.sleep(max(0.0, wait))
-                            await self.rate_limiter.wait_if_needed("tickers")
+                            retry_after = resp.headers.get("Retry-After")
+                            if hasattr(self.rate_limiter, "note_failure"):
+                                cooldown = self.rate_limiter.note_failure(
+                                    "tickers", int(resp.status_code), retry_after
+                                )
+                                logger.warning(f"CB öppnad för tickers i {cooldown:.1f}s")
+                            await self.rate_limiter.handle_server_busy("tickers")
                         except Exception:
                             pass
-                        async with self._get_public_sem():
-                            resp = await client.get(url)
-                        if resp.status_code in (429, 500, 502, 503, 504):
+                        raise httpx.HTTPError("server busy")
+                    resp.raise_for_status()
+                    data = resp.json()
+                    # Uppdatera cache och ev. latest_prices med snapshot
+                    now = time.time()
+                    try:
+                        for row in data or []:
+                            if not row or not isinstance(row, list):
+                                continue
+                            # Ticker-rad format: [SYMBOL, BID, BID_SIZE, ASK, ASK_SIZE, DAILY_CHANGE, DAILY_CHANGE_RELATIVE, LAST_PRICE, VOLUME, HIGH, LOW]
+                            sy = row[0]
+                            out = {
+                                "last_price": row[7] if len(row) > 7 else None,
+                                "bid": row[1] if len(row) > 1 else None,
+                                "ask": row[3] if len(row) > 3 else None,
+                                "high": row[9] if len(row) > 9 else None,
+                                "low": row[10] if len(row) > 10 else None,
+                                "volume": row[8] if len(row) > 8 else None,
+                            }
+                            _TICKER_CACHE[f"ticker::{sy}"] = {
+                                "ts": now,
+                                "values": out,
+                            }
+                            # Om WS inte levererar ännu, fyll latest_prices som snapshot
                             try:
-                                retry_after = resp.headers.get("Retry-After")
-                                if hasattr(self.rate_limiter, "note_failure"):
-                                    cooldown = self.rate_limiter.note_failure(
-                                        "tickers", int(resp.status_code), retry_after
-                                    )
-                                    logger.warning(f"CB öppnad för tickers i {cooldown:.1f}s")
-                                await self.rate_limiter.handle_server_busy("tickers")
+                                if out["last_price"] is not None and sy not in bitfinex_ws.latest_prices:
+                                    bitfinex_ws.latest_prices[sy] = out["last_price"]
                             except Exception:
                                 pass
-                            raise httpx.HTTPError("server busy")
-                        resp.raise_for_status()
-                        data = resp.json()
-                        # Uppdatera cache och ev. latest_prices med snapshot
-                        now = time.time()
-                        try:
-                            for row in data or []:
-                                if not row or not isinstance(row, list):
-                                    continue
-                                # Ticker-rad format: [SYMBOL, BID, BID_SIZE, ASK, ASK_SIZE, DAILY_CHANGE, DAILY_CHANGE_RELATIVE, LAST_PRICE, VOLUME, HIGH, LOW]
-                                sy = row[0]
-                                out = {
-                                    "last_price": row[7] if len(row) > 7 else None,
-                                    "bid": row[1] if len(row) > 1 else None,
-                                    "ask": row[3] if len(row) > 3 else None,
-                                    "high": row[9] if len(row) > 9 else None,
-                                    "low": row[10] if len(row) > 10 else None,
-                                    "volume": row[8] if len(row) > 8 else None,
-                                }
-                                _TICKER_CACHE[f"ticker::{sy}"] = {
-                                    "ts": now,
-                                    "values": out,
-                                }
-                                # Om WS inte levererar ännu, fyll latest_prices som snapshot
-                                try:
-                                    if out["last_price"] is not None and sy not in bitfinex_ws.latest_prices:
-                                        bitfinex_ws.latest_prices[sy] = out["last_price"]
-                                except Exception:
-                                    pass
-                        except Exception:
-                            pass
-                        try:
-                            self.rate_limiter.reset_server_busy_count()
-                            if hasattr(self.rate_limiter, "note_success"):
-                                self.rate_limiter.note_success("tickers")
-                        except Exception:
-                            pass
-                        return data
+                    except Exception:
+                        pass
+                    try:
+                        self.rate_limiter.reset_server_busy_count()
+                        if hasattr(self.rate_limiter, "note_success"):
+                            self.rate_limiter.note_success("tickers")
+                    except Exception:
+                        pass
+                    return data
                 except Exception as e:
                     last_exc = e
                     if attempt < retries:
@@ -687,11 +670,9 @@ class BitfinexDataService:
         """
         try:
             url = f"{self.base_url}/platform/status"
-            async with httpx.AsyncClient(timeout=self.settings.DATA_HTTP_TIMEOUT) as client:
-                async with self._get_public_sem():
-                    resp = await client.get(url)
-                resp.raise_for_status()
-                return resp.json()
+            async with self._get_public_sem():
+                resp = await aget(url)
+            return resp.json()
         except Exception as e:
             logger.warning(f"Fel vid hämtning av platform status: {e}")
             return None
@@ -726,28 +707,26 @@ class BitfinexDataService:
             # Multi-request för exchange + margin
             url = f"{self.base_url}/conf/pub:list:pair:exchange,pub:list:pair:margin"
             _t0 = _t.perf_counter()
-            async with httpx.AsyncClient(timeout=self.settings.DATA_HTTP_TIMEOUT) as client:
-                resp = await client.get(url)
-                resp.raise_for_status()
-                data = resp.json() or []
-                _t1 = _t.perf_counter()
-                logger.info("⚙️ configs symbols fetch (%.0f ms)", (_t1 - _t0) * 1000)
-                pairs: list[str] = []
-                # data är en lista av listor; slå ihop
-                if isinstance(data, list):
-                    for arr in data:
-                        if isinstance(arr, list):
-                            for p in arr:
-                                try:
-                                    s = str(p)
-                                    if s and s not in pairs:
-                                        pairs.append(s)
-                                except Exception:
-                                    pass
-                if pairs:
-                    _CONFIG_PAIRS_CACHE.clear()
-                    _CONFIG_PAIRS_CACHE.update({"ts": now, "pairs": pairs})
-                return pairs
+            resp = await aget(url)
+            data = resp.json() or []
+            _t1 = _t.perf_counter()
+            logger.info("⚙️ configs symbols fetch (%.0f ms)", (_t1 - _t0) * 1000)
+            pairs: list[str] = []
+            # data är en lista av listor; slå ihop
+            if isinstance(data, list):
+                for arr in data:
+                    if isinstance(arr, list):
+                        for p in arr:
+                            try:
+                                s = str(p)
+                                if s and s not in pairs:
+                                    pairs.append(s)
+                            except Exception:
+                                pass
+            if pairs:
+                _CONFIG_PAIRS_CACHE.clear()
+                _CONFIG_PAIRS_CACHE.update({"ts": now, "pairs": pairs})
+            return pairs
         except Exception as e:
             logger.warning("Fel vid hämtning av configs symbols: %s", e)
             return None
@@ -792,30 +771,28 @@ class BitfinexDataService:
 
             url = f"{self.base_url}/conf/pub:map:currency:sym"
             _t0 = _t.perf_counter()
-            async with httpx.AsyncClient(timeout=self.settings.DATA_HTTP_TIMEOUT) as client:
-                resp = await client.get(url)
-                resp.raise_for_status()
-                data = resp.json() or []
-                _t1 = _t.perf_counter()
-                logger.info("⚙️ currency map fetch (%.0f ms)", (_t1 - _t0) * 1000)
-                fwd: dict[str, str] = {}
-                rev: dict[str, str] = {}
-                # Förväntat format: [[ [RAW, API], [RAW, API], ... ]]
-                if isinstance(data, list) and data and isinstance(data[0], list):
-                    for row in data[0]:
-                        if (
-                            isinstance(row, list)
-                            and len(row) >= 2
-                            and isinstance(row[0], str)
-                            and isinstance(row[1], str)
-                        ):
-                            raw = row[0].upper()
-                            api = row[1].upper()
-                            fwd[raw] = api
-                            rev[api] = raw
-                _CURRENCY_MAP_CACHE.clear()
-                _CURRENCY_MAP_CACHE.update({"ts": now, "fwd": fwd, "rev": rev})
-                return fwd, rev
+            resp = await aget(url)
+            data = resp.json() or []
+            _t1 = _t.perf_counter()
+            logger.info("⚙️ currency map fetch (%.0f ms)", (_t1 - _t0) * 1000)
+            fwd: dict[str, str] = {}
+            rev: dict[str, str] = {}
+            # Förväntat format: [[ [RAW, API], [RAW, API], ... ]]
+            if isinstance(data, list) and data and isinstance(data[0], list):
+                for row in data[0]:
+                    if (
+                        isinstance(row, list)
+                        and len(row) >= 2
+                        and isinstance(row[0], str)
+                        and isinstance(row[1], str)
+                    ):
+                        raw = row[0].upper()
+                        api = row[1].upper()
+                        fwd[raw] = api
+                        rev[api] = raw
+            _CURRENCY_MAP_CACHE.clear()
+            _CURRENCY_MAP_CACHE.update({"ts": now, "fwd": fwd, "rev": rev})
+            return fwd, rev
         except Exception as e:
             logger.warning("Fel vid hämtning av currency sym‑map: %s", e)
             return {}, {}
@@ -868,13 +845,11 @@ class BitfinexDataService:
                 candles = None
                 for attempt in range(retries + 1):
                     try:
-                        async with httpx.AsyncClient(timeout=timeout) as client:
-                            resp = await client.get(url, params=params)
-                            if resp.status_code in (429, 500, 502, 503, 504):
-                                raise httpx.HTTPStatusError("server busy", request=resp.request, response=resp)
-                            resp.raise_for_status()
-                            candles = resp.json() or []
-                            break
+                        resp = await aget(url, params=params)
+                        if resp.status_code in (429, 500, 502, 503, 504):
+                            raise httpx.HTTPStatusError("server busy", request=resp.request, response=resp)
+                        candles = resp.json() or []
+                        break
                     except Exception as e:
                         last_exc = e
                         if attempt < retries:

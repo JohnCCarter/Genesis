@@ -12,7 +12,7 @@ import asyncio
 from datetime import datetime, timedelta, UTC
 from typing import Any, Dict, List
 
-from config.settings import Settings
+from config.settings import settings, Settings
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -21,8 +21,8 @@ logger = get_logger(__name__)
 class CircuitBreakerRecoveryService:
     """Service för att återställa öppna circuit breakers."""
 
-    def __init__(self, settings: Settings | None = None):
-        self.settings = settings or Settings()
+    def __init__(self, settings_override: Settings | None = None):
+        self.settings = settings_override or settings
         self.is_running = False
         self._task: asyncio.Task | None = None
         self._stop_event = asyncio.Event()

@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
-from config.settings import Settings
+from config.settings import settings
 from services.performance import PerformanceService
 from utils.logger import get_logger
 
@@ -55,8 +55,8 @@ class RegimePerformance:
 class RegimeAblationService:
     """Service för regime ablation och gate switching."""
 
-    def __init__(self, settings: Settings | None = None):
-        self.settings = settings or Settings()
+    def __init__(self, settings_override: Settings | None = None):
+        self.settings = settings_override or settings
         self.config_file = "config/regime_ablation.json"
         self.performance_file = "config/regime_performance.json"
         self.performance_service = PerformanceService(self.settings)

@@ -16,7 +16,7 @@ import asyncio
 from datetime import datetime, timedelta
 from typing import Any
 
-from config.settings import Settings
+from config.settings import settings
 from rest.margin import MarginService as _MS
 from services.bitfinex_websocket import bitfinex_ws
 from services.market_data_facade import get_market_data
@@ -53,7 +53,7 @@ class WatchlistService:
             syms = [s.strip() for s in symbols_param.split(",") if s.strip()]
         else:
             try:
-                env_syms = (Settings().WS_SUBSCRIBE_SYMBOLS or "").strip()
+                env_syms = (settings.WS_SUBSCRIBE_SYMBOLS or "").strip()
                 if env_syms:
                     syms = [s.strip() for s in env_syms.split(",") if s.strip()]
                 else:
@@ -102,7 +102,7 @@ class WatchlistService:
 
         # Bygg svar
         results: list[dict[str, Any]] = []
-        env_syms = (Settings().WS_SUBSCRIBE_SYMBOLS or "").strip()
+        env_syms = (settings.WS_SUBSCRIBE_SYMBOLS or "").strip()
         env_list = [x.strip() for x in env_syms.split(",") if x.strip()]
 
         for i, s in enumerate(syms):

@@ -22,7 +22,7 @@ from collections import deque
 from datetime import datetime, timedelta
 from typing import Any
 
-from config.settings import Settings
+from config.settings import settings
 from services.performance import PerformanceService
 from services.trade_constraints import TradeConstraintsService
 from utils.logger import get_logger
@@ -67,8 +67,8 @@ class UnifiedRiskService:
     - Circuit breaker
     """
 
-    def __init__(self, settings: Settings | None = None):
-        self.settings = settings or Settings()
+    def __init__(self, settings_override: Settings | None = None):
+        self.settings = settings_override or settings
         self.performance_service = PerformanceService(self.settings)
         self.trade_constraints = TradeConstraintsService(self.settings)
         self.circuit_breaker = CircuitBreakerState()
@@ -476,4 +476,4 @@ class UnifiedRiskService:
 
 
 # Global instans för enhetlig åtkomst
-unified_risk_service = UnifiedRiskService()
+unified_risk_service = UnifiedRiskService(settings)

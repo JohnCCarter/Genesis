@@ -16,7 +16,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
-from config.settings import Settings
+from config.settings import settings
 from services.bitfinex_websocket import bitfinex_ws
 from utils.logger import get_logger
 
@@ -53,8 +53,8 @@ class HealthStatus:
 class HealthWatchdogService:
     """Service för hälsokontroller och watchdog funktionalitet."""
 
-    def __init__(self, settings: Settings | None = None):
-        self.settings = settings or Settings()
+    def __init__(self, settings_override: Settings | None = None):
+        self.settings = settings_override or settings
         self.config_file = "config/health_watchdog.json"
         self.status_file = "config/health_status.json"
 

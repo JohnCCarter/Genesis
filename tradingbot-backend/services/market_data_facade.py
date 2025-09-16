@@ -8,7 +8,7 @@ import asyncio
 import time
 from typing import Any, Tuple, Protocol
 
-from config.settings import Settings
+from config.settings import settings
 from services.ws_first_data_service import WSFirstDataService, get_ws_first_data_service
 from utils.logger import get_logger
 
@@ -33,7 +33,7 @@ class IMarketDataProvider(Protocol):
 class MarketDataFacade:
     def __init__(self, ws_first: WSFirstDataService | None = None) -> None:
         self.ws_first = ws_first or get_ws_first_data_service()
-        self.settings = Settings()
+        self.settings = settings
 
     async def get_ticker(self, symbol: str, *, force_fresh: bool = False) -> dict[str, Any] | None:
         """Hämta ticker med timeout och bättre logging."""
@@ -146,9 +146,6 @@ def get_market_data() -> MarketDataFacade:
     global _facade_singleton
     if _facade_singleton is None:
         # Lazy-load WSFirstDataService för att undvika WebSocket-anslutning vid startup
-        from config.settings import Settings
-
-        settings = Settings()
         ws_connect_on_start = getattr(settings, "WS_CONNECT_ON_START", True)
 
         if not ws_connect_on_start:

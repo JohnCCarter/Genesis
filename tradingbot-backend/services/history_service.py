@@ -20,7 +20,7 @@ import asyncio
 from datetime import datetime, timedelta
 from typing import Any
 
-from config.settings import Settings
+from config.settings import settings, Settings
 from rest.order_history import OrderHistoryService
 from rest.ledgers import LedgerService
 from rest.positions import PositionsService
@@ -53,8 +53,8 @@ class HistoryService:
     - Performance snapshots
     """
 
-    def __init__(self, settings: Settings | None = None):
-        self.settings = settings or Settings()
+    def __init__(self, settings_override: Settings | None = None):
+        self.settings = settings_override or settings
 
         # Services för historisk data
         self.order_history = OrderHistoryService()

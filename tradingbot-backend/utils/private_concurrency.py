@@ -10,7 +10,7 @@ Användning:
 
 import asyncio
 
-from config.settings import Settings
+from config.settings import settings
 
 _private_sems: dict[int, asyncio.Semaphore] = {}
 
@@ -24,7 +24,7 @@ def get_private_rest_semaphore() -> asyncio.Semaphore:
     sem = _private_sems.get(loop_id)
     if sem is None:
         try:
-            conc = int(getattr(Settings(), "PRIVATE_REST_CONCURRENCY", 2) or 2)
+            conc = int(getattr(settings, "PRIVATE_REST_CONCURRENCY", 2) or 2)
         except Exception:
             conc = 2
         sem = asyncio.Semaphore(max(1, conc))

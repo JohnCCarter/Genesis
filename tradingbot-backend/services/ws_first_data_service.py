@@ -19,6 +19,7 @@ from services.metrics_client import get_metrics_client
 from utils.advanced_rate_limiter import get_advanced_rate_limiter
 from utils.logger import get_logger
 from utils.candle_cache import candle_cache
+from config.settings import settings
 
 logger = get_logger(__name__)
 
@@ -92,9 +93,6 @@ class WSFirstDataService:
                 return
 
             # Kontrollera om WS-anslutning är aktiverad
-            from config.settings import Settings
-
-            settings = Settings()
             ws_connect_on_start = getattr(settings, "WS_CONNECT_ON_START", True)
 
             if not ws_connect_on_start:
@@ -106,17 +104,13 @@ class WSFirstDataService:
                 await bitfinex_ws.connect()
 
             # Prenumerera på standardsymboler
-            from config.settings import Settings
-
-            settings = Settings()
-
             if settings.WS_SUBSCRIBE_SYMBOLS:
                 symbols = [s.strip() for s in settings.WS_SUBSCRIBE_SYMBOLS.split(",")]
                 logger.info(f"🚀 Initialiserar WS-prenumerationer för {len(symbols)} symboler")
 
                 # Timeframes att prenumerera på (ex: 1m,5m)
                 try:
-                    tfs = [tf.strip() for tf in Settings().WS_CANDLE_TIMEFRAMES.split(",") if tf.strip()]
+                    tfs = [tf.strip() for tf in settings.WS_CANDLE_TIMEFRAMES.split(",") if tf.strip()]
                 except Exception:
                     tfs = ["1m"]
 

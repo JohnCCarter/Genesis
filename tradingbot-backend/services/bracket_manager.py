@@ -12,7 +12,7 @@ import os
 from dataclasses import dataclass
 from typing import Any
 
-from config.settings import Settings
+from config.settings import settings, Settings
 from rest.auth import cancel_order
 from utils.logger import get_logger
 
@@ -30,12 +30,12 @@ class BracketGroup:
 
 
 class BracketManager:
-    def __init__(self) -> None:
+    def __init__(self, settings_override: Settings | None = None) -> None:
         # Mappar: child_order_id -> (gid, role)
         self.child_to_group: dict[int, tuple[str, str]] = {}
         # Mappar: gid -> BracketGroup
         self.groups: dict[str, BracketGroup] = {}
-        self.settings = Settings()
+        self.settings = settings_override or settings
         self._state_path = self._abs_state_path()
         # Ladda tidigare state om det finns
         try:

@@ -10,11 +10,12 @@ from datetime import datetime, timedelta
 from typing import Any
 
 import jwt
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Response, Query, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from pydantic import BaseModel
+from fastapi.responses import JSONResponse, PlainTextResponse, ORJSONResponse
+from pydantic import BaseModel, Field
 
-from config.settings import Settings
+from config.settings import Settings, settings
 from indicators.atr import calculate_atr
 
 # REST auth helpers/proxies (order submit/cancel)
@@ -80,7 +81,6 @@ logger = get_logger(__name__)
 
 router = APIRouter(prefix="/api/v2")
 security = HTTPBearer(auto_error=False)
-settings = Settings()
 # Harmonisera verifierings-hemlighet med generatorn (ws.auth) och tillåt fallback
 JWT_SECRET = settings.SOCKETIO_JWT_SECRET or getattr(settings, "JWT_SECRET_KEY", None) or "socket-io-secret"
 _rl_adv = get_advanced_rate_limiter()
@@ -189,7 +189,7 @@ class ProbPreviewRequest(BaseModel):
 async def prob_preview(req: ProbPreviewRequest, _bypass_auth: bool = Depends(security)):
     try:
         # 1) inferens
-        s = Settings()
+        s = settings
         pred = await prob_predict(
             ProbPredictRequest(symbol=req.symbol, timeframe=req.timeframe),
             True,  # bypass auth re-check
@@ -286,7 +286,7 @@ class ProbTradeRequest(BaseModel):
 @router.post("/prob/trade")
 async def prob_trade(req: ProbTradeRequest, _bypass_auth: bool = Depends(security)):
     try:
-        s = Settings()
+        s = settings
         if not bool(getattr(s, "PROB_AUTOTRADE_ENABLED", False)):
             try:
                 from time import time as _now
@@ -493,9 +493,9 @@ def require_auth(credentials: HTTPAuthorizationCredentials | None = Depends(secu
     try:
         from services.runtime_config import get_bool as _rc_get_bool  # lazy import
 
-        auth_required = bool(_rc_get_bool("AUTH_REQUIRED", Settings().AUTH_REQUIRED))
+        auth_required = bool(_rc_get_bool("AUTH_REQUIRED", settings.AUTH_REQUIRED))
     except Exception:
-        auth_required = bool(Settings().AUTH_REQUIRED)
+        auth_required = bool(settings.AUTH_REQUIRED)
     if not auth_required:
         return True
     if not credentials or not credentials.credentials:
@@ -2375,7 +2375,7 @@ async def prob_retrain_run(req: ProbRetrainRunRequest, _: bool = Depends(require
         from services.prob_train import train_and_export
         from services.symbols import SymbolService
 
-        s = Settings()
+        s = settings
         data = get_market_data()
         sym_svc = SymbolService()
         await sym_svc.refresh()
@@ -2388,6 +2388,8 @@ async def prob_retrain_run(req: ProbRetrainRunRequest, _: bool = Depends(require
                 symbols = [x.strip() for x in raw.split(",") if x.strip()]
             else:
                 env_syms = (getattr(s, "WS_SUBSCRIBE_SYMBOLS", None) or "").strip()
+                s = settings
+                ...
                 symbols = [x.strip() for x in env_syms.split(",") if x.strip()] or [
                     f"t{getattr(s, 'DEFAULT_TRADING_PAIR', 'BTCUSD')}"
                 ]
@@ -2522,7 +2524,7 @@ class ProbFeatureLogQuery(BaseModel):
 @router.get("/prob/config")
 async def prob_get_config(_: bool = Depends(require_auth)):
     try:
-        s = Settings()
+        s = settings
         return {
             "model_enabled": bool(getattr(s, "PROB_MODEL_ENABLED", False)),
             "model_file": getattr(s, "PROB_MODEL_FILE", None),
@@ -3133,7 +3135,7 @@ async def runtime_config_set(req: RuntimeConfigRequest, _: bool = Depends(requir
 async def update_max_trades(req: UpdateMaxTradesRequest, _: bool = Depends(require_auth)):
     # Uppdatera i runtime settings (enkel variant). Permanent lagring kräver filskrivning.
     try:
-        s = Settings()
+        s = settings
         s.MAX_TRADES_PER_DAY = req.max_trades_per_day
         # persistera till regler
         tw = TradingWindowService(s)
@@ -3154,7 +3156,7 @@ class UpdateMaxTradesSymbolRequest(BaseModel):
 @router.post("/risk/max-trades-symbol")
 async def update_max_trades_symbol(req: UpdateMaxTradesSymbolRequest, _: bool = Depends(require_auth)):
     try:
-        s = Settings()
+        s = settings
         tw = TradingWindowService(s)
         tw.save_rules(max_trades_per_symbol_per_day=req.max_trades_per_symbol_per_day)
         from services.unified_risk_service import unified_risk_service
@@ -3691,18 +3693,9 @@ async def update_unified_trading_windows(req: UnifiedWindowsUpdateRequest, _: bo
     try:
         from services.trading_window import TradingWindowService
 
-        tw = TradingWindowService(Settings())
-        tw.save_rules(
-            timezone=req.timezone,
-            windows=req.windows,  # valideras i service
-            paused=req.paused,
-            max_trades_per_symbol_per_day=req.max_trades_per_symbol_per_day,
-            max_trades_per_day=req.max_trades_per_day,
-            trade_cooldown_seconds=req.trade_cooldown_seconds,
-        )
-        return {"success": True, "trading_window": tw.get_status()}
-    except ValueError as ve:
-        raise HTTPException(status_code=400, detail=str(ve))
+        tw = TradingWindowService(settings)
+        await tw.update_rules_async(req.windows)
+        return {"status": "success", "message": "Tradingfönster uppdaterade."}
     except Exception as e:
         logger.exception(f"Fel vid uppdatering av unified trading windows: {e}")
         raise HTTPException(status_code=500, detail="internal_error") from e
@@ -3786,7 +3779,7 @@ class CacheClearRequest(BaseModel):
 @router.get("/ui/capabilities")
 async def ui_capabilities(_: bool = Depends(require_auth)):
     try:
-        s = Settings()
+        s = settings
         from utils.feature_flags import get_feature_flag as _ff
 
         caps = {
@@ -3955,12 +3948,13 @@ async def set_ws_strategy(payload: CoreModeRequest, _: bool = Depends(require_au
         # Auto‑subscribe när WS Strategy slås på
         try:
             if bool(payload.enabled):
-                s = Settings()
+                s = settings
                 raw = (getattr(s, "WS_SUBSCRIBE_SYMBOLS", None) or "").strip()
                 if raw:
                     syms = [x.strip() for x in raw.split(",") if x.strip()]
                 else:
-                    # Fallback: standardpar
+                    s = settings
+                    ...
                     syms = [f"t{getattr(s, 'DEFAULT_TRADING_PAIR', 'BTCUSD')}"]
                 import asyncio as _async
 
@@ -4118,7 +4112,7 @@ class UpdateWindowsRequest(BaseModel):
 @router.post("/risk/windows")
 async def update_trading_windows(req: UpdateWindowsRequest, _: bool = Depends(require_auth)):
     try:
-        s = Settings()
+        s = settings
         tw = TradingWindowService(s)
         # Omvandla list[List[str]] till List[Tuple[str, str]]
         windows_typed = None
@@ -4211,7 +4205,7 @@ async def get_prob_model(_: bool = Depends(require_auth)):
         enabled = bool(getattr(prob_model, "enabled", False))
         if enabled is False:
             try:
-                enabled = bool(getattr(Settings(), "PROB_MODEL_ENABLED", False))
+                enabled = bool(getattr(settings, "PROB_MODEL_ENABLED", False))
             except Exception:
                 pass
         return {"prob_model_enabled": bool(enabled)}
@@ -4243,7 +4237,7 @@ async def set_prob_model(payload: CoreModeRequest, _: bool = Depends(require_aut
 @router.get("/mode/autotrade")
 async def get_autotrade(_: bool = Depends(require_auth)):
     try:
-        return {"autotrade_enabled": bool(getattr(Settings(), "PROB_AUTOTRADE_ENABLED", False))}
+        return {"autotrade_enabled": bool(getattr(settings, "PROB_AUTOTRADE_ENABLED", False))}
     except Exception as e:
         logger.exception(f"Fel vid get autotrade: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -4256,7 +4250,7 @@ async def set_autotrade(payload: CoreModeRequest, _: bool = Depends(require_auth
 
         rc.set_bool("PROB_AUTOTRADE_ENABLED", bool(payload.enabled))
         _emit_notification("info", "Autotrade", {"enabled": bool(payload.enabled)})
-        return {"autotrade_enabled": bool(getattr(Settings(), "PROB_AUTOTRADE_ENABLED", False))}
+        return {"autotrade_enabled": bool(getattr(settings, "PROB_AUTOTRADE_ENABLED", False))}
     except Exception as e:
         logger.exception(f"Fel vid set autotrade: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -4386,10 +4380,9 @@ async def get_all_regimes(_: bool = Depends(require_auth)):
         from config.settings import Settings
 
         symbol_service = SymbolService()
-        settings = Settings()
+        _s = settings
 
-        # Hämta symboler från samma källa som Live Signals
-        raw_symbols = (settings.WS_SUBSCRIBE_SYMBOLS or "").strip()
+        raw_symbols = (_s.WS_SUBSCRIBE_SYMBOLS or "").strip()
         if raw_symbols:
             symbols = [s.strip() for s in raw_symbols.split(",") if s.strip()]
         else:
@@ -4686,7 +4679,7 @@ async def get_unified_risk_status(_: bool = Depends(require_auth)):
         from services.unified_risk_service import unified_risk_service
         from services.trading_window import TradingWindowService
 
-        s = Settings()
+        s = settings
         tw = TradingWindowService(s)
 
         status = unified_risk_service.get_risk_status()
@@ -4735,7 +4728,7 @@ async def pause_unified_risk(_: bool = Depends(require_auth)):
     try:
         from services.trading_window import TradingWindowService
 
-        s = Settings()
+        s = settings
         tw = TradingWindowService(s)
         tw.set_paused(True)
         return {"success": True, "paused": True}
@@ -4751,7 +4744,7 @@ async def resume_unified_risk(_: bool = Depends(require_auth)):
         from services.unified_circuit_breaker_service import unified_circuit_breaker_service
         from utils.advanced_rate_limiter import get_advanced_rate_limiter
 
-        s = Settings()
+        s = settings
         tw = TradingWindowService(s)
         # 1) Unpause trading window
         tw.set_paused(False)

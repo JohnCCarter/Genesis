@@ -14,7 +14,7 @@ import asyncio
 import re
 from datetime import UTC, datetime, timedelta
 
-from config.settings import Settings
+from config.settings import settings
 from utils.candle_cache import candle_cache
 from utils.logger import get_logger
 
@@ -171,7 +171,7 @@ class SchedulerService:
             logger.warning("%s", f"Kunde inte ta equity-snapshot: {e}")
 
     async def _maybe_enforce_cache_retention(self, now: datetime) -> None:
-        """Enforce TTL/retention på candle-cache med låg frekvens.
+        """Enforce TTL/retention på candle-cache med låg frekvents.
 
         Läser inställningar vid varje körning så ändringar i .env fångas.
         Kör endast om minst 12 timmar förflutit sedan senaste körning.
@@ -179,7 +179,7 @@ class SchedulerService:
         try:
             if self._last_retention_at and (now - self._last_retention_at) < timedelta(hours=12):
                 return
-            s = Settings()
+            s = settings
             days = int(getattr(s, "CANDLE_CACHE_RETENTION_DAYS", 0) or 0)
             max_rows = int(getattr(s, "CANDLE_CACHE_MAX_ROWS_PER_PAIR", 0) or 0)
             if days <= 0 and max_rows <= 0:
@@ -202,7 +202,7 @@ class SchedulerService:
             from services.metrics import metrics_store
             from services.prob_validation import validate_on_candles
 
-            s = Settings()
+            s = settings
             if not bool(getattr(s, "PROB_VALIDATE_ENABLED", True)):
                 return
             interval_minutes = int(getattr(s, "PROB_VALIDATE_INTERVAL_MINUTES", 60) or 60)
@@ -310,7 +310,7 @@ class SchedulerService:
             from services.prob_model import prob_model
             from services.prob_train import train_and_export
 
-            s = Settings()
+            s = settings
             if not bool(getattr(s, "PROB_RETRAIN_ENABLED", False)):
                 return
             interval_hours = int(getattr(s, "PROB_RETRAIN_INTERVAL_HOURS", 24) or 24)

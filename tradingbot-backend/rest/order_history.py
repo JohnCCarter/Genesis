@@ -16,8 +16,7 @@ import httpx
 from services.exchange_client import get_exchange_client
 from pydantic import BaseModel
 
-from config.settings import Settings
-from rest.auth import build_auth_headers
+from config.settings import settings
 from services.metrics import record_http_result, metrics_store
 from utils.advanced_rate_limiter import get_advanced_rate_limiter
 from utils.logger import get_logger
@@ -247,7 +246,7 @@ class OrderHistoryService:
     """Service för att hämta och hantera orderhistorik från Bitfinex."""
 
     def __init__(self):
-        self.settings = Settings()
+        self.settings = settings
         self.base_url = getattr(self.settings, "BITFINEX_AUTH_API_URL", None) or self.settings.BITFINEX_API_URL
         self.rate_limiter = get_advanced_rate_limiter()
         # Global semafor för alla privata REST-klasser
@@ -260,11 +259,12 @@ class OrderHistoryService:
         Återanvänder DATA_* inställningar för timeout/retries.
         Signerar på exakt samma JSON-sträng som skickas.
         """
+        # Anropet hanteras nu helt av ExchangeClient, som har sin egen nonce/retry-logik.
+        # Denna metod behålls för att hantera applikationsspecifik backoff/retry.
+        
         # Bygg deterministisk JSON och signera den exakta strängen
         body = body or {}
-        body_json = json.dumps(body, separators=(",", ":"), ensure_ascii=False)
-        headers = build_auth_headers(endpoint, payload_str=body_json)
-
+        
         timeout = getattr(self.settings, "DATA_HTTP_TIMEOUT", 15.0)
         retries = max(int(getattr(self.settings, "DATA_MAX_RETRIES", 2) or 0), 0)
         backoff_base = max(int(getattr(self.settings, "DATA_BACKOFF_BASE_MS", 250) or 0), 0) / 1000.0
@@ -284,28 +284,20 @@ class OrderHistoryService:
 
                 _t0 = time.perf_counter()
                 async with self._sem:
-                    try:
-                        # Använd centraliserad ExchangeClient för signering/nonce-hantering
-                        ec = get_exchange_client()
-                        response = await ec.signed_request(method="post", endpoint=endpoint, body=body, timeout=timeout)
-                    except Exception:
-                        async with httpx.AsyncClient(timeout=timeout) as client:
-                            response = await client.post(
-                                f"{self.base_url}/{endpoint}",
-                                content=body_json.encode("utf-8"),
-                                headers=headers,
-                            )
-                    _t1 = time.perf_counter()
-                    try:
-                        record_http_result(
-                            path=f"/{endpoint}",
-                            method="POST",
-                            status_code=int(response.status_code),
-                            duration_ms=int((_t1 - _t0) * 1000),
-                            _retry_after=response.headers.get("Retry-After"),
-                        )
-                    except Exception:
-                        pass
+                    # Använd centraliserad ExchangeClient för signering/nonce-hantering
+                    ec = get_exchange_client()
+                    response = await ec.signed_request(method="post", endpoint=endpoint, body=body, timeout=timeout)
+                _t1 = time.perf_counter()
+                try:
+                    record_http_result(
+                        path=f"/{endpoint}",
+                        method="POST",
+                        status_code=int(response.status_code),
+                        duration_ms=int((_t1 - _t0) * 1000),
+                        _retry_after=response.headers.get("Retry-After"),
+                    )
+                except Exception:
+                    pass
 
                     # Kontrollera om det är nonce-fel - bumpa och gör en engångs‑retry
                     if response.status_code == 500:

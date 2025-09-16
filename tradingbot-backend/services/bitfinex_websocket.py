@@ -15,7 +15,7 @@ from typing import Any
 from websockets.client import connect as ws_connect  # type: ignore[attr-defined]
 from websockets.exceptions import ConnectionClosed  # type: ignore[attr-defined]
 
-from config.settings import Settings
+from config.settings import settings
 from utils.logger import get_logger
 from ws.auth import build_ws_auth_payload
 
@@ -28,7 +28,7 @@ class BitfinexWebSocketService:
     """Service för WebSocket-anslutning till Bitfinex."""
 
     def __init__(self):
-        self.settings = Settings()
+        self.settings = settings
         # Standard: använd auth-URI (api) som bas. Publika subar kan specialhanteras vid behov.
         self.ws_url = getattr(self.settings, "BITFINEX_WS_AUTH_URI", None) or self.settings.BITFINEX_WS_URI
         self.websocket = None

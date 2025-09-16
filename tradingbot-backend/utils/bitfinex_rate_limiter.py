@@ -10,7 +10,7 @@ import random
 import time
 from collections import deque
 
-from config.settings import Settings
+from config.settings import settings
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -19,8 +19,8 @@ logger = get_logger(__name__)
 class BitfinexRateLimiter:
     """Intelligent rate limiter för Bitfinex API med server busy handling."""
 
-    def __init__(self, settings: Settings | None = None):
-        self.settings = settings or Settings()
+    def __init__(self, settings_override: Settings | None = None):
+        self.settings = settings_override or settings
         self._request_timestamps: deque = deque()
         self._server_busy_count = 0
         self._last_server_busy_time = 0
@@ -137,5 +137,5 @@ def get_bitfinex_rate_limiter() -> BitfinexRateLimiter:
     """Returnerar global Bitfinex rate limiter instans."""
     global _bitfinex_rate_limiter
     if _bitfinex_rate_limiter is None:
-        _bitfinex_rate_limiter = BitfinexRateLimiter()
+        _bitfinex_rate_limiter = BitfinexRateLimiter(settings)
     return _bitfinex_rate_limiter

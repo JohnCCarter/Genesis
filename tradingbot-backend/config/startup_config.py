@@ -11,7 +11,7 @@ from __future__ import annotations
 import os
 from typing import Any
 
-from config.settings import Settings
+from config.settings import settings
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -20,7 +20,7 @@ logger = get_logger(__name__)
 def enable_components_on_startup() -> None:
     """Aktivera komponenter vid startup baserat på miljövariabler."""
 
-    settings = Settings()
+    _settings = settings
 
     # 1. Aktivera Dry Run om miljövariabel är satt
     if os.environ.get("ENABLE_DRY_RUN", "").lower() in ("true", "1", "yes"):
@@ -28,7 +28,7 @@ def enable_components_on_startup() -> None:
             import services.runtime_config as rc
 
             rc.set_bool("DRY_RUN_ENABLED", True)
-            settings.DRY_RUN_ENABLED = True
+            _settings.DRY_RUN_ENABLED = True
             logger.info("✅ Dry Run aktiverat via miljövariabel")
         except Exception as e:
             logger.warning(f"Kunde inte aktivera Dry Run: {e}")
@@ -39,7 +39,7 @@ def enable_components_on_startup() -> None:
             import services.runtime_config as rc
 
             rc.set_bool("PROB_MODEL_ENABLED", True)
-            settings.PROB_MODEL_ENABLED = True
+            _settings.PROB_MODEL_ENABLED = True
             logger.info("✅ Probability Model aktiverat via miljövariabel")
         except Exception as e:
             logger.warning(f"Kunde inte aktivera Probability Model: {e}")
@@ -50,7 +50,7 @@ def enable_components_on_startup() -> None:
             import services.runtime_config as rc
 
             rc.set_bool("SCHEDULER_ENABLED", True)
-            settings.SCHEDULER_ENABLED = True
+            _settings.SCHEDULER_ENABLED = True
             logger.info("✅ Scheduler aktiverat via miljövariabel")
         except Exception as e:
             logger.warning(f"Kunde inte aktivera Scheduler: {e}")
@@ -66,10 +66,10 @@ def enable_components_on_startup() -> None:
             rc.set_bool("SCHEDULER_ENABLED", True)
             rc.set_bool("PROB_AUTOTRADE_ENABLED", True)
 
-            settings.DRY_RUN_ENABLED = True
-            settings.PROB_MODEL_ENABLED = True
-            settings.SCHEDULER_ENABLED = True
-            settings.PROB_AUTOTRADE_ENABLED = True
+            _settings.DRY_RUN_ENABLED = True
+            _settings.PROB_MODEL_ENABLED = True
+            _settings.SCHEDULER_ENABLED = True
+            _settings.PROB_AUTOTRADE_ENABLED = True
 
             logger.info("🚀 DEV_MODE: Alla komponenter aktiverade")
         except Exception as e:
@@ -79,14 +79,14 @@ def enable_components_on_startup() -> None:
 def get_component_status() -> dict[str, Any]:
     """Hämta status för alla komponenter."""
 
-    settings = Settings()
+    _settings = settings
 
     return {
-        "dry_run_enabled": getattr(settings, "DRY_RUN_ENABLED", False),
-        "prob_model_enabled": getattr(settings, "PROB_MODEL_ENABLED", False),
-        "prob_autotrade_enabled": getattr(settings, "PROB_AUTOTRADE_ENABLED", False),
-        "scheduler_enabled": getattr(settings, "SCHEDULER_ENABLED", True),
-        "ws_connect_on_start": getattr(settings, "WS_CONNECT_ON_START", True),
+        "dry_run_enabled": getattr(_settings, "DRY_RUN_ENABLED", False),
+        "prob_model_enabled": getattr(_settings, "PROB_MODEL_ENABLED", False),
+        "prob_autotrade_enabled": getattr(_settings, "PROB_AUTOTRADE_ENABLED", False),
+        "scheduler_enabled": getattr(_settings, "SCHEDULER_ENABLED", True),
+        "ws_connect_on_start": getattr(_settings, "WS_CONNECT_ON_START", True),
         "dev_mode": os.environ.get("DEV_MODE", "").lower() in ("true", "1", "yes"),
         "environment_variables": {
             "ENABLE_DRY_RUN": os.environ.get("ENABLE_DRY_RUN", "not set"),

@@ -10,9 +10,9 @@ from typing import Any
 
 import httpx
 
-from config.settings import Settings
+from services.exchange_client import get_exchange_client
+from config.settings import settings
 from models.api_models import OrderResponse, OrderSide, OrderType
-from rest.auth import build_auth_headers
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -22,7 +22,7 @@ class ActiveOrdersService:
     """Service för att hämta och hantera aktiva ordrar från Bitfinex."""
 
     def __init__(self):
-        self.settings = Settings()
+        self.settings = settings
         self.base_url = getattr(self.settings, "BITFINEX_AUTH_API_URL", None) or self.settings.BITFINEX_API_URL
 
     async def get_active_orders(self) -> list[OrderResponse]:
@@ -38,29 +38,21 @@ class ActiveOrdersService:
                 logger.info("BITFINEX_API_KEY/SECRET saknas – returnerar tom lista för aktiva ordrar")
                 return []
             endpoint = "auth/r/orders"
-            # För v2 auth/r endpoints ska body vara en tom JSON {} och signaturen inkludera '{}'
-            empty_json = "{}"
-            headers = build_auth_headers(endpoint, payload_str=empty_json)
+            ec = get_exchange_client()
+            logger.info(f"🌐 REST API: Hämtar aktiva ordrar från {self.base_url}/{endpoint}")
+            response = await ec.signed_request(method="post", endpoint=endpoint, body={})
+            try:
+                response.raise_for_status()
+            except httpx.HTTPStatusError as he:
+                status = he.response.status_code if he.response is not None else "?"
+                logger.warning(f"Bitfinex svarade {status} vid hämtning av aktiva ordrar – returnerar tom lista")
+                return []
 
-            async with httpx.AsyncClient(timeout=httpx.Timeout(15.0)) as client:
-                logger.info(f"🌐 REST API: Hämtar aktiva ordrar från {self.base_url}/{endpoint}")
-                response = await client.post(
-                    f"{self.base_url}/{endpoint}",
-                    headers=headers,
-                    content=empty_json.encode("utf-8"),
-                )
-                try:
-                    response.raise_for_status()
-                except httpx.HTTPStatusError as he:
-                    status = he.response.status_code if he.response is not None else "?"
-                    logger.warning(f"Bitfinex svarade {status} vid hämtning av aktiva ordrar – returnerar tom lista")
-                    return []
+            orders_data = response.json()
+            logger.info(f"✅ REST API: Hämtade {len(orders_data)} aktiva ordrar")
 
-                orders_data = response.json()
-                logger.info(f"✅ REST API: Hämtade {len(orders_data)} aktiva ordrar")
-
-                orders = [OrderResponse.from_bitfinex_data(order) for order in orders_data]
-                return orders
+            orders = [OrderResponse.from_bitfinex_data(order) for order in orders_data]
+            return orders
 
         except Exception as e:
             # Tystare fallback för UI: returnera tom lista vid oväntade fel
@@ -178,21 +170,19 @@ class ActiveOrdersService:
             if amount is not None:
                 payload["amount"] = str(amount)
 
-            headers = build_auth_headers(endpoint, payload)
+            ec = get_exchange_client()
+            logger.info(f"🌐 REST API: Uppdaterar order {order_id}")
+            response = await ec.signed_request(method="post", endpoint=endpoint, body=payload)
+            response.raise_for_status()
 
-            async with httpx.AsyncClient() as client:
-                logger.info(f"🌐 REST API: Uppdaterar order {order_id}")
-                response = await client.post(f"{self.base_url}/{endpoint}", headers=headers, json=payload)
-                response.raise_for_status()
+            result = response.json()
+            logger.info(f"✅ REST API: Order {order_id} uppdaterad framgångsrikt")
 
-                result = response.json()
-                logger.info(f"✅ REST API: Order {order_id} uppdaterad framgångsrikt")
-
-                return {
-                    "success": True,
-                    "message": f"Order {order_id} uppdaterad",
-                    "data": result,
-                }
+            return {
+                "success": True,
+                "message": f"Order {order_id} uppdaterad",
+                "data": result,
+            }
 
         except Exception as e:
             logger.error(f"Fel vid uppdatering av order: {e}")
@@ -207,49 +197,41 @@ class ActiveOrdersService:
         """
         try:
             endpoint = "auth/w/order/cancel/all"
-            headers = build_auth_headers(endpoint)
-
-            async with httpx.AsyncClient() as client:
-                logger.info("🌐 REST API: Avbryter alla ordrar")
-                response = await client.post(f"{self.base_url}/{endpoint}", headers=headers)
-                try:
-                    response.raise_for_status()
-                    result = response.json()
-                    logger.info("✅ REST API: Alla ordrar avbrutna framgångsrikt")
-                    return {
-                        "success": True,
-                        "message": "Alla ordrar avbrutna",
-                        "data": result,
-                    }
-                except httpx.HTTPStatusError as e:
-                    if e.response is not None and e.response.status_code == 404:
-                        logger.warning(
-                            "⚠️ cancel/all inte tillgänglig (404). Faller tillbaka till att avbryta individuellt."
-                        )
-                    else:
-                        raise
+            ec = get_exchange_client()
+            logger.info("🌐 REST API: Avbryter alla ordrar")
+            response = await ec.signed_request(method="post", endpoint=endpoint, body={})
+            try:
+                response.raise_for_status()
+                result = response.json()
+                logger.info("✅ REST API: Alla ordrar avbrutna framgångsrikt")
+                return {
+                    "success": True,
+                    "message": "Alla ordrar avbrutna",
+                    "data": result,
+                }
+            except httpx.HTTPStatusError as e:
+                if e.response is not None and e.response.status_code == 404:
+                    logger.warning(
+                        "⚠️ cancel/all inte tillgänglig (404). Faller tillbaka till att avbryta individuellt."
+                    )
+                else:
+                    raise
 
             # Fallback: hämta alla ordrar och avbryt en och en
             orders = await self.get_active_orders()
             results: list[dict[str, Any]] = []
-            async with httpx.AsyncClient() as client:
-                for order in orders:
-                    try:
-                        cancel_endpoint = "auth/w/order/cancel"
-                        payload = {"id": order.id}
-                        body_json = json.dumps(payload, separators=(",", ":"), ensure_ascii=False)
-                        cancel_headers = build_auth_headers(cancel_endpoint, payload_str=body_json)
-                        logger.info(f"🌐 REST API: Fallback – avbryter order {order.id}")
-                        resp = await client.post(
-                            f"{self.base_url}/{cancel_endpoint}",
-                            headers=cancel_headers,
-                            content=body_json.encode("utf-8"),
-                        )
-                        resp.raise_for_status()
-                        results.append({"id": order.id, "success": True})
-                    except Exception as ex:
-                        logger.error(f"Fel vid avbrytning av order {order.id}: {ex}")
-                        results.append({"id": order.id, "success": False, "error": str(ex)})
+            ec = get_exchange_client()
+            for order in orders:
+                try:
+                    cancel_endpoint = "auth/w/order/cancel"
+                    payload = {"id": order.id}
+                    logger.info(f"🌐 REST API: Fallback – avbryter order {order.id}")
+                    resp = await ec.signed_request(method="post", endpoint=cancel_endpoint, body=payload)
+                    resp.raise_for_status()
+                    results.append({"id": order.id, "success": True})
+                except Exception as ex:
+                    logger.error(f"Fel vid avbrytning av order {order.id}: {ex}")
+                    results.append({"id": order.id, "success": False, "error": str(ex)})
 
             num_success = len([r for r in results if r.get("success")])
             return {
@@ -285,20 +267,18 @@ class ActiveOrdersService:
 
             # Avbryt varje order
             results = []
+            ec = get_exchange_client()
             for order in orders:
                 try:
                     endpoint = "auth/w/order/cancel"
                     payload = {"id": order.id}
-                    headers = build_auth_headers(endpoint, payload)
+                    logger.info(f"🌐 REST API: Avbryter order {order.id} för {symbol}")
+                    response = await ec.signed_request(method="post", endpoint=endpoint, body=payload)
+                    response.raise_for_status()
 
-                    async with httpx.AsyncClient() as client:
-                        logger.info(f"🌐 REST API: Avbryter order {order.id} för {symbol}")
-                        response = await client.post(f"{self.base_url}/{endpoint}", headers=headers, json=payload)
-                        response.raise_for_status()
-
-                        result = response.json()
-                        logger.info(f"✅ REST API: Order {order.id} avbruten framgångsrikt")
-                        results.append({"id": order.id, "success": True})
+                    result = response.json()
+                    logger.info(f"✅ REST API: Order {order.id} avbruten framgångsrikt")
+                    results.append({"id": order.id, "success": True})
 
                 except Exception as e:
                     logger.error(f"Fel vid avbrytning av order {order.id}: {e}")

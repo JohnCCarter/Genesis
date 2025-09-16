@@ -30,7 +30,7 @@ from utils.logger import get_logger
 logger = get_logger(__name__)
 
 try:
-    from config.settings import Settings
+    from config.settings import settings
 except Exception as e:
     logger.error(f"❌ Critical startup error - cannot import Settings: {e}")
     logger.error("This error will also appear in uvicorn.out.txt")
@@ -74,7 +74,6 @@ except Exception:
 
 # Asyncio debug support
 try:
-    settings = Settings()
     if getattr(settings, "DEBUG_ASYNC", False):
         _asyncio.get_event_loop().set_debug(True)
         _asyncio.get_event_loop().slow_callback_duration = 0.05  # Log callbacks > 50ms
@@ -154,6 +153,7 @@ async def lifespan(app: FastAPI):
     # Starta circuit breaker recovery service
     try:
         from services.circuit_breaker_recovery import get_circuit_breaker_recovery
+        from services.http import async_client
 
         recovery_service = get_circuit_breaker_recovery()
         await recovery_service.start()
@@ -191,6 +191,13 @@ async def lifespan(app: FastAPI):
         logger.info("✅ Circuit breaker recovery service stoppad")
     except Exception as e:
         logger.warning(f"⚠️ Fel vid stopp av circuit breaker recovery: {e}")
+
+    # Stäng den globala asynkrona HTTP-klienten
+    try:
+        await async_client.aclose()
+        logger.info("✅ Global async HTTP-klient stängd")
+    except Exception as e:
+        logger.warning(f"⚠️ Fel vid stängning av global async HTTP-klient: {e}")
 
     # Rensa alla aktiva tasks
     try:
@@ -233,7 +240,7 @@ async def lifespan(app: FastAPI):
 
 # Skapa FastAPI-applikation – loggning före app-instans för tydlighet
 try:
-    settings = Settings()
+    pass
 except Exception as e:
     logger.error(f"❌ Critical startup error - cannot create Settings instance: {e}")
     raise
@@ -673,11 +680,10 @@ if __name__ == "__main__":
     signal.signal(signal.SIGTERM, signal_handler)  # Terminate
 
     try:
-        _s = Settings()
         uvicorn.run(
             "main:app",
-            host=_s.HOST,
-            port=_s.PORT,
+            host=settings.HOST,
+            port=settings.PORT,
             reload=True,
             log_level="info",
             timeout_keep_alive=15,  # 15s keep-alive timeout (minskat från 30s)

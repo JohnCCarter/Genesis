@@ -22,7 +22,7 @@ try:
 except Exception:  # pragma: no cover
     ZoneInfo = None  # Fallback; använder naive tider
 
-from config.settings import Settings
+from config.settings import settings
 from rest.order_history import OrderHistoryService, TradeItem
 from rest.positions import PositionsService
 from rest.wallet import WalletService
@@ -41,8 +41,8 @@ class SymbolPosition:
 
 
 class PerformanceService:
-    def __init__(self, settings: Settings | None = None) -> None:
-        self.settings = settings or Settings()
+    def __init__(self, settings_override: Settings | None = None) -> None:
+        self.settings = settings_override or settings
         self.wallet_service = WalletService()
         self.positions_service = PositionsService()
         self.order_history_service = OrderHistoryService()

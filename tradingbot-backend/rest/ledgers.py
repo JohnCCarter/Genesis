@@ -14,16 +14,16 @@ from __future__ import annotations
 
 from typing import Any, List
 
-from config.settings import Settings
+from config.settings import settings, Settings
 from rest.order_history import OrderHistoryService
 
 
 class LedgerService:
     """Tunn wrapper för att hämta ledgers som dict-listor."""
 
-    def __init__(self, settings: Settings | None = None) -> None:
+    def __init__(self, settings_override: Settings | None = None) -> None:
         # Settings hålls för framtida bruk/konfiguration
-        self.settings = settings or Settings()
+        self.settings = settings_override or settings
         # Återanvänd befintlig orderhistorikservice för API-anropen
         self._order_history = OrderHistoryService()
 

@@ -22,7 +22,7 @@ from datetime import datetime, timedelta
 from enum import Enum
 from typing import Any
 
-from config.settings import Settings
+from config.settings import settings
 from services.metrics import metrics_store
 from utils.logger import get_logger
 
@@ -100,8 +100,8 @@ class UnifiedCircuitBreakerService:
     - Custom business logic
     """
 
-    def __init__(self, settings: Settings | None = None):
-        self.settings = settings or Settings()
+    def __init__(self, settings_override: "Settings" | None = None):
+        self.settings = settings_override or settings
 
         # Circuit breaker configurations
         self.configs: dict[str, CircuitBreakerConfig] = {}

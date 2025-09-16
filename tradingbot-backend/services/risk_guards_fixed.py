@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 from typing import Any
 import services.runtime_config as rc
 
-from config.settings import Settings
+from config.settings import settings
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -27,8 +27,8 @@ class RiskGuardsService:
     - Volatility guards
     """
 
-    def __init__(self, settings: Settings | None = None):
-        self.settings = settings or Settings()
+    def __init__(self, settings_override: Settings | None = None):
+        self.settings = settings_override or settings
         self.guards_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config", "risk_guards.json")
         self.guards = self._load_guards()
 

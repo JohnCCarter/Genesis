@@ -9,7 +9,7 @@ from typing import Callable, Optional
 
 import socketio
 
-from config.settings import Settings
+from config.settings import settings
 from services.bracket_manager import bracket_manager
 from utils.logger import get_logger
 from ws.auth import authenticate_socket_io, generate_token
@@ -25,7 +25,6 @@ socket_app = socketio.AsyncServer(async_mode="asgi", cors_allowed_origins="*", l
 def is_ui_push_enabled() -> bool:
     """Kontrollera om UI push är aktiverat via environment flag."""
     try:
-        settings = Settings()
         return getattr(settings, "UI_PUSH_ENABLED", True)
     except Exception:
         return True
@@ -79,9 +78,9 @@ async def connect(sid, environ):
         try:
             from services.runtime_config import get_bool as _rc_get_bool
 
-            auth_required = bool(_rc_get_bool("AUTH_REQUIRED", Settings().AUTH_REQUIRED))
+            auth_required = bool(_rc_get_bool("AUTH_REQUIRED", settings.AUTH_REQUIRED))
         except Exception:
-            auth_required = bool(Settings().AUTH_REQUIRED)
+            auth_required = bool(settings.AUTH_REQUIRED)
         if auth_required and not authenticate_socket_io(environ):
             logger.warning(f"❌ Socket.IO autentisering misslyckades för sid: {sid}")
             raise ConnectionRefusedError("unauthorized")

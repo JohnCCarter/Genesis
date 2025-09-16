@@ -9,12 +9,12 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from config.settings import Settings
+from config.settings import settings, Settings
 
 
 class ProbabilityModel:
-    def __init__(self, settings: Settings | None = None) -> None:
-        self.settings = settings or Settings()
+    def __init__(self, settings_override: Settings | None = None) -> None:
+        self.settings = settings_override or settings
         self.enabled = bool(self.settings.PROB_MODEL_ENABLED)
         self.model_meta: dict[str, Any] = {}
 

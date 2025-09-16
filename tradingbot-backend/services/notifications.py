@@ -6,9 +6,9 @@ from __future__ import annotations
 
 from typing import Any
 
-import httpx
+from services.http import apost
 
-from config.settings import Settings
+from config.settings import settings
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -16,7 +16,7 @@ logger = get_logger(__name__)
 
 class NotificationService:
     def __init__(self, settings: Settings | None = None) -> None:
-        self.settings = settings or Settings()
+        self.settings = settings or settings
         self._bot_token = self.settings.TELEGRAM_BOT_TOKEN
         self._chat_id = self.settings.TELEGRAM_CHAT_ID
 
@@ -27,9 +27,7 @@ class NotificationService:
         try:
             url = f"https://api.telegram.org/bot{self._bot_token}/sendMessage"
             payload = {"chat_id": self._chat_id, "text": text, "parse_mode": "HTML"}
-            async with httpx.AsyncClient(timeout=10) as client:
-                resp = await client.post(url, json=payload)
-                resp.raise_for_status()
+            await apost(url, json=payload)
             return True
         except Exception as e:
             logger.warning(f"Telegram-notis misslyckades: {e}")
