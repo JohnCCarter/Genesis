@@ -153,7 +153,9 @@ class RiskGuardsService:
         """
         # Respektera global RISK_ENABLED via Settings
         try:
-            if not rc.get_bool("RISK_ENABLED", getattr(self.settings, "RISK_ENABLED", True)):
+            if not rc.get_bool(
+                "RISK_ENABLED", getattr(self.settings, "RISK_ENABLED", True)
+            ):
                 return False, None
         except Exception:
             pass
@@ -161,7 +163,9 @@ class RiskGuardsService:
         guard = self.guards["max_daily_loss"]
         # Om klienten sÃ¤tter daily_start_equity manuellt i runtime utan datum â€“ behandla som ny baseline
         # och rensa tidigare trigger/cooldown fÃ¶r daglig vakt.
-        if guard.get("daily_start_equity") is not None and not guard.get("daily_start_date"):
+        if guard.get("daily_start_equity") is not None and not guard.get(
+            "daily_start_date"
+        ):
             guard["daily_start_date"] = datetime.now().date().isoformat()
             if guard.get("triggered"):
                 guard["triggered"] = False
@@ -177,8 +181,12 @@ class RiskGuardsService:
         daily_loss_pct_early: float | None = None
         if start_equity_early and start_equity_early > 0:
             current_equity_early = self._get_current_equity()
-            daily_loss_pct_early = ((start_equity_early - current_equity_early) / start_equity_early) * 100
-        if daily_loss_pct_early is not None and daily_loss_pct_early < guard.get("percentage", 0):
+            daily_loss_pct_early = (
+                (start_equity_early - current_equity_early) / start_equity_early
+            ) * 100
+        if daily_loss_pct_early is not None and daily_loss_pct_early < guard.get(
+            "percentage", 0
+        ):
             if guard.get("triggered"):
                 guard["triggered"] = False
                 guard["triggered_at"] = None
@@ -196,7 +204,9 @@ class RiskGuardsService:
                 guard["triggered_at"] = datetime.now().isoformat()
                 self._save_guards(self.guards)
                 try:
-                    logger.warning(f"Max daily loss triggad: {daily_loss_pct_early:.2f}% förlust")
+                    logger.warning(
+                        f"Max daily loss triggad: {daily_loss_pct_early:.2f}% förlust"
+                    )
                 except Exception:
                     pass
             return True, f"Max daily loss överskriden: {daily_loss_pct_early:.2f}%"
@@ -232,7 +242,9 @@ class RiskGuardsService:
                 guard["triggered"] = True
                 guard["triggered_at"] = datetime.now().isoformat()
                 self._save_guards(self.guards)
-                logger.warning(f"ðŸš¨ Max daily loss triggad: {daily_loss_pct:.2f}% fÃ¶rlust")
+                logger.warning(
+                    f"ðŸš¨ Max daily loss triggad: {daily_loss_pct:.2f}% fÃ¶rlust"
+                )
             return True, f"Max daily loss Ã¶verskriden: {daily_loss_pct:.2f}%"
 
         # Under trÃ¶skel â†’ rensa trigger och blockera inte
@@ -348,7 +360,9 @@ class RiskGuardsService:
             position_pct = 0.0
 
         if position_pct > guard["max_position_size_percentage"]:
-            return True, (f"Position size för stor: {position_pct:.2f}% > {guard['max_position_size_percentage']}%")
+            return True, (
+                f"Position size för stor: {position_pct:.2f}% > {guard['max_position_size_percentage']}%"
+            )
 
         return False, None
 
@@ -371,7 +385,9 @@ class RiskGuardsService:
         """
         # Respektera global RISK_ENABLED via Settings (instansens settings)
         try:
-            if not rc.get_bool("RISK_ENABLED", getattr(self.settings, "RISK_ENABLED", True)):
+            if not rc.get_bool(
+                "RISK_ENABLED", getattr(self.settings, "RISK_ENABLED", True)
+            ):
                 return False, None
         except Exception:
             pass

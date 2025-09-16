@@ -71,7 +71,10 @@ class PositionsService:
 
     def __init__(self):
         self.settings = settings
-        self.base_url = getattr(self.settings, "BITFINEX_AUTH_API_URL", None) or self.settings.BITFINEX_API_URL
+        self.base_url = (
+            getattr(self.settings, "BITFINEX_AUTH_API_URL", None)
+            or self.settings.BITFINEX_API_URL
+        )
         self.rate_limiter = get_advanced_rate_limiter()
         # Global semafor för alla privata REST-klasser
         self._sem = get_private_rest_semaphore()
@@ -85,14 +88,20 @@ class PositionsService:
         """
         try:
             # Safeguard: saknade nycklar → tom lista istället för 500
-            if not (self.settings.BITFINEX_API_KEY and self.settings.BITFINEX_API_SECRET):
-                logger.info("BITFINEX_API_KEY/SECRET saknas – returnerar tom positionslista")
+            if not (
+                self.settings.BITFINEX_API_KEY and self.settings.BITFINEX_API_SECRET
+            ):
+                logger.info(
+                    "BITFINEX_API_KEY/SECRET saknas – returnerar tom positionslista"
+                )
                 return []
             endpoint = "auth/r/positions"
 
             # Circuit breaker + rate limiter
             try:
-                if hasattr(self.rate_limiter, "can_request") and not self.rate_limiter.can_request(endpoint):
+                if hasattr(
+                    self.rate_limiter, "can_request"
+                ) and not self.rate_limiter.can_request(endpoint):
                     wait = float(self.rate_limiter.time_until_open(endpoint))
                     logger.warning(f"CB: {endpoint} stängd i {wait:.1f}s")
                     await asyncio.sleep(max(0.0, wait))
@@ -103,12 +112,16 @@ class PositionsService:
             except Exception:
                 pass
 
-            logger.info(f"🌐 REST API: Hämtar positioner från {self.base_url}/{endpoint}")
+            logger.info(
+                f"🌐 REST API: Hämtar positioner från {self.base_url}/{endpoint}"
+            )
             try:
                 _t0 = time.perf_counter()
                 async with self._sem:
                     ec = get_exchange_client()
-                    response = await ec.signed_request(method="post", endpoint=endpoint, body=None, timeout=15.0)
+                    response = await ec.signed_request(
+                        method="post", endpoint=endpoint, body=None, timeout=15.0
+                    )
                 _t1 = time.perf_counter()
                 try:
                     record_http_result(
@@ -135,19 +148,24 @@ class PositionsService:
                 if response.status_code in (429, 500, 502, 503, 504):
                     try:
                         if (
-                            "server busy" in (response.text or "").lower() or response.status_code in (429, 503)
+                            "server busy" in (response.text or "").lower()
+                            or response.status_code in (429, 503)
                         ) and hasattr(self.rate_limiter, "note_failure"):
                             cooldown = self.rate_limiter.note_failure(
                                 endpoint,
                                 int(response.status_code),
                                 response.headers.get("Retry-After"),
                             )
-                            logger.warning(f"CB öppnad för {endpoint} i {cooldown:.1f}s")
+                            logger.warning(
+                                f"CB öppnad för {endpoint} i {cooldown:.1f}s"
+                            )
                             # Transport‑CB hanteras av AdvancedRateLimiter
                         await self.rate_limiter.handle_server_busy(endpoint)
                     except Exception:
                         pass
-                    logger.warning(f"Bitfinex server busy för positions (status {response.status_code})")
+                    logger.warning(
+                        f"Bitfinex server busy för positions (status {response.status_code})"
+                    )
                     return []
 
                 response.raise_for_status()
@@ -166,12 +184,16 @@ class PositionsService:
             except httpx.HTTPStatusError as e:
                 # Vid temporära serverfel – returnera tom lista istället för att krascha flöden
                 if e.response.status_code in (500, 502, 503, 504):
-                    logger.error(f"Serverfel vid positionshämtning ({e.response.status_code}), returnerar tom lista")
+                    logger.error(
+                        f"Serverfel vid positionshämtning ({e.response.status_code}), returnerar tom lista"
+                    )
                     return []
                 raise
 
             logger.info(f"✅ REST API: Hämtade {len(positions_data)} positioner")
-            positions = [Position.from_bitfinex_data(position) for position in positions_data]
+            positions = [
+                Position.from_bitfinex_data(position) for position in positions_data
+            ]
             return positions
 
         except Exception as e:
@@ -224,7 +246,9 @@ class PositionsService:
             # Hämta aktuell position
             position = await self.get_position_by_symbol(symbol)
             if not position or not position.amount:
-                raise ValueError(f"Ingen aktiv position med amount hittad för symbol: {symbol}")
+                raise ValueError(
+                    f"Ingen aktiv position med amount hittad för symbol: {symbol}"
+                )
 
             # Bestäm motsatt amount
             amount = float(position.amount)
@@ -238,7 +262,7 @@ class PositionsService:
                 "amount": str(close_amount),
                 "reduce_only": True,
             }
-            
+
             ec = get_exchange_client()
             timeout = self.settings.ORDER_HTTP_TIMEOUT
             retries = max(int(self.settings.ORDER_MAX_RETRIES), 0)
@@ -252,13 +276,15 @@ class PositionsService:
                         f"🌐 REST API: Stänger position via reduce-only MARKET för {symbol} ({close_amount})"
                     )
                     response = await ec.signed_request(
-                        method="post", 
-                        endpoint=order_endpoint, 
-                        body=order_payload, 
-                        timeout=timeout
+                        method="post",
+                        endpoint=order_endpoint,
+                        body=order_payload,
+                        timeout=timeout,
                     )
                     if response.status_code in (429, 500, 502, 503, 504):
-                        raise httpx.HTTPStatusError("server busy", request=response.request, response=response)
+                        raise httpx.HTTPStatusError(
+                            "server busy", request=response.request, response=response
+                        )
                     response.raise_for_status()
                     result = response.json()
                     break
@@ -268,7 +294,9 @@ class PositionsService:
                         import asyncio
                         import random
 
-                        delay = min(backoff_max, backoff_base * (2**attempt)) + random.uniform(0, 0.1)
+                        delay = min(
+                            backoff_max, backoff_base * (2**attempt)
+                        ) + random.uniform(0, 0.1)
                         await asyncio.sleep(delay)
                         continue
                     else:

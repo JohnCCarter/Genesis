@@ -18,7 +18,9 @@ except ImportError:  # Fall tillbaka till v1
 
         print("Using pydantic BaseSettings (v1)")
     except ImportError:
-        raise ImportError("Neither pydantic-settings nor pydantic BaseSettings found") from None
+        raise ImportError(
+            "Neither pydantic-settings nor pydantic BaseSettings found"
+        ) from None
 
 _settings_instance = None
 
@@ -62,7 +64,9 @@ class Settings(_BaseSettings):
 
     # WS multi-socket (publika kanaler) - Optimerat för Bitfinex-begränsningar
     WS_USE_POOL: bool = True
-    WS_MAX_SUBS_PER_SOCKET: int = 25  # Minskad från 200 (Bitfinex max 25 channels per connection)
+    WS_MAX_SUBS_PER_SOCKET: int = (
+        25  # Minskad från 200 (Bitfinex max 25 channels per connection)
+    )
     WS_PUBLIC_SOCKETS_MAX: int = 1  # Minskad från 3 (undvik 20 connections/min limit)
 
     # Lista över symboler att auto‑subscriba vid startup (komma‑separerad)
@@ -236,7 +240,9 @@ class Settings(_BaseSettings):
     SUPABASE_URL: str | None = None
     SUPABASE_ANON_KEY: str | None = None
     SUPABASE_SERVICE_ROLE_KEY: str | None = None
-    MCP_SERVER_URL: str = "https://kxibqgvpdfmklvwhmcry.supabase.co/functions/v1/mcp_server"
+    MCP_SERVER_URL: str = (
+        "https://kxibqgvpdfmklvwhmcry.supabase.co/functions/v1/mcp_server"
+    )
 
     # JWT Authentication
     JWT_SECRET: str | None = None
@@ -257,12 +263,14 @@ def get_settings() -> Settings:
     if _settings_instance is None:
         try:
             from utils.logger import get_logger
+
             logger = get_logger(__name__)
             logger.info("⚙️  Creating and caching Settings instance...")
         except Exception:
             print("⚙️  Creating and caching Settings instance...")
         _settings_instance = Settings()
     return _settings_instance
+
 
 # Exponera en singleton instans för enkel import
 settings = get_settings()

@@ -125,7 +125,9 @@ class TestRiskGuardsService:
 
         # Sätt triggad status med nyligen timestamp
         self.service.guards["max_daily_loss"]["triggered"] = True
-        self.service.guards["max_daily_loss"]["triggered_at"] = datetime.now().isoformat()
+        self.service.guards["max_daily_loss"][
+            "triggered_at"
+        ] = datetime.now().isoformat()
         self.service.guards["max_daily_loss"]["cooldown_hours"] = 24
 
         # Test - cooldown aktiv
@@ -167,9 +169,13 @@ class TestRiskGuardsService:
     def test_check_all_guards(self):
         """Test alla guards tillsammans."""
         with (
-            patch.object(self.service, "check_max_daily_loss", return_value=(False, None)),
+            patch.object(
+                self.service, "check_max_daily_loss", return_value=(False, None)
+            ),
             patch.object(self.service, "check_kill_switch", return_value=(False, None)),
-            patch.object(self.service, "check_exposure_limits", return_value=(False, None)),
+            patch.object(
+                self.service, "check_exposure_limits", return_value=(False, None)
+            ),
         ):
             # Test - alla guards passerar
             blocked, reason = self.service.check_all_guards("tBTCUSD", 0.1, 50000)
@@ -180,7 +186,9 @@ class TestRiskGuardsService:
         """Test återställning av guard."""
         # Sätt triggad status
         self.service.guards["max_daily_loss"]["triggered"] = True
-        self.service.guards["max_daily_loss"]["triggered_at"] = datetime.now().isoformat()
+        self.service.guards["max_daily_loss"][
+            "triggered_at"
+        ] = datetime.now().isoformat()
         self.service.guards["max_daily_loss"]["reason"] = "Test reason"
 
         # Återställ

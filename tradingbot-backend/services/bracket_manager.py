@@ -50,11 +50,15 @@ class BracketManager:
         sl_id: int | None,
         tp_id: int | None,
     ) -> None:
-        self.groups[gid] = BracketGroup(entry_id=entry_id, sl_id=sl_id, tp_id=tp_id, active=True)
+        self.groups[gid] = BracketGroup(
+            entry_id=entry_id, sl_id=sl_id, tp_id=tp_id, active=True
+        )
         for role, oid in (("entry", entry_id), ("sl", sl_id), ("tp", tp_id)):
             if isinstance(oid, int):
                 self.child_to_group[oid] = (gid, role)
-        logger.info(f"Registered bracket gid={gid} entry={entry_id} sl={sl_id} tp={tp_id}")
+        logger.info(
+            f"Registered bracket gid={gid} entry={entry_id} sl={sl_id} tp={tp_id}"
+        )
         self._save_state_safe()
 
     async def _cancel_sibling(self, filled_child_id: int) -> None:
@@ -84,7 +88,9 @@ class BracketManager:
         try:
             # Vi lyssnar främst på te/tu (trade executed/update)
             if event_code in ("te", "tu"):
-                payload: Any = msg[2] if isinstance(msg, list) and len(msg) > 2 else None
+                payload: Any = (
+                    msg[2] if isinstance(msg, list) and len(msg) > 2 else None
+                )
                 if isinstance(payload, list) and len(payload) >= 6:
                     # Bitfinex format: [ID, PAIR, MTS, ORDER_ID, EXEC_AMOUNT, EXEC_PRICE, ...]
                     order_id = payload[3]
@@ -99,9 +105,13 @@ class BracketManager:
                                     # Ackumulera fylld mängd (absolut)
                                     g = self.groups.get(gid)
                                     if g and g.active:
-                                        g.entry_filled = float(max(0.0, (g.entry_filled or 0.0))) + abs(exec_amount)
+                                        g.entry_filled = float(
+                                            max(0.0, (g.entry_filled or 0.0))
+                                        ) + abs(exec_amount)
                                         # Justera skyddsordrar (SL/TP) till ny fylld mängd
-                                        await self._sync_protectives_to_entry_filled(gid)
+                                        await self._sync_protectives_to_entry_filled(
+                                            gid
+                                        )
                                         self._save_state_safe()
                                 except Exception:
                                     pass
@@ -111,7 +121,9 @@ class BracketManager:
                                 # men OCO-semantiken: cancella syskon vid första fill.
                                 if self.settings.BRACKET_PARTIAL_ADJUST:
                                     try:
-                                        await self._adjust_sibling_on_partial(gid, role, exec_amount)
+                                        await self._adjust_sibling_on_partial(
+                                            gid, role, exec_amount
+                                        )
                                     except Exception:
                                         pass
                                 await self._cancel_sibling(order_id)
@@ -149,7 +161,9 @@ class BracketManager:
         except Exception as e:
             logger.error(f"Fel i BracketManager.handle_private_event: {e}")
 
-    async def _adjust_sibling_on_partial(self, gid: str, filled_role: str, exec_amount: float) -> None:
+    async def _adjust_sibling_on_partial(
+        self, gid: str, filled_role: str, exec_amount: float
+    ) -> None:
         """Justera syskonorder vid partial fill om aktiverat.
 
         Enkel heuristik: minska syskonets amount med samma belopp som fylld del.
@@ -280,11 +294,16 @@ class BracketManager:
 
             # Kontrollera att order-ID:n är positiva heltal
             for order_id in [group.entry_id, group.sl_id, group.tp_id]:
-                if order_id is not None and (not isinstance(order_id, int) or order_id <= 0):
+                if order_id is not None and (
+                    not isinstance(order_id, int) or order_id <= 0
+                ):
                     return False
 
             # Kontrollera att entry_filled är ett giltigt tal
-            if not isinstance(group.entry_filled, (int, float)) or group.entry_filled < 0:
+            if (
+                not isinstance(group.entry_filled, (int, float))
+                or group.entry_filled < 0
+            ):
                 return False
 
             return True
@@ -319,7 +338,9 @@ class BracketManager:
                 from rest.auth import get_order_status  # type: ignore
             except ImportError:
                 # Fallback om get_order_status inte finns
-                logger.warning("get_order_status inte tillgänglig, hoppar över recovery")
+                logger.warning(
+                    "get_order_status inte tillgänglig, hoppar över recovery"
+                )
                 return
 
             for gid, group in self.groups.items():
@@ -332,13 +353,24 @@ class BracketManager:
                         entry_status = await get_order_status(group.entry_id)
                         if entry_status and entry_status.get("status") == "EXECUTED":
                             # Entry är fylld, kontrollera om vi behöver justera skyddsordrar
-                            executed_amount = float(entry_status.get("executed_amount", 0))
-                            if executed_amount > 0 and executed_amount != group.entry_filled:
-                                logger.info(f"Recovery: Entry {group.entry_id} har fylld {executed_amount}")
+                            executed_amount = float(
+                                entry_status.get("executed_amount", 0)
+                            )
+                            if (
+                                executed_amount > 0
+                                and executed_amount != group.entry_filled
+                            ):
+                                logger.info(
+                                    f"Recovery: Entry {group.entry_id} har fylld {executed_amount}"
+                                )
                                 group.entry_filled = executed_amount
-                                await self._adjust_sibling_on_partial(gid, "entry", executed_amount)
+                                await self._adjust_sibling_on_partial(
+                                    gid, "entry", executed_amount
+                                )
                     except Exception as e:
-                        logger.warning(f"Kunde inte kontrollera entry {group.entry_id}: {e}")
+                        logger.warning(
+                            f"Kunde inte kontrollera entry {group.entry_id}: {e}"
+                        )
 
                 # Kontrollera skyddsordrar
                 for role, order_id in [("sl", group.sl_id), ("tp", group.tp_id)]:
@@ -347,10 +379,14 @@ class BracketManager:
                             status = await get_order_status(order_id)
                             if status and status.get("status") == "EXECUTED":
                                 # Skyddsorder är fylld, avbryt syskon
-                                logger.info(f"Recovery: {role.upper()} {order_id} är fylld, avbryter syskon")
+                                logger.info(
+                                    f"Recovery: {role.upper()} {order_id} är fylld, avbryter syskon"
+                                )
                                 await self._cancel_sibling(order_id)
                         except Exception as e:
-                            logger.warning(f"Kunde inte kontrollera {role} {order_id}: {e}")
+                            logger.warning(
+                                f"Kunde inte kontrollera {role} {order_id}: {e}"
+                            )
 
             # Spara uppdaterad state
             self._save_state_safe()
@@ -446,7 +482,11 @@ def _child_index(groups: dict[str, BracketGroup]) -> dict[int, tuple[str, str]]:
 
 
 def _is_valid_state(data: dict) -> bool:
-    return isinstance(data, dict) and "groups" in data and isinstance(data.get("groups"), dict)
+    return (
+        isinstance(data, dict)
+        and "groups" in data
+        and isinstance(data.get("groups"), dict)
+    )
 
 
 def _safe_read_json(path: str) -> dict | None:
@@ -479,7 +519,9 @@ def _safe_write_json(path: str, payload: dict) -> None:
         try:
             if os.path.exists(path):
                 with open(f"{path}.bak", "w", encoding="utf-8") as bf:
-                    json.dump(_safe_read_json(path) or {}, bf, ensure_ascii=False, indent=2)
+                    json.dump(
+                        _safe_read_json(path) or {}, bf, ensure_ascii=False, indent=2
+                    )
         except Exception:
             pass
         os.replace(tmp, path)

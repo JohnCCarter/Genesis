@@ -18,7 +18,9 @@ import requests
 from bs4 import BeautifulSoup
 
 # Konfigurera loggning
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger("bitfinex_docs_scraper")
 
 # Konstanter
@@ -48,7 +50,9 @@ class BitfinexDocsScraper:
         self.cache_dir = cache_dir or CACHE_DIR
         self.cache_validity_days = cache_validity_days
         self.session = requests.Session()
-        self.session.headers.update({"User-Agent": "Mozilla/5.0 Genesis-Trading-Bot Documentation Helper"})
+        self.session.headers.update(
+            {"User-Agent": "Mozilla/5.0 Genesis-Trading-Bot Documentation Helper"}
+        )
 
         # Skapa cache-katalog om den inte finns
         os.makedirs(self.cache_dir, exist_ok=True)
@@ -74,7 +78,9 @@ class BitfinexDocsScraper:
 
         # Kontrollera om cachen finns och är giltig
         if cache_file.exists():
-            file_age = datetime.now() - datetime.fromtimestamp(cache_file.stat().st_mtime)
+            file_age = datetime.now() - datetime.fromtimestamp(
+                cache_file.stat().st_mtime
+            )
             if file_age < timedelta(days=self.cache_validity_days):
                 try:
                     with open(cache_file, "r", encoding="utf-8") as f:
@@ -94,7 +100,8 @@ class BitfinexDocsScraper:
                 json.dump(
                     (
                         response.json()
-                        if "application/json" in response.headers.get("Content-Type", "")
+                        if "application/json"
+                        in response.headers.get("Content-Type", "")
                         else {"html": response.text}
                     ),
                     f,
@@ -118,7 +125,9 @@ class BitfinexDocsScraper:
             if cache_file.exists():
                 try:
                     with open(cache_file, "r", encoding="utf-8") as f:
-                        logger.warning(f"Använder gammal cache för {section} på grund av nätverksfel")
+                        logger.warning(
+                            f"Använder gammal cache för {section} på grund av nätverksfel"
+                        )
                         return json.load(f)
                 except (json.JSONDecodeError, IOError):
                     pass
@@ -172,8 +181,13 @@ class BitfinexDocsScraper:
                                 param = {
                                     "name": cells[0].get_text(strip=True),
                                     "type": cells[1].get_text(strip=True),
-                                    "required": "required" in cells[2].get_text(strip=True).lower(),
-                                    "description": (cells[3].get_text(strip=True) if len(cells) > 3 else ""),
+                                    "required": "required"
+                                    in cells[2].get_text(strip=True).lower(),
+                                    "description": (
+                                        cells[3].get_text(strip=True)
+                                        if len(cells) > 3
+                                        else ""
+                                    ),
                                 }
                                 endpoint["parameters"].append(param)
 
@@ -227,7 +241,9 @@ class BitfinexDocsScraper:
                         self.error_codes[code] = {
                             "code": code,
                             "message": cells[1].get_text(strip=True),
-                            "description": (cells[2].get_text(strip=True) if len(cells) > 2 else ""),
+                            "description": (
+                                cells[2].get_text(strip=True) if len(cells) > 2 else ""
+                            ),
                         }
 
         return self.error_codes
@@ -300,7 +316,9 @@ class BitfinexDocsScraper:
 
         return self.order_types
 
-    def get_endpoint_info(self, path: str, section: Optional[str] = None) -> Optional[Dict]:
+    def get_endpoint_info(
+        self, path: str, section: Optional[str] = None
+    ) -> Optional[Dict]:
         """
         Hämtar information om en specifik endpoint.
 

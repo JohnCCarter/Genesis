@@ -53,7 +53,9 @@ class WSFirstDataService:
 
         # Data caches
         self._ticker_cache: dict[str, DataPoint] = {}
-        self._candle_cache: dict[str, dict[str, DataPoint]] = defaultdict(dict)  # symbol -> timeframe -> data
+        self._candle_cache: dict[str, dict[str, DataPoint]] = defaultdict(
+            dict
+        )  # symbol -> timeframe -> data
 
         # Freshness thresholds
         self.ticker_stale_seconds = 30
@@ -106,31 +108,43 @@ class WSFirstDataService:
             # Prenumerera på standardsymboler
             if settings.WS_SUBSCRIBE_SYMBOLS:
                 symbols = [s.strip() for s in settings.WS_SUBSCRIBE_SYMBOLS.split(",")]
-                logger.info(f"🚀 Initialiserar WS-prenumerationer för {len(symbols)} symboler")
+                logger.info(
+                    f"🚀 Initialiserar WS-prenumerationer för {len(symbols)} symboler"
+                )
 
                 # Timeframes att prenumerera på (ex: 1m,5m)
                 try:
-                    tfs = [tf.strip() for tf in settings.WS_CANDLE_TIMEFRAMES.split(",") if tf.strip()]
+                    tfs = [
+                        tf.strip()
+                        for tf in settings.WS_CANDLE_TIMEFRAMES.split(",")
+                        if tf.strip()
+                    ]
                 except Exception:
                     tfs = ["1m"]
 
                 for symbol in symbols:
                     try:
                         # Ticker kräver callback – använd noop
-                        await bitfinex_ws.subscribe_ticker(symbol, callback=lambda _tick: None)
+                        await bitfinex_ws.subscribe_ticker(
+                            symbol, callback=lambda _tick: None
+                        )
                         for tf in tfs:
 
                             async def _cb(_):
                                 pass
 
-                            await bitfinex_ws.subscribe_candles(symbol=symbol, timeframe=tf, callback=_cb)
+                            await bitfinex_ws.subscribe_candles(
+                                symbol=symbol, timeframe=tf, callback=_cb
+                            )
                     except Exception as e:
                         logger.warning(f"Kunde inte prenumerera på {symbol}: {e}")
                 logger.info("✅ WS-First Data Service initialiserad")
         except Exception as e:
             logger.error(f"❌ Fel vid initialisering av WS-First Data Service: {e}")
 
-    async def _handle_ws_candles(self, symbol: str, timeframe: str, message_data: list | tuple | dict | None) -> None:
+    async def _handle_ws_candles(
+        self, symbol: str, timeframe: str, message_data: list | tuple | dict | None
+    ) -> None:
         """Hantera WS candles-data (snapshot eller uppdateringar)."""
         try:
             now = time.time()
@@ -142,7 +156,11 @@ class WSFirstDataService:
 
             dq = self._candle_queues[key]
             # Snapshot: lista av listor
-            if isinstance(message_data, list) and message_data and isinstance(message_data[0], list):
+            if (
+                isinstance(message_data, list)
+                and message_data
+                and isinstance(message_data[0], list)
+            ):
                 # Ta senaste upp till 500
                 for row in message_data[-500:]:
                     if isinstance(row, (list, tuple)) and len(row) >= 6:
@@ -151,7 +169,12 @@ class WSFirstDataService:
             elif isinstance(message_data, list) and len(message_data) >= 6:
                 mts = message_data[0]
                 # undvik dubbletter: om sista har samma mts, ersätt
-                if dq and isinstance(dq[-1], list) and len(dq[-1]) >= 1 and dq[-1][0] == mts:
+                if (
+                    dq
+                    and isinstance(dq[-1], list)
+                    and len(dq[-1]) >= 1
+                    and dq[-1][0] == mts
+                ):
                     dq[-1] = [
                         message_data[0],
                         message_data[1],
@@ -182,7 +205,9 @@ class WSFirstDataService:
             # Backpressure: vi använder maxlen på deque så äldsta släpps automatiskt
 
             # Skriv till cache med DataPoint
-            data_point = DataPoint(symbol=symbol, data=latest_list, timestamp=now, source="ws")
+            data_point = DataPoint(
+                symbol=symbol, data=latest_list, timestamp=now, source="ws"
+            )
             self._candle_cache[symbol][timeframe] = data_point
             self.stats["ws_hits"] += 1
             try:
@@ -223,32 +248,52 @@ class WSFirstDataService:
 
                 # Seed vid behov med senaste historiken
                 try:
-                    closes = [row[2] for row in latest_list if isinstance(row, (list, tuple)) and len(row) >= 3]
-                    highs = [row[3] for row in latest_list if isinstance(row, (list, tuple)) and len(row) >= 4]
-                    lows = [row[4] for row in latest_list if isinstance(row, (list, tuple)) and len(row) >= 5]
+                    closes = [
+                        row[2]
+                        for row in latest_list
+                        if isinstance(row, (list, tuple)) and len(row) >= 3
+                    ]
+                    highs = [
+                        row[3]
+                        for row in latest_list
+                        if isinstance(row, (list, tuple)) and len(row) >= 4
+                    ]
+                    lows = [
+                        row[4]
+                        for row in latest_list
+                        if isinstance(row, (list, tuple)) and len(row) >= 5
+                    ]
                     if self._ema_state[ind_key].value is None:
                         for px in closes[-ema_p:]:
                             self._ema_state[ind_key].update(float(px))
                     if self._rsi_state[ind_key].prev_close is None and len(closes) >= 2:
                         for px in closes[-(rsi_p + 1) :]:
                             self._rsi_state[ind_key].update(float(px))
-                    if self._atr_state[ind_key].prev_close is None and len(highs) == len(lows) == len(closes):
+                    if self._atr_state[ind_key].prev_close is None and len(
+                        highs
+                    ) == len(lows) == len(closes):
                         start = max(0, len(closes) - atr_p)
                         for i in range(start, len(closes)):
-                            self._atr_state[ind_key].update(float(highs[i]), float(lows[i]), float(closes[i]))
+                            self._atr_state[ind_key].update(
+                                float(highs[i]), float(lows[i]), float(closes[i])
+                            )
                 except Exception:
                     pass
 
                 ema_val = self._ema_state[ind_key].update(float(c))
                 rsi_val = self._rsi_state[ind_key].update(float(c))
-                atr_val = self._atr_state[ind_key].update(float(h), float(low_val), float(c))
+                atr_val = self._atr_state[ind_key].update(
+                    float(h), float(low_val), float(c)
+                )
                 self._ind_values[ind_key] = {
                     "ema": float(ema_val),
                     "rsi": float(rsi_val),
                     "atr": float(atr_val),
                 }
         except Exception as e:
-            logger.error(f"Fel vid hantering av WS candles för {symbol} {timeframe}: {e}")
+            logger.error(
+                f"Fel vid hantering av WS candles för {symbol} {timeframe}: {e}"
+            )
 
     def _handle_ws_ticker(self, symbol: str, ticker_data: dict[str, Any]) -> None:
         """Hantera WS ticker-data med debounce"""
@@ -262,7 +307,9 @@ class WSFirstDataService:
                 return
 
             # Uppdatera cache
-            data_point = DataPoint(symbol=symbol, data=ticker_data, timestamp=now, source="ws")
+            data_point = DataPoint(
+                symbol=symbol, data=ticker_data, timestamp=now, source="ws"
+            )
 
             self._ticker_cache[symbol] = data_point
             self._last_update_time[symbol] = now
@@ -297,14 +344,18 @@ class WSFirstDataService:
             if not force_fresh and symbol in self._ticker_cache:
                 cached = self._ticker_cache[symbol]
                 try:
-                    stale = rc.get_int("WS_TICKER_STALE_SECS", self.ticker_stale_seconds)
+                    stale = rc.get_int(
+                        "WS_TICKER_STALE_SECS", self.ticker_stale_seconds
+                    )
                 except Exception:
                     stale = self.ticker_stale_seconds
 
                 if now - cached.timestamp < stale:
                     self.stats["cache_hits"] += 1
                     try:
-                        get_metrics_client().inc_labeled("marketdata_cache_hits_total", {"type": "ticker"})
+                        get_metrics_client().inc_labeled(
+                            "marketdata_cache_hits_total", {"type": "ticker"}
+                        )
                     except Exception:
                         pass
                     return cached.data
@@ -313,7 +364,9 @@ class WSFirstDataService:
             logger.debug(f"🔄 REST fallback för ticker {symbol}")
             self.stats["rest_fallbacks"] += 1
             try:
-                get_metrics_client().inc_labeled("marketdata_rest_fallbacks_total", {"type": "ticker"})
+                get_metrics_client().inc_labeled(
+                    "marketdata_rest_fallbacks_total", {"type": "ticker"}
+                )
             except Exception:
                 pass
 
@@ -324,10 +377,14 @@ class WSFirstDataService:
 
             if ticker_data:
                 # Uppdatera cache med REST-data
-                data_point = DataPoint(symbol=symbol, data=ticker_data, timestamp=now, source="rest")
+                data_point = DataPoint(
+                    symbol=symbol, data=ticker_data, timestamp=now, source="rest"
+                )
                 self._ticker_cache[symbol] = data_point
                 try:
-                    get_metrics_client().inc_labeled("marketdata_ws_hits_total", {"type": "ticker", "source": "rest"})
+                    get_metrics_client().inc_labeled(
+                        "marketdata_ws_hits_total", {"type": "ticker", "source": "rest"}
+                    )
                 except Exception:
                     pass
 
@@ -423,7 +480,9 @@ class WSFirstDataService:
 
             if candle_data:
                 # Uppdatera cache
-                data_point = DataPoint(symbol=symbol, data=candle_data, timestamp=now, source="rest")
+                data_point = DataPoint(
+                    symbol=symbol, data=candle_data, timestamp=now, source="rest"
+                )
                 self._candle_cache[symbol][timeframe] = data_point
                 try:
                     # Persist REST-data till CandleCache för framtida läsning
@@ -455,7 +514,10 @@ class WSFirstDataService:
         live_symbols = set()
 
         for symbol, data_point in self._ticker_cache.items():
-            if data_point.source == "ws" and now - data_point.timestamp < self.ticker_stale_seconds:
+            if (
+                data_point.source == "ws"
+                and now - data_point.timestamp < self.ticker_stale_seconds
+            ):
                 live_symbols.add(symbol)
 
         return live_symbols
@@ -468,7 +530,9 @@ class WSFirstDataService:
                 try:
                     await asyncio.sleep(0.2 * idx)
                     # Kör begränsad backfill per par – justerbart via Settings om behövs
-                    inserted = await self.rest_service.backfill_history(sym, tf, max_batches=5, batch_limit=1000)
+                    inserted = await self.rest_service.backfill_history(
+                        sym, tf, max_batches=5, batch_limit=1000
+                    )
                     logger.info(f"📚 Backfill klar för {sym} {tf}: +{inserted} rader")
                 except Exception as ie:
                     logger.warning(f"⚠️ Backfill misslyckades för {sym} {tf}: {ie}")
@@ -485,8 +549,12 @@ class WSFirstDataService:
             **self.stats,
             "live_ws_symbols": len(live_symbols),
             "cached_tickers": len(self._ticker_cache),
-            "cached_candles": sum(len(timeframes) for timeframes in self._candle_cache.values()),
-            "queue_sizes": {symbol: len(queue) for symbol, queue in self._update_queues.items()},
+            "cached_candles": sum(
+                len(timeframes) for timeframes in self._candle_cache.values()
+            ),
+            "queue_sizes": {
+                symbol: len(queue) for symbol, queue in self._update_queues.items()
+            },
             "rate_limiter_stats": self.rate_limiter.get_stats(),
         }
 

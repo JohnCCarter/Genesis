@@ -27,7 +27,9 @@ class LedgerService:
         # Återanvänd befintlig orderhistorikservice för API-anropen
         self._order_history = OrderHistoryService()
 
-    async def get_ledgers(self, currency: str | None = None, limit: int = 25) -> list[dict[str, Any]]:
+    async def get_ledgers(
+        self, currency: str | None = None, limit: int = 25
+    ) -> list[dict[str, Any]]:
         """Hämta ledger-poster som dicts.
 
         Args:

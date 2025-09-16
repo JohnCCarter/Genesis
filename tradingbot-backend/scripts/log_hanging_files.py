@@ -87,7 +87,9 @@ async def log_file_analysis():
 
             for pattern in blocking_patterns:
                 if pattern in content and "timeout=" not in content:
-                    issues.append(f"⏰ Potentiell blocking call utan timeout: {pattern}")
+                    issues.append(
+                        f"⏰ Potentiell blocking call utan timeout: {pattern}"
+                    )
 
             # 3. Kontrollera för WebSocket race conditions
             if "listen_for_messages" in content:
@@ -170,7 +172,9 @@ async def test_critical_services():
         logger.info(f"✅ RiskGuards equity: ${equity:.2f} ({duration:.1f}ms)")
 
         if duration > 5000:
-            logger.warning(f"⚠️ RiskGuards equity-hämtning tog {duration:.1f}ms (långsam)")
+            logger.warning(
+                f"⚠️ RiskGuards equity-hämtning tog {duration:.1f}ms (långsam)"
+            )
 
     except Exception as e:
         logger.error(f"❌ RiskGuards test misslyckades: {e}")
@@ -189,7 +193,9 @@ async def test_critical_services():
         logger.info(f"✅ MarketData ticker: {ticker is not None} ({duration:.1f}ms)")
 
         if duration > 1000:
-            logger.warning(f"⚠️ MarketData ticker-hämtning tog {duration:.1f}ms (långsam)")
+            logger.warning(
+                f"⚠️ MarketData ticker-hämtning tog {duration:.1f}ms (långsam)"
+            )
 
     except Exception as e:
         logger.error(f"❌ MarketData test misslyckades: {e}")

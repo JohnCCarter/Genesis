@@ -27,29 +27,27 @@ import { WalletsPanel } from '../components/WalletsPanel';
 
 // Tab component for better organization
 interface TabProps {
-  id: string;
   label: string;
   icon: string;
   color: string;
   children: React.ReactNode;
 }
 
-function Tab({ id, label, icon, color, children }: TabProps) {
+function Tab({ label, icon, color, children }: TabProps) {
   return (
-    <div id={id} style={{ display: 'none' }}>
+    <div>
       {children}
     </div>
   );
 }
 
 function TabButton({
-  id,
   label,
   icon,
   color,
   isActive,
   onClick,
-}: TabProps & { isActive: boolean; onClick: () => void }) {
+}: Omit<TabProps, 'children'> & { isActive: boolean; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
@@ -88,7 +86,15 @@ export default function DashboardPage() {
   } | null>(null);
   const [log, setLog] = React.useState<string[]>([]);
   const [acceptance, setAcceptance] = React.useState<any>(null);
-  const [activeTab, setActiveTab] = React.useState('trading');
+  const [activeTab, setActiveTab] = React.useState(() => {
+    // Persist active tab across page reloads
+    return localStorage.getItem('dashboard_active_tab') || 'trading';
+  });
+
+  // Save active tab to localStorage whenever it changes
+  React.useEffect(() => {
+    localStorage.setItem('dashboard_active_tab', activeTab);
+  }, [activeTab]);
 
   const refresh = React.useCallback(async () => {
     setLog((l) =>
@@ -170,19 +176,8 @@ export default function DashboardPage() {
 
   const handleTabClick = (tabId: string) => {
     setActiveTab(tabId);
-    // Show/hide tab content
-    tabs.forEach((tab) => {
-      const element = document.getElementById(tab.id);
-      if (element) {
-        element.style.display = tab.id === tabId ? 'block' : 'none';
-      }
-    });
+    // No more DOM manipulation - React handles this with conditional rendering
   };
-
-  React.useEffect(() => {
-    // Initialize tab visibility
-    handleTabClick(activeTab);
-  }, [activeTab]);
 
   return (
     <div style={{ fontFamily: 'system-ui, sans-serif', padding: 16 }}>
@@ -270,12 +265,12 @@ export default function DashboardPage() {
         {tabs.map((tab) => (
           <TabButton
             key={tab.id}
-            id={tab.id}
             label={tab.label}
             icon={tab.icon}
             color={tab.color}
             isActive={activeTab === tab.id}
-            onClick={() => handleTabClick(tab.id)} children={undefined}          />
+            onClick={() => handleTabClick(tab.id)}
+          />
         ))}
       </div>
 
@@ -283,7 +278,7 @@ export default function DashboardPage() {
       <div style={{ minHeight: '600px' }}>
         {/* 🚀 TRADING TAB */}
         {activeTab === 'trading' && (
-        <Tab id="trading" label="Trading" icon="🚀" color="#28a745">
+        <Tab label="Trading" icon="🚀" color="#28a745">
           <div
             style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}
           >
@@ -394,7 +389,7 @@ export default function DashboardPage() {
 
         {/* 🛡️ RISK MANAGEMENT TAB */}
         {activeTab === 'risk' && (
-        <Tab id="risk" label="Risk Management" icon="🛡️" color="#dc3545">
+        <Tab label="Risk Management" icon="🛡️" color="#dc3545">
           <div
             style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}
           >
@@ -473,7 +468,7 @@ export default function DashboardPage() {
 
         {/* 📈 ANALYTICS TAB */}
         {activeTab === 'analytics' && (
-        <Tab id="analytics" label="Analytics" icon="📈" color="#007bff">
+        <Tab label="Analytics" icon="📈" color="#007bff">
           <div
             style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}
           >
@@ -552,7 +547,7 @@ export default function DashboardPage() {
 
         {/* ⚙️ SYSTEM TAB */}
         {activeTab === 'system' && (
-        <Tab id="system" label="System" icon="⚙️" color="#ffc107">
+        <Tab label="System" icon="⚙️" color="#ffc107">
           <div
             style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}
           >
@@ -631,7 +626,7 @@ export default function DashboardPage() {
 
         {/* 🔧 ADMIN TAB */}
         {activeTab === 'admin' && (
-        <Tab id="admin" label="Admin" icon="🔧" color="#6c757d">
+        <Tab label="Admin" icon="🔧" color="#6c757d">
           <div
             style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}
           >

@@ -81,7 +81,9 @@ class CostAwareBacktestService:
         self.costs = costs or TradeCosts()
         self.data_service = get_market_data()
 
-    def simulate_market_impact(self, base_price: float, amount: float, side: str) -> tuple[float, float, float]:
+    def simulate_market_impact(
+        self, base_price: float, amount: float, side: str
+    ) -> tuple[float, float, float]:
         """
         Simulera marknadsimpact, slippage och spread.
 
@@ -132,7 +134,9 @@ class CostAwareBacktestService:
 
         return filled_amount, fill_ratio
 
-    def calculate_fees(self, amount: float, price: float, is_maker: bool = False) -> float:
+    def calculate_fees(
+        self, amount: float, price: float, is_maker: bool = False
+    ) -> float:
         """
         Beräkna avgifter för en trade.
 
@@ -159,7 +163,9 @@ class CostAwareBacktestService:
         latency = random.gauss(self.costs.latency_ms, self.costs.latency_ms * 0.2)
         return max(10.0, latency)  # Minst 10ms
 
-    def calculate_metrics(self, trades: list[BacktestTrade], initial_capital: float) -> dict[str, Any]:
+    def calculate_metrics(
+        self, trades: list[BacktestTrade], initial_capital: float
+    ) -> dict[str, Any]:
         """
         Beräkna avancerade metrics från trades.
 
@@ -191,13 +197,19 @@ class CostAwareBacktestService:
 
         # Grundläggande statistik
         total_trades = len(trades)
-        total_pnl = sum(trade.amount * (trade.price - trade.executed_price) for trade in trades)
+        total_pnl = sum(
+            trade.amount * (trade.price - trade.executed_price) for trade in trades
+        )
         total_fees = sum(trade.fees for trade in trades)
         total_slippage = sum(trade.slippage for trade in trades)
 
         # Vinnande/förlorande trades
-        winning_trades = [t for t in trades if t.amount * (t.price - t.executed_price) > 0]
-        losing_trades = [t for t in trades if t.amount * (t.price - t.executed_price) < 0]
+        winning_trades = [
+            t for t in trades if t.amount * (t.price - t.executed_price) > 0
+        ]
+        losing_trades = [
+            t for t in trades if t.amount * (t.price - t.executed_price) < 0
+        ]
 
         winning_count = len(winning_trades)
         losing_count = len(losing_trades)
@@ -207,19 +219,27 @@ class CostAwareBacktestService:
 
         # Genomsnittliga vinster/förluster
         avg_win = (
-            sum(t.amount * (t.price - t.executed_price) for t in winning_trades) / winning_count
+            sum(t.amount * (t.price - t.executed_price) for t in winning_trades)
+            / winning_count
             if winning_count > 0
             else 0.0
         )
         avg_loss = (
-            abs(sum(t.amount * (t.price - t.executed_price) for t in losing_trades) / losing_count)
+            abs(
+                sum(t.amount * (t.price - t.executed_price) for t in losing_trades)
+                / losing_count
+            )
             if losing_count > 0
             else 0.0
         )
 
         # Profit factor
-        total_wins = sum(t.amount * (t.price - t.executed_price) for t in winning_trades)
-        total_losses = abs(sum(t.amount * (t.price - t.executed_price) for t in losing_trades))
+        total_wins = sum(
+            t.amount * (t.price - t.executed_price) for t in winning_trades
+        )
+        total_losses = abs(
+            sum(t.amount * (t.price - t.executed_price) for t in losing_trades)
+        )
         profit_factor = total_wins / total_losses if total_losses > 0 else float("inf")
 
         # Expectancy
@@ -253,7 +273,9 @@ class CostAwareBacktestService:
             "expectancy": expectancy,
         }
 
-    def _calculate_equity_curve(self, trades: list[BacktestTrade], initial_capital: float) -> list[dict[str, Any]]:
+    def _calculate_equity_curve(
+        self, trades: list[BacktestTrade], initial_capital: float
+    ) -> list[dict[str, Any]]:
         """Beräkna equity curve från trades."""
         equity_curve = []
         current_equity = initial_capital
@@ -338,7 +360,9 @@ class CostAwareBacktestService:
         if not negative_returns:
             return float("inf")
 
-        downside_variance = sum((r - mean_return) ** 2 for r in negative_returns) / len(returns)
+        downside_variance = sum((r - mean_return) ** 2 for r in negative_returns) / len(
+            returns
+        )
         downside_deviation = math.sqrt(downside_variance)
 
         if downside_deviation == 0:
@@ -348,7 +372,9 @@ class CostAwareBacktestService:
         sortino = (mean_return * 252) / (downside_deviation * math.sqrt(252))
         return sortino
 
-    def _calculate_calmar_ratio(self, returns: list[float], max_drawdown: float) -> float:
+    def _calculate_calmar_ratio(
+        self, returns: list[float], max_drawdown: float
+    ) -> float:
         """Beräkna Calmar ratio."""
         if not returns or max_drawdown == 0:
             return 0.0
@@ -439,7 +465,10 @@ class CostAwareBacktestService:
                         is_exit=True,
                     )
                     trades.append(exit_trade)
-                    current_equity += exit_trade.amount * (exit_trade.price - entry_price) - exit_trade.fees
+                    current_equity += (
+                        exit_trade.amount * (exit_trade.price - entry_price)
+                        - exit_trade.fees
+                    )
 
                 # Öppna long position
                 position_size = current_equity * position_size_pct / price
@@ -467,7 +496,10 @@ class CostAwareBacktestService:
                         is_exit=True,
                     )
                     trades.append(exit_trade)
-                    current_equity += exit_trade.amount * (exit_trade.price - entry_price) - exit_trade.fees
+                    current_equity += (
+                        exit_trade.amount * (exit_trade.price - entry_price)
+                        - exit_trade.fees
+                    )
 
                 # Öppna short position
                 position_size = current_equity * position_size_pct / price
@@ -531,7 +563,9 @@ class CostAwareBacktestService:
     ) -> BacktestTrade:
         """Skapa en trade med alla kostnader."""
         # Simulera marknadsimpact
-        executed_price, slippage, spread_cost = self.simulate_market_impact(price, amount, side)
+        executed_price, slippage, spread_cost = self.simulate_market_impact(
+            price, amount, side
+        )
 
         # Simulera partial fill
         filled_amount, fill_ratio = self.simulate_partial_fill(amount)

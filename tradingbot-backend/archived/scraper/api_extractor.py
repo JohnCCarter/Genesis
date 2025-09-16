@@ -6,7 +6,9 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 # Konfigurera loggning
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 
@@ -88,7 +90,9 @@ class ApiExtractor:
         }
 
         # Kontrollera om det finns autentiseringskrav i parametrarna
-        if any(p.get("name") in ["api_key", "api_secret"] for p in endpoint["parameters"]):
+        if any(
+            p.get("name") in ["api_key", "api_secret"] for p in endpoint["parameters"]
+        ):
             endpoint["authentication"] = True
 
         return endpoint
@@ -196,9 +200,13 @@ class ApiExtractor:
                 if success_response:
                     response.update(
                         {
-                            "type": success_response.get("type", success_response.get("content_type", "")),
+                            "type": success_response.get(
+                                "type", success_response.get("content_type", "")
+                            ),
                             "description": success_response.get("description", ""),
-                            "schema": success_response.get("schema", success_response.get("content", {})),
+                            "schema": success_response.get(
+                                "schema", success_response.get("content", {})
+                            ),
                         }
                     )
 
@@ -262,7 +270,9 @@ class ApiExtractor:
 
         return examples
 
-    def categorize_endpoint(self, endpoint: Dict[str, Any], source: str) -> tuple[str, str]:
+    def categorize_endpoint(
+        self, endpoint: Dict[str, Any], source: str
+    ) -> tuple[str, str]:
         """
         Kategoriserar en endpoint
 
@@ -282,14 +292,18 @@ class ApiExtractor:
         # Bestäm underkategori baserat på sökväg och autentisering
         path = endpoint.get("path", "").lower()
 
-        if endpoint.get("authentication", False) or any(word in path for word in ["auth", "key", "private"]):
+        if endpoint.get("authentication", False) or any(
+            word in path for word in ["auth", "key", "private"]
+        ):
             subcategory = "authenticated"
         else:
             subcategory = "public"
 
         return category, subcategory
 
-    def save_endpoint(self, endpoint: Dict[str, Any], category: str, subcategory: str, source: str) -> None:
+    def save_endpoint(
+        self, endpoint: Dict[str, Any], category: str, subcategory: str, source: str
+    ) -> None:
         """
         Sparar en endpoint
 
@@ -402,7 +416,9 @@ class ApiExtractor:
             # Bearbeta varje endpoint
             for endpoint in endpoints:
                 # Kategorisera endpoint
-                category, subcategory = self.categorize_endpoint(endpoint, file_path.stem)
+                category, subcategory = self.categorize_endpoint(
+                    endpoint, file_path.stem
+                )
 
                 # Spara endpoint
                 self.save_endpoint(endpoint, category, subcategory, file_path.stem)

@@ -17,7 +17,9 @@ class _StubWSFirst:
         self.rest_service = _StubRestService()
         self._indicator_snapshots = {}
 
-    async def get_ticker(self, symbol: str, *, force_fresh: bool = False):  # noqa: ARG002
+    async def get_ticker(
+        self, symbol: str, *, force_fresh: bool = False
+    ):  # noqa: ARG002
         return {"symbol": symbol, "last_price": 123.45}
 
     async def get_candles(

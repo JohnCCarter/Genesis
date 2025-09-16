@@ -58,7 +58,9 @@ class SignalGeneratorService:
                 return self._get_cached_response()
 
             # OPTIMERAD BATCHING: Hämta all data parallellt först
-            logger.info(f"⚡ Startar optimerad batch-generering för {len(symbols)} symboler")
+            logger.info(
+                f"⚡ Startar optimerad batch-generering för {len(symbols)} symboler"
+            )
 
             # Batch-hämta all data parallellt
             regime_data_batch, price_data_batch = await asyncio.gather(
@@ -93,7 +95,9 @@ class SignalGeneratorService:
                         features={"symbol": symbol},
                     )
                     signal_type = (
-                        "BUY" if sc.recommendation == "buy" else ("SELL" if sc.recommendation == "sell" else "HOLD")
+                        "BUY"
+                        if sc.recommendation == "buy"
+                        else ("SELL" if sc.recommendation == "sell" else "HOLD")
                     )
                     strength = self._evaluate_signal_strength(
                         {
@@ -101,9 +105,7 @@ class SignalGeneratorService:
                             "trading_probability": sc.probability,
                         }
                     )
-                    reason = (
-                        f"Confidence: {sc.confidence:.1f}%, Probability: {sc.probability:.1f}%, Source: {sc.source}"
-                    )
+                    reason = f"Confidence: {sc.confidence:.1f}%, Probability: {sc.probability:.1f}%, Source: {sc.source}"
 
                     # Skapa signal response
                     signal = SignalResponse(
@@ -117,7 +119,9 @@ class SignalGeneratorService:
                             else (
                                 "BUY"
                                 if sc.recommendation == "buy"
-                                else ("HOLD" if sc.recommendation == "hold" else "AVOID")
+                                else (
+                                    "HOLD" if sc.recommendation == "hold" else "AVOID"
+                                )
                             )
                         ),
                         timestamp=datetime.now(),
@@ -226,7 +230,11 @@ class SignalGeneratorService:
                 ema_z_value=regime_data.get("ema_z_value"),
                 features={"symbol": symbol},
             )
-            signal_type = "BUY" if sc.recommendation == "buy" else ("SELL" if sc.recommendation == "sell" else "HOLD")
+            signal_type = (
+                "BUY"
+                if sc.recommendation == "buy"
+                else ("SELL" if sc.recommendation == "sell" else "HOLD")
+            )
             strength = self._evaluate_signal_strength(
                 {
                     "confidence_score": sc.confidence,
@@ -244,7 +252,11 @@ class SignalGeneratorService:
                 recommendation=(
                     "STRONG_BUY"
                     if sc.recommendation == "buy" and sc.probability > 70
-                    else ("BUY" if sc.recommendation == "buy" else ("HOLD" if sc.recommendation == "hold" else "AVOID"))
+                    else (
+                        "BUY"
+                        if sc.recommendation == "buy"
+                        else ("HOLD" if sc.recommendation == "hold" else "AVOID")
+                    )
                 ),
                 timestamp=datetime.now(),
                 strength=strength,
@@ -291,7 +303,9 @@ class SignalGeneratorService:
                             else (
                                 "BUY"
                                 if sc.recommendation == "buy"
-                                else ("HOLD" if sc.recommendation == "hold" else "AVOID")
+                                else (
+                                    "HOLD" if sc.recommendation == "hold" else "AVOID"
+                                )
                             )
                         ),
                     }
@@ -305,19 +319,25 @@ class SignalGeneratorService:
 
     def _calculate_confidence_score(self, adx_value, ema_z_value):
         """DEPRECATED: Använd SignalService.score() direkt istället"""
-        logger.warning("⚠️ _calculate_confidence_score() är deprecated - använd SignalService.score() direkt")
+        logger.warning(
+            "⚠️ _calculate_confidence_score() är deprecated - använd SignalService.score() direkt"
+        )
         _ = (adx_value, ema_z_value)
         return 50.0
 
     def _calculate_trading_probability(self, regime, confidence):
         """DEPRECATED: Använd SignalService.score() direkt istället"""
-        logger.warning("⚠️ _calculate_trading_probability() är deprecated - använd SignalService.score() direkt")
+        logger.warning(
+            "⚠️ _calculate_trading_probability() är deprecated - använd SignalService.score() direkt"
+        )
         _ = (regime, confidence)
         return 50.0
 
     def _get_recommendation(self, regime, confidence, trading_prob):
         """DEPRECATED: Använd SignalService.score() direkt istället"""
-        logger.warning("⚠️ _get_recommendation() är deprecated - använd SignalService.score() direkt")
+        logger.warning(
+            "⚠️ _get_recommendation() är deprecated - använd SignalService.score() direkt"
+        )
         _ = (regime, confidence, trading_prob)
         return "HOLD"
 
@@ -344,7 +364,9 @@ class SignalGeneratorService:
 
     def _determine_signal_type(self, regime_data: dict) -> str:
         """DEPRECATED: Använd SignalService.score() direkt istället"""
-        logger.warning("⚠️ _determine_signal_type() är deprecated - använd SignalService.score() direkt")
+        logger.warning(
+            "⚠️ _determine_signal_type() är deprecated - använd SignalService.score() direkt"
+        )
         _ = regime_data
         return "HOLD"
 
@@ -376,7 +398,9 @@ class SignalGeneratorService:
 
     def _generate_signal_reason(self, regime_data: dict, signal_type: str) -> str:
         """DEPRECATED: Använd SignalService.score() direkt istället"""
-        logger.warning("⚠️ _generate_signal_reason() är deprecated - använd SignalService.score() direkt")
+        logger.warning(
+            "⚠️ _generate_signal_reason() är deprecated - använd SignalService.score() direkt"
+        )
         _ = (regime_data, signal_type)
         return "DEPRECATED - använd SignalService.score()"
 
@@ -437,8 +461,16 @@ class SignalGeneratorService:
             medium_signals = [s for s in signals if s.strength == "MEDIUM"]
             weak_signals = [s for s in signals if s.strength == "WEAK"]
 
-            avg_confidence = sum(s.confidence_score for s in signals) / len(signals) if signals else 0
-            avg_probability = sum(s.trading_probability for s in signals) / len(signals) if signals else 0
+            avg_confidence = (
+                sum(s.confidence_score for s in signals) / len(signals)
+                if signals
+                else 0
+            )
+            avg_probability = (
+                sum(s.trading_probability for s in signals) / len(signals)
+                if signals
+                else 0
+            )
 
             return {
                 "buy_signals": len(buy_signals),
@@ -477,7 +509,9 @@ class SignalGeneratorService:
         except Exception as e:
             logger.error(f"❌ Fel vid history save: {e}")
 
-    def get_signal_history(self, symbol: str | None = None, limit: int = 50) -> list[SignalHistory]:
+    def get_signal_history(
+        self, symbol: str | None = None, limit: int = 50
+    ) -> list[SignalHistory]:
         """Hämta signal-historik"""
         try:
             history = self._signal_history

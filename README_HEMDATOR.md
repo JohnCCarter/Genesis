@@ -2,6 +2,9 @@
 
 Enkel guide för att starta boten lokalt på en hemdator.
 
+**Dator:** Skynet  
+**Sökväg:** `C:\Users\salib\Desktop\Repo\Genesis`
+
 ## 🏠 **Lokal Utvecklingsmiljö**
 
 Detta är en **lokal utvecklingsmiljö** som körs endast på din dator:
@@ -25,7 +28,7 @@ Detta är en **lokal utvecklingsmiljö** som körs endast på din dator:
 
 ```powershell
 # Navigera till din projektmapp
-cd "[DIN_HEMDATOR_SÖKVÄG]"
+cd "C:\Users\salib\Desktop\Repo\Genesis"
 
 # Installera Python-paket (ingen virtuell miljö behövs)
 python -m pip install -U pip
@@ -83,7 +86,7 @@ VITE_API_BASE=http://127.0.0.1:8000
 Kör detta kommando från projektets rotmapp:
 
 ```powershell
-cd "[DIN_HEMDATOR_SÖKVÄG]"
+cd "C:\Users\salib\Desktop\Repo\Genesis"
 .\scripts\start_normal.ps1
 ```
 
@@ -96,14 +99,14 @@ Om du föredrar att starta manuellt:
 **Terminal 1 (Backend):**
 
 ```powershell
-cd "[DIN_HEMDATOR_SÖKVÄG]\tradingbot-backend"
+cd "C:\Users\salib\Desktop\Repo\Genesis\tradingbot-backend"
 uvicorn main:app --reload --host 127.0.0.1 --port 8000
 ```
 
 **Terminal 2 (Frontend):**
 
 ```powershell
-cd "[DIN_HEMDATOR_SÖKVÄG]\frontend\dashboard"
+cd "C:\Users\salib\Desktop\Repo\Genesis\frontend\dashboard"
 npm run dev
 ```
 
@@ -135,6 +138,6 @@ npm run dev
 - Kontrollera att backend körs på port 8000
 - Kontrollera att `AUTH_REQUIRED=False` i `.env` för utveckling
 
-_Ersätt `[DIN_HEMDATOR_SÖKVÄG]` med din faktiska sökväg._
+_Alla sökvägar är nu konfigurerade för datorn Skynet._
 
 Kolla start_normal.ps1 för mer detaljerad information.

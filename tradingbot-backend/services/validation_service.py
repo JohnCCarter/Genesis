@@ -155,7 +155,9 @@ class ValidationService:
                 regimes.append(regime_data)
 
             # Simulera signal generation och validera
-            validation_metrics = self._calculate_probability_metrics(candles, regimes, adx_values, ema_z_values)
+            validation_metrics = self._calculate_probability_metrics(
+                candles, regimes, adx_values, ema_z_values
+            )
 
             result.metrics = validation_metrics
             result.success = True
@@ -212,14 +214,14 @@ class ValidationService:
             )
 
             if not candles or len(candles) < 100:
-                result.error_message = (
-                    f"Otillräcklig data för strategy validation: {len(candles) if candles else 0} candles"
-                )
+                result.error_message = f"Otillräcklig data för strategy validation: {len(candles) if candles else 0} candles"
                 logger.warning(f"⚠️ {result.error_message}")
                 return result
 
             # Simulera strategy execution
-            strategy_metrics = self._simulate_strategy_execution(candles, strategy_params)
+            strategy_metrics = self._simulate_strategy_execution(
+                candles, strategy_params
+            )
 
             result.metrics = strategy_metrics
             result.success = True
@@ -253,9 +255,7 @@ class ValidationService:
     ) -> ValidationResult:
         """Kör backtest."""
         try:
-            cache_key = (
-                f"backtest_{symbol}_{timeframe}_{start_date}_{end_date}_{initial_capital}_{hash(str(strategy_params))}"
-            )
+            cache_key = f"backtest_{symbol}_{timeframe}_{start_date}_{end_date}_{initial_capital}_{hash(str(strategy_params))}"
 
             # Kontrollera cache
             if (
@@ -293,7 +293,9 @@ class ValidationService:
                 return result
 
             # Kör backtest
-            backtest_metrics = self._run_backtest_simulation(candles, initial_capital, strategy_params)
+            backtest_metrics = self._run_backtest_simulation(
+                candles, initial_capital, strategy_params
+            )
 
             result.metrics = backtest_metrics
             result.success = True
@@ -346,12 +348,16 @@ class ValidationService:
                     current_price = float(candles[i][2])  # CLOSE
                     future_price = float(candles[i + 1][2])  # CLOSE
 
-                    if (ema_z > 0 and future_price > current_price) or (ema_z < 0 and future_price < current_price):
+                    if (ema_z > 0 and future_price > current_price) or (
+                        ema_z < 0 and future_price < current_price
+                    ):
                         correct_signals += 1
 
                     # Beräkna Brier score (förenklad)
                     probability = 0.7 if adx > 30 else 0.5
-                    actual_outcome = 1 if (ema_z > 0 and future_price > current_price) else 0
+                    actual_outcome = (
+                        1 if (ema_z > 0 and future_price > current_price) else 0
+                    )
                     brier_score = (probability - actual_outcome) ** 2
                     brier_scores.append(brier_score)
 
@@ -404,7 +410,9 @@ class ValidationService:
                 "winning_trades": winning_trades,
                 "win_rate": win_rate,
                 "total_return": total_return,
-                "avg_return_per_trade": (total_return / total_trades if total_trades > 0 else 0),
+                "avg_return_per_trade": (
+                    total_return / total_trades if total_trades > 0 else 0
+                ),
             }
 
         except Exception as e:
@@ -463,7 +471,9 @@ class ValidationService:
                 "total_return": total_return,
                 "total_trades": len(trades),
                 "max_drawdown": 0.05,  # Förenklad
-                "sharpe_ratio": (total_return / 0.1 if total_return > 0 else 0),  # Förenklad
+                "sharpe_ratio": (
+                    total_return / 0.1 if total_return > 0 else 0
+                ),  # Förenklad
             }
 
         except Exception as e:

@@ -16,7 +16,9 @@ logger = get_logger(__name__)
 
 
 class IMarketDataProvider(Protocol):
-    async def get_ticker(self, symbol: str, *, force_fresh: bool = False) -> dict[str, Any] | None: ...
+    async def get_ticker(
+        self, symbol: str, *, force_fresh: bool = False
+    ) -> dict[str, Any] | None: ...
 
     async def get_candles(
         self,
@@ -35,7 +37,9 @@ class MarketDataFacade:
         self.ws_first = ws_first or get_ws_first_data_service()
         self.settings = settings
 
-    async def get_ticker(self, symbol: str, *, force_fresh: bool = False) -> dict[str, Any] | None:
+    async def get_ticker(
+        self, symbol: str, *, force_fresh: bool = False
+    ) -> dict[str, Any] | None:
         """Hämta ticker med timeout och bättre logging."""
         start_time = time.perf_counter()
 
@@ -64,12 +68,16 @@ class MarketDataFacade:
                 # Fallback till REST
                 data = await self.ws_first.rest_service.get_ticker(symbol)
                 lag_ms = (time.perf_counter() - start_time) * 1000
-                logger.info(f"marketdata.source=rest reason=ws_timeout symbol={symbol} lag_ms={lag_ms:.1f}")
+                logger.info(
+                    f"marketdata.source=rest reason=ws_timeout symbol={symbol} lag_ms={lag_ms:.1f}"
+                )
                 return data
 
         except Exception as e:
             lag_ms = (time.perf_counter() - start_time) * 1000
-            logger.error(f"marketdata.error symbol={symbol} error={e!s} lag_ms={lag_ms:.1f}")
+            logger.error(
+                f"marketdata.error symbol={symbol} error={e!s} lag_ms={lag_ms:.1f}"
+            )
             return None
 
     async def get_candles(
@@ -80,7 +88,9 @@ class MarketDataFacade:
         *,
         force_fresh: bool = False,
     ) -> list | None:
-        return await self.ws_first.get_candles(symbol, timeframe=timeframe, limit=limit, force_fresh=force_fresh)
+        return await self.ws_first.get_candles(
+            symbol, timeframe=timeframe, limit=limit, force_fresh=force_fresh
+        )
 
     def get_indicator_snapshot(self, symbol: str, timeframe: str) -> dict | None:
         return self.ws_first.get_indicator_snapshot(symbol, timeframe)
@@ -115,11 +125,15 @@ class MarketDataFacade:
     ) -> int:
         """Proxy: backfill via REST-service."""
         try:
-            return await self.ws_first.rest_service.backfill_history(symbol, timeframe, max_batches, batch_limit)
+            return await self.ws_first.rest_service.backfill_history(
+                symbol, timeframe, max_batches, batch_limit
+            )
         except Exception:
             return 0
 
-    def parse_candles_to_strategy_data(self, candles: list[list]) -> dict[str, list[float]]:
+    def parse_candles_to_strategy_data(
+        self, candles: list[list]
+    ) -> dict[str, list[float]]:
         """Hjälpare: centralisera candle-parsning till strategi-format."""
         try:
             from utils.candles import parse_candles_to_strategy_data as _parse
@@ -153,7 +167,9 @@ def get_market_data() -> MarketDataFacade:
             from services.ws_first_data_service import WSFirstDataService
 
             mock_ws_service = WSFirstDataService()
-            mock_ws_service._initialized = True  # Markera som initialiserad utan WebSocket
+            mock_ws_service._initialized = (
+                True  # Markera som initialiserad utan WebSocket
+            )
             _facade_singleton = MarketDataFacade(ws_first=mock_ws_service)
         else:
             _facade_singleton = MarketDataFacade()

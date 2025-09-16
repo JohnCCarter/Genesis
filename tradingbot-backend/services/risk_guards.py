@@ -27,9 +27,11 @@ class RiskGuardsService:
     - Volatility guards
     """
 
-    def __init__(self, settings_override: Settings | None = None):
+    def __init__(self, settings_override=None):
         self.settings = settings_override or settings
-        self.guards_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config", "risk_guards.json")
+        self.guards_file = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)), "config", "risk_guards.json"
+        )
         self.guards = self._load_guards()
 
     def _load_guards(self) -> dict[str, Any]:
@@ -100,7 +102,9 @@ class RiskGuardsService:
                     equity_data = await perf_service.compute_current_equity()
                     return equity_data.get("total_usd", 0.0)
                 except Exception as e:
-                    logger.warning(f"⚠️ Kunde inte hämta equity från PerformanceService: {e}")
+                    logger.warning(
+                        f"⚠️ Kunde inte hämta equity från PerformanceService: {e}"
+                    )
                     return 0.0
 
             # Kör async funktion med timeout
@@ -142,14 +146,18 @@ class RiskGuardsService:
     def check_max_daily_loss(self) -> tuple[bool, str | None]:
         """Kontrollera max daily loss."""
         try:
-            if not rc.get_bool("RISK_ENABLED", getattr(self.settings, "RISK_ENABLED", True)):
+            if not rc.get_bool(
+                "RISK_ENABLED", getattr(self.settings, "RISK_ENABLED", True)
+            ):
                 return False, None
         except Exception:
             pass
 
         guard = self.guards["max_daily_loss"]
 
-        if guard.get("daily_start_equity") is not None and not guard.get("daily_start_date"):
+        if guard.get("daily_start_equity") is not None and not guard.get(
+            "daily_start_date"
+        ):
             guard["daily_start_date"] = datetime.now().date().isoformat()
             if guard.get("triggered"):
                 guard["triggered"] = False
@@ -165,7 +173,9 @@ class RiskGuardsService:
         daily_loss_pct_early: float | None = None
         if start_equity_early and start_equity_early > 0:
             current_equity_early = self._get_current_equity()
-            daily_loss_pct_early = ((start_equity_early - current_equity_early) / start_equity_early) * 100
+            daily_loss_pct_early = (
+                (start_equity_early - current_equity_early) / start_equity_early
+            ) * 100
         # Om triggad tidigare: respektera cooldown
         if guard.get("triggered") and guard.get("triggered_at"):
             try:
@@ -175,7 +185,9 @@ class RiskGuardsService:
                     return True, "Max daily loss överskriden – cooldown aktiv"
             except Exception:
                 pass
-        if daily_loss_pct_early is not None and daily_loss_pct_early < guard.get("percentage", 0):
+        if daily_loss_pct_early is not None and daily_loss_pct_early < guard.get(
+            "percentage", 0
+        ):
             if guard.get("triggered"):
                 guard["triggered"] = False
                 guard["triggered_at"] = None
@@ -183,7 +195,9 @@ class RiskGuardsService:
             return False, None
 
         # If above threshold, signal breach regardless of existing cooldown
-        if daily_loss_pct_early is not None and daily_loss_pct_early >= guard.get("percentage", 0):
+        if daily_loss_pct_early is not None and daily_loss_pct_early >= guard.get(
+            "percentage", 0
+        ):
             if not guard.get("triggered"):
                 guard["triggered"] = True
                 guard["triggered_at"] = datetime.now().isoformat()
@@ -197,7 +211,9 @@ class RiskGuardsService:
     def check_kill_switch(self) -> tuple[bool, str | None]:
         """Kontrollera kill switch."""
         try:
-            if not rc.get_bool("RISK_ENABLED", getattr(self.settings, "RISK_ENABLED", True)):
+            if not rc.get_bool(
+                "RISK_ENABLED", getattr(self.settings, "RISK_ENABLED", True)
+            ):
                 return False, None
         except Exception:
             pass
@@ -222,11 +238,15 @@ class RiskGuardsService:
 
         return False, None
 
-    def check_exposure_limits(self, symbol: str, amount: float, price: float) -> tuple[bool, str | None]:
+    def check_exposure_limits(
+        self, symbol: str, amount: float, price: float
+    ) -> tuple[bool, str | None]:
         _ = symbol  # markerar användning för lint
         """Kontrollera exposure limits."""
         try:
-            if not rc.get_bool("RISK_ENABLED", getattr(self.settings, "RISK_ENABLED", True)):
+            if not rc.get_bool(
+                "RISK_ENABLED", getattr(self.settings, "RISK_ENABLED", True)
+            ):
                 return False, None
         except Exception:
             pass
@@ -262,7 +282,9 @@ class RiskGuardsService:
         _ = symbol  # markerar användning för lint
         """Kontrollera volatility guards."""
         try:
-            if not rc.get_bool("RISK_ENABLED", getattr(self.settings, "RISK_ENABLED", True)):
+            if not rc.get_bool(
+                "RISK_ENABLED", getattr(self.settings, "RISK_ENABLED", True)
+            ):
                 return False, None
         except Exception:
             pass
@@ -294,7 +316,9 @@ class RiskGuardsService:
 
             # Exposure limits
             if amount is not None and price is not None:
-                blocked, reason = self.check_exposure_limits(symbol or "", amount, price)
+                blocked, reason = self.check_exposure_limits(
+                    symbol or "", amount, price
+                )
                 if blocked:
                     return True, reason
 

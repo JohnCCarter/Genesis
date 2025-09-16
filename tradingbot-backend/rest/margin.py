@@ -49,7 +49,9 @@ class MarginInfo(BaseModel):
             net_value=float(data[3]),
             required_margin=float(data[4]),
             leverage=leverage,
-            margin_limits=(data[5] if len(data) > 5 and isinstance(data[5], list) else []),
+            margin_limits=(
+                data[5] if len(data) > 5 and isinstance(data[5], list) else []
+            ),
         )
 
 
@@ -77,7 +79,10 @@ class MarginService:
 
     def __init__(self):
         self.settings = settings
-        self.base_url = getattr(self.settings, "BITFINEX_AUTH_API_URL", None) or self.settings.BITFINEX_API_URL
+        self.base_url = (
+            getattr(self.settings, "BITFINEX_AUTH_API_URL", None)
+            or self.settings.BITFINEX_API_URL
+        )
         self.rate_limiter = get_bitfinex_rate_limiter()
         # OPTIMERING: In-memory cache för margin-status per symbol
         self._margin_status_cache = {}
@@ -113,7 +118,9 @@ class MarginService:
             ]
 
             # Lägg till margin_limits om det finns
-            if "margin_limits" in v1_data and isinstance(v1_data["margin_limits"], list):
+            if "margin_limits" in v1_data and isinstance(
+                v1_data["margin_limits"], list
+            ):
                 v2_format.append(v1_data["margin_limits"])
 
             return v2_format
@@ -133,7 +140,9 @@ class MarginService:
             # Försök först med v2 API endpoint (base)
             endpoint = "auth/r/info/margin/base"
             ec = get_exchange_client()
-            response = await ec.signed_request(method="post", endpoint=endpoint, body={}, timeout=None)
+            response = await ec.signed_request(
+                method="post", endpoint=endpoint, body={}, timeout=None
+            )
             response.raise_for_status()
             # v2 base svar: [ 'base', [USER_PL, USER_SWAPS, MARGIN_BALANCE, MARGIN_NET, MARGIN_MIN] ]
             raw = response.json()
@@ -154,7 +163,9 @@ class MarginService:
                 try:
                     v1_endpoint = "margin_infos"
                     ec = get_exchange_client()
-                    v1_response = await ec.signed_request(method="post", endpoint=v1_endpoint, body={}, v1=True)
+                    v1_response = await ec.signed_request(
+                        method="post", endpoint=v1_endpoint, body={}, v1=True
+                    )
                     v1_response.raise_for_status()
                     v1_data = v1_response.json()
                     margin_data = self._convert_v1_to_v2_format(v1_data)
@@ -289,7 +300,11 @@ class MarginService:
             "margin_usage_percent": margin_usage,
             "margin_level": margin_level,
             "leverage": await self.get_leverage(),
-            "status": ("healthy" if margin_level >= 2.0 else "warning" if margin_level >= 1.5 else "danger"),
+            "status": (
+                "healthy"
+                if margin_level >= 2.0
+                else "warning" if margin_level >= 1.5 else "danger"
+            ),
         }
 
     async def get_symbol_margin_status(self, symbol: str) -> dict[str, Any]:
@@ -312,9 +327,15 @@ class MarginService:
                 arr = (bitfinex_ws.margin_sym or {}).get(eff)
                 if isinstance(arr, list) and arr:
                     # Försök tolka fält: [tradable, gross, buy, sell, ...]
-                    tradable = float(arr[0]) if len(arr) >= 1 and arr[0] is not None else None
-                    buy = float(arr[2]) if len(arr) >= 3 and arr[2] is not None else None
-                    sell = float(arr[3]) if len(arr) >= 4 and arr[3] is not None else None
+                    tradable = (
+                        float(arr[0]) if len(arr) >= 1 and arr[0] is not None else None
+                    )
+                    buy = (
+                        float(arr[2]) if len(arr) >= 3 and arr[2] is not None else None
+                    )
+                    sell = (
+                        float(arr[3]) if len(arr) >= 4 and arr[3] is not None else None
+                    )
                     return {
                         "symbol": eff,
                         "source": "ws",
@@ -351,7 +372,9 @@ class MarginService:
             logger.error(f"Fel vid symbol margin status: {e}")
             return {"symbol": symbol, "source": "error"}
 
-    async def get_symbol_margin_status_batch(self, symbols: list[str]) -> dict[str, dict[str, Any]]:
+    async def get_symbol_margin_status_batch(
+        self, symbols: list[str]
+    ) -> dict[str, dict[str, Any]]:
         """
         OPTIMERAD: Batch-hämtning av margin-status för flera symboler.
         Minskar API-anrop genom att hämta all data på en gång.
@@ -383,7 +406,10 @@ class MarginService:
 
                 cache_key = f"margin_status_{eff}"
                 cached = self._margin_status_cache.get(cache_key)
-                if cached and (now - cached["timestamp"]) < self._margin_status_cache_ttl:
+                if (
+                    cached
+                    and (now - cached["timestamp"]) < self._margin_status_cache_ttl
+                ):
                     logger.debug(f"📋 Använder cached margin-status för {eff}")
                     results[symbol] = cached["data"]
                 else:
@@ -401,9 +427,21 @@ class MarginService:
                     arr = (bitfinex_ws.margin_sym or {}).get(eff)
                     if isinstance(arr, list) and arr:
                         # Försök tolka fält: [tradable, gross, buy, sell, ...]
-                        tradable = float(arr[0]) if len(arr) >= 1 and arr[0] is not None else None
-                        buy = float(arr[2]) if len(arr) >= 3 and arr[2] is not None else None
-                        sell = float(arr[3]) if len(arr) >= 4 and arr[3] is not None else None
+                        tradable = (
+                            float(arr[0])
+                            if len(arr) >= 1 and arr[0] is not None
+                            else None
+                        )
+                        buy = (
+                            float(arr[2])
+                            if len(arr) >= 3 and arr[2] is not None
+                            else None
+                        )
+                        sell = (
+                            float(arr[3])
+                            if len(arr) >= 4 and arr[3] is not None
+                            else None
+                        )
 
                         result = {
                             "symbol": eff,
@@ -424,14 +462,20 @@ class MarginService:
                 logger.warning(f"⚠️ WS batch margin-status misslyckades: {e}")
 
             # 3. REST fallback för symboler som inte fick WS-data
-            rest_symbols = [(s, eff) for s, eff in symbols_to_fetch if s not in ws_results]
+            rest_symbols = [
+                (s, eff) for s, eff in symbols_to_fetch if s not in ws_results
+            ]
             if rest_symbols:
-                logger.info(f"🔄 Batch-hämtar margin-status för {len(rest_symbols)} symboler via REST")
+                logger.info(
+                    f"🔄 Batch-hämtar margin-status för {len(rest_symbols)} symboler via REST"
+                )
 
                 # Batch-hämta margin limits
                 try:
                     margin_limits = await self.get_margin_limits()
-                    limits_by_pair = {limit.on_pair.lower(): limit for limit in margin_limits}
+                    limits_by_pair = {
+                        limit.on_pair.lower(): limit for limit in margin_limits
+                    }
 
                     for symbol, eff in rest_symbols:
                         limit = limits_by_pair.get(eff.lower())
@@ -480,7 +524,9 @@ class MarginService:
             # Lägg till WS-resultat
             results.update(ws_results)
 
-            logger.info(f"✅ Batch margin-status klar: {len(results)}/{len(symbols)} symboler")
+            logger.info(
+                f"✅ Batch margin-status klar: {len(results)}/{len(symbols)} symboler"
+            )
             return results
 
         except Exception as e:

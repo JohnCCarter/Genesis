@@ -44,7 +44,9 @@ class CircuitBreakerRecoveryService:
         self._stop_event.clear()
 
         # Starta recovery-loop
-        self._task = asyncio.create_task(self._recovery_loop(), name="circuit-breaker-recovery")
+        self._task = asyncio.create_task(
+            self._recovery_loop(), name="circuit-breaker-recovery"
+        )
 
         logger.info("🚀 CircuitBreakerRecoveryService startad")
 
@@ -113,14 +115,24 @@ class CircuitBreakerRecoveryService:
                         opened_at = cb_status.get("opened_at")
                         if opened_at:
                             try:
-                                opened_time = datetime.fromisoformat(opened_at.replace("Z", "+00:00"))
+                                opened_time = datetime.fromisoformat(
+                                    opened_at.replace("Z", "+00:00")
+                                )
                                 cooldown_seconds = cb_status.get("cooldown_seconds", 60)
 
-                                if datetime.now(UTC) - opened_time > timedelta(seconds=cooldown_seconds):
-                                    logger.info(f"🔄 Återställer circuit breaker: {name}")
-                                    unified_circuit_breaker_service.reset_circuit_breaker(name)
+                                if datetime.now(UTC) - opened_time > timedelta(
+                                    seconds=cooldown_seconds
+                                ):
+                                    logger.info(
+                                        f"🔄 Återställer circuit breaker: {name}"
+                                    )
+                                    unified_circuit_breaker_service.reset_circuit_breaker(
+                                        name
+                                    )
                             except Exception as e:
-                                logger.warning(f"Kunde inte återställa circuit breaker {name}: {e}")
+                                logger.warning(
+                                    f"Kunde inte återställa circuit breaker {name}: {e}"
+                                )
 
         except Exception as e:
             logger.error(f"❌ Fel vid unified circuit breaker recovery: {e}")
@@ -138,7 +150,9 @@ class CircuitBreakerRecoveryService:
                     # Kontrollera om cooldown-perioden har gått
                     current_time = datetime.now().timestamp()
                     if current_time >= cb_state["open_until"]:
-                        logger.info(f"🔄 Återställer transport circuit breaker: {endpoint}")
+                        logger.info(
+                            f"🔄 Återställer transport circuit breaker: {endpoint}"
+                        )
                         # Återställ circuit breaker-state
                         cb_state["fail_count"] = 0
                         cb_state["open_until"] = 0.0
@@ -157,7 +171,9 @@ class CircuitBreakerRecoveryService:
                 # Kontrollera om timeout har gått
                 opened_at = unified_risk_service.circuit_breaker.opened_at
                 if opened_at:
-                    timeout_minutes = unified_risk_service.circuit_breaker.timeout_minutes
+                    timeout_minutes = (
+                        unified_risk_service.circuit_breaker.timeout_minutes
+                    )
                     if datetime.now() - opened_at > timedelta(minutes=timeout_minutes):
                         logger.info("🔄 Återställer risk circuit breaker")
                         unified_risk_service.circuit_breaker.opened_at = None

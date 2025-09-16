@@ -21,7 +21,9 @@ async def test_scheduler_prob_retrain_mocks_and_reload(monkeypatch, tmp_path):
         base = 100.0
         return [[0, 0, base + i * 0.2, base + i * 0.3, base, 1] for i in range(120)]
 
-    monkeypatch.setattr("services.bitfinex_data.BitfinexDataService.get_candles", fake_candles)
+    monkeypatch.setattr(
+        "services.bitfinex_data.BitfinexDataService.get_candles", fake_candles
+    )
 
     # Aktivera modell (fil sätts efter att training kört klart)
     os.environ["PROB_MODEL_ENABLED"] = "True"
@@ -39,7 +41,9 @@ async def test_scheduler_prob_retrain_mocks_and_reload(monkeypatch, tmp_path):
     if not created:
         # Acceptera att testet misslyckas om ingen modell skapades
         # Detta kan hända om prob_retrain inte är konfigurerat korrekt
-        pytest.skip("No model file created - prob_retrain may not be configured correctly")
+        pytest.skip(
+            "No model file created - prob_retrain may not be configured correctly"
+        )
 
     # Sätt PROB_MODEL_FILE både i env och på instansen och reload
     os.environ["PROB_MODEL_FILE"] = str(created[0])

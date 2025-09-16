@@ -153,7 +153,9 @@ class UnifiedRiskService:
                     "circuit_breaker_open",
                     {
                         "opened_at": (
-                            self.circuit_breaker.opened_at.isoformat() if self.circuit_breaker.opened_at else None
+                            self.circuit_breaker.opened_at.isoformat()
+                            if self.circuit_breaker.opened_at
+                            else None
                         )
                     },
                 )
@@ -205,16 +207,26 @@ class UnifiedRiskService:
 
             # Behåll endast fel från senaste timmen
             cutoff = now - timedelta(hours=1)
-            while self.circuit_breaker.error_events and self.circuit_breaker.error_events[0] < cutoff:
+            while (
+                self.circuit_breaker.error_events
+                and self.circuit_breaker.error_events[0] < cutoff
+            ):
                 self.circuit_breaker.error_events.popleft()
 
             # Kontrollera om circuit breaker ska öppnas
-            if len(self.circuit_breaker.error_events) >= self.circuit_breaker.error_threshold:
+            if (
+                len(self.circuit_breaker.error_events)
+                >= self.circuit_breaker.error_threshold
+            ):
                 if not self.circuit_breaker.opened_at:
                     self.circuit_breaker.opened_at = now
-                    logger.warning(f"🚨 Circuit breaker öppnad efter {len(self.circuit_breaker.error_events)} fel")
+                    logger.warning(
+                        f"🚨 Circuit breaker öppnad efter {len(self.circuit_breaker.error_events)} fel"
+                    )
 
-            logger.debug(f"📊 Fel registrerat. Totalt: {len(self.circuit_breaker.error_events)}")
+            logger.debug(
+                f"📊 Fel registrerat. Totalt: {len(self.circuit_breaker.error_events)}"
+            )
         except Exception as e:
             logger.error(f"❌ Fel vid registrering av error: {e}")
 
@@ -253,7 +265,9 @@ class UnifiedRiskService:
                 # Trigga max daily loss
                 guard["triggered"] = True
                 guard["triggered_at"] = datetime.now().isoformat()
-                guard["reason"] = f"Daglig förlust {daily_pnl:.2f} USD överstiger limit {max_loss:.2f} USD"
+                guard["reason"] = (
+                    f"Daglig förlust {daily_pnl:.2f} USD överstiger limit {max_loss:.2f} USD"
+                )
                 self._save_guards(self.guards)
 
                 logger.warning(f"🚨 Max daily loss triggad: {guard['reason']}")
@@ -284,7 +298,9 @@ class UnifiedRiskService:
             logger.error(f"❌ Fel vid kontroll av kill-switch: {e}")
             return True, f"Fel vid kontroll: {e!s}"
 
-    def _check_exposure_limits(self, symbol: str, amount: float, price: float) -> tuple[bool, str | None]:
+    def _check_exposure_limits(
+        self, symbol: str, amount: float, price: float
+    ) -> tuple[bool, str | None]:
         """Kontrollera exposure limits."""
         try:
             _ = symbol  # parameter finns för framtida användning (etiketter/limits per symbol)
@@ -349,7 +365,9 @@ class UnifiedRiskService:
                     equity_data = await perf_service.compute_current_equity()
                     return equity_data.get("total_usd", 0.0)
                 except Exception as e:
-                    logger.warning(f"⚠️ Kunde inte hämta equity från PerformanceService: {e}")
+                    logger.warning(
+                        f"⚠️ Kunde inte hämta equity från PerformanceService: {e}"
+                    )
                     return 0.0
 
             # Kör async funktion med timeout
@@ -407,7 +425,11 @@ class UnifiedRiskService:
             # Hämta circuit breaker status
             circuit_breaker_status = {
                 "open": self._is_circuit_breaker_open(),
-                "opened_at": (self.circuit_breaker.opened_at.isoformat() if self.circuit_breaker.opened_at else None),
+                "opened_at": (
+                    self.circuit_breaker.opened_at.isoformat()
+                    if self.circuit_breaker.opened_at
+                    else None
+                ),
                 "error_count": len(self.circuit_breaker.error_events),
                 "error_threshold": self.circuit_breaker.error_threshold,
             }
@@ -420,7 +442,9 @@ class UnifiedRiskService:
 
                 # Extrahera equity och loss data
                 current_equity = guards_full_status.get("current_equity", 0)
-                daily_loss_percentage = guards_full_status.get("daily_loss_percentage", 0)
+                daily_loss_percentage = guards_full_status.get(
+                    "daily_loss_percentage", 0
+                )
                 drawdown_percentage = guards_full_status.get("drawdown_percentage", 0)
                 guards_full_data = guards_full_status.get("guards", {})
 
@@ -450,7 +474,9 @@ class UnifiedRiskService:
                 "circuit_breaker": circuit_breaker_status,
                 "guards": guards_status,
                 "guards_full": guards_full_data,  # Komplett guards data
-                "overall_status": ("healthy" if not self._is_circuit_breaker_open() else "degraded"),
+                "overall_status": (
+                    "healthy" if not self._is_circuit_breaker_open() else "degraded"
+                ),
             }
 
         except Exception as e:

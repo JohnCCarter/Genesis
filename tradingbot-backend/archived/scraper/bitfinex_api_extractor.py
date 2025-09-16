@@ -9,7 +9,9 @@ from typing import Any, Dict, Iterator, List, Optional
 from bs4 import BeautifulSoup
 
 # Konfigurera loggning
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 
@@ -70,7 +72,9 @@ class BitfinexApiExtractor:
         for dir in [self.rest_dir, self.ws_dir, self.auth_dir]:
             dir.mkdir(exist_ok=True)
 
-    def read_file_chunks(self, file_path: Path, chunk_size: int = 8192) -> Iterator[str]:
+    def read_file_chunks(
+        self, file_path: Path, chunk_size: int = 8192
+    ) -> Iterator[str]:
         """
         Läser en fil i chunks
 
@@ -109,7 +113,9 @@ class BitfinexApiExtractor:
                 data = json.loads(data_str)
 
                 # Kontrollera om det är API-dokumentation
-                if isinstance(data, dict) and ("endpoints" in data or "methods" in data):
+                if isinstance(data, dict) and (
+                    "endpoints" in data or "methods" in data
+                ):
                     api_info.append(data)
 
             except (json.JSONDecodeError, KeyError) as e:
@@ -122,7 +128,9 @@ class BitfinexApiExtractor:
                 try:
                     if script.string:
                         data = json.loads(script.string)
-                        if isinstance(data, dict) and ("endpoints" in data or "methods" in data):
+                        if isinstance(data, dict) and (
+                            "endpoints" in data or "methods" in data
+                        ):
                             api_info.append(data)
                 except json.JSONDecodeError as e:
                     logger.debug(f"Kunde inte parsa script JSON: {str(e)}")
@@ -173,7 +181,9 @@ class BitfinexApiExtractor:
 
         return endpoints
 
-    def _extract_parameters_from_data(self, data: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def _extract_parameters_from_data(
+        self, data: Dict[str, Any]
+    ) -> List[Dict[str, Any]]:
         """Extraherar parametrar från endpoint-data"""
         parameters = []
 
@@ -245,7 +255,9 @@ class BitfinexApiExtractor:
             return "rest", "authenticated"
         return "rest", "public"
 
-    def save_endpoint(self, endpoint: Dict[str, Any], category: str, subcategory: str) -> None:
+    def save_endpoint(
+        self, endpoint: Dict[str, Any], category: str, subcategory: str
+    ) -> None:
         """
         Sparar en endpoint i rätt kategori
 

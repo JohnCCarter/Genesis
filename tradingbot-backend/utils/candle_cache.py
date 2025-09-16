@@ -4,7 +4,9 @@ from collections.abc import Iterable
 from contextlib import closing
 from datetime import datetime, timedelta
 
-_DB_DEFAULT = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config", "candles.sqlite3")
+_DB_DEFAULT = os.path.join(
+    os.path.dirname(os.path.dirname(__file__)), "config", "candles.sqlite3"
+)
 
 
 class CandleCache:
@@ -35,17 +37,25 @@ class CandleCache:
 
             # Migration: Lägg till cached_at kolumn om den inte finns
             try:
-                conn.execute("ALTER TABLE candles ADD COLUMN cached_at INTEGER NOT NULL DEFAULT 0")
-                print("✅ Migrerade candle cache databas: lade till cached_at kolumn")
+                # Kontrollera om kolumnen redan finns för att undvika fel
+                cur = conn.execute("PRAGMA table_info(candles)")
+                cols = [r[1] for r in cur.fetchall()]
+                if "cached_at" not in cols:
+                    conn.execute(
+                        "ALTER TABLE candles ADD COLUMN cached_at INTEGER NOT NULL DEFAULT 0"
+                    )
+                    print("Migrerade candle cache databas: lade till cached_at kolumn")
             except sqlite3.OperationalError as e:
-                if "duplicate column name" in str(e):
-                    print("ℹ️ cached_at kolumn finns redan")
-                else:
-                    print(f"ℹ️ Migration noter: {e}")
+                # Logga utan Unicode-emoji för kompatibilitet med konsol
+                print(f"Migration note: {e}")
 
             # Skapa index
-            conn.execute("CREATE INDEX IF NOT EXISTS ix_candles_symbol_tf_mts ON candles(symbol, timeframe, mts)")
-            conn.execute("CREATE INDEX IF NOT EXISTS ix_candles_cached_at ON candles(cached_at)")
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS ix_candles_symbol_tf_mts ON candles(symbol, timeframe, mts)"
+            )
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS ix_candles_cached_at ON candles(cached_at)"
+            )
             conn.commit()
 
     def store(self, symbol: str, timeframe: str, candles: Iterable[list]) -> int:
@@ -85,7 +95,9 @@ class CandleCache:
             conn.commit()
         return count
 
-    def load(self, symbol: str, timeframe: str, limit: int = 100, max_age_minutes: int = 15) -> list[list]:
+    def load(
+        self, symbol: str, timeframe: str, limit: int = 100, max_age_minutes: int = 15
+    ) -> list[list]:
         """
         Läs senaste N candles från cache.
         Returnerar Bitfinex-format, nyast -> äldst, som i API.
@@ -96,7 +108,9 @@ class CandleCache:
             limit: Max antal candles att returnera
             max_age_minutes: Max ålder för cached data i minuter (ökad från 5 till 15)
         """
-        cutoff_time = int((datetime.now() - timedelta(minutes=max_age_minutes)).timestamp())
+        cutoff_time = int(
+            (datetime.now() - timedelta(minutes=max_age_minutes)).timestamp()
+        )
 
         with closing(sqlite3.connect(self.db_path)) as conn:
             rows = conn.execute(
@@ -111,7 +125,9 @@ class CandleCache:
             ).fetchall()
         return [[r[0], r[1], r[2], r[3], r[4], r[5]] for r in rows]
 
-    def get_last(self, symbol: str, timeframe: str, max_age_minutes: int = 15) -> list | None:
+    def get_last(
+        self, symbol: str, timeframe: str, max_age_minutes: int = 15
+    ) -> list | None:
         """
         Returnera senaste candle i Bitfinex-format.
         Format: [MTS, OPEN, CLOSE, HIGH, LOW, VOLUME].
@@ -195,7 +211,9 @@ class CandleCache:
         with closing(sqlite3.connect(self.db_path)) as conn:
             # 1) Rensa äldre än max_days
             if max_days and max_days > 0:
-                cutoff = int((datetime.utcnow() - timedelta(days=max_days)).timestamp() * 1000)
+                cutoff = int(
+                    (datetime.utcnow() - timedelta(days=max_days)).timestamp() * 1000
+                )
                 cur = conn.execute(
                     "DELETE FROM candles WHERE mts < ?",
                     (cutoff,),

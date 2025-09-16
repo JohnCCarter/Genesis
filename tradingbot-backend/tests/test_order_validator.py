@@ -154,7 +154,9 @@ class TestOrderValidator(unittest.TestCase):
         )
 
         # Vanlig symbol
-        self.assertEqual(self.validator.suggest_paper_trading_symbol("tBTCUSD"), "tTESTBTC:TESTUSD")
+        self.assertEqual(
+            self.validator.suggest_paper_trading_symbol("tBTCUSD"), "tTESTBTC:TESTUSD"
+        )
 
     def test_format_order_for_bitfinex(self):
         """Testa formatering av order för Bitfinex API."""

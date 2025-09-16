@@ -8,7 +8,9 @@ from typing import Any, Dict, List
 from bs4 import BeautifulSoup, Comment
 
 # Konfigurera loggning
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 
@@ -47,7 +49,9 @@ class CommentApiExtractor:
         # Hitta alla kommentarer
         for comment in soup.find_all(string=lambda text: isinstance(text, Comment)):
             # Kontrollera om kommentaren innehåller API-information
-            if any(word in comment.string.lower() for word in ["api", "endpoint", "method"]):
+            if any(
+                word in comment.string.lower() for word in ["api", "endpoint", "method"]
+            ):
                 # Extrahera endpoints från kommentaren
                 endpoints = self._extract_endpoints_from_comment(comment.string)
                 api_info.extend(endpoints)
@@ -113,7 +117,10 @@ class CommentApiExtractor:
                     param_type = param_type.strip("{}") if param_type else ""
 
                     # Kontrollera om obligatorisk
-                    required = "required" in param_desc.lower() and "optional" not in param_desc.lower()
+                    required = (
+                        "required" in param_desc.lower()
+                        and "optional" not in param_desc.lower()
+                    )
 
                     current_endpoint["parameters"].append(
                         {
@@ -126,7 +133,9 @@ class CommentApiExtractor:
 
                 # Kontrollera om raden innehåller svarsinformation
                 elif "@return" in line or "@response" in line:
-                    response_text = line.split("@return")[-1].split("@response")[-1].strip()
+                    response_text = (
+                        line.split("@return")[-1].split("@response")[-1].strip()
+                    )
                     current_endpoint["response"]["description"] = response_text
 
                 # Kontrollera om raden innehåller autentiseringskrav
@@ -150,7 +159,9 @@ class CommentApiExtractor:
 
         return endpoints
 
-    def categorize_endpoint(self, endpoint: Dict[str, Any], source: str) -> tuple[str, str]:
+    def categorize_endpoint(
+        self, endpoint: Dict[str, Any], source: str
+    ) -> tuple[str, str]:
         """
         Kategoriserar en endpoint
 
@@ -170,14 +181,18 @@ class CommentApiExtractor:
         # Bestäm underkategori baserat på sökväg och autentisering
         path = endpoint.get("path", "").lower()
 
-        if endpoint.get("authentication", False) or any(word in path for word in ["auth", "key", "private"]):
+        if endpoint.get("authentication", False) or any(
+            word in path for word in ["auth", "key", "private"]
+        ):
             subcategory = "authenticated"
         else:
             subcategory = "public"
 
         return category, subcategory
 
-    def save_endpoint(self, endpoint: Dict[str, Any], category: str, subcategory: str, source: str) -> None:
+    def save_endpoint(
+        self, endpoint: Dict[str, Any], category: str, subcategory: str, source: str
+    ) -> None:
         """
         Sparar en endpoint
 
@@ -295,7 +310,9 @@ class CommentApiExtractor:
             # Bearbeta varje endpoint
             for endpoint in endpoints:
                 # Kategorisera endpoint
-                category, subcategory = self.categorize_endpoint(endpoint, file_path.stem)
+                category, subcategory = self.categorize_endpoint(
+                    endpoint, file_path.stem
+                )
 
                 # Spara endpoint
                 self.save_endpoint(endpoint, category, subcategory, file_path.stem)

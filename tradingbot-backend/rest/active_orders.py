@@ -23,7 +23,10 @@ class ActiveOrdersService:
 
     def __init__(self):
         self.settings = settings
-        self.base_url = getattr(self.settings, "BITFINEX_AUTH_API_URL", None) or self.settings.BITFINEX_API_URL
+        self.base_url = (
+            getattr(self.settings, "BITFINEX_AUTH_API_URL", None)
+            or self.settings.BITFINEX_API_URL
+        )
 
     async def get_active_orders(self) -> list[OrderResponse]:
         """
@@ -34,18 +37,28 @@ class ActiveOrdersService:
         """
         try:
             # Safeguard: om API‑nycklar saknas, returnera tom lista i stället för att krascha UI
-            if not (self.settings.BITFINEX_API_KEY and self.settings.BITFINEX_API_SECRET):
-                logger.info("BITFINEX_API_KEY/SECRET saknas – returnerar tom lista för aktiva ordrar")
+            if not (
+                self.settings.BITFINEX_API_KEY and self.settings.BITFINEX_API_SECRET
+            ):
+                logger.info(
+                    "BITFINEX_API_KEY/SECRET saknas – returnerar tom lista för aktiva ordrar"
+                )
                 return []
             endpoint = "auth/r/orders"
             ec = get_exchange_client()
-            logger.info(f"🌐 REST API: Hämtar aktiva ordrar från {self.base_url}/{endpoint}")
-            response = await ec.signed_request(method="post", endpoint=endpoint, body={})
+            logger.info(
+                f"🌐 REST API: Hämtar aktiva ordrar från {self.base_url}/{endpoint}"
+            )
+            response = await ec.signed_request(
+                method="post", endpoint=endpoint, body={}
+            )
             try:
                 response.raise_for_status()
             except httpx.HTTPStatusError as he:
                 status = he.response.status_code if he.response is not None else "?"
-                logger.warning(f"Bitfinex svarade {status} vid hämtning av aktiva ordrar – returnerar tom lista")
+                logger.warning(
+                    f"Bitfinex svarade {status} vid hämtning av aktiva ordrar – returnerar tom lista"
+                )
                 return []
 
             orders_data = response.json()
@@ -72,7 +85,9 @@ class ActiveOrdersService:
         orders = await self.get_active_orders()
         return [order for order in orders if order.symbol.lower() == symbol.lower()]
 
-    async def get_active_orders_by_type(self, order_type: OrderType) -> list[OrderResponse]:
+    async def get_active_orders_by_type(
+        self, order_type: OrderType
+    ) -> list[OrderResponse]:
         """
         Hämtar aktiva ordrar av en specifik typ.
 
@@ -120,7 +135,9 @@ class ActiveOrdersService:
 
         return None
 
-    async def get_order_by_client_id(self, client_order_id: int) -> OrderResponse | None:
+    async def get_order_by_client_id(
+        self, client_order_id: int
+    ) -> OrderResponse | None:
         """
         Hämtar en specifik order baserat på klient-ID.
 
@@ -172,7 +189,9 @@ class ActiveOrdersService:
 
             ec = get_exchange_client()
             logger.info(f"🌐 REST API: Uppdaterar order {order_id}")
-            response = await ec.signed_request(method="post", endpoint=endpoint, body=payload)
+            response = await ec.signed_request(
+                method="post", endpoint=endpoint, body=payload
+            )
             response.raise_for_status()
 
             result = response.json()
@@ -199,7 +218,9 @@ class ActiveOrdersService:
             endpoint = "auth/w/order/cancel/all"
             ec = get_exchange_client()
             logger.info("🌐 REST API: Avbryter alla ordrar")
-            response = await ec.signed_request(method="post", endpoint=endpoint, body={})
+            response = await ec.signed_request(
+                method="post", endpoint=endpoint, body={}
+            )
             try:
                 response.raise_for_status()
                 result = response.json()
@@ -226,7 +247,9 @@ class ActiveOrdersService:
                     cancel_endpoint = "auth/w/order/cancel"
                     payload = {"id": order.id}
                     logger.info(f"🌐 REST API: Fallback – avbryter order {order.id}")
-                    resp = await ec.signed_request(method="post", endpoint=cancel_endpoint, body=payload)
+                    resp = await ec.signed_request(
+                        method="post", endpoint=cancel_endpoint, body=payload
+                    )
                     resp.raise_for_status()
                     results.append({"id": order.id, "success": True})
                 except Exception as ex:
@@ -273,7 +296,9 @@ class ActiveOrdersService:
                     endpoint = "auth/w/order/cancel"
                     payload = {"id": order.id}
                     logger.info(f"🌐 REST API: Avbryter order {order.id} för {symbol}")
-                    response = await ec.signed_request(method="post", endpoint=endpoint, body=payload)
+                    response = await ec.signed_request(
+                        method="post", endpoint=endpoint, body=payload
+                    )
                     response.raise_for_status()
 
                     result = response.json()
@@ -324,7 +349,9 @@ async def get_order_by_client_id(client_order_id: int) -> OrderResponse | None:
     return await active_orders_service.get_order_by_client_id(client_order_id)
 
 
-async def update_order(order_id: int, price: float | None = None, amount: float | None = None) -> dict[str, Any]:
+async def update_order(
+    order_id: int, price: float | None = None, amount: float | None = None
+) -> dict[str, Any]:
     return await active_orders_service.update_order(order_id, price, amount)
 
 

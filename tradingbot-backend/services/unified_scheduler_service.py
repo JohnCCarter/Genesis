@@ -100,7 +100,9 @@ class UnifiedSchedulerService:
         # Initialisera standard jobb
         self._initialize_default_jobs()
 
-        logger.info("🗓️ UnifiedSchedulerService initialiserad - enhetlig jobb-schemaläggning")
+        logger.info(
+            "🗓️ UnifiedSchedulerService initialiserad - enhetlig jobb-schemaläggning"
+        )
 
     def _initialize_default_jobs(self) -> None:
         """Initialisera standard jobb från befintliga services."""
@@ -200,7 +202,9 @@ class UnifiedSchedulerService:
             next_run=datetime.now(UTC) + timedelta(seconds=interval),
         )
 
-        logger.info(f"📋 Jobb {name} registrerat (prioritet: {priority.name}, intervall: {interval}s)")
+        logger.info(
+            f"📋 Jobb {name} registrerat (prioritet: {priority.name}, intervall: {interval}s)"
+        )
 
     def unregister_job(self, name: str) -> None:
         """Avregistrera ett jobb."""
@@ -257,7 +261,9 @@ class UnifiedSchedulerService:
         self._stop_event.clear()
 
         # Starta huvudloop
-        self._task = asyncio.create_task(self._run_loop(), name="unified-scheduler-loop")
+        self._task = asyncio.create_task(
+            self._run_loop(), name="unified-scheduler-loop"
+        )
 
         logger.info("🚀 UnifiedSchedulerService startad")
 
@@ -326,7 +332,10 @@ class UnifiedSchedulerService:
                 continue
 
             dep_job = self.jobs[dep_name]
-            if dep_job.status == JobStatus.FAILED and dep_job.error_count >= dep_job.max_errors:
+            if (
+                dep_job.status == JobStatus.FAILED
+                and dep_job.error_count >= dep_job.max_errors
+            ):
                 return False
 
         return True
@@ -447,7 +456,9 @@ class UnifiedSchedulerService:
             try:
                 await health_watchdog.check_system_health()
             except AttributeError:
-                logger.warning("check_system_health metod inte tillgänglig i health_watchdog")
+                logger.warning(
+                    "check_system_health metod inte tillgänglig i health_watchdog"
+                )
         except Exception as e:
             logger.error(f"Health check fel: {e}")
             raise
@@ -463,7 +474,9 @@ class UnifiedSchedulerService:
             status = unified_circuit_breaker_service.get_status()
             # Logga om någon är öppen
             if status.get("open_circuit_breakers", 0) > 0:
-                logger.warning(f"⚠️ {status['open_circuit_breakers']} circuit breakers är öppna")
+                logger.warning(
+                    f"⚠️ {status['open_circuit_breakers']} circuit breakers är öppna"
+                )
         except Exception as e:
             logger.error(f"Circuit breaker monitor fel: {e}")
             raise
@@ -498,7 +511,9 @@ class UnifiedSchedulerService:
                 "total_jobs": len(self.jobs),
                 "enabled_jobs": sum(1 for job in self.jobs.values() if job.enabled),
                 "running_jobs": sum(1 for job in self.jobs.values() if job.is_running),
-                "failed_jobs": sum(1 for job in self.jobs.values() if job.status == JobStatus.FAILED),
+                "failed_jobs": sum(
+                    1 for job in self.jobs.values() if job.status == JobStatus.FAILED
+                ),
             }
 
     def get_scheduler_summary(self) -> dict[str, Any]:
@@ -508,14 +523,23 @@ class UnifiedSchedulerService:
             "is_running": self.is_running,
             "total_jobs": len(self.jobs),
             "jobs_by_priority": {
-                priority.name: sum(1 for job in self.jobs.values() if job.priority == priority)
+                priority.name: sum(
+                    1 for job in self.jobs.values() if job.priority == priority
+                )
                 for priority in JobPriority
             },
             "jobs_by_status": {
-                status.value: sum(1 for job in self.jobs.values() if job.status == status) for status in JobStatus
+                status.value: sum(
+                    1 for job in self.jobs.values() if job.status == status
+                )
+                for status in JobStatus
             },
             "next_job_to_run": min(
-                (job.next_run for job in self.jobs.values() if job.next_run and job.enabled),
+                (
+                    job.next_run
+                    for job in self.jobs.values()
+                    if job.next_run and job.enabled
+                ),
                 default=None,
             ),
         }

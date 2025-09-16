@@ -39,7 +39,9 @@ def build_auth_headers(
 ) -> dict:
     """Proxy till ExchangeClient för att behålla bakåtkompatibelt API."""
     client = get_exchange_client()
-    return client.build_rest_headers(endpoint=endpoint, payload=payload, v1=v1, payload_str=payload_str)
+    return client.build_rest_headers(
+        endpoint=endpoint, payload=payload, v1=v1, payload_str=payload_str
+    )
 
 
 def redact_headers(headers: dict) -> dict:
@@ -84,7 +86,10 @@ async def place_order(order: dict) -> dict:
             return {"error": error_msg}
 
         endpoint = "auth/w/order/submit"
-        base_url = getattr(settings, "BITFINEX_AUTH_API_URL", None) or settings.BITFINEX_API_URL
+        base_url = (
+            getattr(settings, "BITFINEX_AUTH_API_URL", None)
+            or settings.BITFINEX_API_URL
+        )
         url = f"{base_url}/{endpoint}"
 
         # Konvertera till Bitfinex format (REST v2 använder tecken på amount som riktning)
@@ -139,7 +144,7 @@ async def place_order(order: dict) -> dict:
             method="post",
             endpoint=endpoint,
             body=bitfinex_order,
-            timeout=settings.ORDER_HTTP_TIMEOUT
+            timeout=settings.ORDER_HTTP_TIMEOUT,
         )
         response_data.raise_for_status()
         result = response_data.json()
@@ -170,7 +175,10 @@ async def cancel_order(order_id: int) -> dict:
             return {"error": error_msg}
 
         endpoint = "auth/w/order/cancel"
-        base_url = getattr(settings, "BITFINEX_AUTH_API_URL", None) or settings.BITFINEX_API_URL
+        base_url = (
+            getattr(settings, "BITFINEX_AUTH_API_URL", None)
+            or settings.BITFINEX_API_URL
+        )
         url = f"{base_url}/{endpoint}"
 
         # Konvertera till Bitfinex format
@@ -185,7 +193,7 @@ async def cancel_order(order_id: int) -> dict:
             method="post",
             endpoint=endpoint,
             body=bitfinex_cancel,
-            timeout=settings.ORDER_HTTP_TIMEOUT
+            timeout=settings.ORDER_HTTP_TIMEOUT,
         )
         response_data.raise_for_status()
         result = response_data.json()

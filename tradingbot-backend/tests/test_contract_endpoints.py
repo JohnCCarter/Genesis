@@ -15,7 +15,12 @@ def test_contract_risk_unified_status():
     r = c.get("/api/v2/risk/unified/status")
     assert r.status_code == 200
     js = r.json()
-    for key in ("current_equity", "daily_loss_percentage", "drawdown_percentage", "guards_full"):
+    for key in (
+        "current_equity",
+        "daily_loss_percentage",
+        "drawdown_percentage",
+        "guards_full",
+    ):
         assert key in js
 
 
@@ -26,7 +31,10 @@ def test_contract_validation_v2_endpoints():
     assert r1.status_code == 200
     r2 = c.post("/api/v2/validation/strategy", json={**body, "strategy_params": {}})
     assert r2.status_code == 200
-    r3 = c.post("/api/v2/validation/backtest", json={**body, "initial_capital": 10000.0, "strategy_params": {}})
+    r3 = c.post(
+        "/api/v2/validation/backtest",
+        json={**body, "initial_capital": 10000.0, "strategy_params": {}},
+    )
     assert r3.status_code == 200
     r4 = c.get("/api/v2/validation/history")
     assert r4.status_code == 200
@@ -40,7 +48,10 @@ def test_contract_circuit_breaker_endpoints():
     rs = c.get("/api/v2/circuit-breaker/status")
     assert rs.status_code == 200
     # record failure/success + reset for trading
-    rf = c.post("/api/v2/circuit-breaker/record-failure", json={"name": "trading", "error_type": "test"})
+    rf = c.post(
+        "/api/v2/circuit-breaker/record-failure",
+        json={"name": "trading", "error_type": "test"},
+    )
     assert rf.status_code == 200
     rr = c.post("/api/v2/circuit-breaker/reset", json={"name": "trading"})
     assert rr.status_code == 200

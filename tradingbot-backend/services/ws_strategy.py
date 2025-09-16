@@ -40,7 +40,11 @@ class WSStrategyService:
     def update_strategy_flag(self, flag_name: str, value: bool) -> bool:
         """Uppdaterar en strategiflagga."""
         try:
-            if flag_name in ("ws_strategy_enabled", "ws_connect_on_start", "validation_on_start"):
+            if flag_name in (
+                "ws_strategy_enabled",
+                "ws_connect_on_start",
+                "validation_on_start",
+            ):
                 _set_flag(flag_name, bool(value))
             else:
                 self.logger.warning(f"⚠️ Okänd strategiflagga: {flag_name}")
@@ -50,7 +54,9 @@ class WSStrategyService:
             return True
 
         except Exception as e:
-            self.logger.error(f"❌ Fel vid uppdatering av strategiflagga {flag_name}: {e}")
+            self.logger.error(
+                f"❌ Fel vid uppdatering av strategiflagga {flag_name}: {e}"
+            )
             return False
 
 

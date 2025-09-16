@@ -20,7 +20,10 @@ logger = get_logger(__name__)
 class FundingService:
     def __init__(self) -> None:
         self.settings = settings
-        self.base_url = getattr(self.settings, "BITFINEX_AUTH_API_URL", None) or self.settings.BITFINEX_API_URL
+        self.base_url = (
+            getattr(self.settings, "BITFINEX_AUTH_API_URL", None)
+            or self.settings.BITFINEX_API_URL
+        )
 
     async def transfer(
         self,
@@ -55,10 +58,10 @@ class FundingService:
                 currency,
             )
             resp = await ec.signed_request(
-                method="post", 
-                endpoint=endpoint, 
-                body=payload, 
-                timeout=self.settings.ORDER_HTTP_TIMEOUT
+                method="post",
+                endpoint=endpoint,
+                body=payload,
+                timeout=self.settings.ORDER_HTTP_TIMEOUT,
             )
             resp.raise_for_status()
             return resp.json()
@@ -93,15 +96,15 @@ class FundingService:
             payload["end"] = int(end)
         if limit is not None:
             payload["limit"] = int(limit)
-        
+
         try:
             ec = get_exchange_client()
             logger.info("🌐 REST API: Movements fetch (%s)", currency or "all")
             resp = await ec.signed_request(
-                method="post", 
-                endpoint=endpoint, 
-                body=payload, 
-                timeout=self.settings.ORDER_HTTP_TIMEOUT
+                method="post",
+                endpoint=endpoint,
+                body=payload,
+                timeout=self.settings.ORDER_HTTP_TIMEOUT,
             )
             resp.raise_for_status()
             data = resp.json()

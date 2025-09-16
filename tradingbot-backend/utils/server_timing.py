@@ -13,7 +13,9 @@ import time
 from contextvars import ContextVar
 from typing import Any
 
-_server_timing: ContextVar[list[str] | None] = ContextVar("_server_timing", default=None)
+_server_timing: ContextVar[list[str] | None] = ContextVar(
+    "_server_timing", default=None
+)
 
 
 def reset() -> None:

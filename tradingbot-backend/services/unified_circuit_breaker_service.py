@@ -115,7 +115,9 @@ class UnifiedCircuitBreakerService:
         # Initialize default circuit breakers
         self._initialize_default_circuit_breakers()
 
-        logger.info("⚡ UnifiedCircuitBreakerService initialiserad - enhetlig circuit breaker-hantering")
+        logger.info(
+            "⚡ UnifiedCircuitBreakerService initialiserad - enhetlig circuit breaker-hantering"
+        )
 
     def _initialize_default_circuit_breakers(self) -> None:
         """Initialisera standard circuit breakers."""
@@ -228,7 +230,9 @@ class UnifiedCircuitBreakerService:
             # Rensa gamla failure events
             self._cleanup_failure_events(name)
 
-        logger.debug(f"⚡ Success registrerad för {name}: {state.success_count} successes")
+        logger.debug(
+            f"⚡ Success registrerad för {name}: {state.success_count} successes"
+        )
 
     def record_failure(self, name: str, error_type: str = "generic") -> None:
         """Registrera en misslyckad operation."""
@@ -252,7 +256,9 @@ class UnifiedCircuitBreakerService:
         if self._should_open_circuit(name):
             self._open_circuit(name, error_type)
 
-        logger.warning(f"⚡ Failure registrerad för {name}: {state.failure_count} failures")
+        logger.warning(
+            f"⚡ Failure registrerad för {name}: {state.failure_count} failures"
+        )
 
     def on_event(
         self,
@@ -313,7 +319,9 @@ class UnifiedCircuitBreakerService:
         cutoff_time = now - timedelta(seconds=config.failure_window)
 
         # Räkna failures inom fönstret
-        recent_failures = sum(1 for event in self.failure_events[name] if event > cutoff_time)
+        recent_failures = sum(
+            1 for event in self.failure_events[name] if event > cutoff_time
+        )
 
         return recent_failures >= config.failure_threshold
 
@@ -342,7 +350,9 @@ class UnifiedCircuitBreakerService:
         # Uppdatera metrics
         self._update_metrics(name, 1)  # 1 = open
 
-        logger.warning(f"⚡ Circuit breaker {name} öppnad: {error_type}, cooldown: {backoff}s")
+        logger.warning(
+            f"⚡ Circuit breaker {name} öppnad: {error_type}, cooldown: {backoff}s"
+        )
 
         # Skicka notifikation om aktiverat
         if hasattr(self.settings, "CB_NOTIFY") and self.settings.CB_NOTIFY:
@@ -420,10 +430,22 @@ class UnifiedCircuitBreakerService:
                 "state": state.state.value,
                 "failure_count": state.failure_count,
                 "success_count": state.success_count,
-                "last_failure_time": (state.last_failure_time.isoformat() if state.last_failure_time else None),
-                "last_success_time": (state.last_success_time.isoformat() if state.last_success_time else None),
+                "last_failure_time": (
+                    state.last_failure_time.isoformat()
+                    if state.last_failure_time
+                    else None
+                ),
+                "last_success_time": (
+                    state.last_success_time.isoformat()
+                    if state.last_success_time
+                    else None
+                ),
                 "opened_at": state.opened_at.isoformat() if state.opened_at else None,
-                "next_attempt_time": (state.next_attempt_time.isoformat() if state.next_attempt_time else None),
+                "next_attempt_time": (
+                    state.next_attempt_time.isoformat()
+                    if state.next_attempt_time
+                    else None
+                ),
                 "half_open_calls": state.half_open_calls,
                 "total_requests": state.total_requests,
                 "total_failures": state.total_failures,
@@ -441,10 +463,14 @@ class UnifiedCircuitBreakerService:
             # Returnera status för alla circuit breakers
             return {
                 "timestamp": datetime.now().isoformat(),
-                "circuit_breakers": {name: self.get_status(name) for name in self.states.keys()},
+                "circuit_breakers": {
+                    name: self.get_status(name) for name in self.states.keys()
+                },
                 "total_circuit_breakers": len(self.states),
                 "open_circuit_breakers": sum(
-                    1 for state in self.states.values() if state.state == CircuitBreakerState.OPEN
+                    1
+                    for state in self.states.values()
+                    if state.state == CircuitBreakerState.OPEN
                 ),
             }
 

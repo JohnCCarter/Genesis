@@ -100,7 +100,9 @@ class HistoryService:
             self._history_cache[cache_key].trades = trades
             self._last_update = datetime.now()
 
-            logger.info(f"📊 Hämtade {len(trades)} trades för {symbol or 'alla symboler'}")
+            logger.info(
+                f"📊 Hämtade {len(trades)} trades för {symbol or 'alla symboler'}"
+            )
             return trades
 
         except Exception as e:
@@ -125,7 +127,9 @@ class HistoryService:
                 and self._last_update
                 and datetime.now() - self._last_update < self._cache_ttl
             ):
-                logger.debug(f"📋 Använder cached ledger history för {wallet_type or 'all'}")
+                logger.debug(
+                    f"📋 Använder cached ledger history för {wallet_type or 'all'}"
+                )
                 return self._history_cache[cache_key].ledgers
 
             # Hämta ledger history
@@ -133,7 +137,9 @@ class HistoryService:
 
             # Filtrera på wallet_type och currency om specificerat
             if wallet_type:
-                ledgers = [ledger for ledger in ledgers if ledger.wallet_type == wallet_type]
+                ledgers = [
+                    ledger for ledger in ledgers if ledger.wallet_type == wallet_type
+                ]
             if currency:
                 ledgers = [ledger for ledger in ledgers if ledger.currency == currency]
 
@@ -143,14 +149,18 @@ class HistoryService:
             self._history_cache[cache_key].ledgers = ledgers
             self._last_update = datetime.now()
 
-            logger.info(f"📊 Hämtade {len(ledgers)} ledgers för {wallet_type or 'alla wallets'}")
+            logger.info(
+                f"📊 Hämtade {len(ledgers)} ledgers för {wallet_type or 'alla wallets'}"
+            )
             return ledgers
 
         except Exception as e:
             logger.error(f"❌ Fel vid hämtning av ledger history: {e}")
             return []
 
-    async def get_equity_history(self, limit: int = 1000, force_refresh: bool = False) -> list[dict[str, Any]]:
+    async def get_equity_history(
+        self, limit: int = 1000, force_refresh: bool = False
+    ) -> list[dict[str, Any]]:
         """Hämta equity history över tid."""
         try:
             cache_key = f"equity_{limit}"
@@ -191,7 +201,9 @@ class HistoryService:
             logger.error(f"❌ Fel vid hämtning av equity history: {e}")
             return []
 
-    async def get_performance_snapshot(self, force_refresh: bool = False) -> dict[str, Any] | None:
+    async def get_performance_snapshot(
+        self, force_refresh: bool = False
+    ) -> dict[str, Any] | None:
         """Hämta aktuell performance snapshot."""
         try:
             cache_key = "performance_snapshot"
@@ -235,12 +247,20 @@ class HistoryService:
         """Hämta all historisk data i en enhetlig struktur."""
         try:
             # Hämta all historik parallellt
-            trades_task = asyncio.create_task(self.get_trade_history(symbol, trades_limit, force_refresh))
-            ledgers_task = asyncio.create_task(
-                self.get_ledger_history(wallet_type, currency, ledgers_limit, force_refresh)
+            trades_task = asyncio.create_task(
+                self.get_trade_history(symbol, trades_limit, force_refresh)
             )
-            equity_task = asyncio.create_task(self.get_equity_history(equity_limit, force_refresh))
-            performance_task = asyncio.create_task(self.get_performance_snapshot(force_refresh))
+            ledgers_task = asyncio.create_task(
+                self.get_ledger_history(
+                    wallet_type, currency, ledgers_limit, force_refresh
+                )
+            )
+            equity_task = asyncio.create_task(
+                self.get_equity_history(equity_limit, force_refresh)
+            )
+            performance_task = asyncio.create_task(
+                self.get_performance_snapshot(force_refresh)
+            )
 
             # Vänta på alla tasks
             results = await asyncio.gather(
@@ -255,7 +275,9 @@ class HistoryService:
             trades = results[0] if not isinstance(results[0], Exception) else []
             ledgers = results[1] if not isinstance(results[1], Exception) else []
             equity_history = results[2] if not isinstance(results[2], Exception) else []
-            performance_snapshot = results[3] if not isinstance(results[3], Exception) else None
+            performance_snapshot = (
+                results[3] if not isinstance(results[3], Exception) else None
+            )
 
             # Skapa comprehensive history
             comprehensive_history = {
@@ -331,7 +353,9 @@ class HistoryService:
             logger.error(f"❌ Fel vid beräkning av trades summary: {e}")
             return {}
 
-    def _calculate_ledgers_summary(self, ledgers: list[dict[str, Any]]) -> dict[str, Any]:
+    def _calculate_ledgers_summary(
+        self, ledgers: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         """Beräkna sammanfattning av ledgers."""
         try:
             by_currency: dict[str, float] = {}
@@ -340,11 +364,21 @@ class HistoryService:
             for ledger in ledgers:
                 # ledger kan vara dict eller objekt; hantera båda
                 try:
-                    currency = ledger.get("currency") if isinstance(ledger, dict) else getattr(ledger, "currency", None)
-                    wallet_type = (
-                        ledger.get("wallet_type") if isinstance(ledger, dict) else getattr(ledger, "wallet_type", None)
+                    currency = (
+                        ledger.get("currency")
+                        if isinstance(ledger, dict)
+                        else getattr(ledger, "currency", None)
                     )
-                    amount_raw = ledger.get("amount") if isinstance(ledger, dict) else getattr(ledger, "amount", 0)
+                    wallet_type = (
+                        ledger.get("wallet_type")
+                        if isinstance(ledger, dict)
+                        else getattr(ledger, "wallet_type", None)
+                    )
+                    amount_raw = (
+                        ledger.get("amount")
+                        if isinstance(ledger, dict)
+                        else getattr(ledger, "amount", 0)
+                    )
                     amount = float(amount_raw or 0)
                 except Exception:
                     currency = None
@@ -365,7 +399,9 @@ class HistoryService:
             logger.error(f"❌ Fel vid beräkning av ledgers summary: {e}")
             return {}
 
-    def _calculate_equity_summary(self, equity_history: list[dict[str, Any]]) -> dict[str, Any]:
+    def _calculate_equity_summary(
+        self, equity_history: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         """Beräkna sammanfattning av equity history."""
         try:
             if not equity_history:

@@ -95,7 +95,7 @@ class AdvancedRateLimiter:
     `time_until_open` för utvalda endpoints.
     """
 
-    def __init__(self, settings_override: Settings | None = None):
+    def __init__(self, settings_override=None):
         self.settings = settings_override or settings
         self._buckets: dict[EndpointType, TokenBucket] = {}
         self._endpoint_mapping: dict[str, EndpointType] = {}
@@ -239,7 +239,9 @@ class AdvancedRateLimiter:
         semaphores = self._semaphores.get(loop_id)
         if semaphores is None:
             pub = max(1, int(getattr(self.settings, "PUBLIC_REST_CONCURRENCY", 2) or 1))
-            prv = max(1, int(getattr(self.settings, "PRIVATE_REST_CONCURRENCY", 1) or 1))
+            prv = max(
+                1, int(getattr(self.settings, "PRIVATE_REST_CONCURRENCY", 1) or 1)
+            )
             semaphores = {
                 EndpointType.PUBLIC_MARKET: asyncio.Semaphore(pub),
                 EndpointType.PRIVATE_ACCOUNT: asyncio.Semaphore(prv),
@@ -275,7 +277,9 @@ class AdvancedRateLimiter:
             wait_time = bucket.time_to_tokens(tokens)
 
             if wait_time > 0:
-                logger.warning(f"Rate limit nått för {endpoint_type.value} ({endpoint}), väntar {wait_time:.1f}s")
+                logger.warning(
+                    f"Rate limit nått för {endpoint_type.value} ({endpoint}), väntar {wait_time:.1f}s"
+                )
                 await asyncio.sleep(wait_time)
 
                 # Konsumera tokens efter väntan
@@ -338,13 +342,23 @@ class AdvancedRateLimiter:
         self._server_busy_count += 1
         # Anpassa multiplier beroende på hur tätt felen kommer
         if now - self._last_server_busy_time < 60:
-            self._adaptive_backoff_multiplier = min(4.0, self._adaptive_backoff_multiplier * 1.5)
+            self._adaptive_backoff_multiplier = min(
+                4.0, self._adaptive_backoff_multiplier * 1.5
+            )
         else:
-            self._adaptive_backoff_multiplier = max(1.0, self._adaptive_backoff_multiplier * 0.8)
+            self._adaptive_backoff_multiplier = max(
+                1.0, self._adaptive_backoff_multiplier * 0.8
+            )
         self._last_server_busy_time = now
 
-        base_min = float(getattr(self.settings, "BITFINEX_SERVER_BUSY_BACKOFF_MIN_SECONDS", 10.0) or 10.0)
-        base_max = float(getattr(self.settings, "BITFINEX_SERVER_BUSY_BACKOFF_MAX_SECONDS", 30.0) or 30.0)
+        base_min = float(
+            getattr(self.settings, "BITFINEX_SERVER_BUSY_BACKOFF_MIN_SECONDS", 10.0)
+            or 10.0
+        )
+        base_max = float(
+            getattr(self.settings, "BITFINEX_SERVER_BUSY_BACKOFF_MAX_SECONDS", 30.0)
+            or 30.0
+        )
         wait_time = random.uniform(
             base_min * self._adaptive_backoff_multiplier,
             base_max * self._adaptive_backoff_multiplier,
@@ -389,11 +403,15 @@ class AdvancedRateLimiter:
             self._cb_state[key] = st
         # Signalera unified CB
         try:
-            unified_circuit_breaker_service.on_event(source="transport", endpoint=endpoint, success=True)
+            unified_circuit_breaker_service.on_event(
+                source="transport", endpoint=endpoint, success=True
+            )
         except Exception:
             pass
 
-    def note_failure(self, endpoint: str, status_code: int, retry_after: str | None = None) -> float:
+    def note_failure(
+        self, endpoint: str, status_code: int, retry_after: str | None = None
+    ) -> float:
         """Notera fel och öppna transport‑CB för endpoint enligt backoff.
 
         - Om `retry_after` kan tolkas som sekunder används det som minsta

@@ -52,7 +52,9 @@ class TestWSOrderHandler(unittest.IsolatedAsyncioTestCase):
 
     async def test_authenticate(self):
         """Testa autentisering via WebSocket."""
-        with mock.patch("ws.order_handler.build_ws_auth_payload", return_value='{"event":"auth"}'):
+        with mock.patch(
+            "ws.order_handler.build_ws_auth_payload", return_value='{"event":"auth"}'
+        ):
             result = await self.handler.authenticate()
 
             # Kontrollera att autentiseringsmeddelandet skickades
@@ -74,7 +76,9 @@ class TestWSOrderHandler(unittest.IsolatedAsyncioTestCase):
         }
 
         # Testa att lägga en order
-        success, error = await self.handler.place_order({"symbol": "tBTCUSD", "amount": "0.001", "price": "50000"})
+        success, error = await self.handler.place_order(
+            {"symbol": "tBTCUSD", "amount": "0.001", "price": "50000"}
+        )
 
         # Kontrollera resultatet
         self.assertTrue(success)
@@ -96,7 +100,9 @@ class TestWSOrderHandler(unittest.IsolatedAsyncioTestCase):
         self.mock_validator.validate_order.return_value = (False, "Ogiltig symbol")
 
         # Testa att lägga en order
-        success, error = await self.handler.place_order({"symbol": "INVALID", "amount": "0.001", "price": "50000"})
+        success, error = await self.handler.place_order(
+            {"symbol": "INVALID", "amount": "0.001", "price": "50000"}
+        )
 
         # Kontrollera resultatet
         self.assertFalse(success)
@@ -109,7 +115,9 @@ class TestWSOrderHandler(unittest.IsolatedAsyncioTestCase):
         self.handler.authenticated = False
 
         # Testa att lägga en order
-        success, error = await self.handler.place_order({"symbol": "tBTCUSD", "amount": "0.001", "price": "50000"})
+        success, error = await self.handler.place_order(
+            {"symbol": "tBTCUSD", "amount": "0.001", "price": "50000"}
+        )
 
         # Kontrollera resultatet
         self.assertFalse(success)

@@ -9,7 +9,9 @@ from typing import Any, Dict, List, Optional
 from bs4 import BeautifulSoup
 
 # Konfigurera loggning
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 
@@ -165,7 +167,9 @@ class EnhancedJsonExtractor:
         """
         if isinstance(data, dict):
             # Kontrollera om det är API-dokumentation
-            if any(key in data for key in ["method", "path", "endpoints", "parameters"]):
+            if any(
+                key in data for key in ["method", "path", "endpoints", "parameters"]
+            ):
                 return "endpoints"
             # Kontrollera om det är ett schema
             elif any(key in data for key in ["type", "properties", "required"]):

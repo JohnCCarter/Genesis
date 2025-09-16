@@ -137,7 +137,9 @@ class EnhancedObservabilityService:
         self._cache_ttl = timedelta(seconds=30)  # Kort cache för realtidsdata
         self._last_update: datetime | None = None
 
-        logger.info("📊 EnhancedObservabilityService initialiserad - enhetlig observability")
+        logger.info(
+            "📊 EnhancedObservabilityService initialiserad - enhetlig observability"
+        )
 
     async def get_system_metrics(self) -> SystemMetrics:
         """Hämta system-resurser."""
@@ -165,7 +167,9 @@ class EnhancedObservabilityService:
             except AttributeError:
                 metrics.load_average = [0.0, 0.0, 0.0]  # Windows fallback
 
-            logger.debug(f"📊 System metrics: CPU {metrics.cpu_percent}%, RAM {metrics.memory_percent}%")
+            logger.debug(
+                f"📊 System metrics: CPU {metrics.cpu_percent}%, RAM {metrics.memory_percent}%"
+            )
             return metrics
 
         except Exception as e:
@@ -186,7 +190,9 @@ class EnhancedObservabilityService:
                 metrics.blocked_requests = status.get("blocked_requests", {})
                 metrics.endpoint_patterns = status.get("endpoint_patterns", {})
 
-            logger.debug(f"📊 Rate limiter metrics: {len(metrics.tokens_available)} patterns")
+            logger.debug(
+                f"📊 Rate limiter metrics: {len(metrics.tokens_available)} patterns"
+            )
             return metrics
 
         except Exception as e:
@@ -217,7 +223,9 @@ class EnhancedObservabilityService:
 
             # Beräkna error rate
             if metrics.total_requests > 0:
-                metrics.error_rate_percent = (metrics.failed_requests / metrics.total_requests) * 100
+                metrics.error_rate_percent = (
+                    metrics.failed_requests / metrics.total_requests
+                ) * 100
 
             logger.debug(
                 f"📊 Exchange metrics: {metrics.total_requests} requests, {metrics.error_rate_percent:.1f}% error rate"
@@ -259,7 +267,9 @@ class EnhancedObservabilityService:
             ws_pool = metrics_store.get("ws_pool", {})
             metrics.connected_sockets = len(ws_pool.get("sockets", []))
             metrics.max_sockets = ws_pool.get("max_sockets", 0)
-            metrics.active_subscriptions = sum(s.get("subs", 0) for s in ws_pool.get("sockets", []))
+            metrics.active_subscriptions = sum(
+                s.get("subs", 0) for s in ws_pool.get("sockets", [])
+            )
             metrics.max_subscriptions = ws_pool.get("max_subs", 0)
 
             logger.debug(
@@ -278,17 +288,23 @@ class EnhancedObservabilityService:
 
             # Hämta från metrics store
             metrics.total_orders = metrics_store.get("orders_total", 0)
-            metrics.successful_orders = metrics.total_orders - metrics_store.get("orders_failed_total", 0)
+            metrics.successful_orders = metrics.total_orders - metrics_store.get(
+                "orders_failed_total", 0
+            )
             metrics.failed_orders = metrics_store.get("orders_failed_total", 0)
 
             # Beräkna success rate
             if metrics.total_orders > 0:
-                metrics.order_success_rate = (metrics.successful_orders / metrics.total_orders) * 100
+                metrics.order_success_rate = (
+                    metrics.successful_orders / metrics.total_orders
+                ) * 100
 
             # Beräkna genomsnittlig latens
             order_submit_ms = metrics_store.get("order_submit_ms", 0)
             if metrics.total_orders > 0:
-                metrics.average_order_latency_ms = order_submit_ms / metrics.total_orders
+                metrics.average_order_latency_ms = (
+                    order_submit_ms / metrics.total_orders
+                )
 
             logger.debug(
                 f"📊 Trading metrics: {metrics.total_orders} orders, {metrics.order_success_rate:.1f}% success rate"
@@ -315,7 +331,9 @@ class EnhancedObservabilityService:
             system_task = asyncio.create_task(self.get_system_metrics())
             rate_limiter_task = asyncio.create_task(self.get_rate_limiter_metrics())
             exchange_task = asyncio.create_task(self.get_exchange_metrics())
-            circuit_breaker_task = asyncio.create_task(self.get_circuit_breaker_metrics())
+            circuit_breaker_task = asyncio.create_task(
+                self.get_circuit_breaker_metrics()
+            )
             websocket_task = asyncio.create_task(self.get_websocket_metrics())
             trading_task = asyncio.create_task(self.get_trading_metrics())
 
@@ -331,12 +349,34 @@ class EnhancedObservabilityService:
             )
 
             # Hantera exceptions
-            system_metrics = results[0] if not isinstance(results[0], Exception) else SystemMetrics()
-            rate_limiter_metrics = results[1] if not isinstance(results[1], Exception) else RateLimiterMetrics()
-            exchange_metrics = results[2] if not isinstance(results[2], Exception) else ExchangeMetrics()
-            circuit_breaker_metrics = results[3] if not isinstance(results[3], Exception) else CircuitBreakerMetrics()
-            websocket_metrics = results[4] if not isinstance(results[4], Exception) else WebSocketMetrics()
-            trading_metrics = results[5] if not isinstance(results[5], Exception) else TradingMetrics()
+            system_metrics = (
+                results[0] if not isinstance(results[0], Exception) else SystemMetrics()
+            )
+            rate_limiter_metrics = (
+                results[1]
+                if not isinstance(results[1], Exception)
+                else RateLimiterMetrics()
+            )
+            exchange_metrics = (
+                results[2]
+                if not isinstance(results[2], Exception)
+                else ExchangeMetrics()
+            )
+            circuit_breaker_metrics = (
+                results[3]
+                if not isinstance(results[3], Exception)
+                else CircuitBreakerMetrics()
+            )
+            websocket_metrics = (
+                results[4]
+                if not isinstance(results[4], Exception)
+                else WebSocketMetrics()
+            )
+            trading_metrics = (
+                results[5]
+                if not isinstance(results[5], Exception)
+                else TradingMetrics()
+            )
 
             # Skapa comprehensive metrics
             comprehensive_metrics = {
@@ -427,7 +467,10 @@ class EnhancedObservabilityService:
         """Beräkna övergripande hälsostatus."""
         try:
             # Kontrollera kritiska faktorer
-            if circuit_breaker.trading_circuit_breaker_open or circuit_breaker.transport_circuit_breaker_open:
+            if (
+                circuit_breaker.trading_circuit_breaker_open
+                or circuit_breaker.transport_circuit_breaker_open
+            ):
                 return "critical"
 
             if system.cpu_percent > 90 or system.memory_percent > 90:
@@ -467,7 +510,9 @@ class EnhancedObservabilityService:
                 alerts.append(f"Memory usage kritisk: {system.memory_percent:.1f}%")
 
             if exchange.error_rate_percent > 20:
-                alerts.append(f"Exchange error rate kritisk: {exchange.error_rate_percent:.1f}%")
+                alerts.append(
+                    f"Exchange error rate kritisk: {exchange.error_rate_percent:.1f}%"
+                )
 
         except Exception as e:
             alerts.append(f"Fel vid kontroll av alerts: {e}")

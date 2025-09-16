@@ -1,6 +1,8 @@
 import pytest
 
-pytestmark = pytest.mark.skip(reason="Legacy realtime integration test – skipped in current backend focus")
+pytestmark = pytest.mark.skip(
+    reason="Legacy realtime integration test – skipped in current backend focus"
+)
 """
 Realtime Tests - TradingBot Backend
 
