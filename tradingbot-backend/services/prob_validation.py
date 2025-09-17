@@ -25,9 +25,7 @@ def _one_hot(label: Label) -> tuple[float, float, float]:
     return 0.0, 0.0, 1.0
 
 
-def _scores_for(
-    probs: dict[str, float], label: Label, eps: float = 1e-12
-) -> tuple[float, float]:
+def _scores_for(probs: dict[str, float], label: Label, eps: float = 1e-12) -> tuple[float, float]:
     """
     Return (brier, logloss) for a single sample.
     - Brier (multi-class): sum_k (p_k - y_k)^2
@@ -54,6 +52,9 @@ def validate_on_candles(
     tp: float,
     sl: float,
     max_samples: int | None = None,
+    *,
+    symbol: str | None = None,
+    timeframe: str | None = None,
 ) -> dict[str, Any]:
     """
     Build dataset from candles, run model inference per sample,
@@ -61,14 +62,16 @@ def validate_on_candles(
     and per-label breakdown.
     """
     ds = build_dataset(candles, horizon=horizon, tp=tp, sl=sl)
+    meta_used = prob_model.get_meta_for(symbol, timeframe)
+    model_loaded = bool(meta_used)
     if not ds:
         return {
             "samples": 0,
             "brier": None,
             "logloss": None,
             "by_label": {},
-            "source": ("model" if prob_model.enabled else "heuristic"),
-            "schema": prob_model.model_meta.get("schema"),
+            "source": ("model" if model_loaded else "heuristic"),
+            "schema": (prob_model.model_meta.get("schema") if model_loaded else None),
         }
 
     if isinstance(max_samples, int) and max_samples > 0:
@@ -91,7 +94,7 @@ def validate_on_candles(
             "atr_pct": float(row.get("atr_pct", 0.0)),
         }
         label: Label = str(row.get("label", "hold"))
-        probs = prob_model.predict_proba(feats)
+        probs, _ = prob_model.predict_proba_for(symbol, timeframe, feats)
         b, ll = _scores_for(probs, label)
         total_brier += float(b)
         total_logloss += float(ll)
@@ -114,8 +117,8 @@ def validate_on_candles(
             "brier": None,
             "logloss": None,
             "by_label": {},
-            "source": ("model" if prob_model.enabled else "heuristic"),
-            "schema": prob_model.model_meta.get("schema"),
+            "source": ("model" if model_loaded else "heuristic"),
+            "schema": (prob_model.model_meta.get("schema") if model_loaded else None),
         }
 
     # finalize averages
@@ -134,6 +137,6 @@ def validate_on_candles(
         "brier": total_brier / n,
         "logloss": total_logloss / n,
         "by_label": summary_by_label,
-        "source": ("model" if prob_model.enabled else "heuristic"),
-        "schema": prob_model.model_meta.get("schema"),
+        "source": ("model" if model_loaded else "heuristic"),
+        "schema": (meta_used.get("schema") if model_loaded else None),
     }

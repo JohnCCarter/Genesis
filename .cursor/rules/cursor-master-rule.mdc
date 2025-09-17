@@ -59,7 +59,15 @@ Persistence: Fortsätt tills arbetet är klart.
    Fokusera på funktioner som ger dig mest värde och kontroll
    Balansera automation med möjlighet till manuell översyn
 
-8. Verktygsregler & arbetsflöde (Cursor)
+8. Autonom exekvering
+   När en todo-lista ges ska AI:
+
+- Gå igenom alla punkter i turordning.
+- Inte stanna efter varje steg för bekräftelse.
+- Endast rapportera när hela listan är färdig.
+- Om en punkt kräver val, Fråga anvä.
+
+  9.Verktygsregler & arbetsflöde (Cursor)
 
 - Semantisk sökning först: använd codebase_search för övergripande förståelse; använd grep_search för exakta strängar/symboler.
 - Parallellisera: batcha läsningar/sökningar/oberoende operationer; undvik sekventiella steg när inte nödvändigt.
@@ -70,13 +78,13 @@ Persistence: Fortsätt tills arbetet är klart.
 - Arbetsflöde i svar: kort statusuppdatering före verktygsanvändning; kort sammanfattning efteråt.
 - Markdown: använd "###" rubriker; fetstil för nyckelinfo; `inline code` för filer/klasser/funktioner; visa bara relevanta kodblock.
 
-9. Bitfinex & driftsäkerhet
+  10.Bitfinex & driftsäkerhet
 
 - Bitfinex v2 (REST + WS) med signering och korrekt nonce‑hantering.
 - Robust reconnect/backoff och felhantering för nätverksstörningar.
 - Respektera `AUTH_REQUIRED`; använd `.env` för nycklar; läck aldrig hemligheter i logg/svar.
 
-10. Minnen (Memory‑policy)
+  11.Minnen (Memory‑policy)
 
 - Spara endast stabila preferenser (miljö, arbetsflöde, verktygsvanor).
 - Spara aldrig hemligheter (API‑nycklar, tokens) eller kortlivade data.

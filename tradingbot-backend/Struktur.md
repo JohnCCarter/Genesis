@@ -17,15 +17,17 @@ Obs: Arkitekturöversikt och systemflöden finns i `ARCHITECTURE.md`.
 - Symptom: Startup‑varning om att `UnifiedSignalService` saknar `set_websocket_service`.
 - Åtgärd: Implementera `set_websocket_service(ws)` eller ta bort kopplingsanropet i `main.py`.
 
-3. REST har WS‑endpoints
+3. REST har WS‑endpoints (wrapper‑endpoints kvar i REST)
 
-- Symptom: `/api/v2/ws/*` endpoints ligger i REST.
+- Symptom: `/api/v2/ws/*` endpoints ligger i REST (ex. `/ws/order`, `/ws/orders/ops`, `/ws/subscribe`).
 - Åtgärd: Flytta WS‑specifika operationer till Socket.IO/WS‑händelser.
 
 4. Modellfiler för fler symboler/timeframes
 
 - Symptom: Prob‑signaler 0.0 för ETH/DOT/ADA/5m.
 - Åtgärd: Lägg till modeller eller inaktivera validering/retrain tills filer finns.
+  - Nytt: Per‑symbol/tidsram laddas automatiskt från `config/models/<SYMBOL>_<TF>.json`.
+  - Cache: metadata caches i minnet och invalidieras med filens `mtime` (ingen omstart krävs efter retrain).
 
 5. Bitfinex REST 500 vid order
 
@@ -97,7 +99,8 @@ Obs: Arkitekturöversikt och systemflöden finns i `ARCHITECTURE.md`.
 
 6. Marknadsdata
 
-- `GET /api/v2/watchlist` → data ska komma (WS först, REST fallback).
+- `GET /api/v2/market/watchlist` → data ska komma (WS först, REST fallback).
+- `GET /api/v2/market/candles/{symbol}` → candles för symbol.
 - Logg: `marketdata.source=ws` eller `marketdata.source=rest reason=ws_timeout`.
 
 7. Prob‑modellen

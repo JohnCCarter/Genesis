@@ -12,7 +12,11 @@ from typing import Any
 import jwt
 from fastapi import APIRouter, Depends, HTTPException, Response, Query, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from fastapi.responses import JSONResponse as FastJSONResponse, PlainTextResponse, ORJSONResponse
+from fastapi.responses import (
+    JSONResponse as FastJSONResponse,
+    PlainTextResponse,
+    ORJSONResponse,
+)
 from pydantic import BaseModel, Field
 
 from config.settings import Settings, settings
@@ -2291,7 +2295,7 @@ async def prob_predict(req: ProbPredictRequest, _: bool = Depends(require_auth))
             rsi_norm = 0.0
         f_rsi = rsi_norm
 
-        probs = prob_model.predict_proba({"ema": f_ema, "rsi": f_rsi})
+        probs, meta_used = prob_model.predict_proba_for(req.symbol, req.timeframe, {"ema": f_ema, "rsi": f_rsi})
         confidence = float(max(probs.values()))
         # EV för buy/sell (procentenheter)
         p_buy = float(probs.get("buy", 0.0))
@@ -2328,7 +2332,7 @@ async def prob_predict(req: ProbPredictRequest, _: bool = Depends(require_auth))
                 "prob_events",
                 {
                     "type": "infer",
-                    "source": ("model" if prob_model.enabled else "heuristic"),
+                    "source": ("model" if meta_used else "heuristic"),
                     "symbol": req.symbol,
                     "tf": req.timeframe,
                 },
@@ -2369,7 +2373,7 @@ async def prob_predict(req: ProbPredictRequest, _: bool = Depends(require_auth))
         except Exception:
             pass
         t1 = _t.time()
-        source = "model" if prob_model.enabled else "heuristic"
+        source = "model" if meta_used else "heuristic"
         out = {
             "source": source,
             "probabilities": {k: round(float(v), 6) for k, v in probs.items()},
@@ -2381,6 +2385,7 @@ async def prob_predict(req: ProbPredictRequest, _: bool = Depends(require_auth))
             "thresholds": {"ev": ev_th, "confidence": conf_th},
             "latency_ms": int((t1 - t0) * 1000),
             "features": {"ema": f_ema, "rsi": f_rsi, "price": price, "ema_proxy": ema},
+            **({"schema": meta_used.get("schema")} if meta_used else {}),
             "params": req.dict(),
         }
         # Feature/decision‑loggning (ringbuffer)
@@ -2630,9 +2635,17 @@ async def prob_get_config(_: bool = Depends(require_auth)):
         s = settings
         try:
             # Läs aktuella thresholds via runtime_config med fallback till Settings
-            ev_th = float(rc.get_float("PROB_MODEL_EV_THRESHOLD", getattr(s, "PROB_MODEL_EV_THRESHOLD", 0.0) or 0.0))
+            ev_th = float(
+                rc.get_float(
+                    "PROB_MODEL_EV_THRESHOLD",
+                    getattr(s, "PROB_MODEL_EV_THRESHOLD", 0.0) or 0.0,
+                )
+            )
             conf_min = float(
-                rc.get_float("PROB_MODEL_CONFIDENCE_MIN", getattr(s, "PROB_MODEL_CONFIDENCE_MIN", 0.0) or 0.0)
+                rc.get_float(
+                    "PROB_MODEL_CONFIDENCE_MIN",
+                    getattr(s, "PROB_MODEL_CONFIDENCE_MIN", 0.0) or 0.0,
+                )
             )
         except Exception:
             ev_th = float(getattr(s, "PROB_MODEL_EV_THRESHOLD", 0.0) or 0.0)
@@ -5020,7 +5033,7 @@ async def get_feature_flags_status(_: bool = Depends(require_auth)):
         from services.feature_flags_service import feature_flags_service
 
         flags_status = feature_flags_service.get_flag_status()
-        return status
+        return flags_status
     except Exception as e:
         logger.exception(f"Fel vid hämtning av feature flags status: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -5507,7 +5520,7 @@ async def get_circuit_breaker_status(name: str | None = None, _: bool = Depends(
         )
 
         cb_status = unified_circuit_breaker_service.get_status(name)
-        return status
+        return cb_status
     except Exception as e:
         logger.exception(f"Fel vid hämtning av circuit breaker status: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -5684,7 +5697,7 @@ async def get_enhanced_auto_status(_: bool = Depends(require_auth)):
         enhanced_trader = EnhancedAutoTrader.get_instance()
         enhanced_status = await enhanced_trader.get_enhanced_status()
 
-        return status
+        return enhanced_status
 
     except Exception as e:
         logger.error(f"❌ Fel vid hämtning av enhanced auto-status: {e}")
@@ -6052,6 +6065,8 @@ async def prob_validate(req: ProbValidateRequest, _: bool = Depends(require_auth
             tp=float(max(0.0, req.tp)),
             sl=float(max(0.0, req.sl)),
             max_samples=req.max_samples,
+            symbol=req.symbol,
+            timeframe=req.timeframe,
         )
         return res
     except Exception as e:

@@ -37,26 +37,26 @@ Huvudkategorier av endpoints:
 
 - Autentisering & Tokens
   - POST /api/v2/auth/ws-token - Genererar WebSocket token
-  - GET /api/v2/auth/verify - Verifierar token
+
 - Orderhantering
   - POST /api/v2/order - Lägger order (huvudendpoint)
-  - POST /api/v2/orders/cancel/{order_id} - Avbryter order
+  - POST /api/v2/orders/cancel/all - Avbryter alla ordrar
   - POST /api/v2/orders/cancel/symbol/{symbol} - Avbryter alla ordrar för symbol
   - GET /api/v2/orders - Hämtar aktiva ordrar
   - GET /api/v2/orders/symbol/{symbol} - Hämtar ordrar för specifik symbol
 - Marknadsdata & Signals
   - GET /api/v2/signals/live - Hämtar live trading signals
   - GET /api/v2/signals/{symbol} - Hämtar signal för specifik symbol
-  - GET /api/v2/watchlist - Hämtar watchlist data
-  - GET /api/v2/candles/{symbol} - Hämtar candle data
+  - GET /api/v2/market/watchlist - Hämtar watchlist data
+  - GET /api/v2/market/candles/{symbol} - Hämtar candle data
 - Plånbok & Positioner
   - GET /api/v2/wallets - Hämtar plånböcker
   - GET /api/v2/positions - Hämtar positioner
-  - GET /api/v2/positions/history - Hämtar positionshistorik
 - Performance & Metrics
   - GET /api/v2/performance/daily - Hämtar dagliga statistik
-  - GET /api/v2/metrics/acceptance - Hämtar acceptance metrics
-  - GET /api/v2/metrics/prometheus - Prometheus metrics
+  - GET /api/v2/metrics - Översiktsmetrics
+  - GET /api/v2/metrics/summary - Sammanfattade metrics
+  - GET /api/v2/metrics/acceptance - Acceptance metrics
 
 🌐 3. WebSocket Event Handlers
 Bitfinex WebSocket Events:

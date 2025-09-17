@@ -26,14 +26,69 @@ export function FeatureFlagsPanel() {
     const [selectedCategory, setSelectedCategory] = React.useState<string>('all');
 
     const refresh = React.useCallback(async () => {
+        async function fallbackRefresh() {
+            try {
+                // Hämta centrala /mode-endpoints parallellt som fallback
+                const [dry, paused, pm, at, wsst, warm, sch] = await Promise.all([
+                    getWith('/api/v2/mode/dry-run', { timeout: 6000, maxRetries: 0 }).catch(() => null),
+                    getWith('/api/v2/mode/trading-paused', { timeout: 6000, maxRetries: 0 }).catch(() => null),
+                    getWith('/api/v2/mode/prob-model', { timeout: 6000, maxRetries: 0 }).catch(() => null),
+                    getWith('/api/v2/mode/autotrade', { timeout: 6000, maxRetries: 0 }).catch(() => null),
+                    getWith('/api/v2/mode/ws-strategy', { timeout: 6000, maxRetries: 0 }).catch(() => null),
+                    getWith('/api/v2/mode/validation-warmup', { timeout: 6000, maxRetries: 0 }).catch(() => null),
+                    getWith('/api/v2/mode/scheduler', { timeout: 6000, maxRetries: 0 }).catch(() => null),
+                ]);
+
+                const flags: Record<string, FeatureFlag> = {};
+
+                const addFlag = (name: string, value: any, description: string, category: string, requires_restart = false) => {
+                    flags[name] = {
+                        value,
+                        default_value: value,
+                        description,
+                        category,
+                        requires_restart,
+                        last_updated: null,
+                    };
+                };
+
+                if (dry && 'dry_run_enabled' in dry) addFlag('dry_run_enabled', !!dry.dry_run_enabled, 'Dry Run Mode - Simulerar trades utan att utföra dem', 'trading', true);
+                if (paused && 'trading_paused' in paused) addFlag('trading_paused', !!paused.trading_paused, 'Trading Paused - Pausar all handel', 'trading');
+                if (pm && 'prob_model_enabled' in pm) addFlag('prob_model_enabled', !!pm.prob_model_enabled, 'Probability Model - Aktiverar ML-baserad signal-generering', 'probability', true);
+                if (at && 'autotrade_enabled' in at) addFlag('autotrade_enabled', !!at.autotrade_enabled, 'Probability Auto Trading - Automatisk handel baserat på ML-modell', 'probability');
+                if (wsst && 'ws_strategy_enabled' in wsst) addFlag('ws_strategy_enabled', !!wsst.ws_strategy_enabled, 'WebSocket Strategy - Aktiverar realtids-strategiutvärdering', 'websocket');
+                if (warm && 'validation_on_start' in warm) addFlag('validation_on_start', !!warm.validation_on_start, 'Validation on Start - Kör validering vid start', 'validation');
+                if (sch && 'scheduler_running' in sch) addFlag('scheduler_running', !!sch.scheduler_running, 'Scheduler Running - Aktiverar schemalagda uppgifter', 'scheduler');
+
+                const categories = Array.from(new Set(Object.values(flags).map(f => f.category)));
+                const fallbackStatus: FeatureFlagsStatus = {
+                    timestamp: new Date().toISOString(),
+                    total_flags: Object.keys(flags).length,
+                    categories,
+                    flags,
+                    ui_capabilities: {},
+                };
+                setStatus(fallbackStatus);
+                setLastUpdate(new Date());
+            } catch (err: any) {
+                setError(err?.message || 'Kunde inte hämta feature flags status via fallback');
+            }
+        }
+
         try {
             setLoading(true);
             setError(null);
             const data = await getWith('/api/v2/feature-flags/status', { timeout: 8000, maxRetries: 0, doNotRecordCB: true });
-            setStatus(data);
-            setLastUpdate(new Date());
+            // Om svaret saknar strukturen vi förväntar oss, använd fallback
+            if (!data || typeof data !== 'object' || !('flags' in data)) {
+                await fallbackRefresh();
+            } else {
+                setStatus(data);
+                setLastUpdate(new Date());
+            }
         } catch (e: any) {
-            setError(e?.message || 'Kunde inte hämta feature flags status');
+            // Backend kan vara äldre/buggig → fallback till /mode/*
+            await fallbackRefresh();
         } finally {
             setLoading(false);
         }
@@ -42,7 +97,26 @@ export function FeatureFlagsPanel() {
     const setFlag = React.useCallback(async (name: string, value: any) => {
         try {
             setLoading(true);
-            await post('/api/v2/feature-flags/set', { name, value });
+            try {
+                await post('/api/v2/feature-flags/set', { name, value });
+            } catch {
+                // Fallback till /mode/* endpoints för kända snabba toggles
+                const mapping: Record<string, string> = {
+                    'dry_run_enabled': '/api/v2/mode/dry-run',
+                    'trading_paused': '/api/v2/mode/trading-paused',
+                    'prob_model_enabled': '/api/v2/mode/prob-model',
+                    'autotrade_enabled': '/api/v2/mode/autotrade',
+                    'ws_strategy_enabled': '/api/v2/mode/ws-strategy',
+                    'validation_on_start': '/api/v2/mode/validation-warmup',
+                    'scheduler_running': '/api/v2/mode/scheduler',
+                };
+                const path = mapping[name];
+                if (path) {
+                    await post(path, { enabled: Boolean(value) });
+                } else {
+                    throw new Error('Okänd feature flag och fallback saknas');
+                }
+            }
             await refresh();
         } catch (e: any) {
             setError(e?.message || 'Kunde inte uppdatera feature flag');
@@ -118,7 +192,7 @@ export function FeatureFlagsPanel() {
     const getFilteredFlags = () => {
         if (!status) return {};
         if (selectedCategory === 'all') return status.flags;
-        
+
         const filtered: Record<string, FeatureFlag> = {};
         for (const [name, flag] of Object.entries(status.flags)) {
             if (flag.category === selectedCategory) {
@@ -131,7 +205,7 @@ export function FeatureFlagsPanel() {
     // Quick toggle flags - most important ones
     const quickToggleFlags = [
         'dry_run_enabled',
-        'trading_paused', 
+        'trading_paused',
         'autotrade_enabled',
         'ws_strategy_enabled',
         'prob_model_enabled'
@@ -145,8 +219,8 @@ export function FeatureFlagsPanel() {
                     <button onClick={refresh} disabled={loading}>
                         {loading ? 'Laddar...' : '🔄 Uppdatera'}
                     </button>
-                    <button 
-                        onClick={resetAllFlags} 
+                    <button
+                        onClick={resetAllFlags}
                         disabled={loading}
                         style={{ background: '#dc3545', color: 'white' }}
                     >
@@ -164,10 +238,10 @@ export function FeatureFlagsPanel() {
             {status && (
                 <>
                     {/* Quick Toggle Section */}
-                    <div style={{ 
-                        background: '#f8f9fa', 
-                        padding: 16, 
-                        borderRadius: 8, 
+                    <div style={{
+                        background: '#f8f9fa',
+                        padding: 16,
+                        borderRadius: 8,
                         marginBottom: 20,
                         border: '1px solid #e9ecef'
                     }}>
@@ -178,10 +252,10 @@ export function FeatureFlagsPanel() {
                             {quickToggleFlags.map(flagName => {
                                 const flag = status.flags[flagName];
                                 if (!flag) return null;
-                                
+
                                 const isEnabled = Boolean(flag.value);
                                 const label = flagName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                                
+
                                 return (
                                     <button
                                         key={flagName}
@@ -208,10 +282,10 @@ export function FeatureFlagsPanel() {
                     </div>
 
                     {/* Översikt */}
-                    <div style={{ 
-                        display: 'grid', 
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
-                        gap: 12, 
+                    <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                        gap: 12,
                         marginBottom: 16,
                         padding: 12,
                         background: '#f6f8fa',
@@ -285,9 +359,9 @@ export function FeatureFlagsPanel() {
                         </h4>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                             {Object.entries(getFilteredFlags()).map(([name, flag]) => (
-                                <div key={name} style={{ 
-                                    padding: 12, 
-                                    background: '#f6f8fa', 
+                                <div key={name} style={{
+                                    padding: 12,
+                                    background: '#f6f8fa',
                                     borderRadius: 6,
                                     border: '1px solid #e1e4e8'
                                 }}>
@@ -297,9 +371,9 @@ export function FeatureFlagsPanel() {
                                                 <span style={{ fontWeight: 'bold', fontSize: 14 }}>
                                                     {name}
                                                 </span>
-                                                <span style={{ 
-                                                    fontSize: 10, 
-                                                    padding: '2px 6px', 
+                                                <span style={{
+                                                    fontSize: 10,
+                                                    padding: '2px 6px',
                                                     background: getCategoryColor(flag.category),
                                                     color: 'white',
                                                     borderRadius: 3
@@ -307,9 +381,9 @@ export function FeatureFlagsPanel() {
                                                     {flag.category}
                                                 </span>
                                                 {flag.requires_restart && (
-                                                    <span style={{ 
-                                                        fontSize: 10, 
-                                                        padding: '2px 6px', 
+                                                    <span style={{
+                                                        fontSize: 10,
+                                                        padding: '2px 6px',
                                                         background: '#ffc107',
                                                         color: '#333',
                                                         borderRadius: 3
@@ -378,9 +452,9 @@ export function FeatureFlagsPanel() {
                     {/* UI Capabilities */}
                     <div style={{ marginTop: 16 }}>
                         <h4 style={{ margin: '0 0 8px' }}>UI Capabilities</h4>
-                        <div style={{ 
-                            padding: 12, 
-                            background: '#f6f8fa', 
+                        <div style={{
+                            padding: 12,
+                            background: '#f6f8fa',
                             borderRadius: 6,
                             border: '1px solid #e1e4e8',
                             fontSize: 12

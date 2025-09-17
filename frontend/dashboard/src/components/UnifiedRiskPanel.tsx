@@ -121,7 +121,7 @@ export function UnifiedRiskPanel() {
                     <button onClick={refresh} disabled={loading}>
                         {loading ? 'Laddar...' : '🔄 Uppdatera'}
                     </button>
-                    {status?.circuit_breaker.open && (
+                    {status?.circuit_breaker?.open && (
                         <button
                             onClick={resetCircuitBreaker}
                             disabled={loading}
@@ -165,7 +165,7 @@ export function UnifiedRiskPanel() {
                         <div>
                             <div style={{ fontSize: 12, color: '#555' }}>Aktuell Equity</div>
                             <div style={{ fontSize: 16, fontWeight: 'bold', color: '#0366d6' }}>
-                                ${status.current_equity.toLocaleString()}
+                                ${Number(status?.current_equity ?? 0).toLocaleString()}
                             </div>
                         </div>
                         <div>
@@ -173,9 +173,9 @@ export function UnifiedRiskPanel() {
                             <div style={{
                                 fontSize: 16,
                                 fontWeight: 'bold',
-                                color: status.daily_loss_percentage > 0 ? '#dc3545' : '#28a745'
+                                color: (Number(status?.daily_loss_percentage ?? 0) > 0) ? '#dc3545' : '#28a745'
                             }}>
-                                {status.daily_loss_percentage.toFixed(2)}%
+                                {Number(status?.daily_loss_percentage ?? 0).toFixed(2)}%
                             </div>
                         </div>
                         <div>
@@ -183,9 +183,9 @@ export function UnifiedRiskPanel() {
                             <div style={{
                                 fontSize: 16,
                                 fontWeight: 'bold',
-                                color: status.drawdown_percentage > 0 ? '#dc3545' : '#28a745'
+                                color: (Number(status?.drawdown_percentage ?? 0) > 0) ? '#dc3545' : '#28a745'
                             }}>
-                                {status.drawdown_percentage.toFixed(2)}%
+                                {Number(status?.drawdown_percentage ?? 0).toFixed(2)}%
                             </div>
                         </div>
                         <div>
@@ -193,9 +193,9 @@ export function UnifiedRiskPanel() {
                             <div style={{
                                 fontSize: 16,
                                 fontWeight: 'bold',
-                                color: status.circuit_breaker.open ? '#dc3545' : '#28a745'
+                                color: status?.circuit_breaker?.open ? '#dc3545' : '#28a745'
                             }}>
-                                {status.circuit_breaker.open ? '🔴 Öppen' : '🟢 Stängd'}
+                                {status?.circuit_breaker?.open ? '🔴 Öppen' : '🟢 Stängd'}
                             </div>
                         </div>
                         <div>
@@ -203,9 +203,9 @@ export function UnifiedRiskPanel() {
                             <div style={{
                                 fontSize: 16,
                                 fontWeight: 'bold',
-                                color: status.trade_constraints.open ? '#28a745' : '#dc3545'
+                                color: status?.trade_constraints?.open ? '#28a745' : '#dc3545'
                             }}>
-                                {status.trade_constraints.open ? '🟢 Öppen' : '🔴 Stängd'}
+                                {status?.trade_constraints?.open ? '🟢 Öppen' : '🔴 Stängd'}
                             </div>
                         </div>
                         <div>
@@ -264,25 +264,25 @@ export function UnifiedRiskPanel() {
                         <h4 style={{ margin: '0 0 8px' }}>Circuit Breaker</h4>
                         <div style={{
                             padding: 12,
-                            background: status.circuit_breaker.open ? '#ffebe9' : '#f6f8fa',
+                            background: status?.circuit_breaker?.open ? '#ffebe9' : '#f6f8fa',
                             borderRadius: 6,
-                            border: `1px solid ${status.circuit_breaker.open ? '#dc3545' : '#e1e4e8'}`
+                            border: `1px solid ${status?.circuit_breaker?.open ? '#dc3545' : '#e1e4e8'}`
                         }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <div>
                                     <div style={{ fontWeight: 'bold' }}>
-                                        Status: {status.circuit_breaker.open ? 'Öppen' : 'Stängd'}
+                                        Status: {status?.circuit_breaker?.open ? 'Öppen' : 'Stängd'}
                                     </div>
                                     <div style={{ fontSize: 12, color: '#555' }}>
-                                        Fel: {status.circuit_breaker.error_count}/{status.circuit_breaker.error_threshold}
+                                        Fel: {(status?.circuit_breaker?.error_count ?? 0)}/{(status?.circuit_breaker?.error_threshold ?? 0)}
                                     </div>
-                                    {status.circuit_breaker.opened_at && (
+                                    {status?.circuit_breaker?.opened_at && (
                                         <div style={{ fontSize: 12, color: '#555' }}>
-                                            Öppnad: {formatTime(status.circuit_breaker.opened_at)}
+                                            Öppnad: {formatTime(status?.circuit_breaker?.opened_at ?? null)}
                                         </div>
                                     )}
                                 </div>
-                                {status.circuit_breaker.open && (
+                                {status?.circuit_breaker?.open && (
                                     <button
                                         onClick={resetCircuitBreaker}
                                         disabled={loading}
@@ -306,7 +306,7 @@ export function UnifiedRiskPanel() {
                     <div>
                         <h4 style={{ margin: '0 0 8px' }}>Risk Guards</h4>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                            {Object.entries(status.guards).map(([guardName, guard]) => (
+                            {Object.entries(status?.guards || {}).map(([guardName, guard]) => (
                                 <div key={guardName} style={{
                                     padding: 12,
                                     background: guard.triggered ? '#ffebe9' : '#f6f8fa',
