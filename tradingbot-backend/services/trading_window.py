@@ -8,9 +8,10 @@ import json
 import os
 import re
 from dataclasses import dataclass
+from typing import Any
 from datetime import datetime, time, timedelta
 
-from config.settings import Settings
+from config.settings import settings
 from utils.logger import get_logger
 
 try:
@@ -40,8 +41,8 @@ class TradingRules:
 
 
 class TradingWindowService:
-    def __init__(self, settings: Settings | None = None):
-        self.settings = settings or Settings()
+    def __init__(self, settings_override: Settings | None = None):
+        self.settings = settings_override or settings
         self.rules = self._load_rules()
 
     def _load_rules(self) -> TradingRules:
@@ -53,8 +54,14 @@ class TradingWindowService:
             return TradingRules(
                 timezone=data.get("timezone", self.settings.TIMEZONE),
                 windows=data.get("windows", {}),
-                max_trades_per_day=int(data.get("max_trades_per_day", self.settings.MAX_TRADES_PER_DAY)),
-                trade_cooldown_seconds=int(data.get("trade_cooldown_seconds", self.settings.TRADE_COOLDOWN_SECONDS)),
+                max_trades_per_day=int(
+                    data.get("max_trades_per_day", self.settings.MAX_TRADES_PER_DAY)
+                ),
+                trade_cooldown_seconds=int(
+                    data.get(
+                        "trade_cooldown_seconds", self.settings.TRADE_COOLDOWN_SECONDS
+                    )
+                ),
                 paused=bool(data.get("paused", self.settings.TRADING_PAUSED)),
                 max_trades_per_symbol_per_day=int(
                     data.get(
@@ -78,7 +85,9 @@ class TradingWindowService:
             max_trades_per_day=self.settings.MAX_TRADES_PER_DAY,
             trade_cooldown_seconds=self.settings.TRADE_COOLDOWN_SECONDS,
             paused=self.settings.TRADING_PAUSED,
-            max_trades_per_symbol_per_day=getattr(self.settings, "MAX_TRADES_PER_SYMBOL_PER_DAY", 0),
+            max_trades_per_symbol_per_day=getattr(
+                self.settings, "MAX_TRADES_PER_SYMBOL_PER_DAY", 0
+            ),
         )
         try:
             cfg_path = self._abs_rules_path()
@@ -89,7 +98,9 @@ class TradingWindowService:
                 "max_trades_per_day": default_rules.max_trades_per_day,
                 "trade_cooldown_seconds": default_rules.trade_cooldown_seconds,
                 "paused": default_rules.paused,
-                "max_trades_per_symbol_per_day": getattr(default_rules, "max_trades_per_symbol_per_day", 0),
+                "max_trades_per_symbol_per_day": getattr(
+                    default_rules, "max_trades_per_symbol_per_day", 0
+                ),
             }
             with open(cfg_path, "w", encoding="utf-8") as f:
                 json.dump(payload, f, ensure_ascii=False, indent=2)
@@ -129,7 +140,9 @@ class TradingWindowService:
             windows = self.rules.windows.get(weekday, [])
             for start, _ in windows:
                 t_start = _parse_time(start)
-                candidate_dt = candidate_day.replace(hour=t_start.hour, minute=t_start.minute, second=0, microsecond=0)
+                candidate_dt = candidate_day.replace(
+                    hour=t_start.hour, minute=t_start.minute, second=0, microsecond=0
+                )
                 if candidate_dt >= now:
                     return candidate_dt
         return None
@@ -138,11 +151,37 @@ class TradingWindowService:
         return {
             "max_trades_per_day": self.rules.max_trades_per_day,
             "trade_cooldown_seconds": self.rules.trade_cooldown_seconds,
-            "max_trades_per_symbol_per_day": getattr(self.rules, "max_trades_per_symbol_per_day", 0),
+            "max_trades_per_symbol_per_day": getattr(
+                self.rules, "max_trades_per_symbol_per_day", 0
+            ),
         }
 
     def is_paused(self) -> bool:
         return self.rules.paused
+
+    def set_paused(self, paused: bool) -> None:
+        """Sätt paused status."""
+        self.save_rules(paused=paused)
+
+    def set_windows(self, windows: dict[str, list[tuple[str, str]]]) -> None:
+        """Sätt trading windows."""
+        self.save_rules(windows=windows)
+
+    def set_timezone(self, timezone: str) -> None:
+        """Sätt timezone."""
+        self.save_rules(timezone=timezone)
+
+    def get_status(self) -> dict[str, Any]:
+        """Hämta komplett status."""
+        _next = self.next_open()
+        return {
+            "paused": self.rules.paused,
+            "open": self.is_open(),
+            "next_open": _next.isoformat() if _next is not None else None,
+            "windows": self.rules.windows,
+            "timezone": self.rules.timezone,
+            "limits": self.get_limits(),
+        }
 
     # --- Dynamiska uppdateringar/persistens ---
     def save_rules(
@@ -166,8 +205,13 @@ class TradingWindowService:
             self.rules.windows = windows
         if paused is not None:
             self.rules.paused = paused
-        if max_trades_per_symbol_per_day is not None and max_trades_per_symbol_per_day >= 0:
-            self.rules.max_trades_per_symbol_per_day = int(max_trades_per_symbol_per_day)
+        if (
+            max_trades_per_symbol_per_day is not None
+            and max_trades_per_symbol_per_day >= 0
+        ):
+            self.rules.max_trades_per_symbol_per_day = int(
+                max_trades_per_symbol_per_day
+            )
         if max_trades_per_day is not None and max_trades_per_day > 0:
             self.rules.max_trades_per_day = int(max_trades_per_day)
         if trade_cooldown_seconds is not None and trade_cooldown_seconds >= 0:
@@ -180,7 +224,9 @@ class TradingWindowService:
             "max_trades_per_day": self.rules.max_trades_per_day,
             "trade_cooldown_seconds": self.rules.trade_cooldown_seconds,
             "paused": self.rules.paused,
-            "max_trades_per_symbol_per_day": getattr(self.rules, "max_trades_per_symbol_per_day", 0),
+            "max_trades_per_symbol_per_day": getattr(
+                self.rules, "max_trades_per_symbol_per_day", 0
+            ),
         }
         cfg_path = self._abs_rules_path()
         os.makedirs(os.path.dirname(cfg_path), exist_ok=True)
@@ -200,8 +246,7 @@ class TradingWindowService:
     def reload(self) -> None:
         self.rules = self._load_rules()
 
-    def set_paused(self, paused: bool) -> None:
-        self.save_rules(paused=paused)
+    # removed duplicate set_paused (defined earlier)
 
     # --- Validering ---
     @staticmethod
@@ -240,8 +285,13 @@ class TradingWindowService:
                 if not isinstance(pair, (list, tuple)) or len(pair) != 2:
                     raise ValueError(f"Fel format för intervall i {day}: {pair}")
                 start, end = pair[0], pair[1]
-                if not (self._is_valid_time_string(start) and self._is_valid_time_string(end)):
+                if not (
+                    self._is_valid_time_string(start)
+                    and self._is_valid_time_string(end)
+                ):
                     raise ValueError(f"Ogiltigt tidsformat i {day}: {start}-{end}")
                 t_start, t_end = _parse_time(start), _parse_time(end)
                 if not (t_start < t_end):
-                    raise ValueError(f"Start måste vara före slut i {day}: {start}-{end}")
+                    raise ValueError(
+                        f"Start måste vara före slut i {day}: {start}-{end}"
+                    )

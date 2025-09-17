@@ -13,6 +13,7 @@ PyJWT>=2.8,<3
 python-dotenv>=1.0,<2
 orjson>=3.9,<4
 msgpack>=1.0,<2
+psutil>=5.9,<8
 
 # Data (ABI-stabil för Py3.11 på Windows)
 numpy==1.26.4

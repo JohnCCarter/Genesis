@@ -15,8 +15,7 @@ Detta är backend-delen av Genesis Trading Bot, en plattform för automatiserad 
 9. [Orderflaggor (Reduce-Only/Post-Only)](#orderflaggor-reduce-onlypost-only)
 10. [Backtest & Heatmap](#backtest--heatmap)
 11. [CI (GitHub Actions)](#ci-github-actions)
-12. [CodeQL](#codeql)
-13. [Arkitektur: MarketDataFacade, SignalService, RiskPolicyEngine, Circuit Breakers](#arkitektur-marketdatafacade-signalservice-riskpolicyengine-circuit-breakers)
+12. [Arkitektur: MarketDataFacade, SignalService, RiskPolicyEngine, Circuit Breakers](#arkitektur-marketdatafacade-signalservice-riskpolicyengine-circuit-breakers)
 
 ## Översikt
 
@@ -446,9 +445,6 @@ jobs:
 
 Notera att `AUTH_REQUIRED=False` under test förenklar körningen. Justera vid behov.
 
-## CodeQL
-
-CodeQL-körning är aktiverad via en separat job i samma workflow. Den analyserar Python-koden vid push/PR och rapporterar säkerhetsfynd under "Security" i GitHub.
 
 ## Orderflaggor (Reduce-Only/Post-Only)
 
@@ -563,3 +559,63 @@ I `/metrics` exponeras aggregerade procentandelar för datakällor:
 - `tradingbot_marketdata_ws_percent`
 
 Använd dem för paneler i t.ex. Grafana för att följa cache‑träffar, REST‑fallbacks, och WS‑andel över tid.
+
+## Transport-limiter: circuit breaker state (_cb_state)
+
+Transport‑nivån (REST) använder en enkel circuit breaker per endpoint, hanterad av `utils/advanced_rate_limiter.py`.
+
+- Nycklar: `fail_count`, `open_until` (epoch‑sek), `last_failure`.
+- `can_request(endpoint)`: True när `now >= open_until`.
+- `time_until_open(endpoint)`: sekunder kvar tills circuit stänger.
+- `note_failure(endpoint, status_code, retry_after)`: ökar `fail_count`, sätter `open_until` via `Retry-After` eller exponentiell backoff, och signalerar Unified CB.
+- `note_success(endpoint)`: nollar state och signalerar återhämtning.
+
+Felsök:
+
+- `GET /api/v2/debug/rate_limiter` visar limiter‑stats och `time_until_open` för vanliga endpoints.
+- Se även `services/unified_circuit_breaker_service.py` för övergripande CB‑status.
+
+# AI Change: Added Deprecation & Sunset-plan (Agent: Cursor, Date: 2025-09-15)
+
+## Deprecation & Sunset-plan
+
+Denna sektion beskriver vilka legacy‑endpoints och funktioner som är markerade för avveckling, hur klienter ska migrera, samt vilka datum som gäller. Alla avvecklingar följer HTTP‑headersna `Deprecation`, `Sunset` och `Link` för att guida klienter.
+
+- **Risk V1/V2 routes**: Använd unified risk‑endpoints under `/api/v2/risk/unified/*`.
+  - Legacy: `/api/v2/risk/status`, `/api/v2/risk/windows`, `/api/v2/risk/pause`, `/api/v2/risk/resume`, och alla `/api/v2/v2/risk/*` varianter.
+  - Status: Avvecklade i kodbasen; unified används. Klienter ska migrera omgående.
+
+- **Validation: legacy `/prob/validate*`**: Använd `/api/v2/validation/probability`.
+  - Legacy: `POST /api/v2/prob/validate`, `POST /api/v2/prob/validate/run` (svarar med `Deprecation`/`Sunset`/`Link`).
+  - Sunset: 2026‑01‑01 00:00:00Z. Efter datumet tas legacy bort.
+  - Migration: Byt till `POST /api/v2/validation/probability` och uppdatera schema enligt `services.validation_service`.
+
+- **Metrics**: Använd JSON‑sammanfattning.
+  - Legacy: `GET /metrics` (Prometheus text) finns kvar men UI ska använda `GET /api/v2/metrics/summary`.
+  - Plan: När UI är helt migrerad kan `GET /metrics` endast exponeras för Prometheus‑scrape.
+
+- **MCP**: Helt borttagen.
+  - Legacy: alla `/api/v2/mcp/*` endpoints och MCP‑klienter.
+  - Migration: Tokenhämtning sker via `POST /api/v2/auth/ws-token`. UI och scripts uppdaterade.
+
+- **TransportCircuitBreaker**: Funktionellt ersatt av `AdvancedRateLimiter` + `UnifiedCircuitBreakerService`.
+  - Legacy‑anrop ur REST‑moduler borttagna. Klassen kan tas bort när inga referenser återstår.
+
+- **WS pool namn/prefix‑hygien**:
+  - CI blockerar nu `/api/v2/v2`‑mönster i routerfiler med `APIRouter(prefix="/api/v2")`.
+
+- **Unified Signals SoT**:
+  - SoT: `services/unified_signal_service.py` (`unified_signal_service`).
+  - Legacy: `services/signal_service.py` innehöll dubblettklass; nu endast alias till SoT. All ny utveckling ska importera `from services.unified_signal_service import unified_signal_service`.
+
+### Avvecklingsprocess
+
+1. Märk legacy‑endpoints med `Deprecation`, `Sunset`, `Link` och instrumentera `legacy_endpoints_total{endpoint=...}`.
+2. Migrera UI/klienter till ersättning och verifiera i staging.
+3. Efter sunset‑datum: ta bort legacy‑endpoints/kod.
+4. Uppdatera denna sektion och changelog.
+
+### Spårning och uppföljning
+
+- Metrik: `legacy_endpoints_total{endpoint}` används för att följa kvarvarande trafik.
+- Dashboard: SystemPanel visar `/api/v2/metrics/summary` där legacy‑användning kan synas i counters.

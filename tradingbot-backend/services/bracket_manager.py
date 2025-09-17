@@ -12,7 +12,7 @@ import os
 from dataclasses import dataclass
 from typing import Any
 
-from config.settings import Settings
+from config.settings import settings, Settings
 from rest.auth import cancel_order
 from utils.logger import get_logger
 
@@ -30,12 +30,12 @@ class BracketGroup:
 
 
 class BracketManager:
-    def __init__(self) -> None:
+    def __init__(self, settings_override: Settings | None = None) -> None:
         # Mappar: child_order_id -> (gid, role)
         self.child_to_group: dict[int, tuple[str, str]] = {}
         # Mappar: gid -> BracketGroup
         self.groups: dict[str, BracketGroup] = {}
-        self.settings = Settings()
+        self.settings = settings_override or settings
         self._state_path = self._abs_state_path()
         # Ladda tidigare state om det finns
         try:
@@ -50,11 +50,15 @@ class BracketManager:
         sl_id: int | None,
         tp_id: int | None,
     ) -> None:
-        self.groups[gid] = BracketGroup(entry_id=entry_id, sl_id=sl_id, tp_id=tp_id, active=True)
+        self.groups[gid] = BracketGroup(
+            entry_id=entry_id, sl_id=sl_id, tp_id=tp_id, active=True
+        )
         for role, oid in (("entry", entry_id), ("sl", sl_id), ("tp", tp_id)):
             if isinstance(oid, int):
                 self.child_to_group[oid] = (gid, role)
-        logger.info(f"Registered bracket gid={gid} entry={entry_id} sl={sl_id} tp={tp_id}")
+        logger.info(
+            f"Registered bracket gid={gid} entry={entry_id} sl={sl_id} tp={tp_id}"
+        )
         self._save_state_safe()
 
     async def _cancel_sibling(self, filled_child_id: int) -> None:
@@ -84,7 +88,9 @@ class BracketManager:
         try:
             # Vi lyssnar främst på te/tu (trade executed/update)
             if event_code in ("te", "tu"):
-                payload: Any = msg[2] if isinstance(msg, list) and len(msg) > 2 else None
+                payload: Any = (
+                    msg[2] if isinstance(msg, list) and len(msg) > 2 else None
+                )
                 if isinstance(payload, list) and len(payload) >= 6:
                     # Bitfinex format: [ID, PAIR, MTS, ORDER_ID, EXEC_AMOUNT, EXEC_PRICE, ...]
                     order_id = payload[3]
@@ -99,9 +105,13 @@ class BracketManager:
                                     # Ackumulera fylld mängd (absolut)
                                     g = self.groups.get(gid)
                                     if g and g.active:
-                                        g.entry_filled = float(max(0.0, (g.entry_filled or 0.0))) + abs(exec_amount)
+                                        g.entry_filled = float(
+                                            max(0.0, (g.entry_filled or 0.0))
+                                        ) + abs(exec_amount)
                                         # Justera skyddsordrar (SL/TP) till ny fylld mängd
-                                        await self._sync_protectives_to_entry_filled(gid)
+                                        await self._sync_protectives_to_entry_filled(
+                                            gid
+                                        )
                                         self._save_state_safe()
                                 except Exception:
                                     pass
@@ -111,7 +121,9 @@ class BracketManager:
                                 # men OCO-semantiken: cancella syskon vid första fill.
                                 if self.settings.BRACKET_PARTIAL_ADJUST:
                                     try:
-                                        await self._adjust_sibling_on_partial(gid, role, exec_amount)
+                                        await self._adjust_sibling_on_partial(
+                                            gid, role, exec_amount
+                                        )
                                     except Exception:
                                         pass
                                 await self._cancel_sibling(order_id)
@@ -149,7 +161,9 @@ class BracketManager:
         except Exception as e:
             logger.error(f"Fel i BracketManager.handle_private_event: {e}")
 
-    async def _adjust_sibling_on_partial(self, gid: str, filled_role: str, exec_amount: float) -> None:
+    async def _adjust_sibling_on_partial(
+        self, gid: str, filled_role: str, exec_amount: float
+    ) -> None:
         """Justera syskonorder vid partial fill om aktiverat.
 
         Enkel heuristik: minska syskonets amount med samma belopp som fylld del.
@@ -224,22 +238,175 @@ class BracketManager:
         return os.path.join(cfg_dir, os.path.basename(path))
 
     def _load_state(self) -> None:
+        """Ladda bracket-state med förbättrad recovery."""
         raw = _safe_read_json(self._state_path)
         if not raw:
+            logger.info("Ingen befintlig bracket-state hittades")
             return
+
         if not _is_valid_state(raw):
             logger.warning("Ogiltig bracket-state, ignorerar")
             return
-        groups = _deserialize_groups(raw.get("groups", {}))
-        # Filtrera bort inaktiva grupper direkt
-        groups = {gid: g for gid, g in groups.items() if g.active}
-        self.groups = groups
-        self.child_to_group = _child_index(groups)
-        logger.info(f"Laddade {len(self.groups)} bracket-grupper från state")
+
+        try:
+            groups = _deserialize_groups(raw.get("groups", {}))
+
+            # Validera och rensa grupper
+            valid_groups = {}
+            for gid, group in groups.items():
+                if self._validate_group(group):
+                    valid_groups[gid] = group
+                else:
+                    logger.warning(f"Ogiltig bracket-grupp {gid}, hoppar över")
+
+            # Filtrera bort inaktiva grupper
+            active_groups = {gid: g for gid, g in valid_groups.items() if g.active}
+
+            self.groups = active_groups
+            self.child_to_group = _child_index(active_groups)
+
+            logger.info(f"Laddade {len(self.groups)} aktiva bracket-grupper från state")
+
+            # Kör recovery för partial fills
+            if self.groups:
+                logger.info("Kör bracket recovery för partial fills...")
+                # Recovery kommer att köras asynkront när systemet startar
+
+        except Exception as e:
+            logger.error(f"Fel vid laddning av bracket-state: {e}")
+            # Skapa backup av korrupt state
+            self._backup_corrupt_state()
 
     def _save_state_safe(self) -> None:
-        payload = {"groups": _serialize_groups(self.groups)}
-        _safe_write_json(self._state_path, payload)
+        """Spara bracket-state med atomic write."""
+        try:
+            payload = {"groups": _serialize_groups(self.groups)}
+            _safe_write_json(self._state_path, payload)
+        except Exception as e:
+            logger.error(f"Fel vid sparande av bracket-state: {e}")
+
+    def _validate_group(self, group: BracketGroup) -> bool:
+        """Validera en bracket-grupp."""
+        try:
+            # Kontrollera att gruppen har minst en order
+            if not any([group.entry_id, group.sl_id, group.tp_id]):
+                return False
+
+            # Kontrollera att order-ID:n är positiva heltal
+            for order_id in [group.entry_id, group.sl_id, group.tp_id]:
+                if order_id is not None and (
+                    not isinstance(order_id, int) or order_id <= 0
+                ):
+                    return False
+
+            # Kontrollera att entry_filled är ett giltigt tal
+            if (
+                not isinstance(group.entry_filled, (int, float))
+                or group.entry_filled < 0
+            ):
+                return False
+
+            return True
+        except Exception:
+            return False
+
+    def _backup_corrupt_state(self) -> None:
+        """Skapa backup av korrupt state-fil."""
+        try:
+            import shutil
+            from datetime import datetime
+
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            backup_path = f"{self._state_path}.corrupt_{timestamp}"
+
+            if os.path.exists(self._state_path):
+                shutil.copy2(self._state_path, backup_path)
+                logger.info(f"Skapade backup av korrupt state: {backup_path}")
+        except Exception as e:
+            logger.error(f"Kunde inte skapa backup av korrupt state: {e}")
+
+    async def recover_partial_fills(self) -> None:
+        """Recovery-rutin för partial fills vid omstart."""
+        if not self.groups:
+            return
+
+        logger.info("Kör bracket recovery för partial fills...")
+
+        try:
+            # Använd en säkrare import-metod
+            try:
+                from rest.auth import get_order_status  # type: ignore
+            except ImportError:
+                # Fallback om get_order_status inte finns
+                logger.warning(
+                    "get_order_status inte tillgänglig, hoppar över recovery"
+                )
+                return
+
+            for gid, group in self.groups.items():
+                if not group.active:
+                    continue
+
+                # Kontrollera entry order status
+                if group.entry_id:
+                    try:
+                        entry_status = await get_order_status(group.entry_id)
+                        if entry_status and entry_status.get("status") == "EXECUTED":
+                            # Entry är fylld, kontrollera om vi behöver justera skyddsordrar
+                            executed_amount = float(
+                                entry_status.get("executed_amount", 0)
+                            )
+                            if (
+                                executed_amount > 0
+                                and executed_amount != group.entry_filled
+                            ):
+                                logger.info(
+                                    f"Recovery: Entry {group.entry_id} har fylld {executed_amount}"
+                                )
+                                group.entry_filled = executed_amount
+                                await self._adjust_sibling_on_partial(
+                                    gid, "entry", executed_amount
+                                )
+                    except Exception as e:
+                        logger.warning(
+                            f"Kunde inte kontrollera entry {group.entry_id}: {e}"
+                        )
+
+                # Kontrollera skyddsordrar
+                for role, order_id in [("sl", group.sl_id), ("tp", group.tp_id)]:
+                    if order_id:
+                        try:
+                            status = await get_order_status(order_id)
+                            if status and status.get("status") == "EXECUTED":
+                                # Skyddsorder är fylld, avbryt syskon
+                                logger.info(
+                                    f"Recovery: {role.upper()} {order_id} är fylld, avbryter syskon"
+                                )
+                                await self._cancel_sibling(order_id)
+                        except Exception as e:
+                            logger.warning(
+                                f"Kunde inte kontrollera {role} {order_id}: {e}"
+                            )
+
+            # Spara uppdaterad state
+            self._save_state_safe()
+            logger.info("Bracket recovery slutförd")
+
+        except Exception as e:
+            logger.error(f"Fel vid bracket recovery: {e}")
+
+    def get_recovery_status(self) -> dict[str, Any]:
+        """Hämta status för bracket recovery."""
+        return {
+            "total_groups": len(self.groups),
+            "active_groups": sum(1 for g in self.groups.values() if g.active),
+            "groups_with_entry": sum(1 for g in self.groups.values() if g.entry_id),
+            "groups_with_sl": sum(1 for g in self.groups.values() if g.sl_id),
+            "groups_with_tp": sum(1 for g in self.groups.values() if g.tp_id),
+            "partial_fills": sum(1 for g in self.groups.values() if g.entry_filled > 0),
+            "state_file_exists": os.path.exists(self._state_path),
+            "state_file_path": self._state_path,
+        }
 
     def reset(self, delete_file: bool = True) -> int:
         """Töm alla grupper och nollställ state.
@@ -286,6 +453,7 @@ def _serialize_groups(groups: dict[str, BracketGroup]) -> dict[str, dict]:
             "sl_id": _coerce_int(g.sl_id),
             "tp_id": _coerce_int(g.tp_id),
             "active": bool(g.active),
+            "entry_filled": float(g.entry_filled or 0.0),
         }
     return out
 
@@ -298,6 +466,7 @@ def _deserialize_groups(raw: dict[str, dict]) -> dict[str, BracketGroup]:
             sl_id=_coerce_int(v.get("sl_id")),
             tp_id=_coerce_int(v.get("tp_id")),
             active=bool(v.get("active", True)),
+            entry_filled=float(v.get("entry_filled", 0.0) or 0.0),
         )
     return out
 
@@ -313,7 +482,11 @@ def _child_index(groups: dict[str, BracketGroup]) -> dict[int, tuple[str, str]]:
 
 
 def _is_valid_state(data: dict) -> bool:
-    return isinstance(data, dict) and "groups" in data and isinstance(data.get("groups"), dict)
+    return (
+        isinstance(data, dict)
+        and "groups" in data
+        and isinstance(data.get("groups"), dict)
+    )
 
 
 def _safe_read_json(path: str) -> dict | None:
@@ -321,9 +494,19 @@ def _safe_read_json(path: str) -> dict | None:
         with open(path, encoding="utf-8") as f:
             return json.load(f)
     except FileNotFoundError:
-        return None
+        # Prova backup
+        try:
+            with open(f"{path}.bak", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return None
     except Exception:
-        return None
+        # Prova backup
+        try:
+            with open(f"{path}.bak", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return None
 
 
 def _safe_write_json(path: str, payload: dict) -> None:
@@ -332,6 +515,15 @@ def _safe_write_json(path: str, payload: dict) -> None:
         tmp = f"{path}.tmp"
         with open(tmp, "w", encoding="utf-8") as f:
             json.dump(payload, f, ensure_ascii=False, indent=2)
+        # Skriv backup innan atomisk replace
+        try:
+            if os.path.exists(path):
+                with open(f"{path}.bak", "w", encoding="utf-8") as bf:
+                    json.dump(
+                        _safe_read_json(path) or {}, bf, ensure_ascii=False, indent=2
+                    )
+        except Exception:
+            pass
         os.replace(tmp, path)
     except Exception as e:
         logger.warning(f"Kunde inte skriva bracket-state: {e}")

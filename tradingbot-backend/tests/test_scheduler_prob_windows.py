@@ -17,7 +17,9 @@ async def test_scheduler_prob_rolling_windows_retention(monkeypatch):
         base = 100.0
         return [[0, 0, base + i * 0.1, base + i * 0.2, base, 1] for i in range(60)]
 
-    monkeypatch.setattr("services.bitfinex_data.BitfinexDataService.get_candles", fake_candles)
+    monkeypatch.setattr(
+        "services.bitfinex_data.BitfinexDataService.get_candles", fake_candles
+    )
 
     sch = SchedulerService()
     now = __import__("datetime").datetime.now(__import__("datetime").timezone.utc)

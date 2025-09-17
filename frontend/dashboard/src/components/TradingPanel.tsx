@@ -1,5 +1,5 @@
+import { ensureToken, getWith, post } from '@lib/api';
 import React from 'react';
-import { get, post, ensureToken } from '@lib/api';
 
 type OrderRow = any;
 
@@ -63,7 +63,7 @@ export const TradingPanel = React.memo(function TradingPanel() {
             if (isEditing) {
                 return; // hoppa över uppdatering när användaren skriver
             }
-            const res = await get('/api/v2/orders');
+            const res = await getWith('/api/v2/orders', { timeout: 12000, maxRetries: 1 });
             setOrders(Array.isArray(res) ? res : []);
         } catch (e: any) {
             setError(e?.message || 'Kunde inte hämta ordrar');
@@ -85,19 +85,19 @@ export const TradingPanel = React.memo(function TradingPanel() {
             let list: string[] = [];
             if (paperOnly) {
                 try {
-                    const p = await get('/api/v2/market/symbols/paper?format=v2');
+                    const p = await getWith('/api/v2/market/symbols/paper?format=v2', { timeout: 8000, maxRetries: 0 });
                     if (Array.isArray(p) && p.length) list = p;
                 } catch { }
             }
             if (!list.length && !paperOnly) {
                 try {
-                    const res1 = await get('/api/v2/market/symbols/config?format=v2');
+                    const res1 = await getWith('/api/v2/market/symbols/config?format=v2', { timeout: 8000, maxRetries: 0 });
                     if (Array.isArray(res1) && res1.length) list = res1;
                 } catch { }
             }
             if (!list.length) {
                 try {
-                    const res2 = await get('/api/v2/market/symbols?format=v2');
+                    const res2 = await getWith('/api/v2/market/symbols?format=v2', { timeout: 10000, maxRetries: 0 });
                     if (Array.isArray(res2)) list = res2;
                 } catch { }
             }

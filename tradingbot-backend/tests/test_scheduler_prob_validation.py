@@ -22,7 +22,9 @@ async def test_scheduler_prob_validation_updates_metrics(monkeypatch):
             arr.append([0, 0, px, px, px, 1])
         return arr
 
-    monkeypatch.setattr("services.bitfinex_data.BitfinexDataService.get_candles", fake_candles)
+    monkeypatch.setattr(
+        "services.bitfinex_data.BitfinexDataService.get_candles", fake_candles
+    )
 
     sch = SchedulerService()
     now = __import__("datetime").datetime.now(__import__("datetime").timezone.utc)

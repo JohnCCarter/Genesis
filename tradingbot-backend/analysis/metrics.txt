@@ -1,0 +1,171 @@
+﻿C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\order_history.py:286:                 _t0 = time.perf_counter()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\order_history.py:299:                     _t1 = time.perf_counter()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\positions.py:110:                 _t0 = time.perf_counter()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\positions.py:119:                 _t1 = time.perf_counter()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:39: from services.metrics import get_metrics_summary, inc_labeled, render_prometheus_text
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:2387:     """Kör validering direkt (utan att invänta schemaläggare) och uppdatera metrics."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3242: async def get_trade_counter(_: bool = Depends(require_auth)):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3682: # Metrics endpoint (Prometheus text format)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3718:         text = render_prometheus_text()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5133:             "timestamp": metrics.timestamp.isoformat(),
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5134:             "cpu_percent": metrics.cpu_percent,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5135:             "memory_percent": metrics.memory_percent,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5136:             "memory_used_gb": metrics.memory_used_gb,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5137:             "memory_total_gb": metrics.memory_total_gb,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5138:             "disk_percent": metrics.disk_percent,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5139:             "disk_used_gb": metrics.disk_used_gb,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5140:             "disk_total_gb": metrics.disk_total_gb,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5141:             "load_average": metrics.load_average,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5150:     """Hämta rate limiter metrics."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5156:             "timestamp": metrics.timestamp.isoformat(),
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5157:             "tokens_available": metrics.tokens_available,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5158:             "utilization_percent": metrics.utilization_percent,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5159:             "requests_per_second": metrics.requests_per_second,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5160:             "blocked_requests": metrics.blocked_requests,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5161:             "endpoint_patterns": metrics.endpoint_patterns,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5170:     """Hämta exchange API metrics."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5176:             "timestamp": metrics.timestamp.isoformat(),
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5177:             "total_requests": metrics.total_requests,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5178:             "failed_requests": metrics.failed_requests,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5179:             "rate_limited_requests": metrics.rate_limited_requests,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5180:             "average_latency_ms": metrics.average_latency_ms,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5181:             "p95_latency_ms": metrics.p95_latency_ms,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5182:             "p99_latency_ms": metrics.p99_latency_ms,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5183:             "error_rate_percent": metrics.error_rate_percent,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5192:     """Hämta trading metrics."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5198:             "timestamp": metrics.timestamp.isoformat(),
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5199:             "total_orders": metrics.total_orders,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5200:             "successful_orders": metrics.successful_orders,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5201:             "failed_orders": metrics.failed_orders,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5202:             "order_success_rate": metrics.order_success_rate,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5203:             "average_order_latency_ms": metrics.average_order_latency_ms,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5204:             "orders_per_minute": metrics.orders_per_minute,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5428:                         "accuracy": result.metrics.get("accuracy", 0),
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5429:                         "total_return": result.metrics.get("total_return", 0),
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5430:                         "final_capital": result.metrics.get("final_capital", 0),
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\wallet.py:89:             _t0 = time.perf_counter()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\wallet.py:98:                 _t1 = time.perf_counter()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_data.py:124:                     _t0 = time.perf_counter()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_data.py:127:                     _t1 = time.perf_counter()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_data.py:427:                             _t0 = time.perf_counter()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_data.py:430:                             _t1 = time.perf_counter()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_data.py:683:             _t0 = _t.perf_counter()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_data.py:688:                 _t1 = _t.perf_counter()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_data.py:730:             _t0 = _t.perf_counter()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_data.py:735:                 _t1 = _t.perf_counter()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:148:             _t0 = _t.perf_counter()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:150:             _t1 = _t.perf_counter()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:50:     """Rate limiter metrics."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:62:     """Exchange API metrics."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:77:     """Circuit breaker metrics."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:90:     """WebSocket metrics."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:104:     """Trading metrics."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:148:             metrics.cpu_percent = psutil.cpu_percent(interval=None)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:152:             metrics.memory_percent = memory.percent
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:153:             metrics.memory_used_gb = memory.used / (1024**3)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:154:             metrics.memory_total_gb = memory.total / (1024**3)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:158:             metrics.disk_percent = (disk.used / disk.total) * 100
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:159:             metrics.disk_used_gb = disk.used / (1024**3)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:160:             metrics.disk_total_gb = disk.total / (1024**3)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:164:                 metrics.load_average = list(psutil.getloadavg())
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:166:                 metrics.load_average = [0.0, 0.0, 0.0]  # Windows fallback
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:168:             logger.debug(f"📊 System metrics: CPU {metrics.cpu_percent}%, RAM {metrics.memory_percent}%")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:176:         """Hämta rate limiter metrics."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:183:                 metrics.tokens_available = status.get('tokens_available', {})
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:184:                 metrics.utilization_percent = status.get('utilization_percent', {})
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:185:                 metrics.requests_per_second = status.get('requests_per_second', {})
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:186:                 metrics.blocked_requests = status.get('blocked_requests', {})
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:187:                 metrics.endpoint_patterns = status.get('endpoint_patterns', {})
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:189:             logger.debug(f"📊 Rate limiter metrics: {len(metrics.tokens_available)} patterns")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:197:         """Hämta exchange API metrics."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:202:             metrics.total_requests = metrics_store.get('orders_total', 0)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:203:             metrics.failed_requests = metrics_store.get('orders_failed_total', 0)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:204:             metrics.rate_limited_requests = metrics_store.get('rate_limited_total', 0)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:214:                 metrics.average_latency_ms = sum(all_latencies) / len(all_latencies)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:215:                 metrics.p95_latency_ms = all_latencies[int(len(all_latencies) * 0.95)]
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:216:                 metrics.p99_latency_ms = all_latencies[int(len(all_latencies) * 0.99)]
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:219:             if metrics.total_requests > 0:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:220:                 metrics.error_rate_percent = (metrics.failed_requests / metrics.total_requests) * 100
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:223:                 f"📊 Exchange metrics: {metrics.total_requests} requests, {metrics.error_rate_percent:.1f}% error rate"
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:232:         """Hämta circuit breaker metrics."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:241:             metrics.trading_circuit_breaker_open = False
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:242:             metrics.transport_circuit_breaker_open = False
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:243:             metrics.trading_errors_count = 0
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:244:             metrics.transport_errors_count = 0
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:254:         """Hämta WebSocket metrics."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:260:             metrics.connected_sockets = len(ws_pool.get('sockets', []))
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:261:             metrics.max_sockets = ws_pool.get('max_sockets', 0)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:262:             metrics.active_subscriptions = sum(s.get('subs', 0) for s in ws_pool.get('sockets', []))
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:263:             metrics.max_subscriptions = ws_pool.get('max_subs', 0)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:266:                 f"📊 WebSocket metrics: {metrics.connected_sockets} sockets, {metrics.active_subscriptions} subs"
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:275:         """Hämta trading metrics."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:280:             metrics.total_orders = metrics_store.get('orders_total', 0)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:281:             metrics.successful_orders = metrics.total_orders - metrics_store.get('orders_failed_total', 0)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:282:             metrics.failed_orders = metrics_store.get('orders_failed_total', 0)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:285:             if metrics.total_orders > 0:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:286:                 metrics.order_success_rate = (metrics.successful_orders / metrics.total_orders) * 100
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:290:             if metrics.total_orders > 0:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:291:                 metrics.average_order_latency_ms = order_submit_ms / metrics.total_orders
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:294:                 f"📊 Trading metrics: {metrics.total_orders} orders, {metrics.order_success_rate:.1f}% success rate"
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:345:                     "cpu_percent": system_metrics.cpu_percent,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:346:                     "memory_percent": system_metrics.memory_percent,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:347:                     "memory_used_gb": system_metrics.memory_used_gb,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:348:                     "memory_total_gb": system_metrics.memory_total_gb,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:349:                     "disk_percent": system_metrics.disk_percent,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:350:                     "disk_used_gb": system_metrics.disk_used_gb,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:351:                     "disk_total_gb": system_metrics.disk_total_gb,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:352:                     "load_average": system_metrics.load_average,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:355:                     "tokens_available": rate_limiter_metrics.tokens_available,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:356:                     "utilization_percent": rate_limiter_metrics.utilization_percent,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:357:                     "requests_per_second": rate_limiter_metrics.requests_per_second,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:358:                     "blocked_requests": rate_limiter_metrics.blocked_requests,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:359:                     "endpoint_patterns": rate_limiter_metrics.endpoint_patterns,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:362:                     "total_requests": exchange_metrics.total_requests,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:363:                     "failed_requests": exchange_metrics.failed_requests,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:364:                     "rate_limited_requests": exchange_metrics.rate_limited_requests,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:365:                     "average_latency_ms": exchange_metrics.average_latency_ms,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:366:                     "p95_latency_ms": exchange_metrics.p95_latency_ms,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:367:                     "p99_latency_ms": exchange_metrics.p99_latency_ms,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:368:                     "error_rate_percent": exchange_metrics.error_rate_percent,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:371:                     "trading_open": circuit_breaker_metrics.trading_circuit_breaker_open,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:372:                     "transport_open": circuit_breaker_metrics.transport_circuit_breaker_open,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:373:                     "trading_errors_count": circuit_breaker_metrics.trading_errors_count,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:374:                     "transport_errors_count": circuit_breaker_metrics.transport_errors_count,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:377:                     "connected_sockets": websocket_metrics.connected_sockets,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:378:                     "max_sockets": websocket_metrics.max_sockets,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:379:                     "active_subscriptions": websocket_metrics.active_subscriptions,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:380:                     "max_subscriptions": websocket_metrics.max_subscriptions,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:381:                     "messages_per_second": websocket_metrics.messages_per_second,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:382:                     "reconnect_count": websocket_metrics.reconnect_count,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:385:                     "total_orders": trading_metrics.total_orders,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:386:                     "successful_orders": trading_metrics.successful_orders,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:387:                     "failed_orders": trading_metrics.failed_orders,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:388:                     "order_success_rate": trading_metrics.order_success_rate,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:389:                     "average_order_latency_ms": trading_metrics.average_order_latency_ms,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:390:                     "orders_per_minute": trading_metrics.orders_per_minute,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\market_data_facade.py:38:         start_time = time.perf_counter()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\market_data_facade.py:47:                     f"marketdata.source=rest reason=forced_mode symbol={symbol} lag_ms={(time.perf_counter() - start_time) * 1000:.1f}"
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\market_data_facade.py:57:                 lag_ms = (time.perf_counter() - start_time) * 1000
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\market_data_facade.py:63:                 lag_ms = (time.perf_counter() - start_time) * 1000
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\market_data_facade.py:68:             lag_ms = (time.perf_counter() - start_time) * 1000
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\metrics.py:2: Metrics store för enkel Prometheus-export.
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\metrics.py:64:     # Enkel label-escaping för Prometheus-formatteringen
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\metrics.py:157: def render_prometheus_text() -> str:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\prob_validation.py:58:     compute metrics. Returns summary dict with overall Brier/LogLoss
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\validation_service.py:157:                 f"🧪 Probability validation slutförd för {symbol}: {validation_metrics.get('accuracy', 0):.3f} accuracy"
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\validation_service.py:221:                 f"🧪 Strategy validation slutförd för {symbol}: {strategy_metrics.get('total_return', 0):.3f} return"
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\validation_service.py:292:                 f"🧪 Backtest slutförd för {symbol}: {backtest_metrics.get('final_capital', 0):.2f} final capital"
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\validation_service.py:307:         """Beräkna probability validation metrics."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\utils\advanced_rate_limiter.py:266:         """Skicka limiter-stats till metrics_store för Prometheus-export."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\utils\server_timing.py:45:         self._t0 = time.perf_counter()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\utils\server_timing.py:50:             dt_ms = (time.perf_counter() - self._t0) * 1000.0
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\main.py:56:     from services.metrics import observe_latency, render_prometheus_text
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\main.py:107:             _t0 = _t.perf_counter()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\main.py:110:                 _t1 = _t.perf_counter()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\main.py:120:                     _ta = _t.perf_counter()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\main.py:122:                     _tb = _t.perf_counter()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\main.py:355:     """Prometheus metrics (root) med valfritt skydd via miljövariabler.
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\main.py:454:     txt = render_prometheus_text()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\main.py:479:     start = time.perf_counter()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\main.py:483:         duration_ms = int((time.perf_counter() - start) * 1000)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\main.py:528:         duration_ms = int((time.perf_counter() - start) * 1000)

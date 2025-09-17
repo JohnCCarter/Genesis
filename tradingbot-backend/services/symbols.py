@@ -27,7 +27,21 @@ _CACHE: dict = {
     "ts": 0.0,
     "ttl": 14400.0,  # Öka från 2 timmar till 4 timmar för bättre prestanda
 }
-_REFRESH_LOCK: asyncio.Lock = asyncio.Lock()
+# Skapa lock per event loop dynamiskt (undvik loop-bundet module-level lock)
+_REFRESH_LOCKS: dict[int, asyncio.Lock] = {}
+
+
+def _get_refresh_lock() -> asyncio.Lock:
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = None  # type: ignore
+    loop_id = id(loop)
+    lock = _REFRESH_LOCKS.get(loop_id)
+    if lock is None:
+        lock = asyncio.Lock()
+        _REFRESH_LOCKS[loop_id] = lock
+    return lock
 
 
 class SymbolService:
@@ -96,7 +110,7 @@ class SymbolService:
                 self._last_refresh_ts = _CACHE["ts"]
                 return
 
-            async with _REFRESH_LOCK:
+            async with _get_refresh_lock():
                 # Double‑check under lås
                 now = _t.time()
                 if (now - float(_CACHE["ts"] or 0)) <= float(_CACHE["ttl"]):

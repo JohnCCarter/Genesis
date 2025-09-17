@@ -1,7 +1,7 @@
-import React from 'react';
 import { post } from '@lib/api';
-import { Sparkline } from './Sparkline';
+import React from 'react';
 import { JsonTree } from './JsonTree';
+import { Sparkline } from './Sparkline';
 
 export function ValidationPanel() {
     const [symbol, setSymbol] = React.useState('tBTCUSD');
@@ -16,11 +16,12 @@ export function ValidationPanel() {
         try {
             setLoading(true);
             setError(null);
-            const res = await post('/api/v2/prob/validate/run', {
+            const res = await post('/api/v2/validation/probability', {
                 symbol,
                 timeframe,
                 limit,
                 max_samples: maxSamples,
+                force_refresh: true,
             });
             setResult(res);
         } catch (e: any) {
@@ -32,7 +33,7 @@ export function ValidationPanel() {
 
     // Härled simpla serier om resultatet innehåller rolling/series
     const brierSeries = React.useMemo(() => {
-        const rolling = result?.rolling || result?.metrics?.rolling || {};
+        const rolling = result?.rolling_metrics || result?.metrics?.rolling || {};
         // försök ta första nyckelns serie
         const series: any[] = Array.isArray(rolling) ? rolling : (Object.values(rolling)[0] as any[] || []);
         return (series || []).map((x: any) => Number(x?.brier || 0)).filter((n: number) => Number.isFinite(n));

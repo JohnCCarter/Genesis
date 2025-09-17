@@ -17,7 +17,7 @@ from rest.wallet import get_total_balance_usd, get_wallets
 from services.market_data_facade import get_market_data
 from services.metrics import inc
 from services.realtime_strategy import realtime_strategy
-from services.risk_manager import RiskManager
+from services.unified_risk_service import unified_risk_service
 from services.strategy import evaluate_strategy
 from utils.logger import get_logger
 
@@ -96,7 +96,9 @@ class TradingIntegrationService:
                 symbol = position.symbol
                 self.position_info[symbol] = position
 
-            logger.info(f"✅ Positionsinformation uppdaterad: {len(positions)} positioner")
+            logger.info(
+                f"✅ Positionsinformation uppdaterad: {len(positions)} positioner"
+            )
 
         except Exception as e:
             logger.error(f"❌ Fel vid uppdatering av positionsinformation: {e}")
@@ -113,7 +115,9 @@ class TradingIntegrationService:
                 "leverage": await get_leverage(),
             }
 
-            logger.info(f"✅ Margin-information uppdaterad: {self.margin_info['leverage']}x hävstång")
+            logger.info(
+                f"✅ Margin-information uppdaterad: {self.margin_info['leverage']}x hävstång"
+            )
 
         except Exception as e:
             logger.error(f"❌ Fel vid uppdatering av margin-information: {e}")
@@ -140,7 +144,9 @@ class TradingIntegrationService:
                     "timestamp": datetime.now().isoformat(),
                 }
 
-                logger.info(f"✅ Marknadsdata uppdaterad för {symbol}: ${ticker['last_price']:,.2f}")
+                logger.info(
+                    f"✅ Marknadsdata uppdaterad för {symbol}: ${ticker['last_price']:,.2f}"
+                )
 
         except Exception as e:
             logger.error(f"❌ Fel vid uppdatering av marknadsdata för {symbol}: {e}")
@@ -177,8 +183,6 @@ class TradingIntegrationService:
                 return {"high": highs, "low": lows, "close": closes}
 
             strategy_data = _parse(candles)
-            # bädda in symbol för per-symbol viktning
-            strategy_data["symbol"] = symbol
 
             # Utvärdera strategi
             result = evaluate_strategy(strategy_data)
@@ -194,19 +198,25 @@ class TradingIntegrationService:
             risk_assessment = self._assess_risk(symbol, result)
             result.update(risk_assessment)
 
-            logger.info(f"✅ Tradingmöjlighet utvärderad för {symbol}: {result['signal']}")
+            logger.info(
+                f"✅ Tradingmöjlighet utvärderad för {symbol}: {result['signal']}"
+            )
 
             return result
 
         except Exception as e:
-            logger.error(f"❌ Fel vid utvärdering av tradingmöjlighet för {symbol}: {e}")
+            logger.error(
+                f"❌ Fel vid utvärdering av tradingmöjlighet för {symbol}: {e}"
+            )
             return {
                 "symbol": symbol,
                 "signal": "ERROR",
                 "reason": f"Fel vid utvärdering: {e}",
             }
 
-    def _assess_risk(self, symbol: str, strategy_result: dict[str, Any]) -> dict[str, Any]:
+    def _assess_risk(
+        self, symbol: str, strategy_result: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Utvärderar risk för en tradingmöjlighet.
 
@@ -229,7 +239,9 @@ class TradingIntegrationService:
             open_positions = len(self.position_info)
 
             # Kontrollera margin-status
-            margin_level = self.margin_info["status"]["margin_level"] if self.margin_info else 0
+            margin_level = (
+                self.margin_info["status"]["margin_level"] if self.margin_info else 0
+            )
             leverage = self.margin_info["leverage"] if self.margin_info else 1.0
 
             # Riskbedömning
@@ -246,7 +258,9 @@ class TradingIntegrationService:
                 if open_positions >= self.risk_limits["max_open_positions"]:
                     risk_assessment["can_trade"] = False
                     risk_assessment["risk_level"] = "HIGH"
-                    risk_assessment["reason"] = f"För många öppna positioner ({open_positions})"
+                    risk_assessment["reason"] = (
+                        f"För många öppna positioner ({open_positions})"
+                    )
 
                 # Kontrollera hävstång
                 elif leverage > self.risk_limits["max_leverage"]:
@@ -262,7 +276,9 @@ class TradingIntegrationService:
 
                 # Om vi redan har en position i samma riktning
                 elif has_position:
-                    if (signal == "BUY" and position_size > 0) or (signal == "SELL" and position_size < 0):
+                    if (signal == "BUY" and position_size > 0) or (
+                        signal == "SELL" and position_size < 0
+                    ):
                         risk_assessment["can_trade"] = False
                         risk_assessment["risk_level"] = "MEDIUM"
                         risk_assessment["reason"] = f"Har redan en {signal} position"
@@ -277,7 +293,9 @@ class TradingIntegrationService:
                 "reason": f"Fel vid riskbedömning: {e}",
             }
 
-    async def execute_trading_signal(self, symbol: str, signal_data: dict[str, Any]) -> dict[str, Any]:
+    async def execute_trading_signal(
+        self, symbol: str, signal_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Utför en tradingsignal för en symbol.
 
@@ -295,26 +313,27 @@ class TradingIntegrationService:
             can_trade = signal_data.get("can_trade", False)
 
             if not can_trade:
-                logger.warning(f"⚠️ Kan inte handla {symbol}: {signal_data.get('reason', 'Okänd anledning')}")
+                logger.warning(
+                    f"⚠️ Kan inte handla {symbol}: {signal_data.get('reason', 'Okänd anledning')}"
+                )
                 return {
                     "success": False,
                     "message": f"Kan inte handla: {signal_data.get('reason', 'Okänd anledning')}",
                     "order": None,
                 }
 
-            # Centrala riskkontroller (TradingWindow, dagliga limits, cooldown, CB)
+            # Enhetliga riskkontroller (Trade constraints, guards, CB)
             try:
-                risk = RiskManager()
-                ok, reason = risk.pre_trade_checks()
-                if not ok:
-                    logger.warning(f"🚫 RiskManager block: {reason}")
+                decision = unified_risk_service.evaluate_risk(symbol=symbol)
+                if not decision.allowed:
+                    logger.warning(f"🚫 Risk block: {decision.reason}")
                     return {
                         "success": False,
-                        "message": f"risk_blocked:{reason}",
+                        "message": f"risk_blocked:{decision.reason}",
                         "order": None,
                     }
             except Exception as e:
-                logger.warning(f"RiskManager-kontroll misslyckades: {e}")
+                logger.warning(f"Unified risk-kontroll misslyckades: {e}")
 
             # Kontrollera om vi ska handla
             if signal not in ["BUY", "SELL"]:
@@ -331,21 +350,27 @@ class TradingIntegrationService:
             # Skapa orderdata
             order_data = {
                 "symbol": symbol,
-                "amount": (str(position_size) if signal == "BUY" else str(-position_size)),
+                "amount": (
+                    str(position_size) if signal == "BUY" else str(-position_size)
+                ),
                 "price": str(current_price),
                 "type": "EXCHANGE LIMIT",
             }
 
             # Lägg order
-            logger.info(f"🛒 Lägger {signal} order för {symbol}: {position_size} @ ${current_price:,.2f}")
+            logger.info(
+                f"🛒 Lägger {signal} order för {symbol}: {position_size} @ ${current_price:,.2f}"
+            )
             result = await place_order(order_data)
 
             if "error" in result:
-                logger.error(f"❌ Fel vid orderläggning för {symbol}: {result['error']}")
+                logger.error(
+                    f"❌ Fel vid orderläggning för {symbol}: {result['error']}"
+                )
                 try:
                     inc("orders_total")
                     inc("orders_failed_total")
-                    RiskManager().record_error()
+                    unified_risk_service.record_error()
                 except Exception:
                     pass
                 return {
@@ -357,7 +382,7 @@ class TradingIntegrationService:
             logger.info(f"✅ Order lagd för {symbol}: {result}")
             try:
                 inc("orders_total")
-                RiskManager().record_trade()
+                unified_risk_service.record_trade(symbol=symbol)
             except Exception:
                 pass
 
@@ -378,7 +403,9 @@ class TradingIntegrationService:
                 "order": None,
             }
 
-    def _calculate_position_size(self, symbol: str, signal_data: dict[str, Any]) -> float:
+    def _calculate_position_size(
+        self, symbol: str, signal_data: dict[str, Any]
+    ) -> float:
         """
         Beräknar lämplig positionsstorlek baserat på riskhantering.
 
@@ -391,7 +418,9 @@ class TradingIntegrationService:
         """
         try:
             # Hämta max positionsstorlek från riskhantering
-            max_size = signal_data.get("max_position_size", self.risk_limits["max_position_size"])
+            max_size = signal_data.get(
+                "max_position_size", self.risk_limits["max_position_size"]
+            )
 
             # Hämta tillgängligt saldo
             available_balance = 0
@@ -403,9 +432,9 @@ class TradingIntegrationService:
                         available_balance = self.wallet_info["exchange"]["BTC"].balance
                 # För andra symboler, använd USD
                 elif "USD" in self.wallet_info["exchange"]:
-                    available_balance = self.wallet_info["exchange"]["USD"].balance / signal_data.get(
-                        "current_price", 50000
-                    )
+                    available_balance = self.wallet_info["exchange"][
+                        "USD"
+                    ].balance / signal_data.get("current_price", 50000)
 
             # Begränsa positionsstorlek baserat på tillgängligt saldo
             # Använd max 20% av tillgängligt saldo
@@ -426,7 +455,9 @@ class TradingIntegrationService:
             logger.error(f"❌ Fel vid beräkning av positionsstorlek för {symbol}: {e}")
             return 0.001  # Minimal positionsstorlek som fallback
 
-    async def start_automated_trading(self, symbol: str, callback: Callable | None = None):
+    async def start_automated_trading(
+        self, symbol: str, callback: Callable | None = None
+    ):
         """
         Startar automatiserad trading för en symbol.
 
@@ -444,7 +475,9 @@ class TradingIntegrationService:
                 self.signal_callbacks[symbol] = callback
 
             # Starta realtidsövervakning med vår egen callback
-            await realtime_strategy.start_monitoring(symbol, self._handle_realtime_signal)
+            await realtime_strategy.start_monitoring(
+                symbol, self._handle_realtime_signal
+            )
 
             self.active_symbols.add(symbol)
 
@@ -504,7 +537,9 @@ class TradingIntegrationService:
             self.strategy_results[symbol] = result
 
             # Logga signal
-            logger.info(f"🎯 {symbol}: {signal} @ ${result.get('current_price', 0):,.2f} - {result.get('reason', '')}")
+            logger.info(
+                f"🎯 {symbol}: {signal} @ ${result.get('current_price', 0):,.2f} - {result.get('reason', '')}"
+            )
 
             # Utför tradingsignal om det är BUY eller SELL
             if signal in ["BUY", "SELL"] and result.get("can_trade", False):
@@ -549,18 +584,32 @@ class TradingIntegrationService:
             # Sammanställ information
             summary = {
                 "total_balance_usd": self.wallet_info.get("total_usd", 0),
-                "margin_balance": (self.margin_info["info"].margin_balance if self.margin_info else 0),
-                "unrealized_pl": (self.margin_info["info"].unrealized_pl if self.margin_info else 0),
+                "margin_balance": (
+                    self.margin_info["info"].margin_balance if self.margin_info else 0
+                ),
+                "unrealized_pl": (
+                    self.margin_info["info"].unrealized_pl if self.margin_info else 0
+                ),
                 "leverage": self.margin_info["leverage"] if self.margin_info else 1.0,
-                "margin_level": (self.margin_info["status"]["margin_level"] if self.margin_info else 0),
-                "margin_status": (self.margin_info["status"]["status"] if self.margin_info else "unknown"),
+                "margin_level": (
+                    self.margin_info["status"]["margin_level"]
+                    if self.margin_info
+                    else 0
+                ),
+                "margin_status": (
+                    self.margin_info["status"]["status"]
+                    if self.margin_info
+                    else "unknown"
+                ),
                 "open_positions": len(self.position_info),
                 "total_position_value": total_position_value,
                 "active_symbols": list(self.active_symbols),
                 "timestamp": datetime.now().isoformat(),
             }
 
-            logger.info(f"✅ Kontosammanfattning skapad: ${summary['total_balance_usd']:,.2f}")
+            logger.info(
+                f"✅ Kontosammanfattning skapad: ${summary['total_balance_usd']:,.2f}"
+            )
 
             return summary
 

@@ -8,7 +8,9 @@ from typing import Any, Dict, List, Optional
 from bs4 import BeautifulSoup
 
 # Konfigurera loggning
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 
@@ -81,7 +83,9 @@ class BitfinexHtmlParser:
         sections = []
 
         # Hitta alla sektioner
-        for section in soup.find_all(["section", "div"], class_=["section", "endpoint", "method"]):
+        for section in soup.find_all(
+            ["section", "div"], class_=["section", "endpoint", "method"]
+        ):
             section_info = self._parse_section(section)
             if section_info:
                 sections.append(section_info)
@@ -119,14 +123,18 @@ class BitfinexHtmlParser:
         endpoints = []
 
         # Hitta alla endpoint-element
-        for endpoint in section.find_all(["div", "section"], class_=["endpoint", "method"]):
+        for endpoint in section.find_all(
+            ["div", "section"], class_=["endpoint", "method"]
+        ):
             try:
                 # Hitta metod och sökväg
                 method = None
                 path = None
 
                 # Sök i olika format
-                method_elem = endpoint.find(["span", "code"], class_=["method", "http-method"])
+                method_elem = endpoint.find(
+                    ["span", "code"], class_=["method", "http-method"]
+                )
                 if method_elem:
                     method = method_elem.text.strip().upper()
                 else:
@@ -138,7 +146,9 @@ class BitfinexHtmlParser:
                             method = m
                             break
 
-                path_elem = endpoint.find(["span", "code"], class_=["path", "endpoint", "url"])
+                path_elem = endpoint.find(
+                    ["span", "code"], class_=["path", "endpoint", "url"]
+                )
                 if path_elem:
                     path = path_elem.text.strip()
                 else:
@@ -182,12 +192,16 @@ class BitfinexHtmlParser:
         parameters = []
 
         # Hitta parametertabell eller lista
-        param_section = element.find(["table", "div", "ul"], class_=["parameters", "params", "arguments"])
+        param_section = element.find(
+            ["table", "div", "ul"], class_=["parameters", "params", "arguments"]
+        )
         if not param_section:
             return parameters
 
         # Hitta alla parametrar
-        for param in param_section.find_all(["tr", "li", "div"], class_=["parameter", "argument"]):
+        for param in param_section.find_all(
+            ["tr", "li", "div"], class_=["parameter", "argument"]
+        ):
             try:
                 param_info = {
                     "name": "",
@@ -198,26 +212,36 @@ class BitfinexHtmlParser:
                 }
 
                 # Hitta namn
-                name_elem = param.find(["td", "span", "code"], class_=["name", "param-name"])
+                name_elem = param.find(
+                    ["td", "span", "code"], class_=["name", "param-name"]
+                )
                 if name_elem:
                     param_info["name"] = name_elem.text.strip()
 
                 # Hitta typ
-                type_elem = param.find(["td", "span", "code"], class_=["type", "param-type"])
+                type_elem = param.find(
+                    ["td", "span", "code"], class_=["type", "param-type"]
+                )
                 if type_elem:
                     param_info["type"] = type_elem.text.strip()
 
                 # Kontrollera om obligatorisk
                 required_text = param.get_text().lower()
-                param_info["required"] = "required" in required_text and "optional" not in required_text
+                param_info["required"] = (
+                    "required" in required_text and "optional" not in required_text
+                )
 
                 # Hitta beskrivning
-                desc_elem = param.find(["td", "span", "p"], class_=["description", "param-desc"])
+                desc_elem = param.find(
+                    ["td", "span", "p"], class_=["description", "param-desc"]
+                )
                 if desc_elem:
                     param_info["description"] = desc_elem.text.strip()
 
                 # Hitta standardvärde
-                default_elem = param.find(["td", "span", "code"], class_=["default", "param-default"])
+                default_elem = param.find(
+                    ["td", "span", "code"], class_=["default", "param-default"]
+                )
                 if default_elem:
                     param_info["default"] = default_elem.text.strip()
 
@@ -235,23 +259,31 @@ class BitfinexHtmlParser:
         response = {"type": "", "description": "", "schema": {}, "examples": []}
 
         # Hitta svarssektion
-        response_section = element.find(["div", "section"], class_=["response", "returns", "result"])
+        response_section = element.find(
+            ["div", "section"], class_=["response", "returns", "result"]
+        )
         if not response_section:
             return response
 
         try:
             # Hitta typ
-            type_elem = response_section.find(["span", "code"], class_=["type", "response-type"])
+            type_elem = response_section.find(
+                ["span", "code"], class_=["type", "response-type"]
+            )
             if type_elem:
                 response["type"] = type_elem.text.strip()
 
             # Hitta beskrivning
-            desc_elem = response_section.find(["p", "div"], class_=["description", "response-desc"])
+            desc_elem = response_section.find(
+                ["p", "div"], class_=["description", "response-desc"]
+            )
             if desc_elem:
                 response["description"] = desc_elem.text.strip()
 
             # Hitta schema
-            schema_elem = response_section.find(["pre", "code"], class_=["schema", "json-schema"])
+            schema_elem = response_section.find(
+                ["pre", "code"], class_=["schema", "json-schema"]
+            )
             if schema_elem:
                 try:
                     schema_text = schema_elem.text.strip()
@@ -261,7 +293,9 @@ class BitfinexHtmlParser:
                     pass
 
             # Hitta exempel
-            for example in response_section.find_all(["pre", "code"], class_=["example", "json-example"]):
+            for example in response_section.find_all(
+                ["pre", "code"], class_=["example", "json-example"]
+            ):
                 try:
                     example_text = example.text.strip()
                     if example_text:
@@ -279,7 +313,9 @@ class BitfinexHtmlParser:
         examples = []
 
         # Hitta alla exempel
-        for example in element.find_all(["div", "section"], class_=["example", "sample"]):
+        for example in element.find_all(
+            ["div", "section"], class_=["example", "sample"]
+        ):
             try:
                 example_info = {
                     "title": self._extract_title(example),

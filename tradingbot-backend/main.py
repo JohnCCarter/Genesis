@@ -24,9 +24,23 @@ from fastapi.openapi.docs import (
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from config.settings import Settings
+# Initialize logger early to catch startup errors
 from utils.logger import get_logger
-from ws.manager import socket_app
+
+logger = get_logger(__name__)
+
+try:
+    from config.settings import settings
+except Exception as e:
+    logger.error(f"❌ Critical startup error - cannot import Settings: {e}")
+    logger.error("This error will also appear in uvicorn.out.txt")
+    raise
+
+try:
+    from ws.manager import socket_app
+except Exception as e:
+    logger.error(f"❌ Critical startup error - cannot import socket_app: {e}")
+    raise
 
 try:
     # MCP routes removed - MCP functionality disabled
@@ -35,18 +49,21 @@ try:
 except Exception:
     mcp_router = None  # type: ignore
 
-from rest.routes import router as rest_router
-from services.bitfinex_websocket import bitfinex_ws
-from services.metrics import observe_latency, render_prometheus_text
-from services.metrics import get_metrics_summary
-from services.runtime_mode import get_validation_on_start, get_ws_connect_on_start
-from services.signal_service import signal_service
-from services.trading_service import trading_service
+try:
+    from rest.routes import router as rest_router
+    from rest.debug_routes import router as debug_router
+    from services.bitfinex_websocket import bitfinex_ws
+    from services.metrics_client import get_metrics_client
+    from services.metrics import get_metrics_summary
+    from utils.feature_flags import is_ws_connect_on_start
+    from services.signal_service import signal_service
+    from services.trading_service import trading_service
+except Exception as e:
+    logger.error(f"❌ Critical startup error - cannot import core modules: {e}")
+    raise
 
 # Kommenterar ut för att undvika cirkulära imports
 # from tests.test_backend_order import test_backend_limit_order
-
-logger = get_logger(__name__)
 
 # Windows event loop policy: avoid Proactor issues with websockets
 try:
@@ -55,15 +72,16 @@ try:
 except Exception:
     pass
 
-# Read env toggle for WS_CONNECT_ON_START into runtime flags
+# Asyncio debug support
 try:
-    from services.runtime_mode import set_ws_connect_on_start as _set_ws_connect
+    if getattr(settings, "DEBUG_ASYNC", False):
+        _asyncio.get_event_loop().set_debug(True)
+        _asyncio.get_event_loop().slow_callback_duration = 0.05  # Log callbacks > 50ms
+        logger.info("🔍 Asyncio debug aktiverat")
+except Exception as e:
+    logger.warning(f"⚠️ Could not configure asyncio debug: {e}")
 
-    _env_ws = os.environ.get("WS_CONNECT_ON_START")
-    if _env_ws is not None:
-        _set_ws_connect(str(_env_ws).strip().lower() not in ("0", "false", "no"))
-except Exception:
-    pass
+# WS_CONNECT_ON_START hanteras via FeatureFlagsService; env fallback sker i utils/feature_flags
 
 
 @asynccontextmanager
@@ -74,14 +92,16 @@ async def lifespan(app: FastAPI):
 
     # Starta Bitfinex WebSocket-anslutning endast om flagga är på
     try:
-        if bool(get_ws_connect_on_start()):
+        if bool(is_ws_connect_on_start()):
             import time as _t
 
             _t0 = _t.perf_counter()
             try:
                 await _asyncio.wait_for(bitfinex_ws.connect(), timeout=5.0)
                 _t1 = _t.perf_counter()
-                logger.info("✅ WebSocket-anslutning etablerad (%.0f ms)", (_t1 - _t0) * 1000)
+                logger.info(
+                    "✅ WebSocket-anslutning etablerad (%.0f ms)", (_t1 - _t0) * 1000
+                )
 
                 # Koppla WebSocket service till enhetliga services
                 signal_service.set_websocket_service(bitfinex_ws)
@@ -91,11 +111,15 @@ async def lifespan(app: FastAPI):
                 # WS‑auth direkt om nycklar finns så att privata flöden fungerar
                 try:
                     _ta = _t.perf_counter()
-                    await _asyncio.wait_for(bitfinex_ws.ensure_authenticated(), timeout=3.0)
+                    await _asyncio.wait_for(
+                        bitfinex_ws.ensure_authenticated(), timeout=3.0
+                    )
                     _tb = _t.perf_counter()
                     logger.info("🔐 WS‑auth klar (%.0f ms)", (_tb - _ta) * 1000)
                 except TimeoutError:
-                    logger.warning("⚠️ WS‑auth timeout – fortsätter utan auth vid startup")
+                    logger.warning(
+                        "⚠️ WS‑auth timeout – fortsätter utan auth vid startup"
+                    )
                 except Exception as e:
                     logger.warning(f"⚠️ WS‑auth misslyckades: {e}")
             except TimeoutError:
@@ -103,12 +127,48 @@ async def lifespan(app: FastAPI):
             except Exception as e:
                 logger.warning(f"⚠️ WebSocket-anslutning misslyckades: {e}")
         else:
-            logger.info("WS‑connect vid start är AV. Kan startas via WS‑test sidan eller API.")
+            logger.info(
+                "WS‑connect vid start är AV. Kan startas via WS‑test sidan eller API."
+            )
     except Exception as e:
         logger.warning(f"⚠️ WebSocket-anslutning block misslyckades: {e}")
 
-    # Scheduler avstängd för att undvika rate limiting och event loop problem
-    logger.info("🚫 Scheduler avstängd för att undvika rate limiting")
+    # Aktivera komponenter baserat på miljövariabler
+    try:
+        from config.startup_config import (
+            enable_components_on_startup,
+            log_startup_status,
+        )
+
+        enable_components_on_startup()
+        log_startup_status()
+    except Exception as e:
+        logger.warning(f"⚠️ Kunde inte aktivera komponenter vid startup: {e}")
+
+    # Starta scheduler om aktiverat
+    try:
+        from services.scheduler import scheduler
+        from utils.feature_flags import is_scheduler_enabled
+
+        if is_scheduler_enabled():
+            scheduler.start()
+            logger.info("🗓️ Scheduler startad")
+        else:
+            logger.info(
+                "🚫 Scheduler inaktiverat (aktivera med ENABLE_SCHEDULER=true eller DEV_MODE=true)"
+            )
+    except Exception as e:
+        logger.warning(f"⚠️ Kunde inte starta scheduler: {e}")
+
+    # Starta circuit breaker recovery service
+    try:
+        from services.circuit_breaker_recovery import get_circuit_breaker_recovery
+
+        recovery_service = get_circuit_breaker_recovery()
+        await recovery_service.start()
+        logger.info("🔄 Circuit breaker recovery service startad")
+    except Exception as e:
+        logger.warning(f"⚠️ Kunde inte starta circuit breaker recovery: {e}")
 
     yield
 
@@ -131,11 +191,32 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"⚠️ Fel vid stopp av scheduler: {e}")
 
+    # Stoppa circuit breaker recovery service
+    try:
+        from services.circuit_breaker_recovery import get_circuit_breaker_recovery
+
+        recovery_service = get_circuit_breaker_recovery()
+        await recovery_service.stop()
+        logger.info("✅ Circuit breaker recovery service stoppad")
+    except Exception as e:
+        logger.warning(f"⚠️ Fel vid stopp av circuit breaker recovery: {e}")
+
+    # Stäng delade HTTP-klienter via helper (per event loop)
+    try:
+        from services.http import close_http_clients
+
+        await close_http_clients()
+        logger.info("✅ Delade async HTTP‑klienter stängda")
+    except Exception as e:
+        logger.warning(f"⚠️ Fel vid stängning av HTTP‑klienter: {e}")
+
     # Rensa alla aktiva tasks
     try:
         import asyncio
 
-        all_tasks = [task for task in asyncio.all_tasks() if task is not asyncio.current_task()]
+        all_tasks = [
+            task for task in asyncio.all_tasks() if task is not asyncio.current_task()
+        ]
         if all_tasks:
             logger.info(f"🔄 Avbryter {len(all_tasks)} aktiva tasks...")
             for task in all_tasks:
@@ -143,22 +224,30 @@ async def lifespan(app: FastAPI):
 
             # Vänta på att tasks avslutas (max 3 sekunder)
             try:
-                await asyncio.wait_for(asyncio.gather(*all_tasks, return_exceptions=True), timeout=3.0)
+                await asyncio.wait_for(
+                    asyncio.gather(*all_tasks, return_exceptions=True), timeout=3.0
+                )
                 logger.info("✅ Alla tasks avbrutna")
             except TimeoutError:
-                logger.warning("⚠️ Timeout vid avbrytning av tasks - fortsätter shutdown")
+                logger.warning(
+                    "⚠️ Timeout vid avbrytning av tasks - fortsätter shutdown"
+                )
     except Exception as e:
         logger.warning(f"⚠️ Fel vid task cleanup: {e}")
 
-    # Stäng HTTP-klienter
+    # Stäng HTTP-klienter via facade (respektera WS-first design)
     try:
-        from services.bitfinex_data import BitfinexDataService
+        from services.market_data_facade import get_market_data
 
-        if hasattr(BitfinexDataService, "_client") and BitfinexDataService._client:
-            await BitfinexDataService._client.aclose()
-            logger.info("✅ HTTP-klient stängd")
+        facade = get_market_data()
+        # Om underliggande REST-klient existerar, stäng den säkert
+        rest = getattr(facade.ws_first, "rest_service", None)
+        client = getattr(rest, "_client", None)
+        if client is not None:
+            await client.aclose()
+            logger.info("✅ HTTP-klient stängd (via MarketDataFacade)")
     except Exception as e:
-        logger.warning(f"⚠️ Fel vid stängning av HTTP-klient: {e}")
+        logger.warning(f"⚠️ Fel vid stängning av HTTP-klient (via facade): {e}")
 
     logger.info("✅ Shutdown komplett")
 
@@ -167,7 +256,11 @@ async def lifespan(app: FastAPI):
 
 
 # Skapa FastAPI-applikation – loggning före app-instans för tydlighet
-settings = Settings()
+try:
+    pass
+except Exception as e:
+    logger.error(f"❌ Critical startup error - cannot create Settings instance: {e}")
+    raise
 
 logger.info("🔑 Kontroll vid startup:")
 logger.info(
@@ -188,9 +281,31 @@ app = FastAPI(
 
 
 # CORS middleware
+try:
+    import json as _json
+
+    _raw_origins = getattr(settings, "ALLOWED_ORIGINS", "[]")
+    if isinstance(_raw_origins, str):
+        try:
+            _origins = _json.loads(_raw_origins)
+        except Exception:
+            _origins = [_raw_origins]
+    else:
+        _origins = list(_raw_origins) if _raw_origins else []
+    if not _origins:
+        _origins = [
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+        ]
+except Exception:
+    _origins = [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # I produktion, specificera dina domäner
+    allow_origins=_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -198,6 +313,53 @@ app.add_middleware(
 
 # Mitigera DoS-relaterade risker i multipart/stora svar
 app.add_middleware(GZipMiddleware, minimum_size=1024)
+
+
+# HTTP-protokollfelhantering middleware
+@app.middleware("http")
+async def http_protocol_error_handler(request: Request, call_next):
+    """Hantera HTTP-protokollfel och connection errors gracefully."""
+    try:
+        response = await call_next(request)
+        return response
+    except Exception as e:
+        # Logga HTTP-protokollfel utan att krascha applikationen
+        error_msg = str(e)
+        if "ConnectionClosed" in error_msg or "LocalProtocolError" in error_msg:
+            logger.warning(f"⚠️ HTTP-protokollfel hanterat: {error_msg}")
+            return Response(
+                status_code=499, content="Connection closed by client"
+            )  # Client Closed Request
+        elif "timeout" in error_msg.lower():
+            logger.warning(f"⚠️ HTTP-timeout hanterat: {error_msg}")
+            return Response(
+                status_code=504, content="Request timeout"
+            )  # Gateway Timeout
+        else:
+            # Logga andra fel men låt dem propagera
+            logger.error(f"❌ Ohanterat HTTP-fel: {error_msg}")
+            raise
+
+
+# Förbättrad uvicorn-konfiguration för att minska HTTP-protokollfel
+@app.on_event("startup")
+async def startup_event():
+    """Startup event för att konfigurera servern."""
+    try:
+        host = getattr(settings, "HOST", "127.0.0.1")
+        port = getattr(settings, "PORT", 8000)
+    except Exception:
+        host = "127.0.0.1"
+        port = 8000
+    logger.info("🚀 Genesis Trading Bot Backend startar...")
+    logger.info(f"📡 Server körs på http://{host}:{port}")
+    logger.info("🔧 HTTP-protokollfelhantering aktiverad")
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Shutdown event för att stänga servern gracefully."""
+    logger.info("🛑 Genesis Trading Bot Backend stänger...")
 
 
 # Enkel RequestGuard: blockera multipart och cap Content-Length
@@ -224,6 +386,7 @@ async def request_guard(request: Request, call_next):
 
 # Inkludera REST endpoints
 app.include_router(rest_router)
+app.include_router(debug_router)
 
 # MCP kan stängas av via settings
 try:
@@ -242,7 +405,9 @@ try:
 
     _FASTAPI_STATIC = _os.path.join(_os.path.dirname(_fastapi.__file__), "static")
     # Montera under egen path för att inte krocka
-    app.mount("/_docs_static", StaticFiles(directory=_FASTAPI_STATIC), name="_docs_static")
+    app.mount(
+        "/_docs_static", StaticFiles(directory=_FASTAPI_STATIC), name="_docs_static"
+    )
 
     @app.get("/docs", include_in_schema=False)
     async def custom_swagger_ui_html():
@@ -343,7 +508,9 @@ async def metrics(request: Request) -> Response:
     basic_pass = _os.getenv("METRICS_BASIC_AUTH_PASS")
     access_token = _os.getenv("METRICS_ACCESS_TOKEN")
 
-    restrictions_configured = bool(ip_allowlist_raw or (basic_user and basic_pass) or access_token)
+    restrictions_configured = bool(
+        ip_allowlist_raw or (basic_user and basic_pass) or access_token
+    )
 
     if restrictions_configured:
         client_ip = None
@@ -356,7 +523,9 @@ async def metrics(request: Request) -> Response:
 
         # 1) IP allowlist
         if ip_allowlist_raw and client_ip:
-            allowed_ips = {ip.strip() for ip in ip_allowlist_raw.split(",") if ip.strip()}
+            allowed_ips = {
+                ip.strip() for ip in ip_allowlist_raw.split(",") if ip.strip()
+            }
             if client_ip in allowed_ips:
                 allowed = True
 
@@ -395,9 +564,9 @@ async def metrics(request: Request) -> Response:
                 try:
                     decoded = base64.b64decode(b64).decode("utf-8")
                     username, password = decoded.split(":", 1)
-                    if hmac.compare_digest(username, str(basic_user)) and hmac.compare_digest(
-                        password, str(basic_pass)
-                    ):
+                    if hmac.compare_digest(
+                        username, str(basic_user)
+                    ) and hmac.compare_digest(password, str(basic_pass)):
                         allowed = True
                 except Exception:
                     pass
@@ -419,7 +588,7 @@ async def metrics(request: Request) -> Response:
     except Exception:
         pass
 
-    txt = render_prometheus_text()
+    txt = get_metrics_client().render_prometheus_text()
     return Response(
         content=txt,
         media_type="text/plain; version=0.0.4",
@@ -460,10 +629,10 @@ async def latency_middleware(request: Request, call_next):
                 getattr(response, "status_code", 0),
             )
 
-        # Logga mycket långsamma requests (>2000ms)
+        # Logga mycket långsamma requests (>2000ms) som potentiella hängningar
         if duration_ms > 2000:
             logger.error(
-                "🚨 Mycket långsam request: %s %s - %dms (status: %d)",
+                "🚨 POTENTIELL HÄNGNING: %s %s - %dms (status: %d)",
                 request.method,
                 request.url.path,
                 duration_ms,
@@ -482,7 +651,10 @@ async def latency_middleware(request: Request, call_next):
             route = request.scope.get("route")
             if route is not None:
                 path_template = getattr(route, "path", path_template)
-            observe_latency(
+            # AI Change: use MetricsClient.observe_latency (Agent: Codex, Date: 2025-09-11)
+            from services.metrics_client import get_metrics_client
+
+            get_metrics_client().observe_latency(
                 path=path_template or request.url.path,
                 method=request.method,
                 status_code=getattr(response, "status_code", 0),
@@ -518,8 +690,6 @@ if __name__ == "__main__":
     import signal
     import sys
 
-    from config.settings import Settings as _S
-
     def signal_handler(signum, _frame):
         """Hantera shutdown-signaler."""
         logger.info(f"📡 Mottog signal {signum}, startar shutdown...")
@@ -536,11 +706,21 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal_handler)  # Ctrl+C
     signal.signal(signal.SIGTERM, signal_handler)  # Terminate
 
-    _s = _S()
-    uvicorn.run(
-        "main:app",
-        host=_s.HOST,
-        port=_s.PORT,
-        reload=True,
-        log_level="info",
-    )
+    try:
+        uvicorn.run(
+            "main:app",
+            host=settings.HOST,
+            port=settings.PORT,
+            reload=True,
+            log_level="info",
+            timeout_keep_alive=15,  # 15s keep-alive timeout (minskat från 30s)
+            timeout_graceful_shutdown=5,  # 5s graceful shutdown (minskat från 10s)
+            limit_max_requests=500,  # Begränsa antal requests per worker (minskat från 1000)
+            limit_concurrency=100,  # Begränsa samtidiga anslutningar
+            backlog=50,  # Begränsa backlog för nya anslutningar
+        )
+    except Exception as e:
+        logger.error(
+            f"❌ Kritiskt startfel - kan inte starta uvicorn: {e}", exc_info=True
+        )
+        raise

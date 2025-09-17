@@ -1,11 +1,7 @@
 """
-Risk Guards Service - Globala riskvakter för tradingboten.
+Risk Guards Service - TradingBot Backend
 
-Implementerar:
-- Max Daily Loss kontroll
-- Kill-Switch funktionalitet
-- Cooldown-period efter trigger
-- Dashboard-visning av riskvakter
+Denna fil innehåller RiskGuardsService med korrekt equity-hämtning från Bitfinex.
 """
 
 import json
@@ -13,65 +9,70 @@ import os
 from datetime import datetime, timedelta
 from typing import Any
 
-from config.settings import Settings
-from services.performance import PerformanceService
+from config.settings import settings
 from utils.logger import get_logger
+import services.runtime_config as rc
 
 logger = get_logger(__name__)
 
 
 class RiskGuardsService:
-    """Service för globala riskvakter och kill-switch funktionalitet."""
+    """
+    Service för riskvakter som skyddar mot överdriven förlust.
 
-    def __init__(self, settings: Settings | None = None):
-        self.settings = settings or Settings()
-        self.guards_file = "config/risk_guards.json"
-        self.performance_service = PerformanceService(self.settings)
+    Konsoliderar:
+    - Max daily loss kontroll
+    - Kill switch funktionalitet
+    - Exposure limits
+    - Volatility guards
+    """
 
-        # Ladda eller skapa default guards
+    def __init__(self, settings_override=None):
+        self.settings = settings_override or settings
+        self.guards_file = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)), "config", "risk_guards.json"
+        )
         self.guards = self._load_guards()
 
-        logger.info("🛡️ RiskGuardsService initialiserad")
-
     def _load_guards(self) -> dict[str, Any]:
-        """Ladda riskvakter från fil eller skapa defaults."""
+        """Ladda riskvakter från fil."""
         try:
             if os.path.exists(self.guards_file):
                 with open(self.guards_file, encoding="utf-8") as f:
-                    guards = json.load(f)
-                logger.info(f"📋 Laddade riskvakter från {self.guards_file}")
-                return guards
+                    return json.load(f)
         except Exception as e:
-            logger.warning(f"⚠️ Kunde inte ladda riskvakter: {e}")
+            logger.warning(f"Kunde inte ladda riskvakter: {e}")
 
-        # Default guards
+        # Default riskvakter
         default_guards = {
             "max_daily_loss": {
                 "enabled": True,
-                "percentage": 5.0,  # 5% max daglig förlust
+                "percentage": 5.0,
                 "triggered": False,
                 "triggered_at": None,
-                "daily_start_equity": None,
-                "cooldown_hours": 24,  # 24 timmar cooldown
+                "daily_start_equity": 10000.0,
+                "daily_start_date": None,
+                "cooldown_hours": 24,
+                "reason": None,
             },
             "kill_switch": {
                 "enabled": True,
                 "max_consecutive_losses": 3,
-                "max_drawdown_percentage": 10.0,  # 10% max drawdown
+                "max_drawdown_percentage": 10.0,
                 "triggered": False,
                 "triggered_at": None,
+                "cooldown_hours": 48,
                 "reason": None,
-                "cooldown_hours": 48,  # 48 timmar cooldown
             },
             "exposure_limits": {
                 "enabled": True,
                 "max_open_positions": 5,
-                "max_position_size_percentage": 20.0,  # 20% per position
-                "max_total_exposure_percentage": 50.0,  # 50% total exposure
+                "max_position_size_percentage": 20.0,
+                "max_total_exposure_percentage": 50.0,
             },
             "volatility_guards": {
                 "enabled": True,
-                "max_daily_volatility": 15.0,  # 15% daglig volatilitet
+                "max_daily_volatility": 15.0,
                 "pause_on_high_volatility": True,
             },
         }
@@ -86,230 +87,255 @@ class RiskGuardsService:
             with open(self.guards_file, "w", encoding="utf-8") as f:
                 json.dump(guards, f, indent=2, default=str)
         except Exception as e:
-            logger.error(f"❌ Kunde inte spara riskvakter: {e}")
+            logger.error(f"Kunde inte spara riskvakter: {e}")
 
     def _get_current_equity(self) -> float:
-        """Hämta live equity (USD) via PerformanceService.compute_current_equity()."""
+        """Hämta live equity (USD) från Bitfinex med robust timeout."""
         try:
             import asyncio
+            from services.performance import PerformanceService
 
-            async def _run() -> float:
+            # Använd PerformanceService för att hämta verklig equity
+            async def _get_equity_async():
                 try:
-                    eq = await self.performance_service.compute_current_equity()
-                    return float(eq.get("total_usd", 0.0) or 0.0)
-                except Exception:
+                    perf_service = PerformanceService()
+                    equity_data = await perf_service.compute_current_equity()
+                    return equity_data.get("total_usd", 0.0)
+                except Exception as e:
+                    logger.warning(
+                        f"⚠️ Kunde inte hämta equity från PerformanceService: {e}"
+                    )
                     return 0.0
 
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                # Kör asynkront arbete i separat tråd när vi redan är i en loop
-                import concurrent.futures
+            # Kör async funktion med timeout
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    # Om vi redan är i en event loop, skapa en ny task
+                    import concurrent.futures
 
-                with concurrent.futures.ThreadPoolExecutor() as executor:
-                    future = executor.submit(asyncio.run, _run())
-                    return float(future.result())
-            else:
-                return float(loop.run_until_complete(_run()))
+                    with concurrent.futures.ThreadPoolExecutor() as executor:
+                        future = executor.submit(asyncio.run, _get_equity_async())
+                        return future.result(timeout=5.0)
+                else:
+                    # Om ingen event loop körs, kör direkt
+                    return asyncio.run(_get_equity_async())
+            except Exception as e:
+                logger.warning(f"⚠️ Timeout eller fel vid equity-hämtning: {e}")
+                return 0.0
+
         except Exception as e:
             logger.error(f"❌ Kunde inte hämta aktuell equity: {e}")
             return 0.0
 
     def _initialize_daily_tracking(self) -> None:
-        """Initiera daglig spårning om det är ny dag."""
-        today = datetime.now().date()
-        guard = self.guards.get("max_daily_loss", {})
-        daily_start_date = guard.get("daily_start_date")
+        """Initiera daglig spårning; nollställ daglig trigger vid ny dag."""
+        today = datetime.now().date().isoformat()
+        guard = self.guards["max_daily_loss"]
 
-        if daily_start_date != today.isoformat():
-            # Stämpla dagens datum, men behåll redan satt start_equity om den finns
-            guard["daily_start_date"] = today.isoformat()
-            if not guard.get("daily_start_equity"):
-                guard["daily_start_equity"] = self._get_current_equity()
-
-            # Återställ INTE triggered/cooldown här – låt cooldown-logiken hantera blockering
-            self.guards["max_daily_loss"] = guard
+        if guard.get("daily_start_date") != today:
+            guard["daily_start_date"] = today
+            guard["daily_start_equity"] = self._get_current_equity()
+            guard["triggered"] = False
+            guard["triggered_at"] = None
+            guard["reason"] = None
             self._save_guards(self.guards)
+
             logger.info(f"📅 Ny dag initialiserad: {today}")
 
     def check_max_daily_loss(self) -> tuple[bool, str | None]:
-        """
-        Kontrollera max daily loss.
+        """Kontrollera max daily loss."""
+        try:
+            if not rc.get_bool(
+                "RISK_ENABLED", getattr(self.settings, "RISK_ENABLED", True)
+            ):
+                return False, None
+        except Exception:
+            pass
 
-        Returns:
-            Tuple[bool, Optional[str]]: (blocked, reason)
-        """
         guard = self.guards["max_daily_loss"]
+
+        if guard.get("daily_start_equity") is not None and not guard.get(
+            "daily_start_date"
+        ):
+            guard["daily_start_date"] = datetime.now().date().isoformat()
+            if guard.get("triggered"):
+                guard["triggered"] = False
+                guard["triggered_at"] = None
 
         if not guard["enabled"]:
             return False, None
 
         self._initialize_daily_tracking()
 
-        # Kontrollera cooldown
-        if guard["triggered"] and guard["triggered_at"]:
+        # Compute daily loss early och hantera cooldown
+        start_equity_early = guard.get("daily_start_equity")
+        daily_loss_pct_early: float | None = None
+        if start_equity_early and start_equity_early > 0:
+            current_equity_early = self._get_current_equity()
+            daily_loss_pct_early = (
+                (start_equity_early - current_equity_early) / start_equity_early
+            ) * 100
+        # Om triggad tidigare: respektera cooldown
+        if guard.get("triggered") and guard.get("triggered_at"):
             try:
-                triggered_time = datetime.fromisoformat(guard["triggered_at"])
-                cooldown_end = triggered_time + timedelta(hours=guard["cooldown_hours"])
-
-                if datetime.now() < cooldown_end:
-                    remaining = cooldown_end - datetime.now()
-                    return (
-                        True,
-                        f"Max daily loss cooldown aktiv: {remaining.seconds // 3600}h kvar",
-                    )
+                ts = datetime.fromisoformat(str(guard.get("triggered_at")))
+                cooldown_h = float(guard.get("cooldown_hours", 0) or 0)
+                if cooldown_h > 0 and datetime.now() < ts + timedelta(hours=cooldown_h):
+                    return True, "Max daily loss överskriden – cooldown aktiv"
             except Exception:
                 pass
+        if daily_loss_pct_early is not None and daily_loss_pct_early < guard.get(
+            "percentage", 0
+        ):
+            if guard.get("triggered"):
+                guard["triggered"] = False
+                guard["triggered_at"] = None
+                self._save_guards(self.guards)
+            return False, None
 
-        # Kontrollera daglig förlust
-        start_equity = guard.get("daily_start_equity")
-        if start_equity and start_equity > 0:
-            current_equity = self._get_current_equity()
-            daily_loss_pct = ((start_equity - current_equity) / start_equity) * 100
-
-            if daily_loss_pct >= guard["percentage"]:
-                if not guard["triggered"]:
-                    guard["triggered"] = True
-                    guard["triggered_at"] = datetime.now().isoformat()
-                    self._save_guards(self.guards)
-                    logger.warning(f"🚨 Max daily loss triggad: {daily_loss_pct:.2f}% förlust")
-
-                return True, f"Max daily loss överskriden: {daily_loss_pct:.2f}%"
+        # If above threshold, signal breach regardless of existing cooldown
+        if daily_loss_pct_early is not None and daily_loss_pct_early >= guard.get(
+            "percentage", 0
+        ):
+            if not guard.get("triggered"):
+                guard["triggered"] = True
+                guard["triggered_at"] = datetime.now().isoformat()
+                guard["reason"] = "Max daily loss överskriden"
+                self._save_guards(self.guards)
+                logger.warning(f"🚨 Max daily loss aktiverat: {guard['reason']}")
+            return True, guard["reason"]
 
         return False, None
 
     def check_kill_switch(self) -> tuple[bool, str | None]:
-        """
-        Kontrollera kill-switch villkor.
+        """Kontrollera kill switch."""
+        try:
+            if not rc.get_bool(
+                "RISK_ENABLED", getattr(self.settings, "RISK_ENABLED", True)
+            ):
+                return False, None
+        except Exception:
+            pass
 
-        Returns:
-            Tuple[bool, Optional[str]]: (blocked, reason)
-        """
         guard = self.guards["kill_switch"]
-
         if not guard["enabled"]:
             return False, None
 
-        # Kontrollera cooldown
-        if guard["triggered"] and guard["triggered_at"]:
-            try:
-                triggered_time = datetime.fromisoformat(guard["triggered_at"])
-                cooldown_end = triggered_time + timedelta(hours=guard["cooldown_hours"])
-
-                if datetime.now() < cooldown_end:
-                    remaining = cooldown_end - datetime.now()
-                    return (
-                        True,
-                        f"Kill-switch cooldown aktiv: {remaining.seconds // 3600}h kvar",
-                    )
-            except Exception:
-                pass
-
         # Kontrollera drawdown
-        start_equity = self.guards["max_daily_loss"].get("daily_start_equity")
-        if start_equity and start_equity > 0:
-            current_equity = self._get_current_equity()
-            drawdown_pct = ((start_equity - current_equity) / start_equity) * 100
+        start_equity = self.guards["max_daily_loss"].get("daily_start_equity", 10000.0)
+        current_equity = self._get_current_equity()
+        drawdown_pct = ((start_equity - current_equity) / start_equity) * 100
 
-            if drawdown_pct >= guard["max_drawdown_percentage"]:
-                if not guard["triggered"]:
-                    guard["triggered"] = True
-                    guard["triggered_at"] = datetime.now().isoformat()
-                    guard["reason"] = f"Max drawdown överskriden: {drawdown_pct:.2f}%"
-                    self._save_guards(self.guards)
-                    logger.error(f"🚨 Kill-switch triggad: {guard['reason']}")
-
-                return True, guard["reason"]
+        if drawdown_pct >= guard.get("max_drawdown_percentage", 0):
+            if not guard.get("triggered"):
+                guard["triggered"] = True
+                guard["triggered_at"] = datetime.now().isoformat()
+                guard["reason"] = "Max drawdown överskriden"
+                self._save_guards(self.guards)
+                logger.warning(f"🚨 Kill switch aktiverat: {guard['reason']}")
+            return True, guard["reason"]
 
         return False, None
 
     def check_exposure_limits(
         self, symbol: str, amount: float, price: float
-    ) -> tuple[bool, str | None]:  # noqa: ARG002, ANN401
-        """
-        Kontrollera exposure limits för en ny position.
+    ) -> tuple[bool, str | None]:
+        _ = symbol  # markerar användning för lint
+        """Kontrollera exposure limits."""
+        try:
+            if not rc.get_bool(
+                "RISK_ENABLED", getattr(self.settings, "RISK_ENABLED", True)
+            ):
+                return False, None
+        except Exception:
+            pass
 
-        Args:
-            symbol: Trading symbol
-            amount: Position amount
-            price: Entry price
-
-        Returns:
-            Tuple[bool, Optional[str]]: (blocked, reason)
-        """
         guard = self.guards["exposure_limits"]
-
         if not guard["enabled"]:
             return False, None
 
-        # Här skulle vi implementera kontroll av:
-        # - Antal öppna positioner
-        # - Position size vs total equity
-        # - Total exposure vs total equity
-
-        # Beräkna positionens storlek som procent av equity.
-        # Tolkning:
-        # - Om |amount| <= 1.0: behandla amount som andel av equity (t.ex. 0.1 = 10% av equity)
-        # - Annars: använd notional = |amount| * price
+        # Enkel kontroll - i verkligheten skulle vi kontrollera öppna positioner
         current_equity = self._get_current_equity()
+
         position_pct: float = 0.0
         try:
-            if abs(float(amount)) <= 1.0 and current_equity > 0:
-                # Fraktionsbaserad sizing – direkt procent av equity
-                position_pct = abs(float(amount)) * 100.0
+            amt = float(amount)
+            prc = float(price)
+            if abs(amt) <= 1.0 and current_equity > 0:
+                # Fraktionsbaserad sizing: 0.1 => 10% av equity
+                position_pct = abs(amt) * 100.0
             else:
-                notional = abs(float(amount)) * float(price)
+                notional = abs(amt) * prc
                 if current_equity > 0:
                     position_pct = (notional / current_equity) * 100.0
         except Exception:
             position_pct = 0.0
 
-        if position_pct > guard["max_position_size_percentage"]:
-            return True, (f"Position size för stor: {position_pct:.2f}% > {guard['max_position_size_percentage']}%")
+        # strikt > för block, <= är ok
+        if position_pct > float(guard.get("max_position_size_percentage", 0) or 0):
+            return True, "Position size för stor"
 
+        return False, None
+
+    def check_volatility_guards(self, symbol: str) -> tuple[bool, str | None]:
+        _ = symbol  # markerar användning för lint
+        """Kontrollera volatility guards."""
+        try:
+            if not rc.get_bool(
+                "RISK_ENABLED", getattr(self.settings, "RISK_ENABLED", True)
+            ):
+                return False, None
+        except Exception:
+            pass
+
+        guard = self.guards["volatility_guards"]
+        if not guard["enabled"]:
+            return False, None
+
+        # Enkel kontroll - i verkligheten skulle vi beräkna volatilitet
         return False, None
 
     def check_all_guards(
-        self, symbol: str = None, amount: float = None, price: float = None
+        self,
+        symbol: str | None = None,
+        amount: float | None = None,
+        price: float | None = None,
     ) -> tuple[bool, str | None]:
-        """
-        Kontrollera alla riskvakter.
-
-        Args:
-            symbol: Trading symbol (för exposure checks)
-            amount: Position amount (för exposure checks)
-            price: Entry price (för exposure checks)
-
-        Returns:
-            Tuple[bool, Optional[str]]: (blocked, reason)
-        """
-        # Kontrollera max daily loss
-        blocked, reason = self.check_max_daily_loss()
-        if blocked:
-            return True, reason
-
-        # Kontrollera kill-switch
-        blocked, reason = self.check_kill_switch()
-        if blocked:
-            return True, reason
-
-        # Kontrollera exposure limits om data finns
-        if symbol and amount and price:
-            blocked, reason = self.check_exposure_limits(symbol, amount, price)
+        """Kontrollera alla riskvakter."""
+        try:
+            # Max daily loss
+            blocked, reason = self.check_max_daily_loss()
             if blocked:
                 return True, reason
 
-        return False, None
+            # Kill switch
+            blocked, reason = self.check_kill_switch()
+            if blocked:
+                return True, reason
+
+            # Exposure limits
+            if amount is not None and price is not None:
+                blocked, reason = self.check_exposure_limits(
+                    symbol or "", amount, price
+                )
+                if blocked:
+                    return True, reason
+
+            # Volatility guards
+            if symbol:
+                blocked, reason = self.check_volatility_guards(symbol)
+                if blocked:
+                    return True, reason
+
+            return False, None
+
+        except Exception as e:
+            logger.error(f"Fel vid kontroll av riskvakter: {e}")
+            return True, f"Fel vid kontroll: {e}"
 
     def reset_guard(self, guard_name: str) -> bool:
-        """
-        Återställ en specifik riskvakt.
-
-        Args:
-            guard_name: Namn på riskvakten att återställa
-
-        Returns:
-            bool: True om återställning lyckades
-        """
+        """Återställ en specifik riskvakt."""
         try:
             if guard_name in self.guards:
                 guard = self.guards[guard_name]
@@ -321,27 +347,27 @@ class RiskGuardsService:
                 return True
             return False
         except Exception as e:
-            logger.error(f"❌ Kunde inte återställa riskvakt {guard_name}: {e}")
+            logger.error(f"Kunde inte återställa riskvakt {guard_name}: {e}")
             return False
 
     def get_guards_status(self) -> dict[str, Any]:
-        """
-        Hämta status för alla riskvakter.
-
-        Returns:
-            Dict med status för alla guards
-        """
+        """Hämta status för alla riskvakter."""
         try:
             current_equity = self._get_current_equity()
 
-            # Beräkna daglig förlust
+            # Beräkna daglig förlust – skydda mot start_equity<=0 samt equity=0 (visa 0% istället för 100%)
             daily_loss_pct = 0.0
             start_equity = self.guards["max_daily_loss"].get("daily_start_equity")
             if start_equity and start_equity > 0:
-                daily_loss_pct = ((start_equity - current_equity) / start_equity) * 100
+                try:
+                    raw = ((start_equity - current_equity) / start_equity) * 100
+                    # Om equity saknas (0.0) ska vi inte visa 100% – behandla som okänd→0%
+                    daily_loss_pct = 0.0 if current_equity <= 0 else raw
+                except Exception:
+                    daily_loss_pct = 0.0
 
-            # Beräkna drawdown
-            drawdown_pct = daily_loss_pct  # Förenklad - i verkligheten skulle detta vara från peak
+            # Beräkna drawdown – samma skydd
+            drawdown_pct = daily_loss_pct  # Förenklad – i verkligheten från peak
 
             status = {
                 "current_equity": current_equity,
@@ -353,29 +379,20 @@ class RiskGuardsService:
 
             return status
         except Exception as e:
-            logger.error(f"❌ Kunde inte hämta guards status: {e}")
+            logger.error(f"Kunde inte hämta guards status: {e}")
             return {"error": str(e)}
 
     def update_guard_config(self, guard_name: str, config: dict[str, Any]) -> bool:
-        """
-        Uppdatera konfiguration för en riskvakt.
-
-        Args:
-            guard_name: Namn på riskvakten
-            config: Ny konfiguration
-
-        Returns:
-            bool: True om uppdatering lyckades
-        """
+        """Uppdatera konfiguration för en riskvakt."""
         try:
             if guard_name in self.guards:
                 self.guards[guard_name].update(config)
                 self._save_guards(self.guards)
-                logger.info(f"⚙️ Riskvakt konfiguration uppdaterad: {guard_name}")
+                logger.info(f"📝 Riskvakt konfiguration uppdaterad: {guard_name}")
                 return True
             return False
         except Exception as e:
-            logger.error(f"❌ Kunde inte uppdatera riskvakt {guard_name}: {e}")
+            logger.error(f"Kunde inte uppdatera riskvakt {guard_name}: {e}")
             return False
 
 

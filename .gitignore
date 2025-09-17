@@ -286,17 +286,13 @@ Thumbs.db
 # Log files (additional patterns)
 logs/
 *.log.*
-tradingbot.log
+tradingbot.log # kommentera ut om du vill se loggarna
 
 # OpenAI Batch local artifacts (removed)
 
-# CodeQL Security Analysis artifacts
-genesis-python-*/
-genesis-python-new*/
+# CodeQL Security Analysis artifacts (handled by GitHub)
 *.sarif
 *.csv
-Genesis-CodeQL.code-workspace
-codeql-custom-queries-python/
 
 # Supabase/Edge Functions local artifacts
 supabase/.temp/
@@ -312,3 +308,17 @@ scripts/**/.venv/
 # SQLite backups
 tradingbot-backend/config/*.sqlite3.backup*
 audit-backend.json
+
+# AI agent locks (do not commit)
+.agent-locks/
+.agent-communication/
+
+# AI agent communication (do not commit)
+.agent-communication/
+
+# Tillåt specifika filer
+!.agent-communication/contracts.json
+!.agent-communication/messages.json
+!.agent-communication/notifications.json
+!.agent-communication/status.json
+!.agent-communication/contracts.view.txt

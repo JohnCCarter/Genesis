@@ -1,0 +1,397 @@
+﻿C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\config\settings.py:86:     # Risk- och handelsregler
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\active_orders.py:36:             # Safeguard: om API‑nycklar saknas, returnera tom lista i stället för att krascha UI
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\debug_routes.py:144: @router.get("/api/v2/debug/risk_guards")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\debug_routes.py:145: async def dump_risk_guards() -> dict[str, Any]:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\debug_routes.py:146:     """Dump risk guards status."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\debug_routes.py:148:         from services.risk_guards import risk_guards
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\debug_routes.py:150:         status = risk_guards.get_guards_status()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\debug_routes.py:153:         logger.error(f"Fel vid risk guards dump: {e}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\positions.py:89:             # Safeguard: saknade nycklar → tom lista istället för 500
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:201:         # 2) positionsstorlek (återanvänd /risk/position-size i miniform)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:305:         # Tidig guardrail: respektera riskregler innan vi gör preview
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:307:             risk = RiskManager()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:308:             ok, reason = risk.pre_trade_checks(symbol=req.symbol)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:359:         # Guardrails: margin tradable > 0
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:563:             # Använd RiskPolicyEngine (som inkluderar TradeConstraintsService)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:573:             risk = RiskManager()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:737:             risk.record_trade(symbol=order.symbol)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:1673: @router.post("/risk/position-size")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:2866:         risk = RiskManager()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:2867:         ok, reason = risk.pre_trade_checks(symbol=req.symbol)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:2999: # Risk windows GET + pause/resume
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3000: @router.get("/risk/windows")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3016: @router.post("/risk/pause")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3028: @router.post("/risk/resume")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3141: # Risk endpoints
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3146: @router.get("/risk/status")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3207: @router.post("/risk/max-trades")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3228: @router.post("/risk/max-trades-symbol")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3241: @router.get("/risk/trade-counter")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3259: @router.get("/risk/circuit")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3269: @router.post("/risk/circuit/reset")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3279: @router.post("/risk/circuit/config")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3294: # Risk Guards endpoints
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3295: class RiskGuardResetRequest(BaseModel):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3296:     guard_name: str
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3299: @router.get("/risk/guards/status")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3300: async def get_risk_guards_status(_: bool = Depends(require_auth)):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3303:         from services.risk_guards import risk_guards
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3305:         status = risk_guards.get_guards_status()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3308:         logger.exception(f"Fel vid hämtning av risk guards status: {e}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3312: @router.post("/risk/guards/reset")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3313: async def reset_risk_guard(req: RiskGuardResetRequest, _: bool = Depends(require_auth)):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3316:         from services.risk_guards import risk_guards
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3318:         success = risk_guards.reset_guard(req.guard_name)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3320:             return {"success": True, "message": f"Riskvakt {req.guard_name} återställd"}
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3324:                 detail=f"Kunde inte återställa riskvakt {req.guard_name}",
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3331: class RiskGuardConfigRequest(BaseModel):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3332:     guard_name: str
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3336: @router.post("/risk/guards/config")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3337: async def update_risk_guard_config(req: RiskGuardConfigRequest, _: bool = Depends(require_auth)):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3340:         from services.risk_guards import risk_guards
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3342:         success = risk_guards.update_guard_config(req.guard_name, req.config)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3346:                 "message": f"Riskvakt {req.guard_name} konfiguration uppdaterad",
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3351:                 detail=f"Kunde inte uppdatera riskvakt {req.guard_name}",
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4355: @router.post("/risk/windows")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4917: # --- Unified Risk Service endpoints ---
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4918: @router.get("/risk/unified/status")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4920:     """Hämta komplett risk-status från UnifiedRiskService."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4927:         logger.exception(f"Fel vid hämtning av unified risk status: {e}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4931: @router.post("/risk/unified/evaluate")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4933:     """Utför risk-evaluering för en trade."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4948:         logger.exception(f"Fel vid risk-evaluering: {e}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4952: @router.post("/risk/unified/reset-guard")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4953: async def reset_risk_guard(request: dict[str, Any], _: bool = Depends(require_auth)):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4955:     guard_name = request.get("guard_name")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4957:     if not guard_name:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4958:         raise HTTPException(status_code=400, detail="guard_name parameter is required")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4962:         success = unified_risk_service.reset_guard(guard_name)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4965:             "message": f"Riskvakt {guard_name} {'återställd' if success else 'kunde inte återställas'}",
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4972: @router.post("/risk/unified/reset-circuit-breaker")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4988: @router.post("/risk/unified/update-guard")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4989: async def update_risk_guard(request: dict[str, Any], _: bool = Depends(require_auth)):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4991:     guard_name = request.get("guard_name")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4994:     if not guard_name:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4995:         raise HTTPException(status_code=400, detail="guard_name parameter is required")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4999:         success = unified_risk_service.update_guard_config(guard_name, config)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5002:             "message": f"Riskvakt {guard_name} {'uppdaterad' if success else 'kunde inte uppdateras'}",
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\wallet.py:69:             # Safeguard: saknade nycklar → tom lista istället för 500
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\cost_aware_backtest.py:232:         # Risk-adjusted returns
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:27:     CRITICAL = 1  # 30s - Risk guards, circuit breakers
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\refresh_manager.py:77:             RefreshPriority.CRITICAL: 30,  # Risk guards, circuit breakers
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:2: Risk Guards Service - Globala riskvakter för tradingboten.
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:23: class RiskGuardsService:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:28:         self.guards_file = "config/risk_guards.json"
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:31:         # Ladda eller skapa default guards
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:32:         self.guards = self._load_guards()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:34:         logger.info("🛡️ RiskGuardsService initialiserad")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:36:     def _load_guards(self) -> dict[str, Any]:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:39:             if os.path.exists(self.guards_file):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:40:                 with open(self.guards_file, encoding="utf-8") as f:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:41:                     guards = json.load(f)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:42:                 logger.info(f"📋 Laddade riskvakter från {self.guards_file}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:43:                 return guards
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:47:         # Default guards
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:48:         default_guards = {
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:72:             "volatility_guards": {
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:79:         self._save_guards(default_guards)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:80:         return default_guards
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:82:     def _save_guards(self, guards: dict[str, Any]) -> None:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:85:             os.makedirs(os.path.dirname(self.guards_file), exist_ok=True)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:86:             with open(self.guards_file, "w", encoding="utf-8") as f:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:87:                 json.dump(guards, f, indent=2, default=str)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:107:         guard = self.guards.get("max_daily_loss", {})
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:108:         daily_start_date = guard.get("daily_start_date")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:112:             guard["daily_start_date"] = today.isoformat()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:113:             if not guard.get("daily_start_equity"):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:114:                 guard["daily_start_equity"] = self._get_current_equity()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:117:             self.guards["max_daily_loss"] = guard
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:118:             self._save_guards(self.guards)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:128:         guard = self.guards["max_daily_loss"]
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:130:         if not guard["enabled"]:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:136:         if guard["triggered"] and guard["triggered_at"]:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:138:                 triggered_time = datetime.fromisoformat(guard["triggered_at"])
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:139:                 cooldown_end = triggered_time + timedelta(hours=guard["cooldown_hours"])
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:151:         start_equity = guard.get("daily_start_equity")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:156:             if daily_loss_pct >= guard["percentage"]:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:157:                 if not guard["triggered"]:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:158:                     guard["triggered"] = True
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:159:                     guard["triggered_at"] = datetime.now().isoformat()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:160:                     self._save_guards(self.guards)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:174:         guard = self.guards["kill_switch"]
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:176:         if not guard["enabled"]:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:180:         if guard["triggered"] and guard["triggered_at"]:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:182:                 triggered_time = datetime.fromisoformat(guard["triggered_at"])
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:183:                 cooldown_end = triggered_time + timedelta(hours=guard["cooldown_hours"])
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:195:         start_equity = self.guards["max_daily_loss"].get("daily_start_equity")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:200:             if drawdown_pct >= guard["max_drawdown_percentage"]:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:201:                 if not guard["triggered"]:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:202:                     guard["triggered"] = True
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:203:                     guard["triggered_at"] = datetime.now().isoformat()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:204:                     guard["reason"] = f"Max drawdown överskriden: {drawdown_pct:.2f}%"
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:205:                     self._save_guards(self.guards)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:206:                     logger.error(f"🚨 Kill-switch triggad: {guard['reason']}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:208:                 return True, guard["reason"]
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:226:         guard = self.guards["exposure_limits"]
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:228:         if not guard["enabled"]:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:253:         if position_pct > guard["max_position_size_percentage"]:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:254:             return True, (f"Position size för stor: {position_pct:.2f}% > {guard['max_position_size_percentage']}%")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:258:     def check_all_guards(
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:290:     def reset_guard(self, guard_name: str) -> bool:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:295:             guard_name: Namn på riskvakten att återställa
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:301:             if guard_name in self.guards:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:302:                 guard = self.guards[guard_name]
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:303:                 guard["triggered"] = False
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:304:                 guard["triggered_at"] = None
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:305:                 guard["reason"] = None
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:306:                 self._save_guards(self.guards)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:307:                 logger.info(f"🔄 Riskvakt återställd: {guard_name}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:311:             logger.error(f"❌ Kunde inte återställa riskvakt {guard_name}: {e}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:314:     def get_guards_status(self) -> dict[str, Any]:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:319:             Dict med status för alla guards
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:326:             start_equity = self.guards["max_daily_loss"].get("daily_start_equity")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:337:                 "guards": self.guards.copy(),
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:343:             logger.error(f"❌ Kunde inte hämta guards status: {e}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:346:     def update_guard_config(self, guard_name: str, config: dict[str, Any]) -> bool:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:351:             guard_name: Namn på riskvakten
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:358:             if guard_name in self.guards:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:359:                 self.guards[guard_name].update(config)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:360:                 self._save_guards(self.guards)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:361:                 logger.info(f"⚙️ Riskvakt konfiguration uppdaterad: {guard_name}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:365:             logger.error(f"❌ Kunde inte uppdatera riskvakt {guard_name}: {e}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:370: risk_guards = RiskGuardsService()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_manager.py:2: Risk Manager - samlar riskkontroller: tidsfönster, daglig trade-limit, cooldown.
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_manager.py:13: from services.risk_guards import risk_guards
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_manager.py:29:         self.trading_window = self.policy.constraints.trading_window
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_manager.py:30:         self.trade_counter = self.policy.constraints.trade_counter
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_manager.py:35:     def pre_trade_checks(
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_manager.py:39:         blocked, reason = risk_guards.check_all_guards(symbol, amount, price)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_manager.py:41:             return False, f"risk_guard_blocked:{reason}"
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_policy_engine.py:2: Risk Policy Engine - central policy-källa som samlar RiskGuards och TradeConstraints.
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_policy_engine.py:11: from services.risk_guards import risk_guards
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_policy_engine.py:12: from services.trade_constraints import TradeConstraintsService
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_policy_engine.py:25:         self.constraints = TradeConstraintsService(self.settings)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_policy_engine.py:34:         # 1) Globala RiskGuards
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_policy_engine.py:35:         blocked, reason = risk_guards.check_all_guards(symbol, amount, price)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_policy_engine.py:37:             return PolicyDecision(False, f"risk_guard_blocked:{reason}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_policy_engine.py:39:         # 2) Trade constraints (time window + caps + cooldown)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_policy_engine.py:40:         res = self.constraints.check(symbol=symbol)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_policy_engine.py:47:         self.constraints.record_trade(symbol=symbol)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_policy_engine.py:50:         s = self.constraints.status()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_policy_engine.py:51:         s["guards"] = risk_guards.get_guards_status()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\trade_constraints.py:2: Trade Constraints Service - centraliserar tidsfönster, dagliga limits och cooldown.
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\trade_constraints.py:17: class ConstraintResult:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\trade_constraints.py:23: class TradeConstraintsService:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\trade_constraints.py:29:     def check(self, *, symbol: str | None = None) -> ConstraintResult:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\trade_constraints.py:33:                 inc_labeled("trade_constraints_blocked_total", {"reason": "trading_paused"})
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\trade_constraints.py:36:             return ConstraintResult(False, "trading_paused")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\trade_constraints.py:40:                     "trade_constraints_blocked_total",
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\trade_constraints.py:45:             return ConstraintResult(False, "outside_trading_window")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\trade_constraints.py:56:                             "trade_constraints_blocked_total",
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\trade_constraints.py:61:                     return ConstraintResult(False, "symbol_daily_trade_limit_reached")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\trade_constraints.py:71:                         "trade_constraints_blocked_total",
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\trade_constraints.py:76:                 return ConstraintResult(False, "daily_trade_limit_reached", stats)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\trade_constraints.py:80:                         "trade_constraints_blocked_total",
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\trade_constraints.py:85:                 return ConstraintResult(False, "trade_cooldown_active", stats)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\trade_constraints.py:87:                 inc_labeled("trade_constraints_blocked_total", {"reason": "trade_blocked"})
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\trade_constraints.py:90:             return ConstraintResult(False, "trade_blocked", stats)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\trade_constraints.py:93:             inc("trade_constraints_allowed_total")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\trade_constraints.py:96:         return ConstraintResult(True)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\trading_integration.py:211:         Utvärderar risk för en tradingmöjlighet.
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\trading_integration.py:240:                 "reason": "Ingen risk detekterad",
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\trading_integration.py:307:                 risk = RiskManager()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\trading_integration.py:308:                 ok, reason = risk.pre_trade_checks()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:2: Unified Risk Service - Enhetlig riskhantering för alla paneler.
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:6: - RiskGuardsService (max daily loss, kill-switch, exposure limits)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:11: - Duplicerad risk-logik mellan paneler
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:12: - Inkonsistenta risk-kontroller
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:13: - Svår att debugga risk-problem
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:14: - Olika refresh-intervall för risk-data
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:27: from services.trade_constraints import TradeConstraintsService
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:34:     """Resultat från risk-evaluering."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:68:         self.trade_constraints = TradeConstraintsService(self.settings)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:71:         # Risk guards konfiguration
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:72:         self.guards_file = "config/risk_guards.json"
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:73:         self.guards = self._load_guards()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:77:     def _load_guards(self) -> dict[str, Any]:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:80:             if os.path.exists(self.guards_file):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:81:                 with open(self.guards_file) as f:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:82:                     guards = json.load(f)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:83:                 logger.info(f"📋 Riskvakter laddade från {self.guards_file}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:84:                 return guards
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:86:                 # Skapa default guards
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:87:                 default_guards = {
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:105:                 self._save_guards(default_guards)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:106:                 logger.info(f"📋 Default riskvakter skapade i {self.guards_file}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:107:                 return default_guards
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:112:     def _save_guards(self, guards: dict[str, Any]) -> None:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:115:             os.makedirs(os.path.dirname(self.guards_file), exist_ok=True)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:116:             with open(self.guards_file, 'w') as f:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:117:                 json.dump(guards, f, indent=2, default=str)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:125:         Utför komplett risk-evaluering för en trade.
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:164:             # 5. Kontrollera trade constraints (trading windows, cooldowns, limits)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:165:             constraint_result = self.trade_constraints.check(symbol=symbol)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:166:             if not constraint_result.allowed:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:167:                 return RiskDecision(False, f"trade_constraints:{constraint_result.reason}", constraint_result.details)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:172:             logger.error(f"❌ Fel vid risk-evaluering: {e}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:178:             self.trade_constraints.record_trade(symbol=symbol)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:221:             guard = self.guards.get("max_daily_loss", {})
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:222:             if not guard.get("enabled", False):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:225:             if guard.get("triggered", False):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:226:                 return True, f"Max daily loss redan triggad: {guard.get('reason', 'Okänd anledning')}"
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:230:             max_loss = guard.get("max_loss_usd", 1000.0)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:234:                 guard["triggered"] = True
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:235:                 guard["triggered_at"] = datetime.now().isoformat()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:236:                 guard["reason"] = f"Daglig förlust {daily_pnl:.2f} USD överstiger limit {max_loss:.2f} USD"
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:237:                 self._save_guards(self.guards)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:239:                 logger.warning(f"🚨 Max daily loss triggad: {guard['reason']}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:240:                 return True, guard["reason"]
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:251:             guard = self.guards.get("kill_switch", {})
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:252:             if not guard.get("enabled", False):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:255:             if guard.get("triggered", False):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:256:                 return True, f"Kill-switch aktiv: {guard.get('reason', 'Okänd anledning')}"
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:267:             guard = self.guards.get("exposure_limits", {})
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:268:             if not guard.get("enabled", False):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:271:             if guard.get("triggered", False):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:272:                 return True, f"Exposure limits redan triggade: {guard.get('reason', 'Okänd anledning')}"
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:283:             max_position_percentage = guard.get("max_position_size_percentage", 10.0)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:287:                 guard["triggered"] = True
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:288:                 guard["triggered_at"] = datetime.now().isoformat()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:289:                 guard["reason"] = reason
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:290:                 self._save_guards(self.guards)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:323:     def reset_guard(self, guard_name: str) -> bool:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:326:             if guard_name in self.guards:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:327:                 guard = self.guards[guard_name]
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:328:                 guard["triggered"] = False
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:329:                 guard["triggered_at"] = None
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:330:                 guard["reason"] = None
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:331:                 self._save_guards(self.guards)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:332:                 logger.info(f"🔄 Riskvakt återställd: {guard_name}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:336:             logger.error(f"❌ Kunde inte återställa riskvakt {guard_name}: {e}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:351:         """Hämta komplett risk-status."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:353:             # Hämta trade constraints status
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:354:             constraints_status = self.trade_constraints.status()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:364:             # Hämta guards status
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:365:             guards_status = {}
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:366:             for guard_name, guard_data in self.guards.items():
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:367:                 guards_status[guard_name] = {
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:368:                     "enabled": guard_data.get("enabled", False),
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:369:                     "triggered": guard_data.get("triggered", False),
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:370:                     "triggered_at": guard_data.get("triggered_at"),
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:371:                     "reason": guard_data.get("reason"),
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:376:                 "trade_constraints": constraints_status,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:378:                 "guards": guards_status,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:383:             logger.error(f"❌ Fel vid hämtning av risk-status: {e}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:390:     def update_guard_config(self, guard_name: str, config: dict[str, Any]) -> bool:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:393:             if guard_name in self.guards:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:394:                 self.guards[guard_name].update(config)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:395:                 self._save_guards(self.guards)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:396:                 logger.info(f"📝 Riskvakt konfiguration uppdaterad: {guard_name}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_prob_api_extended.py:27:     # trade kan blockeras av risk; verifiera ok flagga eller error nyckel
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:2: Tester för RiskGuardsService.
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:13: from services.risk_guards import RiskGuardsService
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:16: class TestRiskGuardsService:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:17:     """Tester för RiskGuardsService."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:23:         self.guards_file = os.path.join(self.temp_dir, "test_risk_guards.json")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:26:         with patch("services.risk_guards.Settings") as mock_settings:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:28:             self.service = RiskGuardsService()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:29:             self.service.guards_file = self.guards_file
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:34:         if os.path.exists(self.guards_file):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:35:             os.remove(self.guards_file)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:39:     def test_load_guards_creates_defaults(self):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:40:         """Test att default guards skapas när fil inte finns."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:42:         if os.path.exists(self.guards_file):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:43:             os.remove(self.guards_file)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:45:         # Ladda guards
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:46:         guards = self.service._load_guards()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:48:         # Verifiera att default guards skapades
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:49:         assert "max_daily_loss" in guards
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:50:         assert "kill_switch" in guards
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:51:         assert "exposure_limits" in guards
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:52:         assert "volatility_guards" in guards
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:55:         assert guards["max_daily_loss"]["enabled"] is True
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:56:         assert guards["max_daily_loss"]["percentage"] == 5.0
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:57:         assert guards["kill_switch"]["enabled"] is True
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:58:         assert guards["kill_switch"]["max_drawdown_percentage"] == 10.0
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:60:     def test_save_and_load_guards(self):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:61:         """Test att guards kan sparas och laddas."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:62:         test_guards = {
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:79:         # Spara test guards
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:80:         self.service._save_guards(test_guards)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:83:         assert os.path.exists(self.guards_file)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:86:         loaded_guards = self.service._load_guards()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:87:         assert loaded_guards["max_daily_loss"]["percentage"] == 3.0
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:88:         assert loaded_guards["kill_switch"]["enabled"] is False
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:90:     @patch("services.risk_guards.RiskGuardsService._get_current_equity")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:96:         self.service.guards["max_daily_loss"]["daily_start_equity"] = 10000.0
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:97:         self.service.guards["max_daily_loss"]["enabled"] = True
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:98:         self.service.guards["max_daily_loss"]["percentage"] = 5.0
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:105:     @patch("services.risk_guards.RiskGuardsService._get_current_equity")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:111:         self.service.guards["max_daily_loss"]["daily_start_equity"] = 10000.0
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:112:         self.service.guards["max_daily_loss"]["enabled"] = True
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:113:         self.service.guards["max_daily_loss"]["percentage"] = 5.0
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:119:         assert self.service.guards["max_daily_loss"]["triggered"] is True
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:121:     @patch("services.risk_guards.RiskGuardsService._get_current_equity")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:127:         self.service.guards["max_daily_loss"]["triggered"] = True
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:128:         self.service.guards["max_daily_loss"]["triggered_at"] = datetime.now().isoformat()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:129:         self.service.guards["max_daily_loss"]["cooldown_hours"] = 24
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:136:     @patch("services.risk_guards.RiskGuardsService._get_current_equity")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:142:         self.service.guards["max_daily_loss"]["daily_start_equity"] = 10000.0
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:143:         self.service.guards["kill_switch"]["enabled"] = True
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:144:         self.service.guards["kill_switch"]["max_drawdown_percentage"] = 10.0
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:150:         assert self.service.guards["kill_switch"]["triggered"] is True
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:154:         self.service.guards["exposure_limits"]["enabled"] = True
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:155:         self.service.guards["exposure_limits"]["max_position_size_percentage"] = 20.0
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:167:     def test_check_all_guards(self):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:168:         """Test alla guards tillsammans."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:174:             # Test - alla guards passerar
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:175:             blocked, reason = self.service.check_all_guards("tBTCUSD", 0.1, 50000)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:179:     def test_reset_guard(self):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:180:         """Test återställning av guard."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:182:         self.service.guards["max_daily_loss"]["triggered"] = True
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:183:         self.service.guards["max_daily_loss"]["triggered_at"] = datetime.now().isoformat()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:184:         self.service.guards["max_daily_loss"]["reason"] = "Test reason"
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:187:         success = self.service.reset_guard("max_daily_loss")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:189:         assert self.service.guards["max_daily_loss"]["triggered"] is False
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:190:         assert self.service.guards["max_daily_loss"]["triggered_at"] is None
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:191:         assert self.service.guards["max_daily_loss"]["reason"] is None
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:193:     def test_update_guard_config(self):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:194:         """Test uppdatering av guard konfiguration."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:197:         success = self.service.update_guard_config("max_daily_loss", new_config)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:200:         assert self.service.guards["max_daily_loss"]["percentage"] == 7.5
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:201:         assert self.service.guards["max_daily_loss"]["cooldown_hours"] == 36
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:203:     @patch("services.risk_guards.RiskGuardsService._get_current_equity")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:204:     def test_get_guards_status(self, mock_equity):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:205:         """Test hämtning av guards status."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:209:         self.service.guards["max_daily_loss"]["daily_start_equity"] = 10000.0
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:212:         status = self.service.get_guards_status()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_guards.py:217:         assert "guards" in status
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_manager.py:7:     ok, reason = rm.pre_trade_checks()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_manager.py:15:     ok, reason = rm.pre_trade_checks()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_manager_symbol_limit.py:17:     ok, reason = rm.pre_trade_checks(symbol="tBTCUSD")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_manager_symbol_limit.py:22:     ok, reason = rm.pre_trade_checks(symbol="tBTCUSD")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_policy_engine_unit.py:14: async def test_risk_policy_blocks_on_guards(monkeypatch):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_policy_engine_unit.py:18:         rpe.risk_guards,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_policy_engine_unit.py:19:         "check_all_guards",
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_policy_engine_unit.py:26:     assert res.reason.startswith("risk_guard_blocked:")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_policy_engine_unit.py:29: def test_risk_policy_blocks_on_constraints(monkeypatch):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_policy_engine_unit.py:31:     monkeypatch.setattr(eng.constraints, "check", lambda **kwargs: _StubRes(False, "trading_paused"))
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_policy_engine_unit.py:40:     monkeypatch.setattr(eng.constraints, "check", lambda **kwargs: _StubRes(True))
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_policy_engine_unit.py:41:     # ensure guards do not block
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_policy_engine_unit.py:44:     monkeypatch.setattr(rpe.risk_guards, "check_all_guards", lambda *args, **kwargs: (False, None))
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_policy_engine_unit.py:57:     monkeypatch.setattr(eng.constraints, "record_trade", _rec)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_trade_constraints_service_unit.py:4: from services.trade_constraints import TradeConstraintsService, ConstraintResult
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_trade_constraints_service_unit.py:7: def test_trade_constraints_blocks_when_window_paused(monkeypatch):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_trade_constraints_service_unit.py:8:     svc = TradeConstraintsService(Settings())
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_trade_constraints_service_unit.py:16: def test_trade_constraints_blocks_on_symbol_daily_limit(monkeypatch):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_trade_constraints_service_unit.py:17:     svc = TradeConstraintsService(Settings())
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_trade_constraints_service_unit.py:28: def test_trade_constraints_passes_and_records(monkeypatch):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_trade_constraints_service_unit.py:29:     svc = TradeConstraintsService(Settings())
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_trade_constraints_service_unit.py:47: def test_trade_constraints_limits(monkeypatch):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_trade_constraints_service_unit.py:48:     svc = TradeConstraintsService(Settings())
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\utils\advanced_rate_limiter.py:244:         """Concurrency-guard som begränsar samtidiga REST-anrop per endpoint-typ."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\main.py:234: # Enkel RequestGuard: blockera multipart och cap Content-Length
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\main.py:236: async def request_guard(request: Request, call_next):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\main.py:334: # risk-panel and shared directories removed
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\main.py:335: # _RISK_PANEL_DIR = os.path.join(_FRONTEND_DIR, "risk-panel")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\main.py:339: # app.mount("/risk-panel", StaticFiles(directory=_RISK_PANEL_DIR, html=True), name="risk-panel")

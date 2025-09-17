@@ -12,11 +12,9 @@ import httpx
 from services.exchange_client import get_exchange_client
 from pydantic import BaseModel
 
-from config.settings import Settings
-from rest.auth import build_auth_headers
+from config.settings import settings
 from services.metrics import record_http_result
 from utils.advanced_rate_limiter import get_advanced_rate_limiter
-from services.transport_circuit_breaker import get_transport_circuit_breaker
 from utils.logger import get_logger
 from utils.private_concurrency import get_private_rest_semaphore
 
@@ -51,8 +49,11 @@ class WalletService:
     """Service för att hämta och hantera plånboksinformation från Bitfinex."""
 
     def __init__(self):
-        self.settings = Settings()
-        self.base_url = getattr(self.settings, "BITFINEX_AUTH_API_URL", None) or self.settings.BITFINEX_API_URL
+        self.settings = settings
+        self.base_url = (
+            getattr(self.settings, "BITFINEX_AUTH_API_URL", None)
+            or self.settings.BITFINEX_API_URL
+        )
         self.rate_limiter = get_advanced_rate_limiter()
         # Concurrency cap för privata REST
         # Global semafor för alla privata REST-klasser
@@ -67,14 +68,20 @@ class WalletService:
         """
         try:
             # Safeguard: saknade nycklar → tom lista istället för 500
-            if not (self.settings.BITFINEX_API_KEY and self.settings.BITFINEX_API_SECRET):
-                logger.info("BITFINEX_API_KEY/SECRET saknas – returnerar tom wallet-lista")
+            if not (
+                self.settings.BITFINEX_API_KEY and self.settings.BITFINEX_API_SECRET
+            ):
+                logger.info(
+                    "BITFINEX_API_KEY/SECRET saknas – returnerar tom wallet-lista"
+                )
                 return []
             endpoint = "auth/r/wallets"
 
             # Circuit breaker: respektera ev. cooldown + rate limiter
             try:
-                if hasattr(self.rate_limiter, "can_request") and not self.rate_limiter.can_request(endpoint):
+                if hasattr(
+                    self.rate_limiter, "can_request"
+                ) and not self.rate_limiter.can_request(endpoint):
                     wait = float(self.rate_limiter.time_until_open(endpoint))
                     logger.warning(f"CB: {endpoint} stängd i {wait:.1f}s")
                     await asyncio.sleep(max(0.0, wait))
@@ -85,16 +92,15 @@ class WalletService:
             except Exception:
                 pass
 
-            logger.info(f"🌐 REST API: Hämtar plånböcker från {self.base_url}/{endpoint}")
+            logger.info(
+                f"🌐 REST API: Hämtar plånböcker från {self.base_url}/{endpoint}"
+            )
             _t0 = time.perf_counter()
             async with self._sem:
-                try:
-                    ec = get_exchange_client()
-                    response = await ec.signed_request(method="post", endpoint=endpoint, body=None, timeout=15.0)
-                except Exception:
-                    async with httpx.AsyncClient(timeout=httpx.Timeout(15.0)) as client:
-                        headers = build_auth_headers(endpoint)
-                        response = await client.post(f"{self.base_url}/{endpoint}", headers=headers)
+                ec = get_exchange_client()
+                response = await ec.signed_request(
+                    method="post", endpoint=endpoint, body=None, timeout=15.0
+                )
                 _t1 = time.perf_counter()
                 try:
                     record_http_result(
@@ -138,28 +144,24 @@ class WalletService:
                 if response.status_code in (429, 500, 502, 503, 504):
                     try:
                         if (
-                            "server busy" in (response.text or "").lower() or response.status_code in (429, 503)
+                            "server busy" in (response.text or "").lower()
+                            or response.status_code in (429, 503)
                         ) and hasattr(self.rate_limiter, "note_failure"):
                             cooldown = self.rate_limiter.note_failure(
                                 endpoint,
                                 int(response.status_code),
                                 response.headers.get("Retry-After"),
                             )
-                            logger.warning(f"CB öppnad för {endpoint} i {cooldown:.1f}s")
-                            try:
-                                # Namngiven TransportCircuitBreaker
-                                tcb = get_transport_circuit_breaker()
-                                tcb.note_failure(
-                                    endpoint,
-                                    int(response.status_code),
-                                    response.headers.get("Retry-After"),
-                                )
-                            except Exception:
-                                pass
+                            logger.warning(
+                                f"CB öppnad för {endpoint} i {cooldown:.1f}s"
+                            )
+                            # Transport‑CB hanteras av AdvancedRateLimiter
                         await self.rate_limiter.handle_server_busy(endpoint)
                     except Exception:
                         pass
-                    logger.warning(f"Bitfinex server busy för wallets (status {response.status_code})")
+                    logger.warning(
+                        f"Bitfinex server busy för wallets (status {response.status_code})"
+                    )
                     return []
 
                 try:
@@ -174,28 +176,29 @@ class WalletService:
                             self.rate_limiter.note_success(endpoint)
                     except Exception:
                         pass
-                    try:
-                        # TransportCircuitBreaker success
-                        tcb = get_transport_circuit_breaker()
-                        tcb.note_success(endpoint)
-                    except Exception:
-                        pass
+                    # Transport‑CB hanteras av AdvancedRateLimiter
                 except httpx.HTTPStatusError as he:
                     status = he.response.status_code if he.response is not None else "?"
-                    logger.warning(f"Bitfinex svarade {status} vid hämtning av wallets – returnerar tom lista")
+                    logger.warning(
+                        f"Bitfinex svarade {status} vid hämtning av wallets – returnerar tom lista"
+                    )
                     return []
 
                 wallets_data = response.json()
                 logger.info(f"✅ REST API: Hämtade {len(wallets_data)} plånböcker")
 
-                wallets = [WalletBalance.from_bitfinex_data(wallet) for wallet in wallets_data]
+                wallets = [
+                    WalletBalance.from_bitfinex_data(wallet) for wallet in wallets_data
+                ]
                 return wallets
 
         except Exception as e:
             logger.error(f"Fel vid hämtning av plånböcker: {e}")
             return []
 
-    async def get_wallet_by_type_and_currency(self, wallet_type: str, currency: str) -> WalletBalance | None:
+    async def get_wallet_by_type_and_currency(
+        self, wallet_type: str, currency: str
+    ) -> WalletBalance | None:
         """
         Hämtar en specifik plånbok baserat på typ och valuta.
 
@@ -209,7 +212,10 @@ class WalletService:
         wallets = await self.get_wallets()
 
         for wallet in wallets:
-            if wallet.wallet_type.lower() == wallet_type.lower() and wallet.currency.lower() == currency.lower():
+            if (
+                wallet.wallet_type.lower() == wallet_type.lower()
+                and wallet.currency.lower() == currency.lower()
+            ):
                 return wallet
 
         return None
@@ -222,7 +228,9 @@ class WalletService:
             Lista med WalletBalance-objekt för exchange-plånböcker
         """
         wallets = await self.get_wallets()
-        return [wallet for wallet in wallets if wallet.wallet_type.lower() == "exchange"]
+        return [
+            wallet for wallet in wallets if wallet.wallet_type.lower() == "exchange"
+        ]
 
     async def get_margin_wallets(self) -> list[WalletBalance]:
         """
@@ -269,7 +277,9 @@ async def get_wallets() -> list[WalletBalance]:
     return await wallet_service.get_wallets()
 
 
-async def get_wallet_by_type_and_currency(wallet_type: str, currency: str) -> WalletBalance | None:
+async def get_wallet_by_type_and_currency(
+    wallet_type: str, currency: str
+) -> WalletBalance | None:
     return await wallet_service.get_wallet_by_type_and_currency(wallet_type, currency)
 
 

@@ -12,6 +12,7 @@ from typing import Optional
 
 from utils.advanced_rate_limiter import get_advanced_rate_limiter
 from utils.logger import get_logger
+from services.unified_circuit_breaker_service import unified_circuit_breaker_service
 
 logger = get_logger(__name__)
 
@@ -19,6 +20,11 @@ logger = get_logger(__name__)
 class TransportCircuitBreaker:
     def __init__(self) -> None:
         self._limiter = get_advanced_rate_limiter()
+        # Använd global singleton för unified CB
+        try:
+            self._ucb = unified_circuit_breaker_service
+        except Exception:
+            self._ucb = None
 
     def can_request(self, endpoint: str) -> bool:
         return self._limiter.can_request(endpoint)
@@ -36,10 +42,13 @@ class TransportCircuitBreaker:
                 metrics_store["transport_circuit_breaker_active"] = 0
             except Exception:
                 pass
+            # Unified CB signalering hanteras i advanced_rate_limiter.note_success
         except Exception:
             pass
 
-    def note_failure(self, endpoint: str, status_code: int, retry_after: str | None = None) -> float:
+    def note_failure(
+        self, endpoint: str, status_code: int, retry_after: str | None = None
+    ) -> float:
         cooldown = self._limiter.note_failure(endpoint, status_code, retry_after)
         # Toggle metric till 1 när CB öppnas
         try:
@@ -48,6 +57,7 @@ class TransportCircuitBreaker:
             metrics_store["transport_circuit_breaker_active"] = 1
         except Exception:
             pass
+        # Unified CB signalering hanteras i advanced_rate_limiter.note_failure
         return cooldown
 
 

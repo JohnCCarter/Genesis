@@ -51,13 +51,17 @@ class WSWalletHandler:
 
             def on_auth_response(msg):
                 if isinstance(msg, list) and msg[1] == "ws":
-                    logger.info("WebSocket autentisering lyckades för plånboksuppdateringar")
+                    logger.info(
+                        "WebSocket autentisering lyckades för plånboksuppdateringar"
+                    )
                     self.wallets = msg[2] if len(msg) > 2 else []
                     self.authenticated = True
                     if not auth_future.done():
                         auth_future.set_result(True)
                 elif isinstance(msg, list) and msg[1] == "error":
-                    logger.error(f"WebSocket autentiseringsfel för plånboksuppdateringar: {msg}")
+                    logger.error(
+                        f"WebSocket autentiseringsfel för plånboksuppdateringar: {msg}"
+                    )
                     if not auth_future.done():
                         auth_future.set_result(False)
 
@@ -73,14 +77,20 @@ class WSWalletHandler:
                 result = await asyncio.wait_for(auth_future, timeout=10.0)
                 return result
             except asyncio.TimeoutError:
-                logger.error("Timeout vid WebSocket-autentisering för plånboksuppdateringar")
+                logger.error(
+                    "Timeout vid WebSocket-autentisering för plånboksuppdateringar"
+                )
                 return False
 
         except Exception as e:
-            logger.exception(f"Fel vid WebSocket-autentisering för plånboksuppdateringar: {e}")
+            logger.exception(
+                f"Fel vid WebSocket-autentisering för plånboksuppdateringar: {e}"
+            )
             return False
 
-    def register_wallet_callback(self, callback: Callable[[List[Dict[str, Any]]], None]) -> None:
+    def register_wallet_callback(
+        self, callback: Callable[[List[Dict[str, Any]]], None]
+    ) -> None:
         """
         Registrerar en callback-funktion som anropas när plånboksuppdateringar tas emot.
 
@@ -144,7 +154,12 @@ class WSWalletHandler:
             # Uppdatera intern plånbokslista
             updated = False
             for i, wallet in enumerate(self.wallets):
-                if isinstance(wallet, list) and len(wallet) >= 2 and wallet[0] == wallet_type and wallet[1] == currency:
+                if (
+                    isinstance(wallet, list)
+                    and len(wallet) >= 2
+                    and wallet[0] == wallet_type
+                    and wallet[1] == currency
+                ):
                     self.wallets[i] = wallet_data
                     updated = True
                     break
@@ -171,7 +186,9 @@ class WSWalletHandler:
             # Skicka uppdatering till frontend via Socket.IO
             asyncio.create_task(self.sio.emit("wallet_update", formatted_wallet))
 
-            logger.debug(f"Plånboksuppdatering bearbetad: {wallet_type} {currency} {balance}")
+            logger.debug(
+                f"Plånboksuppdatering bearbetad: {wallet_type} {currency} {balance}"
+            )
 
         except Exception as e:
             logger.error(f"Fel vid bearbetning av plånboksuppdatering: {e}")
@@ -199,8 +216,12 @@ class WSWalletHandler:
                         "wallet_type": wallet[0],
                         "currency": wallet[1],
                         "balance": float(wallet[2]),
-                        "unsettled_interest": (float(wallet[3]) if len(wallet) > 3 else 0.0),
-                        "available_balance": (float(wallet[4]) if len(wallet) > 4 else None),
+                        "unsettled_interest": (
+                            float(wallet[3]) if len(wallet) > 3 else 0.0
+                        ),
+                        "available_balance": (
+                            float(wallet[4]) if len(wallet) > 4 else None
+                        ),
                     }
                     formatted_wallets.append(formatted_wallet)
 
@@ -214,7 +235,9 @@ class WSWalletHandler:
             # Skicka uppdatering till frontend via Socket.IO
             asyncio.create_task(self.sio.emit("wallet_snapshot", formatted_wallets))
 
-            logger.info(f"Plånboks-snapshot bearbetad: {len(formatted_wallets)} plånböcker")
+            logger.info(
+                f"Plånboks-snapshot bearbetad: {len(formatted_wallets)} plånböcker"
+            )
 
         except Exception as e:
             logger.error(f"Fel vid bearbetning av plånboks-snapshot: {e}")

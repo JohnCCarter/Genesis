@@ -11,7 +11,9 @@ async def test_prob_predict_endpoint():
     from main import app
 
     client = TestClient(app)
-    resp = client.post("/api/v2/prob/predict", json={"symbol": "tBTCUSD", "timeframe": "1m"})
+    resp = client.post(
+        "/api/v2/prob/predict", json={"symbol": "tBTCUSD", "timeframe": "1m"}
+    )
     assert resp.status_code == 200
     data = resp.json()
     assert "probabilities" in data

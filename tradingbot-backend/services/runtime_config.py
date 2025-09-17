@@ -10,69 +10,66 @@ API:
 - current()
 """
 
+# AI Change: Add runtime_config helpers for runtime flags (Agent: Codex, Date: 2025-09-11)
 from __future__ import annotations
 
+import os
 from typing import Any
 
-_overrides: dict[str, Any] = {}
+from config.settings import settings
+
+# Processlokal cache för write-through uppdateringar (påverkar inte .env)
+_runtime_overrides: dict[str, Any] = {}
 
 
-def set_override(key: str, value: Any) -> None:
-    _overrides[str(key)] = value
+def set_str(key: str, value: str) -> None:
+    _runtime_overrides[key] = str(value)
+    os.environ[key] = str(value)
 
 
-def set_overrides(values: dict[str, Any]) -> None:
-    for k, v in (values or {}).items():
-        set_override(str(k), v)
+def set_bool(key: str, value: bool) -> None:
+    _runtime_overrides[key] = bool(value)
+    os.environ[key] = "True" if bool(value) else "False"
 
 
-def clear_override(key: str) -> None:
-    _overrides.pop(str(key), None)
+def set_int(key: str, value: int) -> None:
+    _runtime_overrides[key] = int(value)
+    os.environ[key] = str(int(value))
 
 
-def current() -> dict[str, Any]:
-    return dict(_overrides)
+def set_float(key: str, value: float) -> None:
+    _runtime_overrides[key] = float(value)
+    os.environ[key] = str(float(value))
 
 
-def get_str(key: str, fallback: str | None = None) -> str | None:
-    if key in _overrides:
-        val = _overrides[key]
-        return str(val) if val is not None else None
-    return fallback
+def get_str(key: str, default: str | None = None) -> str | None:
+    if key in _runtime_overrides:
+        return str(_runtime_overrides[key])
+    return str(getattr(settings, key, default)) if hasattr(settings, key) else default
 
 
-def _to_int(val: Any) -> int:
+def get_bool(key: str, default: bool | None = None) -> bool:
+    if key in _runtime_overrides:
+        return bool(_runtime_overrides[key])
+    val = getattr(settings, key, default)
+    return bool(val) if val is not None else False
+
+
+def get_int(key: str, default: int | None = None) -> int:
+    if key in _runtime_overrides:
+        return int(_runtime_overrides[key])
+    val = getattr(settings, key, default)
     try:
-        return int(float(val))
+        return int(val) if val is not None else int(default or 0)
     except Exception:
-        return 0
+        return int(default or 0)
 
 
-def _to_float(val: Any) -> float:
+def get_float(key: str, default: float | None = None) -> float:
+    if key in _runtime_overrides:
+        return float(_runtime_overrides[key])
+    val = getattr(settings, key, default)
     try:
-        return float(val)
+        return float(val) if val is not None else float(default or 0.0)
     except Exception:
-        return 0.0
-
-
-def _to_bool(val: Any) -> bool:
-    s = str(val).strip().lower()
-    return s in ("1", "true", "yes", "on")
-
-
-def get_int(key: str, fallback: int) -> int:
-    if key in _overrides:
-        return _to_int(_overrides[key])
-    return int(fallback)
-
-
-def get_float(key: str, fallback: float) -> float:
-    if key in _overrides:
-        return _to_float(_overrides[key])
-    return float(fallback)
-
-
-def get_bool(key: str, fallback: bool) -> bool:
-    if key in _overrides:
-        return _to_bool(_overrides[key])
-    return bool(fallback)
+        return float(default or 0.0)

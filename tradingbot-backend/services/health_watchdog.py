@@ -16,7 +16,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
-from config.settings import Settings
+from config.settings import settings
 from services.bitfinex_websocket import bitfinex_ws
 from utils.logger import get_logger
 
@@ -53,8 +53,8 @@ class HealthStatus:
 class HealthWatchdogService:
     """Service för hälsokontroller och watchdog funktionalitet."""
 
-    def __init__(self, settings: Settings | None = None):
-        self.settings = settings or Settings()
+    def __init__(self, settings_override: Settings | None = None):
+        self.settings = settings_override or settings
         self.config_file = "config/health_watchdog.json"
         self.status_file = "config/health_status.json"
 
@@ -164,9 +164,13 @@ class HealthWatchdogService:
 
                 status = {}
                 for name, status_data in data.items():
-                    status_data["last_check"] = datetime.fromisoformat(status_data["last_check"])
+                    status_data["last_check"] = datetime.fromisoformat(
+                        status_data["last_check"]
+                    )
                     if status_data.get("last_success"):
-                        status_data["last_success"] = datetime.fromisoformat(status_data["last_success"])
+                        status_data["last_success"] = datetime.fromisoformat(
+                            status_data["last_success"]
+                        )
                     status[name] = HealthStatus(**status_data)
 
                 return status
@@ -179,12 +183,12 @@ class HealthWatchdogService:
         """Spara health status till fil."""
         try:
             os.makedirs(os.path.dirname(self.status_file), exist_ok=True)
-            data = {name: status.__dict__ for name, status in status.items()}
+            data = {name: st.__dict__ for name, st in status.items()}
             # Konvertera datetime till string för JSON serialisering
-            for name in data:
-                data[name]["last_check"] = data[name]["last_check"].isoformat()
-                if data[name].get("last_success"):
-                    data[name]["last_success"] = data[name]["last_success"].isoformat()
+            for _, vals in data.items():
+                vals["last_check"] = vals["last_check"].isoformat()
+                if vals.get("last_success"):
+                    vals["last_success"] = vals["last_success"].isoformat()
 
             with open(self.status_file, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2)
@@ -234,7 +238,13 @@ class HealthWatchdogService:
                     {
                         "response_time_ms": response_time,
                         "pool_enabled": True,
-                        "active_sockets": len([s for s in ws_status.get("pool_sockets", []) if not s.get("closed")]),
+                        "active_sockets": len(
+                            [
+                                s
+                                for s in ws_status.get("pool_sockets", [])
+                                if not s.get("closed")
+                            ]
+                        ),
                     },
                 )
             else:
@@ -559,7 +569,11 @@ class HealthWatchdogService:
         # Spara status
         self._save_health_status(self.health_status)
 
-        return {status.check_name: status for status in results if hasattr(status, "check_name")}
+        return {
+            status.check_name: status
+            for status in results
+            if hasattr(status, "check_name")
+        }
 
     async def start_watchdog(self) -> None:
         """Starta watchdog-loopen."""
@@ -621,9 +635,13 @@ class HealthWatchdogService:
                 "healthy_checks": healthy_checks,
                 "warning_checks": warning_checks,
                 "critical_checks": critical_checks,
-                "health_percentage": ((healthy_checks / total_checks * 100) if total_checks > 0 else 0),
+                "health_percentage": (
+                    (healthy_checks / total_checks * 100) if total_checks > 0 else 0
+                ),
                 "last_updated": datetime.now().isoformat(),
-                "checks": {name: status.__dict__ for name, status in self.health_status.items()},
+                "checks": {
+                    name: status.__dict__ for name, status in self.health_status.items()
+                },
             }
         except Exception as e:
             logger.error(f"❌ Kunde inte hämta overall health: {e}")

@@ -14,6 +14,8 @@ from typing import Any
 from indicators.atr import calculate_atr
 from indicators.ema import calculate_ema
 from indicators.rsi import calculate_rsi
+
+# Importera get_market_data en gång i modulen för att undvika F811 vid lokala imports
 from services.market_data_facade import get_market_data
 from utils.logger import get_logger
 
@@ -58,7 +60,9 @@ def evaluate_weighted_strategy(data: dict[str, str]) -> dict[str, Any]:
 
     # Hämta dynamiska vikter om tillgängligt
     # Under pytest, använd deterministiska balanserade vikter så att enhetstester inte påverkas av fil/override
-    if os.environ.get("PYTEST_CURRENT_TEST"):
+    from utils.feature_flags import is_pytest_mode
+
+    if is_pytest_mode():
         weights = {"ema": 0.5, "rsi": 0.5, "atr": 0.0}
     else:
         try:
@@ -77,7 +81,11 @@ def evaluate_weighted_strategy(data: dict[str, str]) -> dict[str, Any]:
     # ATR är riktningsneutral i weighted bedömning
     atr_score = 0
 
-    weighted_score = weights["ema"] * ema_score + weights["rsi"] * rsi_score + weights["atr"] * atr_score
+    weighted_score = (
+        weights["ema"] * ema_score
+        + weights["rsi"] * rsi_score
+        + weights["atr"] * atr_score
+    )
 
     if weighted_score > 0:
         final_signal = "buy"
@@ -146,7 +154,8 @@ def evaluate_strategy(data: dict[str, list[float]]) -> dict[str, Any]:
 
         from services.strategy_settings import StrategySettingsService
 
-        sym = data.get("symbol") if isinstance(data, dict) else None
+        sym_raw = data.get("symbol") if isinstance(data, dict) else None
+        sym = sym_raw if isinstance(sym_raw, str) else None
         ssvc = StrategySettingsService()
         s = ssvc.get_settings(symbol=sym)
 
@@ -199,8 +208,14 @@ def evaluate_strategy(data: dict[str, list[float]]) -> dict[str, Any]:
                 from services.prob_model import prob_model
 
                 # Skala features: positivt när buy‑vänligt, negativt åt sell
-                f_ema = 1.0 if current_price > ema else (-1.0 if current_price < ema else 0.0)
-                f_rsi = (30.0 - min(max(rsi, 0.0), 100.0)) / 30.0  # <30 → positiv, >70 → negativ (klipps av modellen)
+                f_ema = (
+                    1.0
+                    if current_price > ema
+                    else (-1.0 if current_price < ema else 0.0)
+                )
+                f_rsi = (
+                    30.0 - min(max(rsi, 0.0), 100.0)
+                ) / 30.0  # <30 → positiv, >70 → negativ (klipps av modellen)
                 probs = prob_model.predict_proba({"ema": f_ema, "rsi": f_rsi})
                 top = max(probs.items(), key=lambda kv: kv[1])[0]
                 weighted = {
@@ -209,7 +224,11 @@ def evaluate_strategy(data: dict[str, list[float]]) -> dict[str, Any]:
                 }
             except Exception:
                 # Heuristisk fallback om modell ej finns
-                ema_sig = "buy" if current_price > ema else ("sell" if current_price < ema else "neutral")
+                ema_sig = (
+                    "buy"
+                    if current_price > ema
+                    else ("sell" if current_price < ema else "neutral")
+                )
                 rsi_sig = "buy" if rsi < 30 else ("sell" if rsi > 70 else "neutral")
                 atr_vol = "high" if (atr / current_price) > 0.02 else "low"
                 # Auto-regime / auto-weights (preset) om aktiverat
@@ -218,7 +237,9 @@ def evaluate_strategy(data: dict[str, list[float]]) -> dict[str, Any]:
                     from strategy.weights import PRESETS, clamp_simplex
 
                     # Läs auto-flaggor/trösklar från strategy_settings.json (baseline)
-                    base = ssvc.get_settings(symbol=(data.get("symbol") if isinstance(data, dict) else None))
+                    _sym_raw = data.get("symbol") if isinstance(data, dict) else None
+                    _sym = _sym_raw if isinstance(_sym_raw, str) else None
+                    base = ssvc.get_settings(symbol=_sym)
                     # Default thresholds
                     cfg = {
                         "ADX_PERIOD": 14,
@@ -230,7 +251,6 @@ def evaluate_strategy(data: dict[str, list[float]]) -> dict[str, Any]:
                     # Försök läsa extra fält från settings-filen om de finns
                     try:
                         import json
-                        import os
 
                         cfg_path = os.path.join(
                             os.path.dirname(os.path.dirname(__file__)),
@@ -267,13 +287,23 @@ def evaluate_strategy(data: dict[str, list[float]]) -> dict[str, Any]:
                     w_map = None
 
                 # Använd evaluate_weighted_strategy (har settings-hook). Om vi har w_map, räkna om lätt för UI‑prob.
-                weighted = evaluate_weighted_strategy({"ema": ema_sig, "rsi": rsi_sig, "atr": atr_vol})
+                weighted = evaluate_weighted_strategy(
+                    {"ema": ema_sig, "rsi": rsi_sig, "atr": atr_vol}
+                )
                 try:
                     if w_map:
-                        ema_term = 1 if ema_sig == "buy" else (-1 if ema_sig == "sell" else 0)
-                        rsi_term = 1 if rsi_sig == "buy" else (-1 if rsi_sig == "sell" else 0)
-                        score = float(w_map["ema"]) * float(ema_term) + float(w_map["rsi"]) * float(rsi_term)
-                        final = "buy" if score > 0 else ("sell" if score < 0 else "hold")
+                        ema_term = (
+                            1 if ema_sig == "buy" else (-1 if ema_sig == "sell" else 0)
+                        )
+                        rsi_term = (
+                            1 if rsi_sig == "buy" else (-1 if rsi_sig == "sell" else 0)
+                        )
+                        score = float(w_map["ema"]) * float(ema_term) + float(
+                            w_map["rsi"]
+                        ) * float(rsi_term)
+                        final = (
+                            "buy" if score > 0 else ("sell" if score < 0 else "hold")
+                        )
                         conf = float(abs(score))
                         ph = max(0.0, 1.0 - conf)
                         pb = conf if final == "buy" else 0.0
@@ -328,7 +358,8 @@ def update_settings_from_regime(symbol: str | None = None) -> dict[str, float]:
     """
     try:
         from indicators.regime import detect_regime
-        from services.market_data_facade import get_market_data
+
+        # get_market_data importeras modulärt; undvik lokal reimport som orsakar F811
         from services.strategy_settings import StrategySettingsService
         from strategy.weights import PRESETS
 
@@ -339,7 +370,6 @@ def update_settings_from_regime(symbol: str | None = None) -> dict[str, float]:
         # Läs auto-flaggor från strategy_settings.json
         try:
             import json
-            import os
 
             cfg_path = os.path.join(
                 os.path.dirname(os.path.dirname(__file__)),
@@ -376,10 +406,14 @@ def update_settings_from_regime(symbol: str | None = None) -> dict[str, float]:
                 import concurrent.futures
 
                 with concurrent.futures.ThreadPoolExecutor() as executor:
-                    future = executor.submit(asyncio.run, data_service.get_candles(symbol, "1m", limit=50))
+                    future = executor.submit(
+                        asyncio.run, data_service.get_candles(symbol, "1m", limit=50)
+                    )
                     candles = future.result()
             else:
-                candles = loop.run_until_complete(data_service.get_candles(symbol, "1m", limit=50))
+                candles = loop.run_until_complete(
+                    data_service.get_candles(symbol, "1m", limit=50)
+                )
         except Exception:
             # Fallback: returnera None om vi inte kan hämta data
             candles = None
@@ -428,7 +462,9 @@ def update_settings_from_regime(symbol: str | None = None) -> dict[str, float]:
         }
 
         logger.info(f"Nya vikter: {new_weights}")
-        logger.info(f"Preset w_ema: {preset.get('w_ema')}, w_rsi: {preset.get('w_rsi')}, w_atr: {preset.get('w_atr')}")
+        logger.info(
+            f"Preset w_ema: {preset.get('w_ema')}, w_rsi: {preset.get('w_rsi')}, w_atr: {preset.get('w_atr')}"
+        )
 
         # Uppdatera settings
         from services.strategy_settings import StrategySettings
@@ -447,7 +483,6 @@ def update_settings_from_regime(symbol: str | None = None) -> dict[str, float]:
         # Uppdatera också strategy_settings.json med nya vikter
         try:
             import json
-            import os
 
             cfg_path = os.path.join(
                 os.path.dirname(os.path.dirname(__file__)),
@@ -500,7 +535,8 @@ def update_settings_from_regime_batch(
         import asyncio
 
         from indicators.regime import detect_regime
-        from services.bitfinex_data import BitfinexDataService
+
+        # get_market_data importeras modulärt; undvik lokal reimport som orsakar F811
         from services.strategy_settings import StrategySettingsService
         from strategy.weights import PRESETS, clamp_simplex
 
@@ -510,7 +546,6 @@ def update_settings_from_regime_batch(
         # Läs auto-flaggor från strategy_settings.json
         try:
             import json
-            import os
 
             cfg_path = os.path.join(
                 os.path.dirname(os.path.dirname(__file__)),
@@ -529,9 +564,15 @@ def update_settings_from_regime_batch(
             # Returnera nuvarande settings för alla symboler
             return {
                 symbol: {
-                    "ema_weight": settings_service.get_settings(symbol=symbol).ema_weight,
-                    "rsi_weight": settings_service.get_settings(symbol=symbol).rsi_weight,
-                    "atr_weight": settings_service.get_settings(symbol=symbol).atr_weight,
+                    "ema_weight": settings_service.get_settings(
+                        symbol=symbol
+                    ).ema_weight,
+                    "rsi_weight": settings_service.get_settings(
+                        symbol=symbol
+                    ).rsi_weight,
+                    "atr_weight": settings_service.get_settings(
+                        symbol=symbol
+                    ).atr_weight,
                 }
                 for symbol in symbols
             }
@@ -541,7 +582,9 @@ def update_settings_from_regime_batch(
 
         async def get_candles_batch():
             """Hämta candles för alla symboler parallellt"""
-            tasks = [data_service.get_candles(symbol, "1m", limit=50) for symbol in symbols]
+            tasks = [
+                data_service.get_candles(symbol, "1m", limit=50) for symbol in symbols
+            ]
             return await asyncio.gather(*tasks, return_exceptions=True)
 
         # Kör batch-hämtning
@@ -560,9 +603,15 @@ def update_settings_from_regime_batch(
             # Fallback: returnera nuvarande settings
             return {
                 symbol: {
-                    "ema_weight": settings_service.get_settings(symbol=symbol).ema_weight,
-                    "rsi_weight": settings_service.get_settings(symbol=symbol).rsi_weight,
-                    "atr_weight": settings_service.get_settings(symbol=symbol).atr_weight,
+                    "ema_weight": settings_service.get_settings(
+                        symbol=symbol
+                    ).ema_weight,
+                    "rsi_weight": settings_service.get_settings(
+                        symbol=symbol
+                    ).rsi_weight,
+                    "atr_weight": settings_service.get_settings(
+                        symbol=symbol
+                    ).atr_weight,
                 }
                 for symbol in symbols
             }
@@ -581,10 +630,20 @@ def update_settings_from_regime_batch(
         # Bearbeta varje symbol
         for i, symbol in enumerate(symbols):
             try:
-                candles = all_candles[i]
+                result_i = all_candles[i]
 
                 # Hantera exceptions från batch-hämtning
-                if isinstance(candles, Exception) or not candles or len(candles) < 20:
+                if isinstance(result_i, Exception):
+                    current_settings = settings_service.get_settings(symbol=symbol)
+                    results[symbol] = {
+                        "ema_weight": current_settings.ema_weight,
+                        "rsi_weight": current_settings.rsi_weight,
+                        "atr_weight": current_settings.atr_weight,
+                    }
+                    continue
+
+                candles = result_i if isinstance(result_i, list) else []
+                if not candles or len(candles) < 20:
                     # Använd nuvarande settings
                     current_settings = settings_service.get_settings(symbol=symbol)
                     results[symbol] = {
@@ -609,16 +668,24 @@ def update_settings_from_regime_batch(
                     continue
 
                 # Detektera regim och applicera preset
-                regime = detect_regime(closes, highs, lows, cfg)
+                regime = detect_regime(highs, lows, closes, cfg)
                 preset_weights = PRESETS.get(regime, PRESETS["balanced"])
 
                 # Applicera nya vikter
                 new_weights = clamp_simplex(preset_weights)
-                settings_service.update_settings(
+                # StrategySettingsService saknar update_settings; spara via save_settings med overrides
+                from services.strategy_settings import StrategySettings
+
+                settings_service.save_settings(
+                    StrategySettings(
+                        ema_weight=new_weights["ema"],
+                        rsi_weight=new_weights["rsi"],
+                        atr_weight=new_weights["atr"],
+                        ema_period=current_settings.ema_period,
+                        rsi_period=current_settings.rsi_period,
+                        atr_period=current_settings.atr_period,
+                    ),
                     symbol=symbol,
-                    ema_weight=new_weights["ema"],
-                    rsi_weight=new_weights["rsi"],
-                    atr_weight=new_weights["atr"],
                 )
 
                 results[symbol] = new_weights

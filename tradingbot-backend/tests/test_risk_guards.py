@@ -105,7 +105,7 @@ class TestRiskGuardsService:
     @patch("services.risk_guards.RiskGuardsService._get_current_equity")
     def test_check_max_daily_loss_triggered(self, mock_equity):
         """Test max daily loss när triggad."""
-        mock_equity.return_value = 9400.0  # 6% förlust
+        mock_equity.return_value = 9400.0  # 5% förlust
 
         # Sätt start equity
         self.service.guards["max_daily_loss"]["daily_start_equity"] = 10000.0
@@ -125,7 +125,9 @@ class TestRiskGuardsService:
 
         # Sätt triggad status med nyligen timestamp
         self.service.guards["max_daily_loss"]["triggered"] = True
-        self.service.guards["max_daily_loss"]["triggered_at"] = datetime.now().isoformat()
+        self.service.guards["max_daily_loss"][
+            "triggered_at"
+        ] = datetime.now().isoformat()
         self.service.guards["max_daily_loss"]["cooldown_hours"] = 24
 
         # Test - cooldown aktiv
@@ -136,7 +138,7 @@ class TestRiskGuardsService:
     @patch("services.risk_guards.RiskGuardsService._get_current_equity")
     def test_check_kill_switch_triggered(self, mock_equity):
         """Test kill switch när triggad."""
-        mock_equity.return_value = 8500.0  # 15% drawdown
+        mock_equity.return_value = 8500.0  # 5% drawdown
 
         # Sätt start equity
         self.service.guards["max_daily_loss"]["daily_start_equity"] = 10000.0
@@ -167,9 +169,13 @@ class TestRiskGuardsService:
     def test_check_all_guards(self):
         """Test alla guards tillsammans."""
         with (
-            patch.object(self.service, "check_max_daily_loss", return_value=(False, None)),
+            patch.object(
+                self.service, "check_max_daily_loss", return_value=(False, None)
+            ),
             patch.object(self.service, "check_kill_switch", return_value=(False, None)),
-            patch.object(self.service, "check_exposure_limits", return_value=(False, None)),
+            patch.object(
+                self.service, "check_exposure_limits", return_value=(False, None)
+            ),
         ):
             # Test - alla guards passerar
             blocked, reason = self.service.check_all_guards("tBTCUSD", 0.1, 50000)
@@ -180,7 +186,9 @@ class TestRiskGuardsService:
         """Test återställning av guard."""
         # Sätt triggad status
         self.service.guards["max_daily_loss"]["triggered"] = True
-        self.service.guards["max_daily_loss"]["triggered_at"] = datetime.now().isoformat()
+        self.service.guards["max_daily_loss"][
+            "triggered_at"
+        ] = datetime.now().isoformat()
         self.service.guards["max_daily_loss"]["reason"] = "Test reason"
 
         # Återställ
@@ -220,6 +228,32 @@ class TestRiskGuardsService:
         assert status["current_equity"] == 9500.0
         assert status["daily_loss_percentage"] == 5.0  # (10000-9500)/10000 * 100
         assert status["drawdown_percentage"] == 5.0
+
+    @patch("services.risk_guards.RiskGuardsService._get_current_equity")
+    def test_get_guards_status_equity_zero_with_positive_start(self, mock_equity):
+        """Equity=0 ska inte visa 100% daily loss om start_equity>0 – ska bli 0%."""
+        mock_equity.return_value = 0.0
+
+        # Sätt positiv start_equity
+        self.service.guards["max_daily_loss"]["daily_start_equity"] = 10000.0
+
+        status = self.service.get_guards_status()
+        assert status["current_equity"] == 0.0
+        assert status["daily_loss_percentage"] == 0.0
+        assert status["drawdown_percentage"] == 0.0
+
+    @patch("services.risk_guards.RiskGuardsService._get_current_equity")
+    def test_get_guards_status_equity_zero_with_zero_start(self, mock_equity):
+        """Equity=0 och start_equity=0 ska vara 0% (ingen division)."""
+        mock_equity.return_value = 0.0
+
+        # Sätt start_equity=0
+        self.service.guards["max_daily_loss"]["daily_start_equity"] = 0.0
+
+        status = self.service.get_guards_status()
+        assert status["current_equity"] == 0.0
+        assert status["daily_loss_percentage"] == 0.0
+        assert status["drawdown_percentage"] == 0.0
 
 
 if __name__ == "__main__":

@@ -1,0 +1,50 @@
+﻿C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_advanced_rate_limiter_patterns.py:9: def test_rate_limit_patterns_classification(monkeypatch):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_advanced_rate_limiter_patterns.py:28: def test_rate_limit_export_metrics(monkeypatch):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_backend_order.py:29: def test_direct_bitfinex():
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_backend_order.py:106: def test_backend_market_order():
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_backend_order.py:185: def test_backend_limit_order():
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_bracket_linking.py:4: def test_register_group_sets_ids():
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_bracket_manager_unit.py:89: def test_bracket_state_persist_and_load(tmp_path, monkeypatch):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_frontend_smoke.py:9: def test_get_ws_token():
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_frontend_smoke.py:19: def test_wallets_requires_auth():
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_frontend_smoke.py:37: def test_wallets_with_token():
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_market_data_facade_unit.py:72: def test_market_data_facade_parse_helper():
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_metrics_security.py:13: def test_metrics_public_when_no_security(monkeypatch):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_metrics_security.py:29: def test_metrics_token_protected_ok(monkeypatch):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_metrics_security.py:40: def test_metrics_token_protected_forbidden(monkeypatch):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_metrics_security.py:51: def test_metrics_basic_auth_ok(monkeypatch):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_metrics_security.py:63: def test_metrics_basic_auth_unauthorized(monkeypatch):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_order_operations.py:44: def test_submit_limit_order():
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_order_operations.py:90: def test_market_order():
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_prob_features_extended.py:4: def test_compute_features_short_history_returns_zeros():
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_prob_features_extended.py:17: def test_label_sequence_tp_sl_hold():
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_prob_features_extended.py:41: def test_build_dataset_alignment():
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_prob_model_extended.py:5: def test_prob_model_disabled_fallback():
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_prob_model_schema_calibration.py:4: def test_predict_proba_with_mocked_schema_and_calibration():
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_prob_unit.py:4: def test_prob_features_basic():
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_prob_unit.py:18: def test_prob_model_fallback():
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_manager.py:4: def test_risk_manager_paused_blocks(monkeypatch):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_manager.py:11: def test_risk_manager_window_blocks(monkeypatch):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_manager.py:91: def test_circuit_breaker_reset_resumes(tmp_path):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_manager_symbol_limit.py:4: def test_symbol_daily_limit_blocks(monkeypatch):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_policy_engine_unit.py:29: def test_risk_policy_blocks_on_constraints(monkeypatch):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_policy_engine_unit.py:38: def test_risk_policy_allows_when_ok(monkeypatch):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_policy_engine_unit.py:50: def test_risk_policy_record_trade_delegates(monkeypatch):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_routes_integration_signal_endpoints.py:14: def test_strategy_regime_all_returns_confidence_and_prob(client):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_routes_integration_signal_endpoints.py:27: def test_market_watchlist_includes_prob_when_flag_set(client):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_runtime_config_endpoints.py:6: def test_runtime_config_get_and_set():
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_socketio_polling.py:5: def test_socketio_polling_handshake(monkeypatch):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_trade_constraints_service_unit.py:7: def test_trade_constraints_blocks_when_window_paused(monkeypatch):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_trade_constraints_service_unit.py:16: def test_trade_constraints_blocks_on_symbol_daily_limit(monkeypatch):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_trade_constraints_service_unit.py:28: def test_trade_constraints_passes_and_records(monkeypatch):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_trade_constraints_service_unit.py:47: def test_trade_constraints_limits(monkeypatch):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_trade_counter_service_unit.py:15: def test_trade_counter_max_per_day_blocks(monkeypatch):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_trade_counter_service_unit.py:32: def test_trade_counter_cooldown_blocks(monkeypatch):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_trade_counter_service_unit.py:46: def test_trade_counter_per_symbol(monkeypatch):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_trading_window.py:9: def test_save_and_reload_rules(monkeypatch):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_trading_window_service_unit.py:18: def test_trading_window_defaults_closed(tmp_path, monkeypatch):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_trading_window_service_unit.py:25: def test_trading_window_open_after_setting_window(tmp_path, monkeypatch):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_trading_window_service_unit.py:37: def test_trading_window_pause(tmp_path, monkeypatch):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_trading_window_service_unit.py:49: def test_trading_window_persist_reload(tmp_path, monkeypatch):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_wallets.py:52: def test_get_wallets():
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\utils\nonce_validation.py:36: def test_nonce_generation(key_id: str, count: int = 10) -> list[tuple[str, int]]:

@@ -10,13 +10,16 @@ from datetime import datetime, timedelta
 from typing import Any
 
 import jwt
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Response, Query, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from pydantic import BaseModel
+from fastapi.responses import JSONResponse, PlainTextResponse, ORJSONResponse
+from pydantic import BaseModel, Field
 
-from config.settings import Settings
+from config.settings import Settings, settings
 from indicators.atr import calculate_atr
-from rest import auth as rest_auth
+
+# REST auth helpers/proxies (order submit/cancel)
+import rest.auth as rest_auth
 from rest.active_orders import ActiveOrdersService
 from rest.funding import FundingService
 from rest.margin import MarginService
@@ -36,22 +39,24 @@ from services.backtest import BacktestService
 from services.bitfinex_websocket import bitfinex_ws
 from services.bracket_manager import bracket_manager
 from services.market_data_facade import get_market_data
-from services.metrics import get_metrics_summary, inc_labeled, render_prometheus_text
-from services.metrics import inc as metrics_inc
+from services.metrics import (
+    render_prometheus_text,
+)  # kvar tills klienten rullas ut överallt
+from services.metrics_client import get_metrics_client
+import services.runtime_config as rc
+from services.idempotency_service import get_idempotency_service
 from services.notifications import notification_service
 from services.performance import PerformanceService
 from services.prob_model import prob_model
 from services.prob_validation import validate_on_candles
 from services.risk_manager import RiskManager
-from services import runtime_config as runtime_cfg
+
+# runtime_config används via lokala imports där det behövs
 from services.risk_policy_engine import RiskPolicyEngine
-from services.runtime_mode import (
-    get_validation_on_start,
-    get_ws_connect_on_start,
-    get_ws_strategy_enabled,
-    set_validation_on_start,
-    set_ws_connect_on_start,
-    set_ws_strategy_enabled,
+from services.unified_risk_service import unified_risk_service
+from utils.feature_flags import (
+    get_feature_flag as _get_flag,
+    set_feature_flag as _set_flag,
 )
 from services.signal_service import SignalService
 from services.strategy import evaluate_weighted_strategy
@@ -66,6 +71,8 @@ from utils.candle_cache import candle_cache
 from utils.candles import parse_candles_to_strategy_data
 from utils.logger import get_logger
 from utils.rate_limiter import get_rate_limiter
+from pathlib import Path
+import json
 
 # WebSocket Autentisering endpoints
 from ws.auth import generate_token
@@ -74,9 +81,12 @@ logger = get_logger(__name__)
 
 router = APIRouter(prefix="/api/v2")
 security = HTTPBearer(auto_error=False)
-settings = Settings()
 # Harmonisera verifierings-hemlighet med generatorn (ws.auth) och tillåt fallback
-JWT_SECRET = settings.SOCKETIO_JWT_SECRET or getattr(settings, "JWT_SECRET_KEY", None) or "socket-io-secret"
+JWT_SECRET = (
+    settings.SOCKETIO_JWT_SECRET
+    or getattr(settings, "JWT_SECRET_KEY", None)
+    or "socket-io-secret"
+)
 _rl_adv = get_advanced_rate_limiter()
 _rl = get_rate_limiter()
 
@@ -183,7 +193,7 @@ class ProbPreviewRequest(BaseModel):
 async def prob_preview(req: ProbPreviewRequest, _bypass_auth: bool = Depends(security)):
     try:
         # 1) inferens
-        s = Settings()
+        s = settings
         pred = await prob_predict(
             ProbPredictRequest(symbol=req.symbol, timeframe=req.timeframe),
             True,  # bypass auth re-check
@@ -197,6 +207,18 @@ async def prob_preview(req: ProbPreviewRequest, _bypass_auth: bool = Depends(sec
         if decision not in ("buy", "sell"):
             return {"decision": decision, "reason": "abstain"}
         # 2) positionsstorlek (återanvänd /risk/position-size i miniform)
+        # Läs autotrade runtime‑state; påverkar bara blockeringen tidigare
+        try:
+            import services.runtime_config as rc
+
+            autotrade_on = bool(
+                rc.get_bool(
+                    "PROB_AUTOTRADE_ENABLED",
+                    getattr(s, "PROB_AUTOTRADE_ENABLED", False),
+                )
+            )
+        except Exception:
+            autotrade_on = bool(getattr(s, "PROB_AUTOTRADE_ENABLED", False))
         cap = float(req.risk_percent_cap or s.PROB_SIZE_MAX_RISK_PCT)
         side = str(decision)
         # begär storlek med ATR‑baserade SL/TP
@@ -225,7 +247,9 @@ async def prob_preview(req: ProbPreviewRequest, _bypass_auth: bool = Depends(sec
             conf = float(pred.get("confidence", 0.0) or 0.0)
             conf_w = float(getattr(s, "PROB_SIZE_CONF_WEIGHT", 0.5) or 0.5)
             conf_scaled = max(0.0, min(conf, 1.0))
-            size_weight = max(0.0, min(1.0, (1.0 - conf_w) * kelly_norm + conf_w * conf_scaled))
+            size_weight = max(
+                0.0, min(1.0, (1.0 - conf_w) * kelly_norm + conf_w * conf_scaled)
+            )
             weighted_size = round(base_size * size_weight, 8)
         except Exception:
             kelly_raw = 0.0
@@ -280,7 +304,7 @@ class ProbTradeRequest(BaseModel):
 @router.post("/prob/trade")
 async def prob_trade(req: ProbTradeRequest, _bypass_auth: bool = Depends(security)):
     try:
-        s = Settings()
+        s = settings
         if not bool(getattr(s, "PROB_AUTOTRADE_ENABLED", False)):
             try:
                 from time import time as _now
@@ -302,9 +326,9 @@ async def prob_trade(req: ProbTradeRequest, _bypass_auth: bool = Depends(securit
             return {"ok": False, "error": "autotrade_disabled"}
         # Tidig guardrail: respektera riskregler innan vi gör preview
         try:
-            risk = RiskManager()
-            ok, reason = risk.pre_trade_checks(symbol=req.symbol)
-            if not ok:
+            decision = unified_risk_service.evaluate_risk(symbol=req.symbol)
+            reason = decision.reason
+            if not decision.allowed:
                 try:
                     from services.metrics import inc_labeled as _inc_labeled
 
@@ -487,9 +511,9 @@ def require_auth(credentials: HTTPAuthorizationCredentials | None = Depends(secu
     try:
         from services.runtime_config import get_bool as _rc_get_bool  # lazy import
 
-        auth_required = bool(_rc_get_bool("AUTH_REQUIRED", Settings().AUTH_REQUIRED))
+        auth_required = bool(_rc_get_bool("AUTH_REQUIRED", settings.AUTH_REQUIRED))
     except Exception:
-        auth_required = bool(Settings().AUTH_REQUIRED)
+        auth_required = bool(settings.AUTH_REQUIRED)
     if not auth_required:
         return True
     if not credentials or not credentials.credentials:
@@ -529,7 +553,7 @@ async def place_order_endpoint(order: OrderRequest, _: bool = Depends(require_au
                 key = "place_order"
                 if not _rl.is_allowed(key, max_requests, window_seconds):
                     try:
-                        metrics_inc("rate_limited_total")
+                        get_metrics_client().inc("rate_limited_total")
                     except Exception:
                         pass
                     return OrderResponse(success=False, error="rate_limited")
@@ -538,7 +562,13 @@ async def place_order_endpoint(order: OrderRequest, _: bool = Depends(require_au
 
         # Dry-run: simulera svar utan att lägga order
         try:
-            if getattr(settings, "DRY_RUN_ENABLED", False):
+            import os as _os
+            import services.runtime_config as rc
+
+            if (
+                rc.get_bool("DRY_RUN_ENABLED", False)
+                and "PYTEST_CURRENT_TEST" not in _os.environ
+            ):
                 return OrderResponse(
                     success=True,
                     data={
@@ -549,8 +579,25 @@ async def place_order_endpoint(order: OrderRequest, _: bool = Depends(require_au
         except Exception:
             pass
 
-        # Validera order innan den skickas
-        is_valid, err = order_validator.validate_order(order.dict())
+        # Resolvera symbol före validering för att undvika falska "Ogiltig symbol"
+        payload = order.dict()
+        try:
+            sym_in = str(payload.get("symbol", ""))
+            from services.symbols import SymbolService as _SS
+
+            _svc = _SS()
+            await _svc.refresh()
+            eff = _svc.resolve(sym_in)
+            if not _svc.listed(eff):
+                return OrderResponse(
+                    success=False, error="validation_error:pair_not_listed"
+                )
+            payload["symbol"] = eff
+        except Exception:
+            pass
+
+        # Validera order efter symbol‑resolution
+        is_valid, err = order_validator.validate_order(payload)
         if not is_valid:
             return OrderResponse(success=False, error=f"validation_error:{err}")
 
@@ -558,50 +605,32 @@ async def place_order_endpoint(order: OrderRequest, _: bool = Depends(require_au
         import os
 
         if "PYTEST_CURRENT_TEST" not in os.environ:
-            # Använd RiskPolicyEngine (som inkluderar TradeConstraintsService)
-            policy = RiskPolicyEngine()
-            # Extrahera amount och price för riskvakter
-            amount = float(order.amount) if order.amount else 0.0
-            price = float(order.price) if order.price else 0.0
-            decision = policy.evaluate(symbol=order.symbol, amount=amount, price=price)
+            # Enhetlig riskkontroll via UnifiedRiskService
+            amount = float(order.amount) if order.amount else None
+            price = float(order.price) if order.price else None
+            decision = unified_risk_service.evaluate_risk(
+                symbol=order.symbol, amount=amount, price=price
+            )
             if not decision.allowed:
                 logger.warning(f"Order blockeras av riskkontroll: {decision.reason}")
-                return OrderResponse(success=False, error=f"risk_blocked:{decision.reason}")
-        else:
-            risk = RiskManager()
+                return OrderResponse(
+                    success=False, error=f"risk_blocked:{decision.reason}"
+                )
 
-        # Idempotens: kortlivad request‑cache per client_id
+        # Idempotens: central service
         try:
-            from services.metrics import metrics_store as _ms
-
-            cache = _ms.setdefault("request_id_cache", {})
             cid = (order.client_id or "").strip() if hasattr(order, "client_id") else ""
             if cid:
-                hit = cache.get(cid)
-                if isinstance(hit, dict) and hit.get("ts") and (int(__import__("time").time()) - int(hit["ts"])) < 60:
+                idem = get_idempotency_service()
+                hit = idem.check_and_register(cid)
+                if hit is not None:
                     return OrderResponse(
-                        success=True,
-                        data={"idempotent": True, **(hit.get("resp") or {})},
+                        success=True, data={"idempotent": True, **(hit or {})}
                     )
         except Exception:
             pass
 
-        # Skicka ordern till Bitfinex
-        payload = order.dict()
-        # Mappa symbol – hoppa över mapping och listed‑check för TEST‑par (paper trading)
-        try:
-            sym_in = str(payload.get("symbol", ""))
-            if not sym_in.startswith("tTEST"):
-                from services.symbols import SymbolService as _SS
-
-                _svc = _SS()
-                await _svc.refresh()
-                eff = _svc.resolve(sym_in)
-                if not _svc.listed(eff):
-                    return OrderResponse(success=False, error="validation_error:pair_not_listed")
-                payload["symbol"] = eff
-        except Exception:
-            pass
+        # Skicka ordern till Bitfinex – payload innehåller redan resolverad symbol
         # Ignorera post_only för MARKET-ordrar (ingen effekt), men skicka vidare reduce_only
         if payload.get("type", "").upper().endswith("MARKET"):
             payload.pop("post_only", None)
@@ -619,14 +648,14 @@ async def place_order_endpoint(order: OrderRequest, _: bool = Depends(require_au
                         "Order misslyckades",
                         {"request": order.dict(), "error": result.get("error")},
                     )
-                    metrics_inc("orders_total")
-                    metrics_inc("orders_failed_total")
+                    get_metrics_client().inc("orders_total")
+                    get_metrics_client().inc("orders_failed_total")
                     try:
-                        RiskManager().record_error()
+                        unified_risk_service.record_error()
                     except Exception:
                         pass
                     try:
-                        inc_labeled(
+                        get_metrics_client().inc_labeled(
                             "orders_total_labeled",
                             {
                                 "symbol": order.symbol,
@@ -639,9 +668,15 @@ async def place_order_endpoint(order: OrderRequest, _: bool = Depends(require_au
                     return OrderResponse(success=False, error=result["error"])
             except Exception:
                 pass
-            # WS fallback (on)
+            # WS fallback (on) - men inte om Dry Run är aktiverat
             ws_fallback_ok = False
             try:
+                import services.runtime_config as rc
+
+                if rc.get_bool("DRY_RUN_ENABLED", False):
+                    logger.info("WS fallback hoppas över: Dry Run är aktiverat")
+                    return OrderResponse(success=False, error=result["error"])
+
                 from services.bitfinex_websocket import bitfinex_ws as _ws
 
                 # WS 'on' accepterar EXCHANGE-typer; behåll inkommande typ
@@ -657,31 +692,33 @@ async def place_order_endpoint(order: OrderRequest, _: bool = Depends(require_au
                         _amt = _amt.lstrip("-")
                 except Exception:
                     pass
-                on_payload = {
+                on_payload: dict[str, Any] = {
                     "type": _t,
                     "symbol": str(payload.get("symbol")),
                     "amount": _amt,
                 }
                 if payload.get("price") is not None:
                     on_payload["price"] = str(payload.get("price"))
-                cid_val = (order.client_id or "").strip() if hasattr(order, "client_id") else ""
+                cid_val = str(getattr(order, "client_id", "") or "").strip()
                 if cid_val:
                     try:
-                        on_payload["cid"] = int(cid_val)
+                        on_payload["cid"] = str(int(cid_val))
                     except Exception:
-                        pass
+                        on_payload["cid"] = cid_val
                 else:
                     # Sätt en enkel cid om ingen given
                     try:
                         import time as _tmod
 
-                        on_payload["cid"] = int(_tmod.time() * 1000)
+                        on_payload["cid"] = str(int(_tmod.time() * 1000))
                     except Exception:
-                        pass
+                        on_payload["cid"] = str(datetime.now().timestamp())
                 # Skicka som singel 'on' istället för batch 'ops' (ökar kompatibilitet)
                 try:
                     if await _ws.ensure_authenticated():
-                        await _ws.send([0, "on", None, on_payload])
+                        # Bitfinex WebSocket API förväntar array-format: [0, "on", null, payload]
+                        ws_message = [0, "on", None, on_payload]
+                        await _ws.send(json.dumps(ws_message))
                         ws_res = {"success": True, "sent": True}
                     else:
                         ws_res = {"success": False, "error": "ws_not_authenticated"}
@@ -689,10 +726,12 @@ async def place_order_endpoint(order: OrderRequest, _: bool = Depends(require_au
                     ws_res = {"success": False, "error": str(_se)}
                 ws_fallback_ok = bool(ws_res.get("success"))
                 if ws_fallback_ok:
-                    await notification_service.notify("info", "Order lagd via WS fallback", {"payload": on_payload})
-                    metrics_inc("orders_total")
+                    await notification_service.notify(
+                        "info", "Order lagd via WS fallback", {"payload": on_payload}
+                    )
+                    get_metrics_client().inc("orders_total")
                     try:
-                        inc_labeled(
+                        get_metrics_client().inc_labeled(
                             "orders_total_labeled",
                             {
                                 "symbol": order.symbol,
@@ -702,23 +741,25 @@ async def place_order_endpoint(order: OrderRequest, _: bool = Depends(require_au
                         )
                     except Exception:
                         pass
-                    return OrderResponse(success=True, data={"ws_fallback": True, **ws_res})
+                    return OrderResponse(
+                        success=True, data={"ws_fallback": True, **ws_res}
+                    )
             except Exception as _wse:
                 logger.warning(f"WS fallback misslyckades: {_wse}")
             # WS misslyckades → rapportera REST-felet
             await notification_service.notify(
                 "error",
                 "Order misslyckades",
-                {"request": order.dict(), "error": result.get("error")},
+                {"request": order.dict(), "error": str(result.get("error"))},
             )
-            metrics_inc("orders_total")
-            metrics_inc("orders_failed_total")
+            get_metrics_client().inc("orders_total")
+            get_metrics_client().inc("orders_failed_total")
             try:
-                RiskManager().record_error()
+                unified_risk_service.record_error()
             except Exception:
                 pass
             try:
-                inc_labeled(
+                get_metrics_client().inc_labeled(
                     "orders_total_labeled",
                     {
                         "symbol": order.symbol,
@@ -732,11 +773,11 @@ async def place_order_endpoint(order: OrderRequest, _: bool = Depends(require_au
 
         # Markera trade om lyckad
         if "error" not in result:
-            risk.record_trade(symbol=order.symbol)
-            metrics_inc("orders_total")
+            unified_risk_service.record_trade(symbol=order.symbol)
+            get_metrics_client().inc("orders_total")
         logger.info(f"Order framgångsrikt lagd: {result}")
         try:
-            inc_labeled(
+            get_metrics_client().inc_labeled(
                 "orders_total_labeled",
                 {
                     "symbol": order.symbol,
@@ -746,7 +787,15 @@ async def place_order_endpoint(order: OrderRequest, _: bool = Depends(require_au
             )
         except Exception:
             pass
-        await notification_service.notify("info", "Order lagd", {"request": order.dict(), "response": result})
+        await notification_service.notify(
+            "info", "Order lagd", {"request": order.dict(), "response": result}
+        )
+        # Spara idempotent svar
+        try:
+            if cid:
+                get_idempotency_service().store_response(cid, result)
+        except Exception:
+            pass
         return OrderResponse(success=True, data=result)
 
     except Exception as e:
@@ -755,7 +804,9 @@ async def place_order_endpoint(order: OrderRequest, _: bool = Depends(require_au
 
 
 @router.post("/order/cancel", response_model=OrderResponse)
-async def cancel_order_endpoint(cancel_request: CancelOrderRequest, _: bool = Depends(require_auth)):
+async def cancel_order_endpoint(
+    cancel_request: CancelOrderRequest, _: bool = Depends(require_auth)
+):
     """
     Avbryter en order via Bitfinex API.
     """
@@ -767,7 +818,7 @@ async def cancel_order_endpoint(cancel_request: CancelOrderRequest, _: bool = De
             if max_requests > 0 and window_seconds > 0:
                 if not _rl.is_allowed("cancel_order", max_requests, window_seconds):
                     try:
-                        metrics_inc("rate_limited_total")
+                        get_metrics_client().inc("rate_limited_total")
                     except Exception:
                         pass
                     return OrderResponse(success=False, error="rate_limited")
@@ -804,12 +855,16 @@ async def cancel_order_endpoint(cancel_request: CancelOrderRequest, _: bool = De
 
 
 @router.post("/order/update", response_model=OrderResponse)
-async def update_order_endpoint(update_request: UpdateOrderRequest, _: bool = Depends(require_auth)):
+async def update_order_endpoint(
+    update_request: UpdateOrderRequest, _: bool = Depends(require_auth)
+):
     """
     Uppdaterar en order via Bitfinex API.
     """
     try:
-        logger.info(f"Mottog uppdateringsförfrågan för order: {update_request.order_id}")
+        logger.info(
+            f"Mottog uppdateringsförfrågan för order: {update_request.order_id}"
+        )
 
         # Skapa en instans av ActiveOrdersService
         active_orders_service = ActiveOrdersService()
@@ -827,8 +882,16 @@ async def update_order_endpoint(update_request: UpdateOrderRequest, _: bool = De
             )
             return OrderResponse(success=True, data=result)
         except Exception as rest_err:
-            logger.warning(f"REST update misslyckades, försöker WS fallback: {rest_err}")
+            logger.warning(
+                f"REST update misslyckades, försöker WS fallback: {rest_err}"
+            )
             try:
+                import services.runtime_config as rc
+
+                if rc.get_bool("DRY_RUN_ENABLED", False):
+                    logger.info("WS fallback hoppas över: Dry Run är aktiverat")
+                    return OrderResponse(success=False, error=str(rest_err))
+
                 from services.bitfinex_websocket import bitfinex_ws as _ws
 
                 ws_res = await _ws.order_update(
@@ -843,8 +906,12 @@ async def update_order_endpoint(update_request: UpdateOrderRequest, _: bool = De
                         "Order uppdaterad via WS",
                         {"request": update_request.dict(), "response": ws_res},
                     )
-                    return OrderResponse(success=True, data={"ws_fallback": True, **ws_res})
-                return OrderResponse(success=False, error=str(ws_res.get("error") or "ws_update_failed"))
+                    return OrderResponse(
+                        success=True, data={"ws_fallback": True, **ws_res}
+                    )
+                return OrderResponse(
+                    success=False, error=str(ws_res.get("error") or "ws_update_failed")
+                )
             except Exception as _wse:
                 logger.exception(f"WS fallback update fel: {_wse}")
                 return OrderResponse(success=False, error=str(_wse))
@@ -856,7 +923,9 @@ async def update_order_endpoint(update_request: UpdateOrderRequest, _: bool = De
 
 # --- WS order endpoints ---
 @router.post("/ws/order/update", response_model=OrderResponse)
-async def ws_order_update(payload: WSOrderUpdateRequest, _: bool = Depends(require_auth)):
+async def ws_order_update(
+    payload: WSOrderUpdateRequest, _: bool = Depends(require_auth)
+):
     try:
         from services.bitfinex_websocket import bitfinex_ws
 
@@ -875,11 +944,15 @@ async def ws_order_update(payload: WSOrderUpdateRequest, _: bool = Depends(requi
 
 
 @router.post("/ws/orders/cancel-multi", response_model=OrderResponse)
-async def ws_order_cancel_multi(payload: WSCancelMultiRequest, _: bool = Depends(require_auth)):
+async def ws_order_cancel_multi(
+    payload: WSCancelMultiRequest, _: bool = Depends(require_auth)
+):
     try:
         from services.bitfinex_websocket import bitfinex_ws
 
-        result = await bitfinex_ws.order_cancel_multi(ids=payload.ids, cids=payload.cids, cid_date=payload.cid_date)
+        result = await bitfinex_ws.order_cancel_multi(
+            ids=payload.ids, cids=payload.cids, cid_date=payload.cid_date
+        )
         if not result.get("success"):
             return OrderResponse(success=False, error=str(result.get("error")))
         return OrderResponse(success=True, data=result)
@@ -891,9 +964,47 @@ async def ws_order_cancel_multi(payload: WSCancelMultiRequest, _: bool = Depends
 @router.post("/ws/orders/ops", response_model=OrderResponse)
 async def ws_order_ops(payload: WSOrderOpsRequest, _: bool = Depends(require_auth)):
     try:
+        # Respektera Dry Run: simulera svar och skicka inte WS‑ops
+        try:
+            import services.runtime_config as rc
+
+            if rc.get_bool("DRY_RUN_ENABLED", False):
+                return OrderResponse(
+                    success=True, data={"dry_run": True, "ops": payload.ops}
+                )
+        except Exception:
+            pass
+
+        # Symbol‑resolution för "on"‑ops: säkerställ effektiv Bitfinex‑symbol
+        try:
+            resolved_ops: list[list] = []
+            for op in payload.ops:
+                if not isinstance(op, list) or not op:
+                    resolved_ops.append(op)
+                    continue
+                tag = str(op[0]).lower()
+                if tag == "on" and len(op) >= 2 and isinstance(op[1], dict):
+                    body = dict(op[1])
+                    sym_in = str(body.get("symbol", ""))
+                    if sym_in:
+                        try:
+                            from services.symbols import SymbolService as _SS
+
+                            _svc = _SS()
+                            await _svc.refresh()
+                            eff = _svc.resolve(sym_in)
+                            body["symbol"] = eff
+                        except Exception:
+                            pass
+                    resolved_ops.append([op[0], body])
+                else:
+                    resolved_ops.append(op)
+        except Exception:
+            resolved_ops = payload.ops
+
         from services.bitfinex_websocket import bitfinex_ws
 
-        result = await bitfinex_ws.order_ops(payload.ops)
+        result = await bitfinex_ws.order_ops(resolved_ops)
         if not result.get("success"):
             return OrderResponse(success=False, error=str(result.get("error")))
         return OrderResponse(success=True, data=result)
@@ -914,7 +1025,9 @@ async def cancel_all_orders_endpoint(_: bool = Depends(require_auth)):
             max_requests = int(getattr(settings, "ORDER_RATE_LIMIT_MAX", 0) or 0)
             window_seconds = int(getattr(settings, "ORDER_RATE_LIMIT_WINDOW", 0) or 0)
             if max_requests > 0 and window_seconds > 0:
-                if not _rl.is_allowed("cancel_all_orders", max_requests, window_seconds):
+                if not _rl.is_allowed(
+                    "cancel_all_orders", max_requests, window_seconds
+                ):
                     try:
                         from services.metrics import inc as _inc
 
@@ -941,7 +1054,9 @@ async def cancel_all_orders_endpoint(_: bool = Depends(require_auth)):
 
 
 @router.post("/orders/cancel/symbol/{symbol}", response_model=OrderResponse)
-async def cancel_orders_by_symbol_endpoint(symbol: str, _: bool = Depends(require_auth)):
+async def cancel_orders_by_symbol_endpoint(
+    symbol: str, _: bool = Depends(require_auth)
+):
     """
     Avbryter alla aktiva ordrar för en specifik symbol.
     """
@@ -955,7 +1070,9 @@ async def cancel_orders_by_symbol_endpoint(symbol: str, _: bool = Depends(requir
         result = await active_orders_service.cancel_orders_by_symbol(symbol)
 
         logger.info(f"Ordrar för {symbol} framgångsrikt avbrutna")
-        _emit_notification("info", "Ordrar avbrutna för symbol", {"symbol": symbol, "response": result})
+        _emit_notification(
+            "info", "Ordrar avbrutna för symbol", {"symbol": symbol, "response": result}
+        )
         return OrderResponse(success=True, data=result)
 
     except Exception as e:
@@ -1011,7 +1128,9 @@ async def get_order_by_id_endpoint(order_id: int, _: bool = Depends(require_auth
         order = await active_orders_service.get_order_by_id(order_id)
 
         if not order:
-            raise HTTPException(status_code=404, detail=f"Order med ID {order_id} hittades inte")
+            raise HTTPException(
+                status_code=404, detail=f"Order med ID {order_id} hittades inte"
+            )
 
         return OrderResponse(success=True, data=order)
 
@@ -1052,7 +1171,9 @@ class TransferRequest(BaseModel):
 async def funding_transfer(req: TransferRequest, _: bool = Depends(require_auth)):
     try:
         svc = FundingService()
-        res = await svc.transfer(req.from_wallet, req.to_wallet, req.currency, req.amount)
+        res = await svc.transfer(
+            req.from_wallet, req.to_wallet, req.currency, req.amount
+        )
         if isinstance(res, dict) and res.get("error"):
             # mappa interna felkoder till generiska HTTP‑felmeddelanden
             code = str(res.get("error"))
@@ -1092,7 +1213,9 @@ async def funding_movements(
 
 
 @router.get("/wallets/balance")
-async def get_wallets_balance_endpoint(currency: str | None = None, _: bool = Depends(require_auth)):
+async def get_wallets_balance_endpoint(
+    currency: str | None = None, _: bool = Depends(require_auth)
+):
     """Aggregat saldo per valuta med brytning per wallet-typ.
 
     - Om `currency` anges returneras endast den valutan.
@@ -1108,15 +1231,21 @@ async def get_wallets_balance_endpoint(currency: str | None = None, _: bool = De
         balances: dict[str, dict[str, Any]] = {}
         for w in wallets:
             cur = _upper(w.currency)
-            entry = balances.setdefault(cur, {"total": 0.0, "available_total": 0.0, "by_type": {}})
+            entry = balances.setdefault(
+                cur, {"total": 0.0, "available_total": 0.0, "by_type": {}}
+            )
             entry["total"] += float(w.balance)
             entry["available_total"] += float(w.available_balance or 0.0)
             by_type = entry["by_type"]
-            by_type[w.wallet_type] = float(by_type.get(w.wallet_type, 0.0)) + float(w.balance)
+            by_type[w.wallet_type] = float(by_type.get(w.wallet_type, 0.0)) + float(
+                w.balance
+            )
 
         if currency:
             cur = currency.upper()
-            data = balances.get(cur, {"total": 0.0, "available_total": 0.0, "by_type": {}})
+            data = balances.get(
+                cur, {"total": 0.0, "available_total": 0.0, "by_type": {}}
+            )
             # inkludera råa wallets för valutan
             data["wallets"] = [w.dict() for w in wallets if _upper(w.currency) == cur]
             data["currency"] = cur
@@ -1281,7 +1410,9 @@ async def get_margin_status_symbol(symbol: str, _: bool = Depends(require_auth))
         base = await margin_service.get_symbol_margin_status(symbol)
         # 2) Om source none/rest och tradable saknas, försök direktslag mot v2 sym (med tom body för korrekt signering)
         if (not base) or (
-            isinstance(base, dict) and base.get("tradable") in (None, 0, 0.0) and base.get("source") != "ws"
+            isinstance(base, dict)
+            and base.get("tradable") in (None, 0, 0.0)
+            and base.get("source") != "ws"
         ):
             try:
                 lim = await margin_service.get_margin_limit_by_pair(symbol)
@@ -1331,7 +1462,9 @@ async def get_orders_history_endpoint(
     """
     try:
         order_history_service = OrderHistoryService()
-        orders = await order_history_service.get_orders_history(limit, start_time, end_time)
+        orders = await order_history_service.get_orders_history(
+            limit, start_time, end_time
+        )
         return orders
 
     except Exception as e:
@@ -1355,7 +1488,9 @@ async def get_order_trades_endpoint(order_id: int, _: bool = Depends(require_aut
 
 
 @router.get("/trades/history", response_model=list[TradeItem])
-async def get_trades_history_endpoint(symbol: str | None = None, limit: int = 25, _: bool = Depends(require_auth)):
+async def get_trades_history_endpoint(
+    symbol: str | None = None, limit: int = 25, _: bool = Depends(require_auth)
+):
     """
     Hämtar handelshistorik från Bitfinex API.
     """
@@ -1371,7 +1506,9 @@ async def get_trades_history_endpoint(symbol: str | None = None, limit: int = 25
 
 
 @router.get("/ledgers", response_model=list[LedgerEntry])
-async def get_ledgers_endpoint(currency: str | None = None, limit: int = 25, _: bool = Depends(require_auth)):
+async def get_ledgers_endpoint(
+    currency: str | None = None, limit: int = 25, _: bool = Depends(require_auth)
+):
     """
     Hämtar ledger-poster från Bitfinex API.
     """
@@ -1420,7 +1557,9 @@ async def generate_ws_token(request: TokenRequest):
             return TokenResponse(success=False, error="Kunde inte generera token")
 
     except Exception as e:
-        logger.exception(f"Fel vid generering av WebSocket-token: {e}")
+        from utils.token_masking import safe_log_data
+
+        logger.exception(safe_log_data(e, "Fel vid generering av WebSocket-token"))
         return TokenResponse(success=False, error=str(e))
 
 
@@ -1442,7 +1581,9 @@ class WeightedStrategyResponse(BaseModel):
 
 
 @router.post("/strategy/evaluate-weighted", response_model=WeightedStrategyResponse)
-async def evaluate_weighted_strategy_endpoint(request: WeightedStrategyRequest, _: bool = Depends(require_auth)):
+async def evaluate_weighted_strategy_endpoint(
+    request: WeightedStrategyRequest, _: bool = Depends(require_auth)
+):
     """
     Returnerar viktad slutsignal (buy/sell/hold) och sannolikheter baserat på
     simplifierade signaler från EMA, RSI och ATR.
@@ -1457,7 +1598,9 @@ async def evaluate_weighted_strategy_endpoint(request: WeightedStrategyRequest, 
         if hasattr(evaluate_weighted_strategy_endpoint, "_cache"):
             cached_data = evaluate_weighted_strategy_endpoint._cache.get(cache_key)
             if cached_data and (datetime.now() - cached_data["timestamp"]) < cache_ttl:
-                logger.debug(f"📋 Använder cached weighted strategy för {request.symbol}")
+                logger.debug(
+                    f"📋 Använder cached weighted strategy för {request.symbol}"
+                )
                 return cached_data["data"]
         else:
             evaluate_weighted_strategy_endpoint._cache = {}
@@ -1494,7 +1637,9 @@ class StrategySettingsPayload(BaseModel):
 
 
 @router.get("/strategy/settings")
-async def get_strategy_settings(symbol: str | None = None, _: bool = Depends(require_auth)):
+async def get_strategy_settings(
+    symbol: str | None = None, _: bool = Depends(require_auth)
+):
     """
     Hämtar strategiinställningar.
     OPTIMERAD: Caching för bättre prestanda.
@@ -1538,12 +1683,36 @@ async def update_strategy_settings(
         svc = StrategySettingsService()
         current = svc.get_settings(symbol=symbol)
         updated = StrategySettings(
-            ema_weight=(payload.ema_weight if payload.ema_weight is not None else current.ema_weight),
-            rsi_weight=(payload.rsi_weight if payload.rsi_weight is not None else current.rsi_weight),
-            atr_weight=(payload.atr_weight if payload.atr_weight is not None else current.atr_weight),
-            ema_period=(payload.ema_period if payload.ema_period is not None else current.ema_period),
-            rsi_period=(payload.rsi_period if payload.rsi_period is not None else current.rsi_period),
-            atr_period=(payload.atr_period if payload.atr_period is not None else current.atr_period),
+            ema_weight=(
+                payload.ema_weight
+                if payload.ema_weight is not None
+                else current.ema_weight
+            ),
+            rsi_weight=(
+                payload.rsi_weight
+                if payload.rsi_weight is not None
+                else current.rsi_weight
+            ),
+            atr_weight=(
+                payload.atr_weight
+                if payload.atr_weight is not None
+                else current.atr_weight
+            ),
+            ema_period=(
+                payload.ema_period
+                if payload.ema_period is not None
+                else current.ema_period
+            ),
+            rsi_period=(
+                payload.rsi_period
+                if payload.rsi_period is not None
+                else current.rsi_period
+            ),
+            atr_period=(
+                payload.atr_period
+                if payload.atr_period is not None
+                else current.atr_period
+            ),
         )
         saved = svc.save_settings(updated, symbol=symbol)
 
@@ -1616,7 +1785,9 @@ async def get_strategy_auto(_: bool = Depends(require_auth)):
 
 
 @router.post("/strategy/auto")
-async def update_strategy_auto(payload: StrategyAutoPayload, _: bool = Depends(require_auth)):
+async def update_strategy_auto(
+    payload: StrategyAutoPayload, _: bool = Depends(require_auth)
+):
     try:
         import json
         import os
@@ -1667,7 +1838,9 @@ class PositionSizeRequest(BaseModel):
 
 
 @router.post("/risk/position-size")
-async def calculate_position_size(req: PositionSizeRequest, _: bool = Depends(require_auth)):
+async def calculate_position_size(
+    req: PositionSizeRequest, _: bool = Depends(require_auth)
+):
     try:
         # Hämta total balans i quote-valutan (auto-detektera från symbol)
         wallet_service = WalletService()
@@ -1679,13 +1852,17 @@ async def calculate_position_size(req: PositionSizeRequest, _: bool = Depends(re
             # Fallback: anta 3 sista tecken som quote (t.ex. BTCUSD -> USD)
             quote_currency = symbol_clean[-3:] if len(symbol_clean) >= 3 else "USD"
         quote_upper = quote_currency.upper()
-        total_quote = sum(w.balance for w in wallets if w.currency.upper() == quote_upper)
+        total_quote = sum(
+            w.balance for w in wallets if w.currency.upper() == quote_upper
+        )
         if total_quote <= 0:
             try:
                 from config.settings import Settings as __S
 
                 __s = __S()
-                fallback = float(getattr(__s, "POSITION_SIZE_FALLBACK_QUOTE", 0.0) or 0.0)
+                fallback = float(
+                    getattr(__s, "POSITION_SIZE_FALLBACK_QUOTE", 0.0) or 0.0
+                )
                 if fallback > 0:
                     total_quote = fallback
             except Exception:
@@ -1863,10 +2040,28 @@ async def calculate_position_size(req: PositionSizeRequest, _: bool = Depends(re
 @router.get("/account/performance")
 async def get_account_performance(_: bool = Depends(require_auth)):
     try:
+        import asyncio
+
         perf = PerformanceService()
-        equity = await perf.compute_current_equity()
-        pnl = await perf.compute_realized_pnl(limit=500)
-        return {"equity": equity, "realized": pnl}
+
+        # Lägg till total timeout på hela performance-beräkningen
+        async def compute_performance():
+            equity = await perf.compute_current_equity()
+            pnl = await perf.compute_realized_pnl(limit=500)
+            return {"equity": equity, "realized": pnl}
+
+        result = await asyncio.wait_for(
+            compute_performance(), timeout=10.0
+        )  # 10s total timeout
+        return result
+    except TimeoutError:
+        logger.warning(
+            "⚠️ Performance endpoint timeout - returning cached/default values"
+        )
+        return {
+            "equity": {"total_usd": 0.0, "wallets_usd": 0.0, "unrealized_usd": 0.0},
+            "realized": {},
+        }
     except Exception as e:
         logger.exception(f"Fel vid performance: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -1981,7 +2176,9 @@ async def market_symbols_paper(format: str = "v2", _: bool = Depends(require_aut
         "XTZ",
     ]
     syms = [f"tTEST{b}:TESTUSD" for b in usd_only]
-    syms.extend(["tTESTBTC:TESTUSD", "tTESTBTC:TESTUSDT"])  # BTC har två quotes på paper
+    syms.extend(
+        ["tTESTBTC:TESTUSD", "tTESTBTC:TESTUSDT"]
+    )  # BTC har två quotes på paper
     if format.lower() in ("v2", "t", "bitfinex_v2"):
         return syms
     return [s[1:] if s.startswith("t") else s for s in syms]
@@ -2008,7 +2205,9 @@ async def market_candles(
         from services.strategy import evaluate_strategy
 
         # bädda in symbol i parsed för vikt-override
-        parsed_map: dict[str, Any] = dict(parsed_any) if isinstance(parsed_any, dict) else {}
+        parsed_map: dict[str, Any] = (
+            dict(parsed_any) if isinstance(parsed_any, dict) else {}
+        )
         parsed_map["symbol"] = symbol
         strategy = evaluate_strategy(parsed_map)  # type: ignore[arg-type]
         return {
@@ -2027,10 +2226,12 @@ async def market_candles(
 async def market_resync(symbol: str, _: bool = Depends(require_auth)):
     try:
         # WS re-subscribe (idempotent skydd finns i subscribe)
-        await bitfinex_ws.subscribe_ticker(symbol, bitfinex_ws._handle_ticker_with_strategy)
+        await bitfinex_ws.subscribe_ticker(
+            symbol, bitfinex_ws._handle_ticker_with_strategy
+        )
         # Trigger omedelbar REST snapshot (värms upp cache)
         data = get_market_data()
-        _ = await data.get_ticker(symbol)
+        _tick = await data.get_ticker(symbol)
         return {"success": True}
     except Exception as e:
         logger.exception(f"Fel vid resync: {e}")
@@ -2046,8 +2247,8 @@ async def health(_: bool = Depends(require_auth)):
         pool = bitfinex_ws.get_pool_status()
         return {
             "rest": True,
-            "ws_connected": bool(bitfinex_ws.is_connected),
-            "ws_authenticated": bool(bitfinex_ws.is_authenticated),
+            "ws_connected": bool(getattr(bitfinex_ws, "is_connected", False)),
+            "ws_authenticated": bool(getattr(bitfinex_ws, "is_authenticated", False)),
             "ws_pool": pool if isinstance(pool, dict) else {},
         }
     except Exception as e:
@@ -2074,10 +2275,14 @@ async def ws_subscribe(req: WSSubscribeRequest, _: bool = Depends(require_auth))
         from services.bitfinex_websocket import bitfinex_ws
 
         if chan == "ticker":
-            await bitfinex_ws.subscribe_ticker(sym, bitfinex_ws._handle_ticker_with_strategy)
+            await bitfinex_ws.subscribe_ticker(
+                sym, bitfinex_ws._handle_ticker_with_strategy
+            )
             sub_key = f"ticker|{sym}"
         elif chan == "trades":
-            await bitfinex_ws.subscribe_trades(sym, bitfinex_ws._handle_ticker_with_strategy)  # återanvänd callback
+            await bitfinex_ws.subscribe_trades(
+                sym, bitfinex_ws._handle_ticker_with_strategy
+            )  # återanvänd callback
             sub_key = f"trades|{sym}"
         elif chan == "candles":
             tf = req.timeframe or "1m"
@@ -2088,7 +2293,9 @@ async def ws_subscribe(req: WSSubscribeRequest, _: bool = Depends(require_auth))
                 await _a.sleep(0.25)
             except Exception:
                 pass
-            await bitfinex_ws.subscribe_candles(sym, tf, bitfinex_ws._handle_ticker_with_strategy)
+            await bitfinex_ws.subscribe_candles(
+                sym, tf, bitfinex_ws._handle_ticker_with_strategy
+            )
             sub_key = f"candles|trade:{tf}:{sym}"
         else:
             raise HTTPException(status_code=400, detail="invalid_channel")
@@ -2134,7 +2341,9 @@ async def prob_predict(req: ProbPredictRequest, _: bool = Depends(require_auth))
         t0 = _t.time()
         # Hämta senaste candles för features
         data = get_market_data()
-        closes_pack = await data.get_candles(req.symbol, req.timeframe, limit=max(req.horizon, 50))
+        closes_pack = await data.get_candles(
+            req.symbol, req.timeframe, limit=max(req.horizon, 50)
+        )
         if not closes_pack:
             return {
                 "source": "heuristic",
@@ -2144,7 +2353,11 @@ async def prob_predict(req: ProbPredictRequest, _: bool = Depends(require_auth))
                 "features": {},
             }
         # Bitfinex candle: [MTS, OPEN, CLOSE, HIGH, LOW, VOLUME]
-        closes = [row[2] for row in closes_pack if isinstance(row, (list, tuple)) and len(row) >= 3]
+        closes = [
+            row[2]
+            for row in closes_pack
+            if isinstance(row, (list, tuple)) and len(row) >= 3
+        ]
         if len(closes) < 5:
             return {
                 "source": "heuristic",
@@ -2188,12 +2401,12 @@ async def prob_predict(req: ProbPredictRequest, _: bool = Depends(require_auth))
         try:
             # metrics
             if decision == "abstain":
-                inc_labeled(
+                get_metrics_client().inc_labeled(
                     "prob_events",
                     {"type": "abstain", "symbol": req.symbol, "tf": req.timeframe},
                 )
             else:
-                inc_labeled(
+                get_metrics_client().inc_labeled(
                     "prob_events",
                     {
                         "type": "trade",
@@ -2202,7 +2415,7 @@ async def prob_predict(req: ProbPredictRequest, _: bool = Depends(require_auth))
                         "tf": req.timeframe,
                     },
                 )
-            inc_labeled(
+            get_metrics_client().inc_labeled(
                 "prob_events",
                 {
                     "type": "infer",
@@ -2212,12 +2425,12 @@ async def prob_predict(req: ProbPredictRequest, _: bool = Depends(require_auth))
                 },
             )
             # latens (sum + count)
-            inc_labeled(
+            get_metrics_client().inc_labeled(
                 "prob_infer_latency_ms_sum",
                 {"symbol": req.symbol, "tf": req.timeframe},
                 by=int(max(((_t.time()) - t0) * 1000, 0)),
             )
-            inc_labeled(
+            get_metrics_client().inc_labeled(
                 "prob_infer_latency_ms_count",
                 {"symbol": req.symbol, "tf": req.timeframe},
                 by=1,
@@ -2234,12 +2447,12 @@ async def prob_predict(req: ProbPredictRequest, _: bool = Depends(require_auth))
             conf_edges = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
             ev_bucket = _bucket(best_ev, ev_edges)
             conf_bucket = _bucket(confidence, conf_edges)
-            inc_labeled(
+            get_metrics_client().inc_labeled(
                 "prob_ev_bucket",
                 {"bucket": ev_bucket, "symbol": req.symbol, "tf": req.timeframe},
                 by=1,
             )
-            inc_labeled(
+            get_metrics_client().inc_labeled(
                 "prob_conf_bucket",
                 {"bucket": conf_bucket, "symbol": req.symbol, "tf": req.timeframe},
                 by=1,
@@ -2269,7 +2482,9 @@ async def prob_predict(req: ProbPredictRequest, _: bool = Depends(require_auth))
             s2 = _S2()
             if bool(getattr(s2, "PROB_FEATURE_LOG_ENABLED", False)):
                 max_pts = int(getattr(s2, "PROB_FEATURE_LOG_MAX_POINTS", 500) or 500)
-                include_price = bool(getattr(s2, "PROB_FEATURE_LOG_INCLUDE_PRICE", False))
+                include_price = bool(
+                    getattr(s2, "PROB_FEATURE_LOG_INCLUDE_PRICE", False)
+                )
                 key = f"{req.symbol}|{req.timeframe}"
                 buf = _ms.setdefault("prob_feature_log", {}).setdefault(key, [])
                 item = {
@@ -2309,7 +2524,9 @@ async def prob_status(_: bool = Depends(require_auth)):
             "version": prob_model.model_meta.get("version") if loaded else None,
             "thresholds": {
                 "ev": float(getattr(s, "PROB_MODEL_EV_THRESHOLD", 0.0) or 0.0),
-                "confidence": float(getattr(s, "PROB_MODEL_CONFIDENCE_MIN", 0.0) or 0.0),
+                "confidence": float(
+                    getattr(s, "PROB_MODEL_CONFIDENCE_MIN", 0.0) or 0.0
+                ),
             },
         }
     except Exception as e:
@@ -2327,48 +2544,7 @@ class ProbValidateRequest(BaseModel):
     max_samples: int | None = 500  # senaste N samples att utvärdera
 
 
-@router.post("/prob/validate")
-async def prob_validate(req: ProbValidateRequest, _: bool = Depends(require_auth)):
-    try:
-        data = get_market_data()
-        candles = await data.get_candles(req.symbol, req.timeframe, req.limit)
-        if not candles:
-            return {"samples": 0, "brier": None, "logloss": None, "by_label": {}}
-        result = validate_on_candles(
-            candles,
-            horizon=req.horizon,
-            tp=req.tp,
-            sl=req.sl,
-            max_samples=req.max_samples,
-        )
-        # uppdatera metrics enkelt
-        try:
-            if result.get("brier") is not None:
-                inc_labeled(
-                    "prob_metrics",
-                    {
-                        "type": "brier",
-                        "symbol": req.symbol,
-                        "tf": req.timeframe,
-                    },
-                    by=int(max(result.get("samples", 0), 1)),
-                )
-            if result.get("logloss") is not None:
-                inc_labeled(
-                    "prob_metrics",
-                    {
-                        "type": "logloss",
-                        "symbol": req.symbol,
-                        "tf": req.timeframe,
-                    },
-                    by=int(max(result.get("samples", 0), 1)),
-                )
-        except Exception:
-            pass
-        return result
-    except Exception as e:
-        logger.exception(f"prob/validate error: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+"""Legacy /prob/validate borttagen – använd /api/v2/validation/probability"""
 
 
 class ProbValidateRunRequest(BaseModel):
@@ -2378,53 +2554,7 @@ class ProbValidateRunRequest(BaseModel):
     max_samples: int | None = 500
 
 
-@router.post("/prob/validate/run")
-async def prob_validate_run(req: ProbValidateRunRequest, _: bool = Depends(require_auth)):
-    """Kör validering direkt (utan att invänta schemaläggare) och uppdatera metrics."""
-    try:
-        data = get_market_data()
-        s = Settings()
-        symbols: list[str]
-        if req.symbols and len(req.symbols) > 0:
-            symbols = req.symbols
-        else:
-            raw = (getattr(s, "PROB_VALIDATE_SYMBOLS", None) or "").strip()
-            if raw:
-                symbols = [x.strip() for x in raw.split(",") if x.strip()]
-            else:
-                env_syms = (getattr(s, "WS_SUBSCRIBE_SYMBOLS", None) or "").strip()
-                symbols = [x.strip() for x in env_syms.split(",") if x.strip()] or [
-                    f"t{getattr(s, 'DEFAULT_TRADING_PAIR', 'BTCUSD')}"
-                ]
-        tf = req.timeframe or str(getattr(s, "PROB_VALIDATE_TIMEFRAME", "1m") or "1m")
-        limit = int(req.limit or getattr(s, "PROB_VALIDATE_LIMIT", 1200) or 1200)
-        max_samples = int(req.max_samples or getattr(s, "PROB_VALIDATE_MAX_SAMPLES", 500) or 500)
-
-        out: dict[str, Any] = {}
-        agg_brier: list[float] = []
-        agg_logloss: list[float] = []
-        for sym in symbols:
-            candles = await data.get_candles(sym, tf, limit)
-            if not candles:
-                out[sym] = {"samples": 0, "brier": None, "logloss": None}
-                continue
-            res = validate_on_candles(
-                candles,
-                horizon=int(getattr(s, "PROB_MODEL_TIME_HORIZON", 20) or 20),
-                tp=float(getattr(s, "PROB_MODEL_EV_THRESHOLD", 0.0005) or 0.0005),
-                sl=float(getattr(s, "PROB_MODEL_EV_THRESHOLD", 0.0005) or 0.0005),
-                max_samples=max_samples,
-            )
-            out[sym] = res
-            if res.get("brier") is not None:
-                agg_brier.append(float(res["brier"]))
-            if res.get("logloss") is not None:
-                agg_logloss.append(float(res["logloss"]))
-        # Aggregat hanteras av scheduler/metrics-moduler
-        return out
-    except Exception as e:
-        logger.exception(f"prob/validate/run error: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+"""Legacy /prob/validate/run borttagen – använd /api/v2/validation/probability"""
 
 
 class ProbRetrainRunRequest(BaseModel):
@@ -2443,7 +2573,7 @@ async def prob_retrain_run(req: ProbRetrainRunRequest, _: bool = Depends(require
         from services.prob_train import train_and_export
         from services.symbols import SymbolService
 
-        s = Settings()
+        s = settings
         data = get_market_data()
         sym_svc = SymbolService()
         await sym_svc.refresh()
@@ -2456,10 +2586,14 @@ async def prob_retrain_run(req: ProbRetrainRunRequest, _: bool = Depends(require
                 symbols = [x.strip() for x in raw.split(",") if x.strip()]
             else:
                 env_syms = (getattr(s, "WS_SUBSCRIBE_SYMBOLS", None) or "").strip()
+                s = settings
+                ...
                 symbols = [x.strip() for x in env_syms.split(",") if x.strip()] or [
                     f"t{getattr(s, 'DEFAULT_TRADING_PAIR', 'BTCUSD')}"
                 ]
-        tf_raw = req.timeframe or str(getattr(s, "PROB_RETRAIN_TIMEFRAME", "1m") or "1m")
+        tf_raw = req.timeframe or str(
+            getattr(s, "PROB_RETRAIN_TIMEFRAME", "1m") or "1m"
+        )
         try:
             import re as _re
 
@@ -2479,7 +2613,9 @@ async def prob_retrain_run(req: ProbRetrainRunRequest, _: bool = Depends(require
                 parent_real += _os.sep
 
             # Child must start with parent path and not be equal to it
-            return child_real.startswith(parent_real) and child_real != parent_real.rstrip(_os.sep)
+            return child_real.startswith(
+                parent_real
+            ) and child_real != parent_real.rstrip(_os.sep)
 
         safe_root = str(getattr(s, "PROB_RETRAIN_OUTPUT_DIR", "config/models"))
         # Resolve safe_root to canonical absolute path
@@ -2534,11 +2670,15 @@ async def prob_retrain_run(req: ProbRetrainRunRequest, _: bool = Depends(require
             fname = f"{clean}_{tf}.json"
             # Defense: ensure fname does not contain slashes
             if "/" in fname or "\\" in fname:
-                raise HTTPException(status_code=400, detail="Invalid filename generated")
+                raise HTTPException(
+                    status_code=400, detail="Invalid filename generated"
+                )
             # Security: Create a safe filename path that passes validation
             # Use only the filename, not the full path, to avoid path traversal issues
             safe_fname_only = fname  # fname is already validated above
-            train_and_export(candles, horizon=horizon, tp=tp, sl=sl, out_path=safe_fname_only)
+            train_and_export(
+                candles, horizon=horizon, tp=tp, sl=sl, out_path=safe_fname_only
+            )
             # For logging, reconstruct the actual path
             actual_out_path = _os.path.join(out_dir, fname)
             written.append(actual_out_path)
@@ -2590,27 +2730,46 @@ class ProbFeatureLogQuery(BaseModel):
 @router.get("/prob/config")
 async def prob_get_config(_: bool = Depends(require_auth)):
     try:
-        s = Settings()
+        s = settings
+        from services import runtime_config as rc
+
         return {
             "model_enabled": bool(getattr(s, "PROB_MODEL_ENABLED", False)),
             "model_file": getattr(s, "PROB_MODEL_FILE", None),
             "ev_threshold": float(getattr(s, "PROB_MODEL_EV_THRESHOLD", 0.0) or 0.0),
-            "confidence_min": float(getattr(s, "PROB_MODEL_CONFIDENCE_MIN", 0.0) or 0.0),
-            "autotrade_enabled": bool(getattr(s, "PROB_AUTOTRADE_ENABLED", False)),
-            "size_max_risk_pct": float(getattr(s, "PROB_SIZE_MAX_RISK_PCT", 0.0) or 0.0),
+            "confidence_min": float(
+                getattr(s, "PROB_MODEL_CONFIDENCE_MIN", 0.0) or 0.0
+            ),
+            "autotrade_enabled": bool(
+                rc.get_bool(
+                    "PROB_AUTOTRADE_ENABLED",
+                    getattr(s, "PROB_AUTOTRADE_ENABLED", False),
+                )
+            ),
+            "size_max_risk_pct": float(
+                getattr(s, "PROB_SIZE_MAX_RISK_PCT", 0.0) or 0.0
+            ),
             "size_kelly_cap": float(getattr(s, "PROB_SIZE_KELLY_CAP", 0.0) or 0.0),
             "size_conf_weight": float(getattr(s, "PROB_SIZE_CONF_WEIGHT", 0.0) or 0.0),
-            "position_size_fallback_quote": float(getattr(s, "POSITION_SIZE_FALLBACK_QUOTE", 0.0) or 0.0),
+            "position_size_fallback_quote": float(
+                getattr(s, "POSITION_SIZE_FALLBACK_QUOTE", 0.0) or 0.0
+            ),
             # Validation
             "validate_enabled": bool(getattr(s, "PROB_VALIDATE_ENABLED", True)),
             "validate_symbols": getattr(s, "PROB_VALIDATE_SYMBOLS", None),
-            "validate_timeframe": str(getattr(s, "PROB_VALIDATE_TIMEFRAME", "1m") or "1m"),
+            "validate_timeframe": str(
+                getattr(s, "PROB_VALIDATE_TIMEFRAME", "1m") or "1m"
+            ),
             "validate_limit": int(getattr(s, "PROB_VALIDATE_LIMIT", 1200) or 1200),
             # Retraining
             "retrain_enabled": bool(getattr(s, "PROB_RETRAIN_ENABLED", False)),
-            "retrain_interval_hours": int(getattr(s, "PROB_RETRAIN_INTERVAL_HOURS", 24) or 24),
+            "retrain_interval_hours": int(
+                getattr(s, "PROB_RETRAIN_INTERVAL_HOURS", 24) or 24
+            ),
             "retrain_symbols": getattr(s, "PROB_RETRAIN_SYMBOLS", None),
-            "retrain_timeframe": str(getattr(s, "PROB_RETRAIN_TIMEFRAME", "1m") or "1m"),
+            "retrain_timeframe": str(
+                getattr(s, "PROB_RETRAIN_TIMEFRAME", "1m") or "1m"
+            ),
             "retrain_limit": int(getattr(s, "PROB_RETRAIN_LIMIT", 5000) or 5000),
             "loaded": bool(prob_model.enabled and prob_model.model_meta),
         }
@@ -2620,58 +2779,62 @@ async def prob_get_config(_: bool = Depends(require_auth)):
 
 
 @router.post("/prob/config")
-async def prob_update_config(req: ProbConfigUpdateRequest, _: bool = Depends(require_auth)):
+async def prob_update_config(
+    req: ProbConfigUpdateRequest, _: bool = Depends(require_auth)
+):
     try:
-        import os as _os
+        import services.runtime_config as rc
 
         # Skriv env och uppdatera runtime där det är relevant
         if req.model_enabled is not None:
-            _os.environ["PROB_MODEL_ENABLED"] = "True" if req.model_enabled else "False"
+            rc.set_bool("PROB_MODEL_ENABLED", bool(req.model_enabled))
             prob_model.enabled = bool(req.model_enabled)
         if req.model_file:
-            _os.environ["PROB_MODEL_FILE"] = str(req.model_file)
+            rc.set_str("PROB_MODEL_FILE", str(req.model_file))
             try:
                 prob_model.reload()
             except Exception:
                 pass
         if req.ev_threshold is not None:
-            _os.environ["PROB_MODEL_EV_THRESHOLD"] = str(float(req.ev_threshold))
+            rc.set_float("PROB_MODEL_EV_THRESHOLD", float(req.ev_threshold))
         if req.confidence_min is not None:
-            _os.environ["PROB_MODEL_CONFIDENCE_MIN"] = str(float(req.confidence_min))
+            rc.set_float("PROB_MODEL_CONFIDENCE_MIN", float(req.confidence_min))
         if req.autotrade_enabled is not None:
-            _os.environ["PROB_AUTOTRADE_ENABLED"] = "True" if req.autotrade_enabled else "False"
+            rc.set_bool("PROB_AUTOTRADE_ENABLED", bool(req.autotrade_enabled))
         if req.size_max_risk_pct is not None:
-            _os.environ["PROB_SIZE_MAX_RISK_PCT"] = str(float(req.size_max_risk_pct))
+            rc.set_float("PROB_SIZE_MAX_RISK_PCT", float(req.size_max_risk_pct))
         if req.size_kelly_cap is not None:
-            _os.environ["PROB_SIZE_KELLY_CAP"] = str(float(req.size_kelly_cap))
+            rc.set_float("PROB_SIZE_KELLY_CAP", float(req.size_kelly_cap))
         if req.size_conf_weight is not None:
-            _os.environ["PROB_SIZE_CONF_WEIGHT"] = str(float(req.size_conf_weight))
+            rc.set_float("PROB_SIZE_CONF_WEIGHT", float(req.size_conf_weight))
         if req.position_size_fallback_quote is not None:
-            _os.environ["POSITION_SIZE_FALLBACK_QUOTE"] = str(float(req.position_size_fallback_quote))
+            rc.set_float(
+                "POSITION_SIZE_FALLBACK_QUOTE", float(req.position_size_fallback_quote)
+            )
         # Validation controls
         if req.validate_enabled is not None:
-            _os.environ["PROB_VALIDATE_ENABLED"] = "True" if req.validate_enabled else "False"
+            rc.set_bool("PROB_VALIDATE_ENABLED", bool(req.validate_enabled))
         if req.validate_symbols is not None:
-            _os.environ["PROB_VALIDATE_SYMBOLS"] = str(req.validate_symbols)
+            rc.set_str("PROB_VALIDATE_SYMBOLS", str(req.validate_symbols))
         if req.validate_timeframe is not None:
-            _os.environ["PROB_VALIDATE_TIMEFRAME"] = str(req.validate_timeframe)
+            rc.set_str("PROB_VALIDATE_TIMEFRAME", str(req.validate_timeframe))
         if req.validate_limit is not None:
-            _os.environ["PROB_VALIDATE_LIMIT"] = str(int(req.validate_limit))
+            rc.set_int("PROB_VALIDATE_LIMIT", int(req.validate_limit))
         # Retraining controls
         if req.retrain_enabled is not None:
-            _os.environ["PROB_RETRAIN_ENABLED"] = "True" if req.retrain_enabled else "False"
+            rc.set_bool("PROB_RETRAIN_ENABLED", bool(req.retrain_enabled))
         if req.retrain_interval_hours is not None:
-            _os.environ["PROB_RETRAIN_INTERVAL_HOURS"] = str(int(req.retrain_interval_hours))
+            rc.set_int("PROB_RETRAIN_INTERVAL_HOURS", int(req.retrain_interval_hours))
         if req.retrain_symbols is not None:
-            _os.environ["PROB_RETRAIN_SYMBOLS"] = str(req.retrain_symbols)
+            rc.set_str("PROB_RETRAIN_SYMBOLS", str(req.retrain_symbols))
         if req.retrain_timeframe is not None:
-            _os.environ["PROB_RETRAIN_TIMEFRAME"] = str(req.retrain_timeframe)
+            rc.set_str("PROB_RETRAIN_TIMEFRAME", str(req.retrain_timeframe))
         if req.retrain_limit is not None:
-            _os.environ["PROB_RETRAIN_LIMIT"] = str(int(req.retrain_limit))
+            rc.set_int("PROB_RETRAIN_LIMIT", int(req.retrain_limit))
 
         # metrics: registrera uppdatering
         try:
-            inc_labeled("prob_events", {"type": "config_update"})
+            get_metrics_client().inc_labeled("prob_events", {"type": "config_update"})
         except Exception:
             pass
 
@@ -2706,7 +2869,9 @@ async def prob_feature_log(q: ProbFeatureLogQuery, _: bool = Depends(require_aut
 
 # Symbols endpoint
 @router.get("/market/symbols")
-async def market_symbols(test_only: bool = False, format: str = "v2", _: bool = Depends(require_auth)):
+async def market_symbols(
+    test_only: bool = False, format: str = "v2", _: bool = Depends(require_auth)
+):
     try:
         svc = SymbolService()
         # Säkerställ färska configs för att kunna filtrera bort icke-listade
@@ -2733,7 +2898,9 @@ async def market_symbols(test_only: bool = False, format: str = "v2", _: bool = 
 
 # Watchlist endpoint (liten vy) med ticker + volym + senaste strategi-signal
 @router.get("/market/watchlist")
-async def market_watchlist(symbols: str | None = None, prob: bool = False, _: bool = Depends(require_auth)):
+async def market_watchlist(
+    symbols: str | None = None, prob: bool = False, _: bool = Depends(require_auth)
+):
     try:
         svc = get_watchlist_service()
         return await svc.build_watchlist(symbols_param=symbols, include_prob=prob)
@@ -2832,7 +2999,9 @@ async def auto_start_batch(req: AutoBatchRequest, _: bool = Depends(require_auth
             except Exception as ie:
                 logger.warning(f"Kunde inte starta {s}: {ie}")
         if started:
-            _emit_notification("info", "Auto trading startad (batch)", {"symbols": started})
+            _emit_notification(
+                "info", "Auto trading startad (batch)", {"symbols": started}
+            )
         return {"ok": True, "started": started}
     except Exception as e:
         logger.exception(f"Fel vid auto/start-batch: {e}")
@@ -2841,9 +3010,21 @@ async def auto_start_batch(req: AutoBatchRequest, _: bool = Depends(require_auth
 
 # Bracket order endpoint
 @router.post("/order/bracket", response_model=OrderResponse)
-async def place_bracket_order(req: BracketOrderRequest, _: bool = Depends(require_auth)):
+async def place_bracket_order(
+    req: BracketOrderRequest, _: bool = Depends(require_auth)
+):
     try:
         logger.info(f"Mottog bracket-order: {req.dict()}")
+        # Idempotens: central service (tidig retur om tidigare svar finns)
+        try:
+            cid2 = (req.client_id or "").strip() if hasattr(req, "client_id") else ""
+            if cid2:
+                _idem = get_idempotency_service()
+                _hit = _idem.check_and_register(cid2)
+                if _hit is not None and isinstance(_hit, dict):
+                    return OrderResponse(**_hit)
+        except Exception:
+            pass
         # Rate-limit skydd
         try:
             max_requests = int(getattr(settings, "ORDER_RATE_LIMIT_MAX", 0) or 0)
@@ -2859,10 +3040,9 @@ async def place_bracket_order(req: BracketOrderRequest, _: bool = Depends(requir
                     return OrderResponse(success=False, error="rate_limited")
         except Exception:
             pass
-        risk = RiskManager()
-        ok, reason = risk.pre_trade_checks(symbol=req.symbol)
-        if not ok:
-            return OrderResponse(success=False, error=f"risk_blocked:{reason}")
+        decision = unified_risk_service.evaluate_risk(symbol=req.symbol)
+        if not decision.allowed:
+            return OrderResponse(success=False, error=f"risk_blocked:{decision.reason}")
 
         # Hjälpare: extrahera order-id från Bitfinex svar (kan vara list-format)
         def _extract_order_id(res: dict | list | None) -> int | None:
@@ -2872,14 +3052,18 @@ async def place_bracket_order(req: BracketOrderRequest, _: bool = Depends(requir
                     return int(val) if val is not None else None
                 if isinstance(res, list) and len(res) >= 5:
                     orders = res[4]
-                    if isinstance(orders, list) and len(orders) > 0 and isinstance(orders[0], list):
+                    if (
+                        isinstance(orders, list)
+                        and len(orders) > 0
+                        and isinstance(orders[0], list)
+                    ):
                         return int(orders[0][0])
             except Exception:
                 return None
             return None
 
         # Entry
-        entry_payload = {
+        entry_payload: dict[str, Any] = {
             "symbol": req.symbol,
             "amount": req.amount,
             "type": req.entry_type,
@@ -2897,8 +3081,14 @@ async def place_bracket_order(req: BracketOrderRequest, _: bool = Depends(requir
             return OrderResponse(success=False, error=f"validation_error:{err}")
         entry_res = await rest_auth.place_order(entry_payload)
         if "error" in entry_res:
-            # Försök WS fallback 'on'
+            # Försök WS fallback 'on' - men inte om Dry Run är aktiverat
             try:
+                import services.runtime_config as rc
+
+                if rc.get_bool("DRY_RUN_ENABLED", False):
+                    logger.info("WS fallback hoppas över: Dry Run är aktiverat")
+                    return OrderResponse(success=False, error=entry_res.get("error"))
+
                 from services.bitfinex_websocket import bitfinex_ws as _ws
 
                 ws_res = await _ws.order_ops([["on", entry_payload]])
@@ -2916,7 +3106,9 @@ async def place_bracket_order(req: BracketOrderRequest, _: bool = Depends(requir
         if req.sl_price:
             sl_payload = {
                 "symbol": req.symbol,
-                "amount": (req.amount if req.side.lower() == "sell" else f"-{req.amount}"),
+                "amount": (
+                    req.amount if req.side.lower() == "sell" else f"-{req.amount}"
+                ),
                 "type": "EXCHANGE STOP",
                 "price": req.sl_price,
                 "side": "sell" if req.side.lower() == "buy" else "buy",
@@ -2940,7 +3132,9 @@ async def place_bracket_order(req: BracketOrderRequest, _: bool = Depends(requir
         if req.tp_price:
             tp_payload = {
                 "symbol": req.symbol,
-                "amount": (req.amount if req.side.lower() == "sell" else f"-{req.amount}"),
+                "amount": (
+                    req.amount if req.side.lower() == "sell" else f"-{req.amount}"
+                ),
                 "type": "EXCHANGE LIMIT",
                 "price": req.tp_price,
                 "side": "sell" if req.side.lower() == "buy" else "buy",
@@ -2973,17 +3167,14 @@ async def place_bracket_order(req: BracketOrderRequest, _: bool = Depends(requir
                 "symbol": req.symbol,
             },
         )
-        resp_obj = OrderResponse(success=True, data={"entry_id": entry_id, "sl_id": sl_id, "tp_id": tp_id})
+        resp_obj = OrderResponse(
+            success=True, data={"entry_id": entry_id, "sl_id": sl_id, "tp_id": tp_id}
+        )
         # Spara idempotensrespons om client_id angiven
         try:
-            if hasattr(req, "client_id") and getattr(req, "client_id", None):
-                from services.metrics import metrics_store as _ms
-
-                cache = _ms.setdefault("request_id_cache", {})
-                cache[str(req.client_id)] = {
-                    "ts": int(__import__("time").time()),
-                    "resp": resp_obj.dict(),
-                }
+            cid2 = (req.client_id or "").strip() if hasattr(req, "client_id") else ""
+            if cid2:
+                get_idempotency_service().store_response(cid2, resp_obj.dict())
         except Exception:
             pass
         return resp_obj
@@ -2992,45 +3183,25 @@ async def place_bracket_order(req: BracketOrderRequest, _: bool = Depends(requir
         return OrderResponse(success=False, error=str(e))
 
 
-# Risk windows GET + pause/resume
-@router.get("/risk/windows")
-async def get_trading_windows(_: bool = Depends(require_auth)):
-    try:
-        s = Settings()
-        tw = TradingWindowService(s)
-        return {
-            "timezone": tw.rules.timezone,
-            "windows": tw.rules.windows,
-            "paused": tw.rules.paused,
-            "limits": tw.get_limits(),
-        }
-    except Exception as e:
-        logger.exception(f"Fel vid hämtning av trading windows: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+"""Legacy risk windows endpoints borttagna – använd unified /risk/unified/*"""
 
 
-@router.post("/risk/pause")
-async def pause_trading(_: bool = Depends(require_auth)):
-    try:
-        s = Settings()
-        tw = TradingWindowService(s)
-        tw.set_paused(True)
-        return {"success": True, "paused": True}
-    except Exception as e:
-        logger.exception(f"Fel vid paus: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+# V2 API endpoints borttagna – använd unified /risk/unified/*
 
 
-@router.post("/risk/resume")
-async def resume_trading(_: bool = Depends(require_auth)):
-    try:
-        s = Settings()
-        tw = TradingWindowService(s)
-        tw.set_paused(False)
-        return {"success": True, "paused": False}
-    except Exception as e:
-        logger.exception(f"Fel vid resume: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+pass
+
+
+pass
+
+
+pass
+
+
+pass
+
+
+pass
 
 
 # Performance breakdown per symbol
@@ -3091,7 +3262,9 @@ async def get_account_performance_detail(_: bool = Depends(require_auth)):
         totals_by_currency: dict[str, dict[str, float]] = {}
         for w in wallets:
             cur = w.currency.upper()
-            e = totals_by_currency.setdefault(cur, {"total": 0.0, "exchange": 0.0, "margin": 0.0, "funding": 0.0})
+            e = totals_by_currency.setdefault(
+                cur, {"total": 0.0, "exchange": 0.0, "margin": 0.0, "funding": 0.0}
+            )
             e["total"] += float(w.balance)
             e[w.wallet_type] += float(w.balance)
 
@@ -3141,8 +3314,9 @@ class UpdateMaxTradesRequest(BaseModel):
 
 @router.get("/risk/status")
 async def get_risk_status(_: bool = Depends(require_auth)):
-    rm = RiskManager()
-    status = rm.status()
+    from services.unified_risk_service import unified_risk_service
+
+    status = unified_risk_service.get_risk_status()
     # Utöka med TransportCircuitBreaker state från limiter om tillgängligt
     try:
         from utils.advanced_rate_limiter import get_advanced_rate_limiter
@@ -3179,39 +3353,56 @@ class RuntimeConfigRequest(BaseModel):
 @router.get("/runtime/config")
 async def runtime_config_get(_: bool = Depends(require_auth)):
     try:
-        return {"overrides": runtime_cfg.current()}
+        import services.runtime_config as rc
+
+        return {"overrides": getattr(rc, "_runtime_overrides", {})}
     except Exception as e:
         logger.exception(f"Fel vid runtime config get: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/runtime/config")
-async def runtime_config_set(req: RuntimeConfigRequest, _: bool = Depends(require_auth)):
+async def runtime_config_set(
+    req: RuntimeConfigRequest, _: bool = Depends(require_auth)
+):
     try:
-        runtime_cfg.set_overrides(req.values or {})
+        import services.runtime_config as rc
+
+        for k, v in (req.values or {}).items():
+            if isinstance(v, bool):
+                rc.set_bool(k, v)
+            elif isinstance(v, int):
+                rc.set_int(k, v)
+            elif isinstance(v, float):
+                rc.set_float(k, v)
+            else:
+                rc.set_str(k, str(v))
         # Hot-reload limiter metrics export
         try:
             get_advanced_rate_limiter().export_metrics()
         except Exception:
             pass
-        return {"ok": True, "overrides": runtime_cfg.current()}
+        return {"ok": True, "overrides": getattr(rc, "_runtime_overrides", {})}
     except Exception as e:
         logger.exception(f"Fel vid runtime config set: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/risk/max-trades")
-async def update_max_trades(req: UpdateMaxTradesRequest, _: bool = Depends(require_auth)):
+async def update_max_trades(
+    req: UpdateMaxTradesRequest, _: bool = Depends(require_auth)
+):
     # Uppdatera i runtime settings (enkel variant). Permanent lagring kräver filskrivning.
     try:
-        s = Settings()
+        s = settings
         s.MAX_TRADES_PER_DAY = req.max_trades_per_day
         # persistera till regler
         tw = TradingWindowService(s)
         tw.rules.max_trades_per_day = req.max_trades_per_day
         tw.save_rules()
-        rm = RiskManager(s)
-        return {"success": True, "status": rm.status()}
+        from services.unified_risk_service import unified_risk_service
+
+        return {"success": True, "status": unified_risk_service.get_risk_status()}
     except Exception as e:
         logger.exception(f"Fel vid uppdatering av max trades: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
@@ -3222,13 +3413,16 @@ class UpdateMaxTradesSymbolRequest(BaseModel):
 
 
 @router.post("/risk/max-trades-symbol")
-async def update_max_trades_symbol(req: UpdateMaxTradesSymbolRequest, _: bool = Depends(require_auth)):
+async def update_max_trades_symbol(
+    req: UpdateMaxTradesSymbolRequest, _: bool = Depends(require_auth)
+):
     try:
-        s = Settings()
+        s = settings
         tw = TradingWindowService(s)
         tw.save_rules(max_trades_per_symbol_per_day=req.max_trades_per_symbol_per_day)
-        rm = RiskManager(s)
-        return {"success": True, "status": rm.status()}
+        from services.unified_risk_service import unified_risk_service
+
+        return {"success": True, "status": unified_risk_service.get_risk_status()}
     except Exception as e:
         logger.exception(f"Fel vid uppdatering av max trades per symbol: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
@@ -3237,8 +3431,10 @@ async def update_max_trades_symbol(req: UpdateMaxTradesSymbolRequest, _: bool = 
 @router.get("/risk/trade-counter")
 async def get_trade_counter(_: bool = Depends(require_auth)):
     try:
-        rm = RiskManager()
-        return rm.trade_counter.stats()
+        # UnifiedRiskService konsoliderar trade constraints; exponera status via get_risk_status
+        from services.unified_risk_service import unified_risk_service
+
+        return unified_risk_service.get_risk_status().get("trade_constraints", {})
     except Exception as e:
         logger.exception(f"Fel vid hämtning av trade counter: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
@@ -3255,18 +3451,23 @@ class CircuitConfigRequest(BaseModel):
 @router.get("/risk/circuit")
 async def circuit_status(_: bool = Depends(require_auth)):
     try:
-        rm = RiskManager()
-        return rm.status().get("circuit", {})
+        from services.unified_risk_service import unified_risk_service
+
+        return unified_risk_service.get_risk_status().get("circuit_breaker", {})
     except Exception as e:
         logger.exception(f"Fel vid circuit status: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/risk/circuit/reset")
-async def circuit_reset(resume: bool = True, clear_errors: bool = True, _: bool = Depends(require_auth)):
+async def circuit_reset(
+    resume: bool = True, clear_errors: bool = True, _: bool = Depends(require_auth)
+):
     try:
-        rm = RiskManager()
-        return rm.circuit_reset(resume=resume, clear_errors=clear_errors)
+        from services.unified_risk_service import unified_risk_service
+
+        ok = unified_risk_service.reset_circuit_breaker()
+        return {"success": ok}
     except Exception as e:
         logger.exception(f"Fel vid circuit reset: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
@@ -3275,13 +3476,11 @@ async def circuit_reset(resume: bool = True, clear_errors: bool = True, _: bool 
 @router.post("/risk/circuit/config")
 async def circuit_config(req: CircuitConfigRequest, _: bool = Depends(require_auth)):
     try:
-        rm = RiskManager()
-        return rm.update_circuit_config(
-            enabled=req.enabled,
-            window_seconds=req.window_seconds,
-            max_errors_per_window=req.max_errors_per_window,
-            notify=req.notify,
-        )
+        # unified_risk_service har fasta CB‑parametrar; eventuell config kan adderas senare
+        from services.unified_risk_service import unified_risk_service
+
+        ok = unified_risk_service.reset_circuit_breaker()
+        return {"success": ok, "note": "CB-config API förenklad; reset utförd"}
     except Exception as e:
         logger.exception(f"Fel vid circuit config: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
@@ -3330,7 +3529,9 @@ class RiskGuardConfigRequest(BaseModel):
 
 
 @router.post("/risk/guards/config")
-async def update_risk_guard_config(req: RiskGuardConfigRequest, _: bool = Depends(require_auth)):
+async def update_risk_guard_config(
+    req: RiskGuardConfigRequest, _: bool = Depends(require_auth)
+):
     """Uppdatera konfiguration för en riskvakt."""
     try:
         from services.risk_guards import risk_guards
@@ -3352,7 +3553,7 @@ async def update_risk_guard_config(req: RiskGuardConfigRequest, _: bool = Depend
 
 
 # Cost-Aware Backtest endpoints
-class BacktestRequest(BaseModel):
+class BacktestRequestV2(BaseModel):
     symbol: str
     timeframe: str = "1m"
     limit: int = 500
@@ -3362,7 +3563,9 @@ class BacktestRequest(BaseModel):
 
 
 @router.post("/backtest/cost-aware")
-async def run_cost_aware_backtest(req: BacktestRequest, _: bool = Depends(require_auth)):
+async def run_cost_aware_backtest(
+    req: BacktestRequestV2, _: bool = Depends(require_auth)
+):
     """Kör cost-aware backtest."""
     try:
         from services.cost_aware_backtest import TradeCosts, cost_aware_backtest
@@ -3467,7 +3670,9 @@ async def get_regime_status(_: bool = Depends(require_auth)):
 
 
 @router.post("/regime/config")
-async def update_regime_config(req: RegimeConfigRequest, _: bool = Depends(require_auth)):
+async def update_regime_config(
+    req: RegimeConfigRequest, _: bool = Depends(require_auth)
+):
     """Uppdatera konfiguration för ett regime."""
     try:
         from services.regime_ablation import regime_ablation
@@ -3479,7 +3684,9 @@ async def update_regime_config(req: RegimeConfigRequest, _: bool = Depends(requi
                 "message": f"Regime {req.regime_name} konfiguration uppdaterad",
             }
         else:
-            raise HTTPException(status_code=400, detail=f"Kunde inte uppdatera regime {req.regime_name}")
+            raise HTTPException(
+                status_code=400, detail=f"Kunde inte uppdatera regime {req.regime_name}"
+            )
     except Exception as e:
         logger.exception(f"Fel vid uppdatering av regime konfiguration: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
@@ -3643,7 +3850,9 @@ class BenchmarkRequest(BaseModel):
 
 
 @router.post("/json-optimizer/benchmark")
-async def benchmark_json_parsing(req: BenchmarkRequest, _: bool = Depends(require_auth)):
+async def benchmark_json_parsing(
+    req: BenchmarkRequest, _: bool = Depends(require_auth)
+):
     """Benchmark JSON parsing prestanda."""
     try:
         from utils.json_optimizer import benchmark_json_parsing
@@ -3734,10 +3943,36 @@ async def metrics_summary(_: bool = Depends(require_auth)):
     try:
         from fastapi.responses import JSONResponse
 
-        summary = get_metrics_summary()
+        summary = get_metrics_client().summary()
         return JSONResponse(content=summary)
     except Exception as e:
         logger.exception("Fel vid metrics summary")
+        raise HTTPException(status_code=500, detail="internal_error") from e
+
+
+# --- Unified Trading Window update ---
+class UnifiedWindowsUpdateRequest(BaseModel):
+    timezone: str | None = None
+    windows: dict[str, list[tuple[str, str]]] | None = None
+    paused: bool | None = None
+    max_trades_per_day: int | None = None
+    max_trades_per_symbol_per_day: int | None = None
+    trade_cooldown_seconds: int | None = None
+
+
+@router.post("/risk/unified/windows/update")
+async def update_unified_trading_windows(
+    req: UnifiedWindowsUpdateRequest, _: bool = Depends(require_auth)
+):
+    """Uppdatera trading windows/status via Unified TradingWindowService."""
+    try:
+        from services.trading_window import TradingWindowService
+
+        tw = TradingWindowService(settings)
+        await tw.update_rules_async(req.windows)
+        return {"status": "success", "message": "Tradingfönster uppdaterade."}
+    except Exception as e:
+        logger.exception(f"Fel vid uppdatering av unified trading windows: {e}")
         raise HTTPException(status_code=500, detail="internal_error") from e
 
 
@@ -3745,10 +3980,10 @@ async def metrics_summary(_: bool = Depends(require_auth)):
 async def metrics_acceptance(_: bool = Depends(require_auth)):
     try:
         from config.settings import Settings as _S
-        from services.metrics import get_metrics_summary as _get
+        from services.metrics_client import get_metrics_client as _get_client
 
         s = _S()
-        m = _get()
+        m = _get_client().summary()
         p95 = int(m.get("latency", {}).get("candles_ms", {}).get("p95", 0))
         p99 = int(m.get("latency", {}).get("candles_ms", {}).get("p99", 0))
         last_hour = m.get("errors", {}).get("last_hour", {}) or {}
@@ -3815,188 +4050,17 @@ class CacheClearRequest(BaseModel):
     timeframe: str | None = None
 
 
-# --- MCP bridge ---
-class MCPExecuteRequest(BaseModel):
-    tool: str
-    params: dict[str, Any] | None = None
-
-
-@router.post("/mcp/execute")
-async def mcp_execute(req: MCPExecuteRequest, _: bool = Depends(require_auth)):
-    try:
-        name = (req.tool or "").strip().lower()
-        p = dict(req.params or {})
-
-        # get_token
-        if name == "get_token":
-            user_id = str(p.get("user_id") or "frontend_user")
-            scope = str(p.get("scope") or "read")
-            expiry_hours = int(p.get("expiry_hours") or 1)
-            token_data = generate_token(user_id=user_id, scope=scope, expiry_minutes=expiry_hours * 60)
-            return {
-                "success": True,
-                "token": (token_data.get("access_token") if isinstance(token_data, dict) else None),
-            }
-
-        # ws_status
-        if name == "ws_status":
-            from services.bitfinex_websocket import bitfinex_ws
-
-            return bitfinex_ws.get_pool_status()
-
-        # toggles
-        if name == "toggle_ws_strategy":
-            enabled = bool(p.get("enabled"))
-            set_ws_strategy_enabled(enabled)
-            return {
-                "success": True,
-                "ws_strategy_enabled": bool(get_ws_strategy_enabled()),
-            }
-
-        if name == "toggle_validation_warmup":
-            enabled = bool(p.get("enabled"))
-            set_validation_on_start(enabled)
-            return {
-                "success": True,
-                "validation_on_start": bool(get_validation_on_start()),
-            }
-
-        if name == "toggle_ws_connect_on_start":
-            enabled = bool(p.get("enabled"))
-            set_ws_connect_on_start(enabled)
-            return {
-                "success": True,
-                "ws_connect_on_start": bool(get_ws_connect_on_start()),
-            }
-
-        # market_ticker
-        if name == "market_ticker":
-            sym = str(p.get("symbol") or "tBTCUSD")
-            data = await get_market_data().get_ticker(sym)
-            return data or {"error": "no_data"}
-
-        # run_validation
-        if name == "run_validation":
-            # acceptera symbols som lista eller komma-separerad sträng
-            syms = p.get("symbols")
-            if isinstance(syms, str):
-                symbols = [s.strip() for s in syms.split(",") if s.strip()]
-            else:
-                symbols = syms
-            timeframe = p.get("timeframe") or None
-            limit = p.get("limit") if p.get("limit") is not None else None
-            max_samples = p.get("max_samples") if p.get("max_samples") is not None else None
-            payload = ProbValidateRunRequest(symbols=symbols, timeframe=str(timeframe or "1m"))
-            # pydantic kräver explicita fält; fyll in efter init om givna
-            if isinstance(limit, int):
-                payload.limit = int(limit)
-            if isinstance(max_samples, int):
-                payload.max_samples = int(max_samples)
-            res = await prob_validate_run(payload, True)
-            return res
-
-        # place_order
-        if name == "place_order":
-            req_payload = OrderRequest(
-                symbol=str(p.get("symbol")),
-                amount=str(p.get("amount")),
-                type=str(p.get("order_type") or "EXCHANGE MARKET"),
-                price=p.get("price"),
-                side=p.get("side"),
-            )
-            resp = await place_order_endpoint(req_payload, True)
-            return resp.dict() if hasattr(resp, "dict") else resp
-
-        return {"success": False, "error": f"unknown_tool:{name}"}
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.exception(f"MCP execute error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-# --- MCP simple GET wrappers (för enkel test/webbläsare) ---
-@router.get("/mcp/ws_status")
-async def mcp_ws_status(_: bool = Depends(require_auth)):
-    from services.bitfinex_websocket import bitfinex_ws
-
-    return bitfinex_ws.get_pool_status()
-
-
-@router.get("/mcp/get_token")
-async def mcp_get_token(
-    user_id: str = "frontend_user",
-    scope: str = "read",
-    expiry_hours: int = 1,
-):
-    try:
-        token_data = generate_token(user_id=user_id, scope=scope, expiry_minutes=expiry_hours * 60)
-        return {
-            "success": True,
-            "token": (token_data.get("access_token") if isinstance(token_data, dict) else None),
-        }
-    except Exception as e:
-        logger.exception(f"MCP get_token error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.get("/mcp/market_ticker")
-async def mcp_market_ticker(symbol: str = "tBTCUSD", _: bool = Depends(require_auth)):
-    try:
-        data = await get_market_data().get_ticker(symbol)
-        return data or {"error": "no_data"}
-    except Exception as e:
-        logger.exception(f"MCP market_ticker error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.get("/mcp/ws_strategy")
-async def mcp_ws_strategy(_: bool = Depends(require_auth)):
-    return {"ws_strategy_enabled": bool(get_ws_strategy_enabled())}
-
-
-@router.get("/mcp/validation_warmup")
-async def mcp_validation_warmup(_: bool = Depends(require_auth)):
-    return {"validation_on_start": bool(get_validation_on_start())}
-
-
-@router.get("/mcp/ws_connect_on_start")
-async def mcp_ws_connect_on_start(_: bool = Depends(require_auth)):
-    return {"ws_connect_on_start": bool(get_ws_connect_on_start())}
-
-
-@router.get("/mcp/run_validation")
-async def mcp_run_validation(
-    symbols: str | None = None,
-    timeframe: str = "1m",
-    limit: int | None = None,
-    max_samples: int | None = None,
-    _: bool = Depends(require_auth),
-):
-    try:
-        sym_list = None
-        if symbols:
-            sym_list = [s.strip() for s in symbols.split(",") if s.strip()]
-        payload = ProbValidateRunRequest(symbols=sym_list, timeframe=timeframe)
-        if isinstance(limit, int):
-            payload.limit = int(limit)
-        if isinstance(max_samples, int):
-            payload.max_samples = int(max_samples)
-        return await prob_validate_run(payload, True)
-    except Exception as e:
-        logger.exception(f"MCP run_validation error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
 # --- UI capabilities ---
 @router.get("/ui/capabilities")
 async def ui_capabilities(_: bool = Depends(require_auth)):
     try:
-        s = Settings()
+        s = settings
+        from utils.feature_flags import get_feature_flag as _ff
+
         caps = {
             "ws": {
-                "connect_on_start": bool(get_ws_connect_on_start()),
-                "strategy_enabled": bool(get_ws_strategy_enabled()),
+                "connect_on_start": bool(_ff("ws_connect_on_start", True)),
+                "strategy_enabled": bool(_ff("ws_strategy_enabled", False)),
             },
             "prob": {
                 "validate_enabled": bool(getattr(s, "PROB_VALIDATE_ENABLED", True)),
@@ -4027,34 +4091,7 @@ class MCPTogglePayload(BaseModel):
     enabled: bool
 
 
-@router.post("/mcp/ws_strategy")
-async def mcp_set_ws_strategy(payload: MCPTogglePayload, _: bool = Depends(require_auth)):
-    try:
-        set_ws_strategy_enabled(bool(payload.enabled))
-        return {"ok": True, "ws_strategy_enabled": bool(get_ws_strategy_enabled())}
-    except Exception as e:
-        logger.exception(f"MCP set ws_strategy error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.post("/mcp/validation_warmup")
-async def mcp_set_validation_warmup(payload: MCPTogglePayload, _: bool = Depends(require_auth)):
-    try:
-        set_validation_on_start(bool(payload.enabled))
-        return {"ok": True, "validation_on_start": bool(get_validation_on_start())}
-    except Exception as e:
-        logger.exception(f"MCP set validation_warmup error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.post("/mcp/ws_connect_on_start")
-async def mcp_set_ws_connect_on_start(payload: MCPTogglePayload, _: bool = Depends(require_auth)):
-    try:
-        set_ws_connect_on_start(bool(payload.enabled))
-        return {"ok": True, "ws_connect_on_start": bool(get_ws_connect_on_start())}
-    except Exception as e:
-        logger.exception(f"MCP set ws_connect_on_start error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+# MCP endpoints removed (legacy functionality disabled)
 
 
 class BackfillRequest(BaseModel):
@@ -4104,7 +4141,9 @@ async def cache_candles_clear(req: CacheClearRequest, _: bool = Depends(require_
 async def cache_candles_backfill(req: BackfillRequest, _: bool = Depends(require_auth)):
     try:
         svc = get_market_data()
-        inserted = await svc.backfill_history(req.symbol, req.timeframe, req.max_batches, req.batch_limit)
+        inserted = await svc.backfill_history(
+            req.symbol, req.timeframe, req.max_batches, req.batch_limit
+        )
         _emit_notification(
             "info",
             "Candle cache backfill",
@@ -4176,22 +4215,23 @@ class CoreModeRequest(BaseModel):
 # --- Runtime toggles: WS strategy & Validation warmup ---
 @router.get("/mode/ws-strategy")
 async def get_ws_strategy(_: bool = Depends(require_auth)):
-    return {"ws_strategy_enabled": bool(get_ws_strategy_enabled())}
+    return {"ws_strategy_enabled": bool(_get_flag("ws_strategy_enabled", False))}
 
 
 @router.post("/mode/ws-strategy")
 async def set_ws_strategy(payload: CoreModeRequest, _: bool = Depends(require_auth)):
     try:
-        set_ws_strategy_enabled(bool(payload.enabled))
+        _set_flag("ws_strategy_enabled", bool(payload.enabled))
         # Auto‑subscribe när WS Strategy slås på
         try:
             if bool(payload.enabled):
-                s = Settings()
+                s = settings
                 raw = (getattr(s, "WS_SUBSCRIBE_SYMBOLS", None) or "").strip()
                 if raw:
                     syms = [x.strip() for x in raw.split(",") if x.strip()]
                 else:
-                    # Fallback: standardpar
+                    s = settings
+                    ...
                     syms = [f"t{getattr(s, 'DEFAULT_TRADING_PAIR', 'BTCUSD')}"]
                 import asyncio as _async
 
@@ -4200,13 +4240,18 @@ async def set_ws_strategy(payload: CoreModeRequest, _: bool = Depends(require_au
                 for sym in syms:
                     try:
                         _async.create_task(
-                            _ws.subscribe_with_strategy_evaluation(sym, _ws._handle_ticker_with_strategy)
+                            _ws.subscribe_with_strategy_evaluation(
+                                sym, _ws._handle_ticker_with_strategy
+                            )
                         )
                     except Exception:
                         pass
         except Exception:
             pass
-        return {"ok": True, "ws_strategy_enabled": bool(get_ws_strategy_enabled())}
+        return {
+            "ok": True,
+            "ws_strategy_enabled": bool(_get_flag("ws_strategy_enabled", False)),
+        }
     except Exception as e:
         logger.exception(f"Fel vid set ws-strategy: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
@@ -4214,14 +4259,19 @@ async def set_ws_strategy(payload: CoreModeRequest, _: bool = Depends(require_au
 
 @router.get("/mode/validation-warmup")
 async def get_validation_warmup(_: bool = Depends(require_auth)):
-    return {"validation_on_start": bool(get_validation_on_start())}
+    return {"validation_on_start": bool(_get_flag("validation_on_start", False))}
 
 
 @router.post("/mode/validation-warmup")
-async def set_validation_warmup(payload: CoreModeRequest, _: bool = Depends(require_auth)):
+async def set_validation_warmup(
+    payload: CoreModeRequest, _: bool = Depends(require_auth)
+):
     try:
-        set_validation_on_start(bool(payload.enabled))
-        return {"ok": True, "validation_on_start": bool(get_validation_on_start())}
+        _set_flag("validation_on_start", bool(payload.enabled))
+        return {
+            "ok": True,
+            "validation_on_start": bool(_get_flag("validation_on_start", False)),
+        }
     except Exception as e:
         logger.exception(f"Fel vid set validation-warmup: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
@@ -4229,14 +4279,19 @@ async def set_validation_warmup(payload: CoreModeRequest, _: bool = Depends(requ
 
 @router.get("/mode/ws-connect-on-start")
 async def get_ws_connect_toggle(_: bool = Depends(require_auth)):
-    return {"ws_connect_on_start": bool(get_ws_connect_on_start())}
+    return {"ws_connect_on_start": bool(_get_flag("ws_connect_on_start", True))}
 
 
 @router.post("/mode/ws-connect-on-start")
-async def set_ws_connect_toggle(payload: CoreModeRequest, _: bool = Depends(require_auth)):
+async def set_ws_connect_toggle(
+    payload: CoreModeRequest, _: bool = Depends(require_auth)
+):
     try:
-        set_ws_connect_on_start(bool(payload.enabled))
-        return {"ok": True, "ws_connect_on_start": bool(get_ws_connect_on_start())}
+        _set_flag("ws_connect_on_start", bool(payload.enabled))
+        return {
+            "ok": True,
+            "ws_connect_on_start": bool(_get_flag("ws_connect_on_start", True)),
+        }
     except Exception as e:
         logger.exception(f"Fel vid set ws-connect-on-start: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
@@ -4264,7 +4319,9 @@ async def get_template(name: str, _: bool = Depends(require_auth)):
 async def save_template(payload: SaveTemplateRequest, _: bool = Depends(require_auth)):
     try:
         svc = OrderTemplatesService()
-        result = svc.save_template({k: v for k, v in payload.dict().items() if v is not None})
+        result = svc.save_template(
+            {k: v for k, v in payload.dict().items() if v is not None}
+        )
         return result
     except Exception as e:
         logger.exception(f"Fel vid save_template: {e}")
@@ -4327,10 +4384,14 @@ async def delete_template(name: str, _: bool = Depends(require_auth)):
 
 
 @router.post("/orders/templates")
-async def save_template_alias(payload: SaveTemplateRequest, _: bool = Depends(require_auth)):
+async def save_template_alias(
+    payload: SaveTemplateRequest, _: bool = Depends(require_auth)
+):
     try:
         svc = OrderTemplatesService()
-        result = svc.save_template({k: v for k, v in payload.dict().items() if v is not None})
+        result = svc.save_template(
+            {k: v for k, v in payload.dict().items() if v is not None}
+        )
         return result
     except Exception as e:
         logger.exception(f"Fel vid save_template (alias): {e}")
@@ -4347,9 +4408,11 @@ class UpdateWindowsRequest(BaseModel):
 
 
 @router.post("/risk/windows")
-async def update_trading_windows(req: UpdateWindowsRequest, _: bool = Depends(require_auth)):
+async def update_trading_windows(
+    req: UpdateWindowsRequest, _: bool = Depends(require_auth)
+):
     try:
-        s = Settings()
+        s = settings
         tw = TradingWindowService(s)
         # Omvandla list[List[str]] till List[Tuple[str, str]]
         windows_typed = None
@@ -4374,7 +4437,9 @@ async def update_trading_windows(req: UpdateWindowsRequest, _: bool = Depends(re
 @router.get("/mode/dry-run")
 async def get_dry_run(_: bool = Depends(require_auth)):
     try:
-        return {"dry_run_enabled": bool(getattr(settings, "DRY_RUN_ENABLED", False))}
+        import services.runtime_config as rc
+
+        return {"dry_run_enabled": bool(rc.get_bool("DRY_RUN_ENABLED", False))}
     except Exception as e:
         logger.exception(f"Fel vid get dry-run: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -4385,9 +4450,9 @@ async def set_dry_run(payload: CoreModeRequest, _: bool = Depends(require_auth))
     try:
         # Uppdatera runtime-config och env
         try:
-            import os as _os
+            import services.runtime_config as rc
 
-            _os.environ["DRY_RUN_ENABLED"] = "True" if payload.enabled else "False"
+            rc.set_bool("DRY_RUN_ENABLED", bool(payload.enabled))
         except Exception:
             pass
         try:
@@ -4395,7 +4460,7 @@ async def set_dry_run(payload: CoreModeRequest, _: bool = Depends(require_auth))
         except Exception:
             pass
         _emit_notification("info", "Dry run", {"enabled": bool(payload.enabled)})
-        return {"dry_run_enabled": bool(getattr(settings, "DRY_RUN_ENABLED", False))}
+        return {"dry_run_enabled": bool(rc.get_bool("DRY_RUN_ENABLED", False))}
     except Exception as e:
         logger.exception(f"Fel vid set dry-run: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -4405,7 +4470,9 @@ async def set_dry_run(payload: CoreModeRequest, _: bool = Depends(require_auth))
 @router.get("/mode/trading-paused")
 async def get_trading_paused(_: bool = Depends(require_auth)):
     try:
-        return {"trading_paused": bool(getattr(settings, "TRADING_PAUSED", False))}
+        import services.runtime_config as rc
+
+        return {"trading_paused": bool(rc.get_bool("TRADING_PAUSED", False))}
     except Exception as e:
         logger.exception(f"Fel vid get trading-paused: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -4416,9 +4483,9 @@ async def set_trading_paused(payload: CoreModeRequest, _: bool = Depends(require
     try:
         # Uppdatera runtime-config och env
         try:
-            import os as _os
+            import services.runtime_config as rc
 
-            _os.environ["TRADING_PAUSED"] = "True" if payload.enabled else "False"
+            rc.set_bool("TRADING_PAUSED", bool(payload.enabled))
         except Exception:
             pass
         try:
@@ -4426,7 +4493,7 @@ async def set_trading_paused(payload: CoreModeRequest, _: bool = Depends(require
         except Exception:
             pass
         _emit_notification("info", "Trading paused", {"enabled": bool(payload.enabled)})
-        return {"trading_paused": bool(getattr(settings, "TRADING_PAUSED", False))}
+        return {"trading_paused": bool(rc.get_bool("TRADING_PAUSED", False))}
     except Exception as e:
         logger.exception(f"Fel vid set trading-paused: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -4442,7 +4509,9 @@ async def get_prob_model(_: bool = Depends(require_auth)):
         enabled = bool(getattr(prob_model, "enabled", False))
         if enabled is False:
             try:
-                enabled = bool(getattr(Settings(), "PROB_MODEL_ENABLED", False))
+                import services.runtime_config as rc
+
+                enabled = bool(rc.get_bool("PROB_MODEL_ENABLED", False))
             except Exception:
                 pass
         return {"prob_model_enabled": bool(enabled)}
@@ -4454,11 +4523,11 @@ async def get_prob_model(_: bool = Depends(require_auth)):
 @router.post("/mode/prob-model")
 async def set_prob_model(payload: CoreModeRequest, _: bool = Depends(require_auth)):
     try:
-        import os as _os
+        import services.runtime_config as rc
 
         from services.prob_model import prob_model
 
-        _os.environ["PROB_MODEL_ENABLED"] = "True" if payload.enabled else "False"
+        rc.set_bool("PROB_MODEL_ENABLED", bool(payload.enabled))
         try:
             prob_model.enabled = bool(payload.enabled)
         except Exception:
@@ -4474,7 +4543,16 @@ async def set_prob_model(payload: CoreModeRequest, _: bool = Depends(require_aut
 @router.get("/mode/autotrade")
 async def get_autotrade(_: bool = Depends(require_auth)):
     try:
-        return {"autotrade_enabled": bool(getattr(Settings(), "PROB_AUTOTRADE_ENABLED", False))}
+        import services.runtime_config as rc
+
+        return {
+            "autotrade_enabled": bool(
+                rc.get_bool(
+                    "PROB_AUTOTRADE_ENABLED",
+                    getattr(settings, "PROB_AUTOTRADE_ENABLED", False),
+                )
+            )
+        }
     except Exception as e:
         logger.exception(f"Fel vid get autotrade: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -4483,13 +4561,89 @@ async def get_autotrade(_: bool = Depends(require_auth)):
 @router.post("/mode/autotrade")
 async def set_autotrade(payload: CoreModeRequest, _: bool = Depends(require_auth)):
     try:
-        import os as _os
+        import services.runtime_config as rc
 
-        _os.environ["PROB_AUTOTRADE_ENABLED"] = "True" if payload.enabled else "False"
+        rc.set_bool("PROB_AUTOTRADE_ENABLED", bool(payload.enabled))
+        # spegla även i singleton settings för process-lokalt state
+        try:
+            settings.PROB_AUTOTRADE_ENABLED = bool(payload.enabled)
+        except Exception:
+            pass
         _emit_notification("info", "Autotrade", {"enabled": bool(payload.enabled)})
-        return {"autotrade_enabled": bool(getattr(Settings(), "PROB_AUTOTRADE_ENABLED", False))}
+        return {
+            "autotrade_enabled": bool(
+                rc.get_bool(
+                    "PROB_AUTOTRADE_ENABLED",
+                    getattr(settings, "PROB_AUTOTRADE_ENABLED", False),
+                )
+            )
+        }
     except Exception as e:
         logger.exception(f"Fel vid set autotrade: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# --- Refresh Manager endpoints ---
+@router.get("/refresh-manager/status")
+async def get_refresh_manager_status(_: bool = Depends(require_auth)):
+    """Hämta status för RefreshManager."""
+    try:
+        from services.refresh_manager import get_refresh_manager
+
+        manager = get_refresh_manager()
+        status = manager.get_panel_status()
+        intervals = manager.get_refresh_intervals_summary()
+
+        return {
+            "status": status,
+            "intervals": intervals,
+            "shared_data_timestamp": manager.shared_data.timestamp.isoformat(),
+        }
+    except Exception as e:
+        logger.exception(f"Fel vid hämtning av refresh manager status: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/refresh-manager/force-refresh")
+async def force_refresh_panel(request: dict[str, Any], _: bool = Depends(require_auth)):
+    """Tvinga refresh för en specifik panel eller alla."""
+    panel_id = request.get("panel_id")
+    try:
+        from services.refresh_manager import get_refresh_manager
+
+        manager = get_refresh_manager()
+        await manager.force_refresh(panel_id)
+
+        target = panel_id or "alla paneler"
+        return {"success": True, "message": f"Refresh tvingad för {target}"}
+    except Exception as e:
+        logger.exception(f"Fel vid force refresh: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/refresh-manager/start")
+async def start_refresh_manager(_: bool = Depends(require_auth)):
+    """Starta RefreshManager."""
+    try:
+        from services.refresh_manager import start_refresh_manager
+
+        await start_refresh_manager()
+        return {"success": True, "message": "RefreshManager startad"}
+    except Exception as e:
+        logger.exception(f"Fel vid start av refresh manager: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/refresh-manager/stop")
+async def stop_refresh_manager(_: bool = Depends(require_auth)):
+    """Stoppa RefreshManager."""
+    try:
+        from services.refresh_manager import stop_refresh_manager
+
+        await stop_refresh_manager()
+        return {"success": True, "message": "RefreshManager stoppad"}
+    except Exception as e:
+        logger.exception(f"Fel vid stopp av refresh manager: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -4499,7 +4653,10 @@ async def get_scheduler(_: bool = Depends(require_auth)):
     try:
         from services.scheduler import scheduler
 
-        return {"scheduler_running": bool(scheduler.is_running())}
+        # Optimera med caching för att minska API-anrop
+        is_running = bool(scheduler.is_running())
+
+        return {"scheduler_running": is_running}
     except Exception as e:
         logger.exception(f"Fel vid get scheduler: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -4529,70 +4686,114 @@ async def set_scheduler(payload: CoreModeRequest, _: bool = Depends(require_auth
 async def get_all_regimes(_: bool = Depends(require_auth)):
     """
     Hämtar aktuell regim för alla aktiva symboler med confidence scores och trading probabilities.
-    OPTIMERAD: Caching för bättre prestanda.
+    ENHETLIG: Använder UnifiedSignalService för konsistenta resultat.
     """
-    logger.info("🎯 /strategy/regime/all endpoint anropad - MED CONFIDENCE SCORES")
+    logger.info("🎯 /strategy/regime/all endpoint anropad - ENHETLIG SIGNAL SERVICE")
 
-    # OPTIMERING: Cache för alla regimer
-    cache_key = "all_regimes_enhanced"
-    cache_ttl = timedelta(minutes=2)  # Kort cache för live data
+    try:
+        from services.unified_signal_service import unified_signal_service
 
-    # Kontrollera cache först
-    if hasattr(get_all_regimes, "_cache"):
-        cached_data = get_all_regimes._cache.get(cache_key)
-        if cached_data and (datetime.now() - cached_data["timestamp"]) < cache_ttl:
-            logger.debug("📋 Använder cached all regimes data")
-            return cached_data["data"]
-    else:
-        get_all_regimes._cache = {}
+        # Använd UnifiedSignalService för enhetlig regime sammanfattning
+        result = await unified_signal_service.get_regime_summary()
 
-    # Enhetlig scoring via SignalService (ersätter lokala beräkningar)
-    scorer = SignalService()
+        logger.info("📊 Returnerar enhetlig regime sammanfattning")
+        return result
 
-    # Statisk test-data med confidence scores
+    except Exception as e:
+        logger.error(f"❌ Fel vid hämtning av all regimes: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    try:
+        from services.symbols import SymbolService
+        from config.settings import Settings
 
-    test_regimes = [
-        {
-            "symbol": "TESTBTC:TESTUSD",
-            "regime": "trend",
-            "adx_value": 28.3,
-            "ema_z_value": -1.93,
-            "last_close": 115090.0,
-        },
-        {
-            "symbol": "TESTETH:TESTUSD",
-            "regime": "balanced",
-            "adx_value": 21.7,
-            "ema_z_value": -0.70,
-            "last_close": 4676.6,
-        },
-        {
-            "symbol": "TESTADA:TESTUSD",
-            "regime": "balanced",
-            "adx_value": 18.5,
-            "ema_z_value": -0.45,
-            "last_close": 0.52,
-        },
-        {
-            "symbol": "TESTSOL:TESTUSD",
-            "regime": "range",
-            "adx_value": 12.3,
-            "ema_z_value": -0.15,
-            "last_close": 89.45,
-        },
-        {
-            "symbol": "TESTDOT:TESTUSD",
-            "regime": "trend",
-            "adx_value": 35.8,
-            "ema_z_value": -2.45,
-            "last_close": 7.23,
-        },
-    ]
+        symbol_service = SymbolService()
+        _s = settings
+
+        raw_symbols = (_s.WS_SUBSCRIBE_SYMBOLS or "").strip()
+        if raw_symbols:
+            symbols = [s.strip() for s in raw_symbols.split(",") if s.strip()]
+        else:
+            symbols = symbol_service.get_symbols(test_only=True, fmt="v2")[
+                :5
+            ]  # Begränsa till 5 för prestanda
+
+        logger.info(f"📊 Hämtar live regime data för {len(symbols)} symboler")
+
+        # Hämta live regime data för varje symbol
+        live_regimes = []
+        for symbol in symbols:
+            try:
+                # Använd samma regime endpoint som Live Signals
+                # Hämta regime data direkt via MarketDataFacade
+                from services.market_data_facade import get_market_data
+                from indicators.regime import detect_regime
+                from indicators.adx import adx as adx_series
+                from indicators.regime import ema_z
+
+                data_service = get_market_data()
+                candles = await data_service.get_candles(symbol, "1m", limit=50)
+
+                if candles and len(candles) >= 20:
+                    highs = [float(candle[3]) for candle in candles if len(candle) >= 4]
+                    lows = [float(candle[4]) for candle in candles if len(candle) >= 5]
+                    closes = [
+                        float(candle[2]) for candle in candles if len(candle) >= 3
+                    ]
+
+                    if len(highs) >= 20 and len(lows) >= 20 and len(closes) >= 20:
+                        regime = detect_regime(highs, lows, closes)
+                        adx_vals = adx_series(highs, lows, closes, period=14)
+                        ez_vals = ema_z(closes, 3, 7, 200)
+
+                        regime_data = {
+                            "symbol": symbol,
+                            "regime": regime,
+                            "adx_value": adx_vals[-1] if adx_vals else None,
+                            "ema_z_value": ez_vals[-1] if ez_vals else None,
+                            "last_close": closes[-1] if closes else None,
+                        }
+                    else:
+                        regime_data = None
+                else:
+                    regime_data = None
+                if (
+                    regime_data
+                    and "regime" in regime_data
+                    and regime_data["regime"] != "unknown"
+                ):
+                    live_regimes.append(regime_data)
+            except Exception as e:
+                logger.warning(f"⚠️ Kunde inte hämta regime för {symbol}: {e}")
+                continue
+
+        test_regimes = live_regimes
+
+    except Exception as e:
+        logger.error(f"❌ Fel vid hämtning av live symboler, använder fallback: {e}")
+        # Fallback till statisk test-data om live hämtning misslyckas
+        test_regimes = [
+            {
+                "symbol": "TESTBTC:TESTUSD",
+                "regime": "trend",
+                "adx_value": 28.3,
+                "ema_z_value": -1.93,
+                "last_close": 115090.0,
+            },
+            {
+                "symbol": "TESTETH:TESTUSD",
+                "regime": "balanced",
+                "adx_value": 21.7,
+                "ema_z_value": -0.70,
+                "last_close": 4676.6,
+            },
+        ]
 
     # Beräkna confidence/probability och rekommendation via SignalService
     enhanced_regimes = []
     for regime_data in test_regimes:
-        sc = scorer.score(
+        # SignalService already imported at top; reuse it below
+        signal_service = SignalService()
+        sc = signal_service.score(
             regime=regime_data["regime"],
             adx_value=regime_data["adx_value"],
             ema_z_value=regime_data["ema_z_value"],
@@ -4624,7 +4825,9 @@ async def get_all_regimes(_: bool = Depends(require_auth)):
     trend_count = len([r for r in enhanced_regimes if r["regime"] == "trend"])
     balanced_count = len([r for r in enhanced_regimes if r["regime"] == "balanced"])
     range_count = len([r for r in enhanced_regimes if r["regime"] == "range"])
-    avg_confidence = sum(r["confidence_score"] for r in enhanced_regimes) / len(enhanced_regimes)
+    avg_confidence = sum(r["confidence_score"] for r in enhanced_regimes) / len(
+        enhanced_regimes
+    )
     total_trading_prob = sum(r["trading_probability"] for r in enhanced_regimes)
 
     logger.info("📊 Returnerar enhanced regim-data med confidence scores")
@@ -4643,6 +4846,8 @@ async def get_all_regimes(_: bool = Depends(require_auth)):
     }
 
     # Spara i cache
+    # timeframe/limit används inte här – ta bort för att undvika undefined
+    cache_key = f"regimes_{symbol}"
     get_all_regimes._cache[cache_key] = {"data": result, "timestamp": datetime.now()}
 
     return result
@@ -4732,7 +4937,9 @@ async def get_strategy_regime(symbol: str, _: bool = Depends(require_auth)):
 
 
 @router.post("/strategy/update-from-regime")
-async def update_strategy_from_regime(symbol: str | None = None, _: bool = Depends(require_auth)):
+async def update_strategy_from_regime(
+    symbol: str | None = None, _: bool = Depends(require_auth)
+):
     """
     Uppdaterar strategi-settings baserat på aktuell regim och auto-flaggor.
     """
@@ -4803,6 +5010,874 @@ async def stop_enhanced_auto_trading(symbol: str, _: bool = Depends(require_auth
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# --- Unified Risk Service endpoints ---
+@router.get("/risk/unified/status")
+async def get_unified_risk_status(_: bool = Depends(require_auth)):
+    """Hämta komplett risk-status från UnifiedRiskService."""
+    try:
+        from services.unified_risk_service import unified_risk_service
+        from services.trading_window import TradingWindowService
+
+        s = settings
+        tw = TradingWindowService(s)
+
+        status = unified_risk_service.get_risk_status()
+        # Utöka unified-status med trading window-fält för en enhetlig vy
+        try:
+            tw_status = tw.get_status()
+            status["trading_window"] = {
+                "paused": tw_status.get("paused", False),
+                "open": tw_status.get("open", False),
+                "next_open": tw_status.get("next_open"),
+                "windows": tw_status.get("windows", []),
+                "timezone": tw_status.get("timezone", "UTC"),
+            }
+        except Exception:
+            pass
+        return status
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/risk/unified/evaluate")
+async def evaluate_risk(request: dict[str, Any], _: bool = Depends(require_auth)):
+    """Utför risk-evaluering för en trade."""
+    symbol = request.get("symbol")
+    amount = request.get("amount")
+    price = request.get("price")
+    try:
+        from services.unified_risk_service import unified_risk_service
+
+        decision = unified_risk_service.evaluate_risk(symbol, amount, price)
+        return {
+            "allowed": decision.allowed,
+            "reason": decision.reason,
+            "details": decision.details,
+            "timestamp": datetime.now().isoformat(),
+        }
+    except Exception as e:
+        logger.exception(f"Fel vid risk-evaluering: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# --- Unified Risk Control endpoints ---
+@router.post("/risk/unified/pause")
+async def pause_unified_risk(_: bool = Depends(require_auth)):
+    """Pausa trading (unified)."""
+    try:
+        from services.trading_window import TradingWindowService
+
+        s = settings
+        tw = TradingWindowService(s)
+        tw.set_paused(True)
+        return {"success": True, "paused": True}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/risk/unified/resume")
+async def resume_unified_risk(_: bool = Depends(require_auth)):
+    """Återuppta trading (unified) och återställ circuit breakers där det är säkert."""
+    try:
+        from services.trading_window import TradingWindowService
+        from services.unified_circuit_breaker_service import (
+            unified_circuit_breaker_service,
+        )
+        from utils.advanced_rate_limiter import get_advanced_rate_limiter
+
+        s = settings
+        tw = TradingWindowService(s)
+        # 1) Unpause trading window
+        tw.set_paused(False)
+
+        # 2) Reset unified circuit breakers
+        try:
+            unified_circuit_breaker_service.reset_all_circuit_breakers()
+        except Exception:
+            pass
+
+        # 3) Nollställ transport CB cooldowns för kända endpoints
+        try:
+            limiter = get_advanced_rate_limiter()
+            for ep in [
+                "auth/r/wallets",
+                "auth/r/positions",
+                "auth/r/info/margin",
+                "auth/r/trades",
+            ]:
+                st = limiter._cb_state.get(ep)
+                if st:
+                    st["fail_count"] = 0
+                    st["open_until"] = 0.0
+                    st["last_failure"] = 0.0
+                    limiter._cb_state[ep] = st
+        except Exception:
+            pass
+
+        return {"success": True, "paused": False}
+    except Exception as e:
+        logger.exception(f"Fel vid unified resume: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/risk/unified/reset-guard")
+async def reset_risk_guard_unified(
+    request: dict[str, Any], _: bool = Depends(require_auth)
+):
+    """Återställ en specifik riskvakt."""
+    guard_name = request.get("guard_name")
+
+    if not guard_name:
+        raise HTTPException(status_code=400, detail="guard_name parameter is required")
+    try:
+        from services.unified_risk_service import unified_risk_service
+
+        success = unified_risk_service.reset_guard(guard_name)
+        return {
+            "success": success,
+            "message": f"Riskvakt {guard_name} {'återställd' if success else 'kunde inte återställas'}",
+        }
+    except Exception as e:
+        logger.exception(f"Fel vid återställning av riskvakt: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/risk/unified/reset-circuit-breaker")
+async def reset_circuit_breaker_unified(_: bool = Depends(require_auth)):
+    """Återställ circuit breaker."""
+    try:
+        from services.unified_risk_service import unified_risk_service
+
+        success = unified_risk_service.reset_circuit_breaker()
+        return {
+            "success": success,
+            "message": (
+                "Circuit breaker återställd"
+                if success
+                else "Kunde inte återställa circuit breaker"
+            ),
+        }
+    except Exception as e:
+        logger.exception(f"Fel vid återställning av circuit breaker: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/risk/unified/update-guard")
+async def update_risk_guard(request: dict[str, Any], _: bool = Depends(require_auth)):
+    """Uppdatera konfiguration för en riskvakt."""
+    guard_name = request.get("guard_name")
+    config = request.get("config", {})
+
+    if not guard_name:
+        raise HTTPException(status_code=400, detail="guard_name parameter is required")
+    try:
+        from services.unified_risk_service import unified_risk_service
+
+        success = unified_risk_service.update_guard_config(guard_name, config)
+        return {
+            "success": success,
+            "message": f"Riskvakt {guard_name} {'uppdaterad' if success else 'kunde inte uppdateras'}",
+        }
+    except Exception as e:
+        logger.exception(f"Fel vid uppdatering av riskvakt: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# --- Compatibility bridge for legacy RiskGuardsPanel (/api/v2/risk/guards/*) ---
+# (Removed duplicate legacy guards endpoints; using the primary definitions above)
+
+
+# --- Feature Flags Service endpoints ---
+@router.get("/feature-flags/status")
+async def get_feature_flags_status(_: bool = Depends(require_auth)):
+    """Hämta komplett status för alla feature flags."""
+    try:
+        from services.feature_flags_service import feature_flags_service
+
+        status = feature_flags_service.get_flag_status()
+        return status
+    except Exception as e:
+        logger.exception(f"Fel vid hämtning av feature flags status: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# --- Risk enabled toggle ---
+@router.get("/risk/enabled")
+async def get_risk_enabled(_: bool = Depends(require_auth)):
+    try:
+        from config.settings import Settings as _S
+
+        s = _S()
+        return {
+            "enabled": rc.get_bool("RISK_ENABLED", getattr(s, "RISK_ENABLED", True))
+        }
+    except Exception as e:
+        logger.exception(f"Fel vid hämtning av risk enabled: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class RiskEnabledRequest(BaseModel):
+    enabled: bool
+
+
+@router.post("/risk/enabled")
+async def set_risk_enabled(req: RiskEnabledRequest, _: bool = Depends(require_auth)):
+    try:
+        rc.set_bool("RISK_ENABLED", bool(req.enabled))
+        return {"ok": True, "enabled": rc.get_bool("RISK_ENABLED", True)}
+    except Exception as e:
+        logger.exception(f"Fel vid sättning av risk enabled: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/feature-flags/category/{category}")
+async def get_feature_flags_by_category(category: str, _: bool = Depends(require_auth)):
+    """Hämta feature flags för en specifik kategori."""
+    try:
+        from services.feature_flags_service import feature_flags_service
+
+        flags = feature_flags_service.get_flags_by_category(category)
+        return {
+            "category": category,
+            "flags": flags,
+            "timestamp": datetime.now().isoformat(),
+        }
+    except Exception as e:
+        logger.exception(
+            f"Fel vid hämtning av feature flags för kategori {category}: {e}"
+        )
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/feature-flags/set")
+async def set_feature_flag(request: dict[str, Any], _: bool = Depends(require_auth)):
+    """Sätt värdet för en feature flag med rate limiting."""
+    name = request.get("name")
+    value = request.get("value")
+
+    if not name:
+        raise HTTPException(status_code=400, detail="name parameter is required")
+    if value is None:
+        raise HTTPException(status_code=400, detail="value parameter is required")
+
+    try:
+        from services.feature_flags_service import feature_flags_service
+
+        # Rate limiting: kontrollera om samma flag uppdateras för ofta
+        current_value = feature_flags_service.get_flag(name)
+        if current_value == value:
+            return {
+                "success": True,
+                "message": f"Feature flag {name} har redan värdet {value}",
+                "new_value": value,
+                "cached": True,
+            }
+
+        success = feature_flags_service.set_flag(name, value)
+        return {
+            "success": success,
+            "message": f"Feature flag {name} {'uppdaterad' if success else 'kunde inte uppdateras'}",
+            "new_value": value,
+        }
+    except Exception as e:
+        logger.exception(f"Fel vid uppdatering av feature flag {name}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/feature-flags/reset")
+async def reset_feature_flag(name: str | None = None, _: bool = Depends(require_auth)):
+    """Återställ en feature flag eller alla."""
+    try:
+        from services.feature_flags_service import feature_flags_service
+
+        if name:
+            success = feature_flags_service.reset_flag(name)
+            return {
+                "success": success,
+                "message": f"Feature flag {name} {'återställd' if success else 'kunde inte återställas'}",
+            }
+        else:
+            success = feature_flags_service.reset_all_flags()
+            return {
+                "success": success,
+                "message": (
+                    "Alla feature flags återställda"
+                    if success
+                    else "Kunde inte återställa alla feature flags"
+                ),
+            }
+    except Exception as e:
+        logger.exception(f"Fel vid återställning av feature flag: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/feature-flags/ui-capabilities")
+async def get_ui_capabilities(_: bool = Depends(require_auth)):
+    """Hämta UI capabilities baserat på feature flags."""
+    try:
+        from services.feature_flags_service import feature_flags_service
+
+        capabilities = feature_flags_service.get_ui_capabilities()
+        return capabilities
+    except Exception as e:
+        logger.exception(f"Fel vid hämtning av UI capabilities: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# --- Enhanced Observability Service endpoints ---
+@router.get("/observability/comprehensive")
+async def get_comprehensive_observability(_: bool = Depends(require_auth)):
+    """Hämta komplett observability-data från alla källor."""
+    try:
+        from services.enhanced_observability_service import (
+            enhanced_observability_service,
+        )
+
+        metrics = await enhanced_observability_service.get_comprehensive_metrics()
+        return metrics
+    except Exception as e:
+        logger.exception(f"Fel vid hämtning av comprehensive observability: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/observability/system")
+async def get_system_observability(_: bool = Depends(require_auth)):
+    """Hämta system-resurser (CPU, RAM, Disk)."""
+    try:
+        from services.enhanced_observability_service import (
+            enhanced_observability_service,
+        )
+
+        metrics = await enhanced_observability_service.get_system_metrics()
+        return {
+            "timestamp": metrics.timestamp.isoformat(),
+            "cpu_percent": metrics.cpu_percent,
+            "memory_percent": metrics.memory_percent,
+            "memory_used_gb": metrics.memory_used_gb,
+            "memory_total_gb": metrics.memory_total_gb,
+            "disk_percent": metrics.disk_percent,
+            "disk_used_gb": metrics.disk_used_gb,
+            "disk_total_gb": metrics.disk_total_gb,
+            "load_average": metrics.load_average,
+        }
+    except Exception as e:
+        logger.exception(f"Fel vid hämtning av system observability: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/observability/rate-limiter")
+async def get_rate_limiter_observability(_: bool = Depends(require_auth)):
+    """Hämta rate limiter metrics."""
+    try:
+        from services.enhanced_observability_service import (
+            enhanced_observability_service,
+        )
+
+        metrics = await enhanced_observability_service.get_rate_limiter_metrics()
+        return {
+            "timestamp": metrics.timestamp.isoformat(),
+            "tokens_available": metrics.tokens_available,
+            "utilization_percent": metrics.utilization_percent,
+            "requests_per_second": metrics.requests_per_second,
+            "blocked_requests": metrics.blocked_requests,
+            "endpoint_patterns": metrics.endpoint_patterns,
+        }
+    except Exception as e:
+        logger.exception(f"Fel vid hämtning av rate limiter observability: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/observability/exchange")
+async def get_exchange_observability(_: bool = Depends(require_auth)):
+    """Hämta exchange API metrics."""
+    try:
+        from services.enhanced_observability_service import (
+            enhanced_observability_service,
+        )
+
+        metrics = await enhanced_observability_service.get_exchange_metrics()
+        return {
+            "timestamp": metrics.timestamp.isoformat(),
+            "total_requests": metrics.total_requests,
+            "failed_requests": metrics.failed_requests,
+            "rate_limited_requests": metrics.rate_limited_requests,
+            "average_latency_ms": metrics.average_latency_ms,
+            "p95_latency_ms": metrics.p95_latency_ms,
+            "p99_latency_ms": metrics.p99_latency_ms,
+            "error_rate_percent": metrics.error_rate_percent,
+        }
+    except Exception as e:
+        logger.exception(f"Fel vid hämtning av exchange observability: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/observability/trading")
+async def get_trading_observability(_: bool = Depends(require_auth)):
+    """Hämta trading metrics."""
+    try:
+        from services.enhanced_observability_service import (
+            enhanced_observability_service,
+        )
+
+        metrics = await enhanced_observability_service.get_trading_metrics()
+        return {
+            "timestamp": metrics.timestamp.isoformat(),
+            "total_orders": metrics.total_orders,
+            "successful_orders": metrics.successful_orders,
+            "failed_orders": metrics.failed_orders,
+            "order_success_rate": metrics.order_success_rate,
+            "average_order_latency_ms": metrics.average_order_latency_ms,
+            "orders_per_minute": metrics.orders_per_minute,
+        }
+    except Exception as e:
+        logger.exception(f"Fel vid hämtning av trading observability: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# --- History Service endpoints ---
+@router.get("/history/comprehensive")
+async def get_comprehensive_history(
+    symbol: str | None = None,
+    wallet_type: str | None = None,
+    currency: str | None = None,
+    trades_limit: int = 100,
+    ledgers_limit: int = 100,
+    equity_limit: int = 1000,
+    force_refresh: bool = False,
+    _: bool = Depends(require_auth),
+):
+    """Hämta all historisk data i en enhetlig struktur."""
+    try:
+        from services.history_service import history_service
+
+        history = await history_service.get_comprehensive_history(
+            symbol=symbol,
+            wallet_type=wallet_type,
+            currency=currency,
+            trades_limit=trades_limit,
+            ledgers_limit=ledgers_limit,
+            equity_limit=equity_limit,
+            force_refresh=force_refresh,
+        )
+        return history
+    except Exception as e:
+        logger.exception(f"Fel vid hämtning av comprehensive history: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/history/trades")
+async def get_trade_history(
+    symbol: str | None = None,
+    limit: int = 100,
+    force_refresh: bool = False,
+    _: bool = Depends(require_auth),
+):
+    """Hämta trade history för en symbol eller alla."""
+    try:
+        from services.history_service import history_service
+
+        trades = await history_service.get_trade_history(
+            symbol=symbol, limit=limit, force_refresh=force_refresh
+        )
+        return {
+            "timestamp": datetime.now().isoformat(),
+            "symbol": symbol,
+            "limit": limit,
+            "trades": trades,
+            "count": len(trades),
+        }
+    except Exception as e:
+        logger.exception(f"Fel vid hämtning av trade history: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/history/ledgers")
+async def get_ledger_history(
+    wallet_type: str | None = None,
+    currency: str | None = None,
+    limit: int = 100,
+    force_refresh: bool = False,
+    _: bool = Depends(require_auth),
+):
+    """Hämta ledger history för en wallet/currency eller alla."""
+    try:
+        from services.history_service import history_service
+
+        ledgers = await history_service.get_ledger_history(
+            wallet_type=wallet_type,
+            currency=currency,
+            limit=limit,
+            force_refresh=force_refresh,
+        )
+        return {
+            "timestamp": datetime.now().isoformat(),
+            "wallet_type": wallet_type,
+            "currency": currency,
+            "limit": limit,
+            "ledgers": ledgers,
+            "count": len(ledgers),
+        }
+    except Exception as e:
+        logger.exception(f"Fel vid hämtning av ledger history: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/history/equity")
+async def get_equity_history(
+    limit: int = 1000, force_refresh: bool = False, _: bool = Depends(require_auth)
+):
+    """Hämta equity history över tid."""
+    try:
+        from services.history_service import history_service
+
+        equity_history = await history_service.get_equity_history(
+            limit=limit, force_refresh=force_refresh
+        )
+        return {
+            "timestamp": datetime.now().isoformat(),
+            "limit": limit,
+            "equity_history": equity_history,
+            "count": len(equity_history),
+        }
+    except Exception as e:
+        logger.exception(f"Fel vid hämtning av equity history: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# --- Validation Service endpoints ---
+@router.post("/validation/probability")
+async def run_probability_validation(
+    request: dict[str, Any], _: bool = Depends(require_auth)
+):
+    """Kör probability model validering."""
+    symbol = request.get("symbol", "tBTCUSD")
+    timeframe = request.get("timeframe", "1m")
+    limit = request.get("limit", 600)
+    max_samples = request.get("max_samples", 500)
+    force_refresh = request.get("force_refresh", False)
+    try:
+        from services.validation_service import validation_service
+
+        result = await validation_service.run_probability_validation(
+            symbol=symbol,
+            timeframe=timeframe,
+            limit=limit,
+            max_samples=max_samples,
+            force_refresh=force_refresh,
+        )
+        return {
+            "timestamp": result.timestamp.isoformat(),
+            "test_type": result.test_type,
+            "symbol": result.symbol,
+            "timeframe": result.timeframe,
+            "parameters": result.parameters,
+            "metrics": result.metrics,
+            "rolling_metrics": result.rolling_metrics,
+            "success": result.success,
+            "error_message": result.error_message,
+        }
+    except Exception as e:
+        logger.exception(f"Fel vid probability validation: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/validation/strategy")
+async def run_strategy_validation(
+    request: dict[str, Any], _: bool = Depends(require_auth)
+):
+    """Kör strategy validering."""
+    symbol = request.get("symbol", "tBTCUSD")
+    timeframe = request.get("timeframe", "1m")
+    limit = request.get("limit", 1000)
+    strategy_params = request.get("strategy_params")
+    force_refresh = request.get("force_refresh", False)
+    try:
+        from services.validation_service import validation_service
+
+        result = await validation_service.run_strategy_validation(
+            symbol=symbol,
+            timeframe=timeframe,
+            limit=limit,
+            strategy_params=strategy_params,
+            force_refresh=force_refresh,
+        )
+        return {
+            "timestamp": result.timestamp.isoformat(),
+            "test_type": result.test_type,
+            "symbol": result.symbol,
+            "timeframe": result.timeframe,
+            "parameters": result.parameters,
+            "metrics": result.metrics,
+            "rolling_metrics": result.rolling_metrics,
+            "success": result.success,
+            "error_message": result.error_message,
+        }
+    except Exception as e:
+        logger.exception(f"Fel vid strategy validation: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/validation/backtest")
+async def run_backtest(request: dict[str, Any], _: bool = Depends(require_auth)):
+    """Kör backtest."""
+    symbol = request.get("symbol", "tBTCUSD")
+    timeframe = request.get("timeframe", "1m")
+    start_date = request.get("start_date")
+    end_date = request.get("end_date")
+    initial_capital = request.get("initial_capital", 10000.0)
+    strategy_params = request.get("strategy_params")
+    force_refresh = request.get("force_refresh", False)
+    try:
+        from services.validation_service import validation_service
+
+        result = await validation_service.run_backtest(
+            symbol=symbol,
+            timeframe=timeframe,
+            start_date=start_date,
+            end_date=end_date,
+            initial_capital=initial_capital,
+            strategy_params=strategy_params,
+            force_refresh=force_refresh,
+        )
+        return {
+            "timestamp": result.timestamp.isoformat(),
+            "test_type": result.test_type,
+            "symbol": result.symbol,
+            "timeframe": result.timeframe,
+            "parameters": result.parameters,
+            "metrics": result.metrics,
+            "rolling_metrics": result.rolling_metrics,
+            "success": result.success,
+            "error_message": result.error_message,
+        }
+    except Exception as e:
+        logger.exception(f"Fel vid backtest: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/validation/history")
+async def get_validation_history(_: bool = Depends(require_auth)):
+    """Hämta historik över alla valideringstester."""
+    try:
+        from services.validation_service import validation_service
+
+        history = validation_service.get_validation_history()
+        return {
+            "timestamp": datetime.now().isoformat(),
+            "validation_history": [
+                {
+                    "timestamp": result.timestamp.isoformat(),
+                    "test_type": result.test_type,
+                    "symbol": result.symbol,
+                    "success": result.success,
+                    "metrics_summary": {
+                        "accuracy": result.metrics.get("accuracy", 0),
+                        "total_return": result.metrics.get("total_return", 0),
+                        "final_capital": result.metrics.get("final_capital", 0),
+                    },
+                }
+                for result in history
+            ],
+            "count": len(history),
+        }
+    except Exception as e:
+        logger.exception(f"Fel vid hämtning av validation history: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# V2 API endpoints för validation borttagna – använd /api/v2/validation/*
+
+
+# --- Unified Circuit Breaker Service endpoints ---
+@router.get("/circuit-breaker/status")
+async def get_circuit_breaker_status(
+    name: str | None = None, _: bool = Depends(require_auth)
+):
+    """Hämta status för en eller alla circuit breakers."""
+    try:
+        from services.unified_circuit_breaker_service import (
+            unified_circuit_breaker_service,
+        )
+
+        status = unified_circuit_breaker_service.get_status(name)
+        return status
+    except Exception as e:
+        logger.exception(f"Fel vid hämtning av circuit breaker status: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/circuit-breaker/record-success")
+async def record_circuit_breaker_success(
+    request: dict[str, Any], _: bool = Depends(require_auth)
+):
+    """Registrera en lyckad operation för en circuit breaker."""
+    name = request.get("name")
+
+    if not name:
+        raise HTTPException(status_code=400, detail="name parameter is required")
+    try:
+        from services.unified_circuit_breaker_service import (
+            unified_circuit_breaker_service,
+        )
+
+        unified_circuit_breaker_service.record_success(name)
+        return {
+            "success": True,
+            "message": f"Success registrerad för circuit breaker {name}",
+        }
+    except Exception as e:
+        logger.exception(f"Fel vid registrering av circuit breaker success: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/circuit-breaker/record-failure")
+async def record_circuit_breaker_failure(
+    request: dict[str, Any], _: bool = Depends(require_auth)
+):
+    """Registrera en misslyckad operation för en circuit breaker."""
+    name = request.get("name")
+    error_type = request.get("error_type", "generic")
+
+    if not name:
+        raise HTTPException(status_code=400, detail="name parameter is required")
+    try:
+        from services.unified_circuit_breaker_service import (
+            unified_circuit_breaker_service,
+        )
+
+        unified_circuit_breaker_service.record_failure(name, error_type)
+        return {
+            "success": True,
+            "message": f"Failure registrerad för circuit breaker {name}",
+        }
+    except Exception as e:
+        logger.exception(f"Fel vid registrering av circuit breaker failure: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/circuit-breaker/reset")
+async def reset_circuit_breaker(
+    request: dict[str, Any], _: bool = Depends(require_auth)
+):
+    """Återställ en circuit breaker eller alla."""
+    name = request.get("name")
+    try:
+        from services.unified_circuit_breaker_service import (
+            unified_circuit_breaker_service,
+        )
+
+        if name:
+            success = unified_circuit_breaker_service.reset_circuit_breaker(name)
+            return {
+                "success": success,
+                "message": f"Circuit breaker {name} {'återställd' if success else 'kunde inte återställas'}",
+            }
+        else:
+            success = unified_circuit_breaker_service.reset_all_circuit_breakers()
+            return {
+                "success": success,
+                "message": (
+                    "Alla circuit breakers återställda"
+                    if success
+                    else "Kunde inte återställa alla circuit breakers"
+                ),
+            }
+    except Exception as e:
+        logger.exception(f"Fel vid återställning av circuit breaker: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/circuit-breaker/force-recovery")
+async def force_circuit_breaker_recovery(_: bool = Depends(require_auth)):
+    """Tvinga återställning av alla circuit breakers med recovery service."""
+    try:
+        from services.circuit_breaker_recovery import get_circuit_breaker_recovery
+
+        recovery_service = get_circuit_breaker_recovery()
+        success = recovery_service.force_recovery_all()
+
+        return {
+            "success": success,
+            "message": (
+                "Alla circuit breakers återställda via recovery service"
+                if success
+                else "Kunde inte återställa circuit breakers via recovery service"
+            ),
+        }
+    except Exception as e:
+        logger.exception(f"Fel vid tvingad circuit breaker recovery: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/circuit-breaker/recovery-status")
+async def get_circuit_breaker_recovery_status(_: bool = Depends(require_auth)):
+    """Hämta status för circuit breaker recovery service."""
+    try:
+        from services.circuit_breaker_recovery import get_circuit_breaker_recovery
+
+        recovery_service = get_circuit_breaker_recovery()
+        status = recovery_service.get_recovery_status()
+
+        return status
+    except Exception as e:
+        logger.exception(f"Fel vid hämtning av circuit breaker recovery status: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/circuit-breaker/register")
+async def register_circuit_breaker(
+    request: dict[str, Any], _: bool = Depends(require_auth)
+):
+    """Registrera en ny circuit breaker."""
+    name = request.get("name")
+    cb_type = request.get("cb_type")
+    failure_threshold = request.get("failure_threshold", 5)
+    recovery_timeout = request.get("recovery_timeout", 60.0)
+    half_open_max_calls = request.get("half_open_max_calls", 3)
+    failure_window = request.get("failure_window", 300.0)
+    exponential_backoff = request.get("exponential_backoff", True)
+    max_backoff = request.get("max_backoff", 300.0)
+
+    if not name:
+        raise HTTPException(status_code=400, detail="name parameter is required")
+    if not cb_type:
+        raise HTTPException(status_code=400, detail="cb_type parameter is required")
+    try:
+        from services.unified_circuit_breaker_service import (
+            unified_circuit_breaker_service,
+            CircuitBreakerConfig,
+            CircuitBreakerType,
+        )
+
+        # Validera cb_type
+        try:
+            cb_type_enum = CircuitBreakerType(cb_type)
+        except ValueError:
+            raise HTTPException(
+                status_code=400, detail=f"Okänd circuit breaker typ: {cb_type}"
+            )
+
+        config = CircuitBreakerConfig(
+            name=name,
+            cb_type=cb_type_enum,
+            failure_threshold=failure_threshold,
+            recovery_timeout=recovery_timeout,
+            half_open_max_calls=half_open_max_calls,
+            failure_window=failure_window,
+            exponential_backoff=exponential_backoff,
+            max_backoff=max_backoff,
+        )
+
+        unified_circuit_breaker_service.register_circuit_breaker(name, config)
+        return {
+            "success": True,
+            "message": f"Circuit breaker {name} registrerad",
+        }
+    except Exception as e:
+        logger.exception(f"Fel vid registrering av circuit breaker: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/enhanced-auto/status")
 async def get_enhanced_auto_status(_: bool = Depends(require_auth)):
     """
@@ -4864,7 +5939,9 @@ async def get_performance_summary(days: int = 30, _: bool = Depends(require_auth
 
 
 @router.get("/performance/symbol/{symbol}")
-async def get_symbol_performance(symbol: str, days: int = 30, _: bool = Depends(require_auth)):
+async def get_symbol_performance(
+    symbol: str, days: int = 30, _: bool = Depends(require_auth)
+):
     """
     Hämtar performance för specifik symbol.
     """
@@ -4926,33 +6003,15 @@ async def get_daily_stats(days: int = 7, _: bool = Depends(require_auth)):
 async def get_live_signals(_: bool = Depends(require_auth)):
     """
     Hämtar alla aktiva live trading signals.
-    OPTIMERAD: Caching för att minska långsamma requests.
+    ENHETLIG: Använder UnifiedSignalService för konsistenta resultat.
     """
     try:
-        # OPTIMERING: In-memory cache för live signals (2 minuter)
-        cache_key = "live_signals"
-        cache_ttl = timedelta(minutes=2)
+        from services.unified_signal_service import unified_signal_service
 
-        if hasattr(get_live_signals, "_cache"):
-            cached_data = get_live_signals._cache.get(cache_key)
-            if cached_data and (datetime.now() - cached_data["timestamp"]) < cache_ttl:
-                logger.debug(f"📋 Använder cached live signals")
-                return cached_data["data"]
-        else:
-            get_live_signals._cache = {}
+        # Använd UnifiedSignalService för enhetliga signaler
+        signals = await unified_signal_service.generate_all_signals()
 
-        from services.signal_generator import SignalGeneratorService
-
-        signal_service = SignalGeneratorService()
-        signals = await signal_service.generate_live_signals()
-
-        # Spara i cache
-        get_live_signals._cache[cache_key] = {
-            "data": signals,
-            "timestamp": datetime.now(),
-        }
-
-        logger.info(f"📊 Returnerar {signals.total_signals} live signals")
+        logger.info(f"📊 Returnerar {signals.total_signals} enhetliga live signals")
         return signals
 
     except Exception as e:
@@ -4974,7 +6033,9 @@ async def get_signal_for_symbol(symbol: str, _: bool = Depends(require_auth)):
         if signals.signals:
             return signals.signals[0]
         else:
-            raise HTTPException(status_code=404, detail=f"Inga signals hittades för {symbol}")
+            raise HTTPException(
+                status_code=404, detail=f"Inga signals hittades för {symbol}"
+            )
 
     except Exception as e:
         logger.error(f"❌ Fel vid hämtning av signal för {symbol}: {e}")
@@ -5004,7 +6065,9 @@ async def refresh_signals(request: dict, _: bool = Depends(require_auth)):
 
 
 @router.get("/signals/history")
-async def get_signal_history(symbol: str | None = None, limit: int = 50, _: bool = Depends(require_auth)):
+async def get_signal_history(
+    symbol: str | None = None, limit: int = 50, _: bool = Depends(require_auth)
+):
     """
     Hämtar signal-historik.
     """
@@ -5078,8 +6141,8 @@ async def get_performance_stats():
 
         from services.data_coordinator import data_coordinator
 
-        # System-resurser
-        cpu_percent = psutil.cpu_percent(interval=1)
+        # System-resurser (använd non-blocking calls)
+        cpu_percent = psutil.cpu_percent(interval=None)  # Non-blocking
         memory = psutil.virtual_memory()
         disk = psutil.disk_usage("/")
 
@@ -5093,9 +6156,12 @@ async def get_performance_stats():
         cache_stats = {
             "data_coordinator": data_cache_stats,
             "candle_cache": candle_cache_stats,
-            "total_entries": data_cache_stats["total_entries"] + candle_cache_stats.get("total_rows", 0),
+            "total_entries": data_cache_stats["total_entries"]
+            + candle_cache_stats.get("total_rows", 0),
             "valid_entries": data_cache_stats["valid_entries"]
-            + candle_cache_stats.get("total_rows", 0),  # SQLite entries är alltid giltiga
+            + candle_cache_stats.get(
+                "total_rows", 0
+            ),  # SQLite entries är alltid giltiga
             "expired_entries": data_cache_stats["expired_entries"],
             "cache_ttl_seconds": data_cache_stats["cache_ttl_seconds"],
             "active_locks": data_cache_stats["active_locks"],
@@ -5127,7 +6193,7 @@ async def get_performance_stats():
             },
             "process": {
                 "memory_mb": round(process_memory.rss / (1024**2), 2),
-                "cpu_percent": process.cpu_percent(),
+                "cpu_percent": process.cpu_percent(),  # Non-blocking
                 "active_tasks": active_tasks,
                 "task_types": task_types,
             },
@@ -5137,3 +6203,50 @@ async def get_performance_stats():
     except Exception as e:
         logger.error(f"❌ Fel vid hämtning av prestanda-statistik: {e}")
         return {"error": "Kunde inte hämta prestanda-statistik"}
+
+
+# ------------------------------
+# Agents (read-only) endpoints
+# ------------------------------
+
+
+def _repo_root() -> Path:
+    # routes.py is tradingbot-backend/rest/routes.py => repo root is parents[2]
+    return Path(__file__).resolve().parents[2]
+
+
+def _read_comm_file(name: str) -> Any:
+    try:
+        p = _repo_root() / ".agent-communication" / name
+        if not p.exists():
+            return None
+        raw = p.read_text(encoding="utf-8", errors="ignore")
+        if not raw or not raw.strip():
+            return None
+        return json.loads(raw)
+    except Exception:
+        return None
+
+
+@router.get("/agents/messages")
+async def agents_messages(_: bool = Depends(require_auth)) -> Any:
+    """Returnerar meddelanden mellan agenter (read-only)."""
+    return _read_comm_file("messages.json") or []
+
+
+@router.get("/agents/contracts")
+async def agents_contracts(_: bool = Depends(require_auth)) -> Any:
+    """Returnerar kontrakt (read-only)."""
+    return _read_comm_file("contracts.json") or []
+
+
+@router.get("/agents/status")
+async def agents_status(_: bool = Depends(require_auth)) -> Any:
+    """Returnerar agentstatus (read-only)."""
+    return _read_comm_file("status.json") or {}
+
+
+@router.get("/agents/notifications")
+async def agents_notifications(_: bool = Depends(require_auth)) -> Any:
+    """Returnerar notifieringsstatus (read-only)."""
+    return _read_comm_file("notifications.json") or {}

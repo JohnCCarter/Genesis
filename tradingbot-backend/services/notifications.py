@@ -6,19 +6,20 @@ from __future__ import annotations
 
 from typing import Any
 
-import httpx
+from services.http import apost
 
-from config.settings import Settings
+from config.settings import settings
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
 
 class NotificationService:
-    def __init__(self, settings: Settings | None = None) -> None:
-        self.settings = settings or Settings()
-        self._bot_token = self.settings.TELEGRAM_BOT_TOKEN
-        self._chat_id = self.settings.TELEGRAM_CHAT_ID
+    def __init__(self, settings_override=None) -> None:
+        # Undvik att skugga importen 'settings'
+        self.settings = settings_override or settings
+        self._bot_token = getattr(self.settings, "TELEGRAM_BOT_TOKEN", None)
+        self._chat_id = getattr(self.settings, "TELEGRAM_CHAT_ID", None)
 
     async def send_telegram(self, text: str) -> bool:
         if not self._bot_token or not self._chat_id:
@@ -27,15 +28,15 @@ class NotificationService:
         try:
             url = f"https://api.telegram.org/bot{self._bot_token}/sendMessage"
             payload = {"chat_id": self._chat_id, "text": text, "parse_mode": "HTML"}
-            async with httpx.AsyncClient(timeout=10) as client:
-                resp = await client.post(url, json=payload)
-                resp.raise_for_status()
+            await apost(url, json=payload)
             return True
         except Exception as e:
             logger.warning(f"Telegram-notis misslyckades: {e}")
             return False
 
-    async def notify(self, level: str, title: str, payload: dict[str, Any] | None = None) -> None:
+    async def notify(
+        self, level: str, title: str, payload: dict[str, Any] | None = None
+    ) -> None:
         # Socket.IO broadcast
         try:
             from ws.manager import socket_app

@@ -1,7 +1,7 @@
+import { getWith } from '@lib/api';
 import React from 'react';
-import { get } from '@lib/api';
-import { Sparkline } from './Sparkline';
 import { JsonTree } from './JsonTree';
+import { Sparkline } from './Sparkline';
 
 type TabKey = 'trades' | 'ledgers' | 'equity';
 
@@ -65,10 +65,10 @@ export function HistoryPanel() {
             setError(null);
             const qSymbol = symbol && symbol.trim().length > 0 ? `&symbol=${encodeURIComponent(symbol.trim())}` : '';
             const [t, l, e, eh] = await Promise.all([
-                get(`/api/v2/trades/history?limit=${limit}${qSymbol}`).catch(() => []),
-                get(`/api/v2/ledgers?limit=${limit}`).catch(() => []),
-                get('/api/v2/account/performance').catch(() => null),
-                get(`/api/v2/account/equity/history?limit=${Math.min(1000, Math.max(100, limit))}`).catch(() => ({ equity: [] })),
+                getWith(`/api/v2/trades/history?limit=${limit}${qSymbol}`, { timeout: 12000, maxRetries: 1 }).catch(() => []),
+                getWith(`/api/v2/ledgers?limit=${limit}`, { timeout: 12000, maxRetries: 1 }).catch(() => []),
+                getWith('/api/v2/account/performance', { timeout: 12000, maxRetries: 1 }).catch(() => null),
+                getWith(`/api/v2/account/equity/history?limit=${Math.min(1000, Math.max(100, limit))}`, { timeout: 12000, maxRetries: 1 }).catch(() => ({ equity: [] })),
             ]);
             setTrades(Array.isArray(t) ? t : []);
             setLedgers(Array.isArray(l) ? l : []);

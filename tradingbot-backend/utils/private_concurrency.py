@@ -10,17 +10,23 @@ Användning:
 
 import asyncio
 
-from config.settings import Settings
+from config.settings import settings
 
-_private_sem: asyncio.Semaphore | None = None
+_private_sems: dict[int, asyncio.Semaphore] = {}
 
 
 def get_private_rest_semaphore() -> asyncio.Semaphore:
-    global _private_sem
-    if _private_sem is None:
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = None  # type: ignore
+    loop_id = id(loop)
+    sem = _private_sems.get(loop_id)
+    if sem is None:
         try:
-            conc = int(getattr(Settings(), "PRIVATE_REST_CONCURRENCY", 2) or 2)
+            conc = int(getattr(settings, "PRIVATE_REST_CONCURRENCY", 2) or 2)
         except Exception:
             conc = 2
-        _private_sem = asyncio.Semaphore(max(1, conc))
-    return _private_sem
+        sem = asyncio.Semaphore(max(1, conc))
+        _private_sems[loop_id] = sem
+    return sem

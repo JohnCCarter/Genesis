@@ -10,8 +10,19 @@ import os as _os
 # Kompatibilitet: Pydantic v2 (pydantic-settings) och v1 (pydantic)
 try:  # Pydantic v2
     from pydantic_settings import BaseSettings as _BaseSettings  # type: ignore
-except Exception:  # Fall tillbaka till v1
-    from pydantic import BaseSettings as _BaseSettings  # type: ignore
+
+    print("Using pydantic-settings (v2)")
+except ImportError:  # Fall tillbaka till v1
+    try:
+        from pydantic import BaseSettings as _BaseSettings  # type: ignore
+
+        print("Using pydantic BaseSettings (v1)")
+    except ImportError:
+        raise ImportError(
+            "Neither pydantic-settings nor pydantic BaseSettings found"
+        ) from None
+
+_settings_instance = None
 
 
 class Settings(_BaseSettings):
@@ -53,7 +64,9 @@ class Settings(_BaseSettings):
 
     # WS multi-socket (publika kanaler) - Optimerat för Bitfinex-begränsningar
     WS_USE_POOL: bool = True
-    WS_MAX_SUBS_PER_SOCKET: int = 25  # Minskad från 200 (Bitfinex max 25 channels per connection)
+    WS_MAX_SUBS_PER_SOCKET: int = (
+        25  # Minskad från 200 (Bitfinex max 25 channels per connection)
+    )
     WS_PUBLIC_SOCKETS_MAX: int = 1  # Minskad från 3 (undvik 20 connections/min limit)
 
     # Lista över symboler att auto‑subscriba vid startup (komma‑separerad)
@@ -79,6 +92,8 @@ class Settings(_BaseSettings):
     # Risk- och handelsregler
     TIMEZONE: str = "UTC"
     TRADING_RULES_FILE: str = "config/trading_rules.json"
+    # Global av/på för risklager (guards + constraints). Starta Off om du vill toggla i runtime
+    RISK_ENABLED: bool = True
     MAX_TRADES_PER_DAY: int = 15
     # Per-symbol daglig gräns (0 = inaktiverad)
     MAX_TRADES_PER_SYMBOL_PER_DAY: int = 0
@@ -147,6 +162,12 @@ class Settings(_BaseSettings):
     # REST ticker cache TTL för att undvika överpollning
     TICKER_CACHE_TTL_SECS: int = 30  # Ökad från 10 (minska API-anrop)
 
+    # Debug och isolerings-flags
+    MARKETDATA_MODE: str = "auto"  # "auto", "rest_only", "ws_only"
+    TRADING_MODE: str = "full"  # "full", "read_only", "disabled"
+    UI_PUSH_ENABLED: bool = True
+    DEBUG_ASYNC: bool = False  # Aktivera asyncio debug
+
     # Candle cache retention
     CANDLE_CACHE_RETENTION_DAYS: int = 7
     CANDLE_CACHE_MAX_ROWS_PER_PAIR: int = 10000
@@ -173,6 +194,8 @@ class Settings(_BaseSettings):
     PROB_MODEL_CONFIDENCE_MIN: float = 0.15
     PROB_MODEL_EV_THRESHOLD: float = 0.0005
     PROB_MODEL_TIME_HORIZON: int = 20
+    # Hybrid vikt för probabilistisk vs heuristisk sannolikhet (1.0 = prob-only)
+    PROB_HYBRID_WEIGHT: float = 1.0
 
     # Probability Validation (rolling drift/quality monitoring)
     PROB_VALIDATE_ENABLED: bool = True
@@ -217,7 +240,9 @@ class Settings(_BaseSettings):
     SUPABASE_URL: str | None = None
     SUPABASE_ANON_KEY: str | None = None
     SUPABASE_SERVICE_ROLE_KEY: str | None = None
-    MCP_SERVER_URL: str = "https://kxibqgvpdfmklvwhmcry.supabase.co/functions/v1/mcp_server"
+    MCP_SERVER_URL: str = (
+        "https://kxibqgvpdfmklvwhmcry.supabase.co/functions/v1/mcp_server"
+    )
 
     # JWT Authentication
     JWT_SECRET: str | None = None
@@ -230,3 +255,22 @@ class Settings(_BaseSettings):
         )
         case_sensitive = False
         extra = "allow"  # Tillåt extra fält från .env
+
+
+def get_settings() -> Settings:
+    """Returnerar en singleton instans av Settings."""
+    global _settings_instance
+    if _settings_instance is None:
+        try:
+            from utils.logger import get_logger
+
+            logger = get_logger(__name__)
+            logger.info("⚙️  Creating and caching Settings instance...")
+        except Exception:
+            print("⚙️  Creating and caching Settings instance...")
+        _settings_instance = Settings()
+    return _settings_instance
+
+
+# Exponera en singleton instans för enkel import
+settings = get_settings()

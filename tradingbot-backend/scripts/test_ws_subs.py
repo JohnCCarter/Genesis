@@ -1,12 +1,12 @@
 import asyncio
 
-from config.settings import Settings
+from config.settings import settings
 from services.bitfinex_websocket import bitfinex_ws
 
 
 async def run_test() -> dict[str, dict[str, str]]:
-    settings = Settings()
-    raw = (settings.WS_SUBSCRIBE_SYMBOLS or "").strip()
+    _settings = settings
+    raw = (_settings.WS_SUBSCRIBE_SYMBOLS or "").strip()
     if not raw:
         print("WS_SUBSCRIBE_SYMBOLS is empty")
         return {}

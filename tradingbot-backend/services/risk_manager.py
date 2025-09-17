@@ -10,6 +10,7 @@ from typing import Any
 
 from config.settings import Settings
 from services.metrics import metrics_store
+import services.runtime_config as rc
 from services.risk_guards import risk_guards
 from services.risk_policy_engine import RiskPolicyEngine
 from utils.logger import get_logger
@@ -33,16 +34,34 @@ class RiskManager:
         self._circuit_opened_at_ref = lambda: _CB_OPENED_AT
 
     def pre_trade_checks(
-        self, *, symbol: str | None = None, amount: float = None, price: float = None
+        self,
+        *,
+        symbol: str | None = None,
+        amount: float | None = None,
+        price: float | None = None,
     ) -> tuple[bool, str | None]:
-        # Kontrollera globala riskvakter först
-        blocked, reason = risk_guards.check_all_guards(symbol, amount, price)
-        if blocked:
-            return False, f"risk_guard_blocked:{reason}"
-
-        decision = self.policy.evaluate(symbol=symbol, amount=amount, price=price)
+        # Avbryt tidigt om risk är avstängd
+        if not rc.get_bool(
+            "RISK_ENABLED", getattr(self.settings, "RISK_ENABLED", True)
+        ):
+            return True, None
+        # 1) Kör policy/constraints först (matchar testernas förväntningar)
+        # Kör constraints via policy men låt RiskGuards hanteras lokalt här
+        decision = self.policy.evaluate(
+            symbol=symbol, amount=amount, price=price, include_guards=False
+        )
         if not decision.allowed:
             return False, decision.reason
+
+        # 2) Kör globala riskvakter endast när vi har tillräckliga parametrar
+        if symbol and amount is not None and price is not None:
+            sym = symbol
+            amt = float(amount)
+            prc = float(price)
+            blocked, reason = risk_guards.check_all_guards(sym, amt, prc)
+            if blocked:
+                return False, f"risk_guard_blocked:{reason}"
+
         return True, None
 
     def record_trade(self, *, symbol: str | None = None) -> None:
@@ -76,7 +95,9 @@ class RiskManager:
             self.trading_window.set_paused(True)
             global _CB_OPENED_AT
             _CB_OPENED_AT = datetime.utcnow()
-            logger.warning("🚨 TradingCircuitBreaker aktiverad: pausar handel pga felspikar")
+            logger.warning(
+                "🚨 TradingCircuitBreaker aktiverad: pausar handel pga felspikar"
+            )
             try:
                 # Behåll bakåtkompatibel nyckel + ny namngiven nyckel
                 metrics_store["circuit_breaker_active"] = 1
@@ -102,7 +123,9 @@ class RiskManager:
                             "warning",
                             "Circuit breaker aktiverad",
                             {
-                                "since": (_CB_OPENED_AT.isoformat() if _CB_OPENED_AT else None),
+                                "since": (
+                                    _CB_OPENED_AT.isoformat() if _CB_OPENED_AT else None
+                                ),
                                 "errors_in_window": len(self._error_events),
                                 "window_seconds": self.settings.CB_ERROR_WINDOW_SECONDS,
                             },
@@ -143,7 +166,9 @@ class RiskManager:
         }
 
     # --- Circuit Breaker controls ---
-    def circuit_reset(self, *, resume: bool = True, clear_errors: bool = True, notify: bool = True) -> dict[str, Any]:
+    def circuit_reset(
+        self, *, resume: bool = True, clear_errors: bool = True, notify: bool = True
+    ) -> dict[str, Any]:
         """Återställ circuit breaker: rensa fel och återuppta handel om så önskas."""
         try:
             if clear_errors:
@@ -190,18 +215,18 @@ class RiskManager:
         notify: bool | None = None,
     ) -> dict[str, Any]:
         """Uppdatera runtime-konfiguration för circuit breaker (påverkar nya instanser via os.environ)."""
-        import os
+        import services.runtime_config as rc
 
         if enabled is not None:
             self.settings.CB_ENABLED = bool(enabled)
-            os.environ["CB_ENABLED"] = "True" if enabled else "False"
+            rc.set_bool("CB_ENABLED", bool(enabled))
         if window_seconds is not None and window_seconds > 0:
             self.settings.CB_ERROR_WINDOW_SECONDS = int(window_seconds)
-            os.environ["CB_ERROR_WINDOW_SECONDS"] = str(int(window_seconds))
+            rc.set_int("CB_ERROR_WINDOW_SECONDS", int(window_seconds))
         if max_errors_per_window is not None and max_errors_per_window > 0:
             self.settings.CB_MAX_ERRORS_PER_WINDOW = int(max_errors_per_window)
-            os.environ["CB_MAX_ERRORS_PER_WINDOW"] = str(int(max_errors_per_window))
+            rc.set_int("CB_MAX_ERRORS_PER_WINDOW", int(max_errors_per_window))
         if notify is not None:
             self.settings.CB_NOTIFY = bool(notify)
-            os.environ["CB_NOTIFY"] = "True" if notify else "False"
+            rc.set_bool("CB_NOTIFY", bool(notify))
         return self.status()

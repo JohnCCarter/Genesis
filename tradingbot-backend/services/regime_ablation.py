@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
-from config.settings import Settings
+from config.settings import settings
 from services.performance import PerformanceService
 from utils.logger import get_logger
 
@@ -55,8 +55,8 @@ class RegimePerformance:
 class RegimeAblationService:
     """Service för regime ablation och gate switching."""
 
-    def __init__(self, settings: Settings | None = None):
-        self.settings = settings or Settings()
+    def __init__(self, settings_override: Settings | None = None):
+        self.settings = settings_override or settings
         self.config_file = "config/regime_ablation.json"
         self.performance_file = "config/regime_performance.json"
         self.performance_service = PerformanceService(self.settings)
@@ -145,7 +145,9 @@ class RegimeAblationService:
 
                 performance = {}
                 for name, perf_data in data.items():
-                    perf_data["last_updated"] = datetime.fromisoformat(perf_data["last_updated"])
+                    perf_data["last_updated"] = datetime.fromisoformat(
+                        perf_data["last_updated"]
+                    )
                     performance[name] = RegimePerformance(**perf_data)
 
                 return performance
@@ -160,15 +162,17 @@ class RegimeAblationService:
             os.makedirs(os.path.dirname(self.performance_file), exist_ok=True)
             data = {name: perf.__dict__ for name, perf in performance.items()}
             # Konvertera datetime till string för JSON serialisering
-            for name in data:
-                data[name]["last_updated"] = data[name]["last_updated"].isoformat()
+            for _, vals in data.items():
+                vals["last_updated"] = vals["last_updated"].isoformat()
 
             with open(self.performance_file, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2)
         except Exception as e:
             logger.error(f"❌ Kunde inte spara performance data: {e}")
 
-    def calculate_regime_performance(self, regime_name: str) -> RegimePerformance | None:
+    def calculate_regime_performance(
+        self, regime_name: str
+    ) -> RegimePerformance | None:
         """
         Beräkna performance för ett specifikt regime.
 
@@ -203,8 +207,16 @@ class RegimeAblationService:
             total_pnl = sum(t.get("pnl", 0) for t in trades)
             hit_rate = winning_count / total_trades
 
-            avg_win = sum(t.get("pnl", 0) for t in winning_trades) / winning_count if winning_count > 0 else 0.0
-            avg_loss = abs(sum(t.get("pnl", 0) for t in losing_trades) / losing_count) if losing_count > 0 else 0.0
+            avg_win = (
+                sum(t.get("pnl", 0) for t in winning_trades) / winning_count
+                if winning_count > 0
+                else 0.0
+            )
+            avg_loss = (
+                abs(sum(t.get("pnl", 0) for t in losing_trades) / losing_count)
+                if losing_count > 0
+                else 0.0
+            )
 
             # Expectancy = (hit_rate * avg_win) - ((1 - hit_rate) * avg_loss)
             expectancy = (hit_rate * avg_win) - ((1 - hit_rate) * avg_loss)
@@ -229,7 +241,9 @@ class RegimeAblationService:
             )
 
         except Exception as e:
-            logger.error(f"❌ Kunde inte beräkna performance för regime {regime_name}: {e}")
+            logger.error(
+                f"❌ Kunde inte beräkna performance för regime {regime_name}: {e}"
+            )
             return None
 
     def update_regime_performance(self, regime_name: str) -> bool:
@@ -251,7 +265,9 @@ class RegimeAblationService:
                 return True
             return False
         except Exception as e:
-            logger.error(f"❌ Kunde inte uppdatera performance för regime {regime_name}: {e}")
+            logger.error(
+                f"❌ Kunde inte uppdatera performance för regime {regime_name}: {e}"
+            )
             return False
 
     def get_active_regimes(self) -> list[str]:
@@ -275,12 +291,16 @@ class RegimeAblationService:
 
             # Kontrollera expectancy gate
             if performance.expectancy < config.expectancy_threshold:
-                logger.info(f"🚫 Regime {regime_name} deaktiverat pga låg expectancy: {performance.expectancy:.6f}")
+                logger.info(
+                    f"🚫 Regime {regime_name} deaktiverat pga låg expectancy: {performance.expectancy:.6f}"
+                )
                 continue
 
             # Kontrollera drawdown gate
             if performance.max_drawdown > config.max_drawdown_threshold:
-                logger.info(f"🚫 Regime {regime_name} deaktiverat pga hög drawdown: {performance.max_drawdown:.2%}")
+                logger.info(
+                    f"🚫 Regime {regime_name} deaktiverat pga hög drawdown: {performance.max_drawdown:.2%}"
+                )
                 continue
 
             # Kontrollera minsta antal trades
@@ -305,7 +325,11 @@ class RegimeAblationService:
 
         if not active_regimes:
             # Om inga aktiva regimer, returnera default
-            return {name: config.weight for name, config in self.regimes.items() if config.enabled}
+            return {
+                name: config.weight
+                for name, config in self.regimes.items()
+                if config.enabled
+            }
 
         # Beräkna vikter baserat på expectancy
         total_expectancy = 0.0
@@ -350,17 +374,27 @@ class RegimeAblationService:
             test_results["all_regimes"] = self._simulate_regime_performance(all_regimes)
 
             # Test 2: Endast momentum
-            test_results["momentum_only"] = self._simulate_regime_performance(["momentum"])
+            test_results["momentum_only"] = self._simulate_regime_performance(
+                ["momentum"]
+            )
 
             # Test 3: Endast mean reversion
-            test_results["mean_reversion_only"] = self._simulate_regime_performance(["mean_reversion"])
+            test_results["mean_reversion_only"] = self._simulate_regime_performance(
+                ["mean_reversion"]
+            )
 
             # Test 4: Momentum + mean reversion
-            test_results["momentum_mean_reversion"] = self._simulate_regime_performance(["momentum", "mean_reversion"])
+            test_results["momentum_mean_reversion"] = self._simulate_regime_performance(
+                ["momentum", "mean_reversion"]
+            )
 
             # Jämför resultat
-            best_performance = max(test_results.values(), key=lambda x: x.get("total_pnl", 0))
-            best_config = [k for k, v in test_results.items() if v == best_performance][0]
+            best_performance = max(
+                test_results.values(), key=lambda x: x.get("total_pnl", 0)
+            )
+            best_config = [k for k, v in test_results.items() if v == best_performance][
+                0
+            ]
 
             return {
                 "test_results": test_results,
@@ -435,7 +469,9 @@ class RegimeAblationService:
                 return True
             return False
         except Exception as e:
-            logger.error(f"❌ Kunde inte uppdatera regime konfiguration {regime_name}: {e}")
+            logger.error(
+                f"❌ Kunde inte uppdatera regime konfiguration {regime_name}: {e}"
+            )
             return False
 
     def get_regime_status(self) -> dict[str, Any]:

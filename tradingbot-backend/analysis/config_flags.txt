@@ -1,0 +1,233 @@
+﻿C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\config\settings.py:24: class Settings(_BaseSettings):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\config\settings.py:33:     AUTH_REQUIRED: bool = False
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\config\settings.py:221:     PROB_FEATURE_LOG_ENABLED: bool = False
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\config\settings.py:222:     PROB_FEATURE_LOG_MAX_POINTS: int = 500
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\config\settings.py:223:     PROB_FEATURE_LOG_INCLUDE_PRICE: bool = False
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\config\settings.py:226:     DRY_RUN_ENABLED: bool = False
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\active_orders.py:25:         self.settings = Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\auth.py:24: settings = Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\auth.py:82:         settings = Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\auth.py:254:         settings = Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\funding.py:24:         self.settings = Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\ledgers.py:26:         self.settings = settings or Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\margin.py:81:         self.settings = Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\order_history.py:251:         self.settings = Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\positions.py:75:         self.settings = Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\positions.py:264:             timeout = Settings().ORDER_HTTP_TIMEOUT
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\positions.py:265:             retries = max(int(Settings().ORDER_MAX_RETRIES), 0)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\positions.py:266:             backoff_base = max(int(Settings().ORDER_BACKOFF_BASE_MS), 0) / 1000.0
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\positions.py:267:             backoff_max = max(int(Settings().ORDER_BACKOFF_MAX_MS), 0) / 1000.0
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\positions_history.py:84:         self.settings = Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:79: settings = Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:188:         s = Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:285:         s = Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:485:     """Kräv JWT endast när AUTH_REQUIRED=True. Annars släpp igenom utan header.
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:487:     Läser runtime‑override först (POST /api/v2/runtime/config), faller tillbaka till Settings().
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:492:         auth_required = bool(_rc_get_bool("AUTH_REQUIRED", Settings().AUTH_REQUIRED))
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:494:         auth_required = bool(Settings().AUTH_REQUIRED)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:495:     if not auth_required:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:543:             if getattr(settings, "DRY_RUN_ENABLED", False):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:547:                         "dry_run": True,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:1501: async def get_strategy_settings(symbol: str | None = None, _: bool = Depends(require_auth)):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:1521:         result = svc.get_settings(symbol=symbol).to_dict()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:1536: async def update_strategy_settings(
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:1543:         current = svc.get_settings(symbol=symbol)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:1544:         updated = StrategySettings(
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:1552:         saved = svc.save_settings(updated, symbol=symbol)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:1821:                 s = ssvc.get_settings(symbol=req.symbol)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:2274:             if bool(getattr(s2, "PROB_FEATURE_LOG_ENABLED", False)):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:2275:                 max_pts = int(getattr(s2, "PROB_FEATURE_LOG_MAX_POINTS", 500) or 500)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:2276:                 include_price = bool(getattr(s2, "PROB_FEATURE_LOG_INCLUDE_PRICE", False))
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:2278:                 buf = _ms.setdefault("prob_feature_log", {}).setdefault(key, [])
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:2390:         s = Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:2450:         s = Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:2597:         s = Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:2633:             _os.environ["PROB_MODEL_ENABLED"] = "True" if req.model_enabled else "False"
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:2636:             _os.environ["PROB_MODEL_FILE"] = str(req.model_file)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:2642:             _os.environ["PROB_MODEL_EV_THRESHOLD"] = str(float(req.ev_threshold))
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:2644:             _os.environ["PROB_MODEL_CONFIDENCE_MIN"] = str(float(req.confidence_min))
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:2646:             _os.environ["PROB_AUTOTRADE_ENABLED"] = "True" if req.autotrade_enabled else "False"
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:2648:             _os.environ["PROB_SIZE_MAX_RISK_PCT"] = str(float(req.size_max_risk_pct))
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:2650:             _os.environ["PROB_SIZE_KELLY_CAP"] = str(float(req.size_kelly_cap))
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:2652:             _os.environ["PROB_SIZE_CONF_WEIGHT"] = str(float(req.size_conf_weight))
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:2654:             _os.environ["POSITION_SIZE_FALLBACK_QUOTE"] = str(float(req.position_size_fallback_quote))
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:2657:             _os.environ["PROB_VALIDATE_ENABLED"] = "True" if req.validate_enabled else "False"
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:2659:             _os.environ["PROB_VALIDATE_SYMBOLS"] = str(req.validate_symbols)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:2661:             _os.environ["PROB_VALIDATE_TIMEFRAME"] = str(req.validate_timeframe)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:2663:             _os.environ["PROB_VALIDATE_LIMIT"] = str(int(req.validate_limit))
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:2666:             _os.environ["PROB_RETRAIN_ENABLED"] = "True" if req.retrain_enabled else "False"
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:2668:             _os.environ["PROB_RETRAIN_INTERVAL_HOURS"] = str(int(req.retrain_interval_hours))
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:2670:             _os.environ["PROB_RETRAIN_SYMBOLS"] = str(req.retrain_symbols)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:2672:             _os.environ["PROB_RETRAIN_TIMEFRAME"] = str(req.retrain_timeframe)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:2674:             _os.environ["PROB_RETRAIN_LIMIT"] = str(int(req.retrain_limit))
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:2689: async def prob_feature_log(q: ProbFeatureLogQuery, _: bool = Depends(require_auth)):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:2693:         logs = _ms.get("prob_feature_log", {}) or {}
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3003:         s = Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3019:         s = Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3031:         s = Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3211:         s = Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3231:         s = Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4001:         s = Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4012:             "dry_run": bool(getattr(s, "DRY_RUN_ENABLED", False)),
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4195:                 s = Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4358:         s = Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4381: async def get_dry_run(_: bool = Depends(require_auth)):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4383:         return {"dry_run_enabled": bool(getattr(settings, "DRY_RUN_ENABLED", False))}
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4390: async def set_dry_run(payload: CoreModeRequest, _: bool = Depends(require_auth)):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4396:             _os.environ["DRY_RUN_ENABLED"] = "True" if payload.enabled else "False"
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4400:             settings.DRY_RUN_ENABLED = bool(payload.enabled)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4404:         return {"dry_run_enabled": bool(getattr(settings, "DRY_RUN_ENABLED", False))}
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4427:             _os.environ["TRADING_PAUSED"] = "True" if payload.enabled else "False"
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4451:                 enabled = bool(getattr(Settings(), "PROB_MODEL_ENABLED", False))
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4467:         _os.environ["PROB_MODEL_ENABLED"] = "True" if payload.enabled else "False"
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4483:         return {"autotrade_enabled": bool(getattr(Settings(), "PROB_AUTOTRADE_ENABLED", False))}
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4494:         _os.environ["PROB_AUTOTRADE_ENABLED"] = "True" if payload.enabled else "False"
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4496:         return {"autotrade_enabled": bool(getattr(Settings(), "PROB_AUTOTRADE_ENABLED", False))}
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4626:         settings = Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5011: async def get_feature_flags_status(_: bool = Depends(require_auth)):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5014:         from services.feature_flags_service import feature_flags_service
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5016:         status = feature_flags_service.get_flag_status()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5024: async def get_feature_flags_by_category(category: str, _: bool = Depends(require_auth)):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5027:         from services.feature_flags_service import feature_flags_service
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5029:         flags = feature_flags_service.get_flags_by_category(category)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5041: async def set_feature_flag(request: dict[str, Any], _: bool = Depends(require_auth)):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5052:         from services.feature_flags_service import feature_flags_service
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5055:         current_value = feature_flags_service.get_flag(name)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5064:         success = feature_flags_service.set_flag(name, value)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5076: async def reset_feature_flag(name: str | None = None, _: bool = Depends(require_auth)):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5079:         from services.feature_flags_service import feature_flags_service
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5082:             success = feature_flags_service.reset_flag(name)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5088:             success = feature_flags_service.reset_all_flags()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5102:         from services.feature_flags_service import feature_flags_service
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5104:         capabilities = feature_flags_service.get_ui_capabilities()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\wallet.py:54:         self.settings = Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_data.py:42:         self.settings = Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:29:         self.settings = Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bracket_manager.py:38:         self.settings = Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\enhanced_observability_service.py:132:         self.settings = settings or Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\exchange_client.py:152:         _client_singleton = ExchangeClient(settings=Settings())
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\feature_flags_service.py:66:         self.settings = settings or Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\feature_flags_service.py:82:         self.flags["dry_run_enabled"] = FeatureFlag(
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\feature_flags_service.py:83:             "dry_run_enabled",
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\feature_flags_service.py:84:             getattr(self.settings, "DRY_RUN_ENABLED", False),
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\feature_flags_service.py:295:                 os.environ["PROB_AUTOTRADE_ENABLED"] = "True" if value else "False"
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\feature_flags_service.py:299:                 os.environ["TRADING_PAUSED"] = "True" if value else "False"
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\feature_flags_service.py:301:             elif name == "dry_run_enabled":
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\feature_flags_service.py:303:                 os.environ["DRY_RUN_ENABLED"] = "True" if value else "False"
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\feature_flags_service.py:388:             "dry_run": self.get_flag("dry_run_enabled"),
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\feature_flags_service.py:436: feature_flags_service = FeatureFlagsService()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\health_watchdog.py:57:         self.settings = settings or Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\history_service.py:57:         self.settings = settings or Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\market_data_facade.py:34:         self.settings = Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\market_data_facade.py:128:         settings = Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\notifications.py:19:         self.settings = settings or Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\performance.py:45:         self.settings = settings or Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\prob_model.py:17:         self.settings = settings or Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\regime_ablation.py:59:         self.settings = settings or Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_guards.py:27:         self.settings = settings or Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_manager.py:26:         self.settings = settings or Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_manager.py:197:             os.environ["CB_ENABLED"] = "True" if enabled else "False"
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_manager.py:200:             os.environ["CB_ERROR_WINDOW_SECONDS"] = str(int(window_seconds))
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_manager.py:203:             os.environ["CB_MAX_ERRORS_PER_WINDOW"] = str(int(max_errors_per_window))
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_manager.py:206:             os.environ["CB_NOTIFY"] = "True" if notify else "False"
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_policy_engine.py:24:         self.settings = settings or Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\scheduler.py:182:             s = Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\scheduler.py:205:             s = Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\scheduler.py:313:             s = Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\strategy.py:70:             s = settings_service.get_settings(symbol=sym)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\strategy.py:151:         s = ssvc.get_settings(symbol=sym)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\strategy.py:221:                     base = ssvc.get_settings(symbol=(data.get("symbol") if isinstance(data, dict) else None))
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\strategy.py:337:         current_settings = settings_service.get_settings(symbol=symbol)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\strategy.py:436:         updated_settings = StrategySettings(
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\strategy.py:445:         settings_service.save_settings(updated_settings, symbol=symbol)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\strategy.py:532:                     "ema_weight": settings_service.get_settings(symbol=symbol).ema_weight,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\strategy.py:533:                     "rsi_weight": settings_service.get_settings(symbol=symbol).rsi_weight,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\strategy.py:534:                     "atr_weight": settings_service.get_settings(symbol=symbol).atr_weight,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\strategy.py:563:                     "ema_weight": settings_service.get_settings(symbol=symbol).ema_weight,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\strategy.py:564:                     "rsi_weight": settings_service.get_settings(symbol=symbol).rsi_weight,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\strategy.py:565:                     "atr_weight": settings_service.get_settings(symbol=symbol).atr_weight,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\strategy.py:589:                     current_settings = settings_service.get_settings(symbol=symbol)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\strategy.py:603:                     current_settings = settings_service.get_settings(symbol=symbol)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\strategy.py:617:                 settings_service.update_settings(
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\strategy.py:628:                 current_settings = settings_service.get_settings(symbol=symbol)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\strategy.py:642:                 "ema_weight": settings_service.get_settings(symbol=symbol).ema_weight,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\strategy.py:643:                 "rsi_weight": settings_service.get_settings(symbol=symbol).rsi_weight,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\strategy.py:644:                 "atr_weight": settings_service.get_settings(symbol=symbol).atr_weight,
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\strategy_settings.py:37:         return StrategySettings(
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\strategy_settings.py:48:         return StrategySettings(
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\strategy_settings.py:60:         self.settings = settings or Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\strategy_settings.py:90:     def get_settings(self, symbol: str | None = None) -> StrategySettings:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\strategy_settings.py:97:             base = StrategySettings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\strategy_settings.py:98:             self.save_settings(base)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\strategy_settings.py:101:             base = StrategySettings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\strategy_settings.py:118:     def save_settings(self, settings_obj: StrategySettings, symbol: str | None = None) -> StrategySettings:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\trade_constraints.py:25:         self.settings = settings or Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\trade_counter.py:33:         self.settings = settings or Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\trading_window.py:44:         self.settings = settings or Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_circuit_breaker_service.py:104:         self.settings = settings or Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_risk_service.py:66:         self.settings = settings or Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_signal_service.py:60:             settings = Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\validation_service.py:63:         self.settings = settings or Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\watchlist_service.py:56:                 env_syms = (Settings().WS_SUBSCRIBE_SYMBOLS or "").strip()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\watchlist_service.py:105:         env_syms = (Settings().WS_SUBSCRIBE_SYMBOLS or "").strip()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\ws_first_data_service.py:97:             settings = Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\ws_first_data_service.py:111:             settings = Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\ws_first_data_service.py:119:                     tfs = [tf.strip() for tf in Settings().WS_CANDLE_TIMEFRAMES.split(",") if tf.strip()]
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\ws_first_data_service.py:231:                     s = ssvc.get_settings(symbol=symbol)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\ws_strategy.py:67: # Exportera funktioner för kompatibilitet med feature_flags_service
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\conftest.py:8:     os.environ["AUTH_REQUIRED"] = "False"
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\conftest.py:11:     os.environ.pop("AUTH_REQUIRED", None)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_advanced_rate_limiter_patterns.py:15:     s = Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_advanced_rate_limiter_patterns.py:30:     s = Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_bracket_manager_unit.py:98:     monkeypatch.setattr(bm_mod, "Settings", lambda: DummySettings())
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_exchange_client_retry.py:43:     s = Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_frontend_smoke.py:22:     # Temporärt sätt AUTH_REQUIRED till True för denna test
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_frontend_smoke.py:23:     original_auth = os.environ.get("AUTH_REQUIRED")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_frontend_smoke.py:24:     os.environ["AUTH_REQUIRED"] = "True"
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_frontend_smoke.py:32:             os.environ["AUTH_REQUIRED"] = original_auth
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_frontend_smoke.py:34:             os.environ.pop("AUTH_REQUIRED", None)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_prob_api.py:6: os.environ.setdefault("AUTH_REQUIRED", "False")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_prob_api_extended.py:7:     os.environ.setdefault("AUTH_REQUIRED", "False")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_prob_config_api.py:7:     os.environ.setdefault("AUTH_REQUIRED", "False")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_prob_model_extended.py:16:     os.environ.setdefault("AUTH_REQUIRED", "False")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_prob_retrain_flow.py:8:     os.environ.setdefault("AUTH_REQUIRED", "False")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_prob_retrain_flow.py:9:     os.environ["PROB_RETRAIN_ENABLED"] = "True"
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_prob_retrain_flow.py:10:     os.environ["PROB_RETRAIN_SYMBOLS"] = "tBTCUSD"
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_prob_retrain_flow.py:11:     os.environ["PROB_RETRAIN_TIMEFRAME"] = "1m"
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_prob_retrain_flow.py:12:     os.environ["PROB_RETRAIN_LIMIT"] = "100"
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_prob_retrain_flow.py:14:     os.environ["PROB_RETRAIN_OUTPUT_DIR"] = str(out_dir)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_prob_retrain_flow.py:27:     os.environ["PROB_MODEL_ENABLED"] = "True"
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_prob_retrain_flow.py:45:     os.environ["PROB_MODEL_FILE"] = str(created[0])
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_manager.py:58:     s = Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_risk_manager.py:97:     s = Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_scheduler_prob_validation.py:6: os.environ.setdefault("AUTH_REQUIRED", "False")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_scheduler_prob_windows.py:7:     os.environ.setdefault("AUTH_REQUIRED", "False")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_socketio_polling.py:7:     monkeypatch.setenv("AUTH_REQUIRED", "False")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_trade_constraints_service_unit.py:8:     svc = TradeConstraintsService(Settings())
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_trade_constraints_service_unit.py:17:     svc = TradeConstraintsService(Settings())
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_trade_constraints_service_unit.py:29:     svc = TradeConstraintsService(Settings())
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_trade_constraints_service_unit.py:48:     svc = TradeConstraintsService(Settings())
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_trade_counter_service_unit.py:16:     s = Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_trade_counter_service_unit.py:33:     s = Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_trade_counter_service_unit.py:47:     s = Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_trading_window.py:15:         s = Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_trading_window_service_unit.py:20:     s = Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_trading_window_service_unit.py:27:     s = Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_trading_window_service_unit.py:39:     s = Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_trading_window_service_unit.py:52:     s = Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_trading_window_service_unit.py:58:     tw2 = TradingWindowService(Settings())
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\utils\advanced_rate_limiter.py:73:         self.settings = settings or Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\utils\bitfinex_rate_limiter.py:23:         self.settings = settings or Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\utils\logger.py:85:             settings = Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\utils\private_concurrency.py:22:             conc = int(getattr(Settings(), "PRIVATE_REST_CONCURRENCY", 2) or 2)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\auth.py:20: settings = Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\manager.py:28:         settings = Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\manager.py:78:         # Respektera AUTH_REQUIRED med runtime-override
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\manager.py:82:             auth_required = bool(_rc_get_bool("AUTH_REQUIRED", Settings().AUTH_REQUIRED))
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\manager.py:84:             auth_required = bool(Settings().AUTH_REQUIRED)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\manager.py:85:         if auth_required and not authenticate_socket_io(environ):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\position_handler.py:30:         self.settings = Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\wallet_handler.py:30:         self.settings = Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\main.py:77:     settings = Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\main.py:198:     settings = Settings()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\main.py:570:         _s = Settings()

@@ -22,7 +22,7 @@ try:
 except Exception:  # pragma: no cover
     ZoneInfo = None  # Fallback; använder naive tider
 
-from config.settings import Settings
+from config.settings import settings
 from rest.order_history import OrderHistoryService, TradeItem
 from rest.positions import PositionsService
 from rest.wallet import WalletService
@@ -41,8 +41,8 @@ class SymbolPosition:
 
 
 class PerformanceService:
-    def __init__(self, settings: Settings | None = None) -> None:
-        self.settings = settings or Settings()
+    def __init__(self, settings_override: Settings | None = None) -> None:
+        self.settings = settings_override or settings
         self.wallet_service = WalletService()
         self.positions_service = PositionsService()
         self.order_history_service = OrderHistoryService()
@@ -56,7 +56,9 @@ class PerformanceService:
         self.history_path = os.path.join(self.config_dir, "performance_history.json")
         os.makedirs(self.config_dir, exist_ok=True)
 
-    async def get_recent_trades(self, hours: int = 24, limit: int = 500) -> list[TradeItem]:
+    async def get_recent_trades(
+        self, hours: int = 24, limit: int = 500
+    ) -> list[TradeItem]:
         """Hämta trades från senaste N timmarna.
 
         Hämtar upp till `limit` trades via REST och filtrerar klient-side på timestamp.
@@ -64,15 +66,24 @@ class PerformanceService:
         """
         try:
             # Hämta senaste trades (utan symbolfilter)
-            trades: list[TradeItem] = await self.order_history_service.get_trades_history(symbol=None, limit=limit)
+            trades: list[TradeItem] = (
+                await self.order_history_service.get_trades_history(
+                    symbol=None, limit=limit
+                )
+            )
         except Exception as e:
             logger.warning(f"Kunde inte hämta senaste trades: {e}")
             return []
 
         try:
-            cutoff_ms = int(datetime.now().timestamp() * 1000) - int(hours * 3600 * 1000)
+            cutoff_ms = int(datetime.now().timestamp() * 1000) - int(
+                hours * 3600 * 1000
+            )
             recent = [
-                t for t in trades if hasattr(t, "executed_at") and int(t.executed_at.timestamp() * 1000) >= cutoff_ms
+                t
+                for t in trades
+                if hasattr(t, "executed_at")
+                and int(t.executed_at.timestamp() * 1000) >= cutoff_ms
             ]
             return recent
         except Exception:
@@ -133,44 +144,38 @@ class PerformanceService:
         if cur in self._fx_cache:
             return self._fx_cache[cur]
 
-        # Test-mynt: försök med TESTUSD som quote (korrekt form: t{ASSET}:TESTUSD)
+        # Begränsa FX‑tickerförsök: endast USD‑quote eller whitelist av direkta FX
+        # Tillåt ett litet set av baser för snabb dev: BTC, ETH, ADA, DOT
+        FX_BASE_WHITELIST = {"BTC", "ETH", "ADA", "DOT"}
+        # Produktion: endast direkta {CUR}USD eller USD:{CUR}
+        # Om cur inte är i whitelist (för bas) eller USD‑stablecoin, försök inte
+        # externa TEST‑par (minska brus/timeouts)
         if cur.startswith("TEST"):
-            try:
-                sym_test = f"t{cur}:TESTUSD"
-                t = await self.data_service.get_ticker(sym_test)
+            # Testvalutor hanteras som 0.0 om inte explicit USD/USDT ovan
+            self._fx_cache[cur] = 0.0
+            return 0.0
+
+        # Produktion: försök direkt USD-quote, därefter inverse
+        try:
+            # Om cur är i whitelist, försök direkt {CUR}USD
+            if cur in FX_BASE_WHITELIST:
+                sym = f"t{cur}USD"
+                t = await self.data_service.get_ticker(sym)
                 if t and float(t.get("last_price", 0)) > 0:
-                    rate = float(t.get("last_price"))  # 1 TESTUSD = 1 USD
+                    rate = float(t.get("last_price"))
                     self._fx_cache[cur] = rate
                     return rate
-            except Exception:
-                pass
-            try:
-                sym_test_inv = f"tTESTUSD:{cur}"
-                t = await self.data_service.get_ticker(sym_test_inv)
+        except Exception:
+            pass
+        try:
+            # Inverse USD:{CUR} endast om whitelisted
+            if cur in FX_BASE_WHITELIST:
+                sym_inv = f"tUSD:{cur}"
+                t = await self.data_service.get_ticker(sym_inv)
                 if t and float(t.get("last_price", 0)) > 0:
                     rate = 1.0 / float(t.get("last_price"))
                     self._fx_cache[cur] = rate
                     return rate
-            except Exception:
-                pass
-
-        # Produktion: försök direkt USD-quote, därefter inverse
-        try:
-            sym = f"t{cur}USD"
-            t = await self.data_service.get_ticker(sym)
-            if t and float(t.get("last_price", 0)) > 0:
-                rate = float(t.get("last_price"))
-                self._fx_cache[cur] = rate
-                return rate
-        except Exception:
-            pass
-        try:
-            sym_inv = f"tUSD:{cur}"
-            t = await self.data_service.get_ticker(sym_inv)
-            if t and float(t.get("last_price", 0)) > 0:
-                rate = 1.0 / float(t.get("last_price"))
-                self._fx_cache[cur] = rate
-                return rate
         except Exception:
             pass
         # Unavailable
@@ -189,9 +194,19 @@ class PerformanceService:
         """
         # Hämta trades – var robust mot tillfälliga Bitfinex-fel (t.ex. 5xx)
         try:
-            trades: list[TradeItem] = await self.order_history_service.get_trades_history(symbol=None, limit=limit)
+            import asyncio
+
+            trades: list[TradeItem] = await asyncio.wait_for(
+                self.order_history_service.get_trades_history(symbol=None, limit=limit),
+                timeout=5.0,  # 5 sekunder timeout för trades-hämtning
+            )
+        except TimeoutError:
+            logger.warning("⚠️ Timeout vid hämtning av trades för realized PnL")
+            trades = []
         except Exception as e:
-            logger.warning(f"Kunde inte hämta trades för realized PnL (fortsätter med tom lista): {e}")
+            logger.warning(
+                f"Kunde inte hämta trades för realized PnL (fortsätter med tom lista): {e}"
+            )
             trades = []
         # Sortera i tidsordning
         trades.sort(key=lambda t: t.executed_at)
@@ -206,7 +221,9 @@ class PerformanceService:
 
             # Summera fees
             try:
-                fees_by_currency[t.fee_currency] = fees_by_currency.get(t.fee_currency, 0.0) + float(t.fee)
+                fees_by_currency[t.fee_currency] = fees_by_currency.get(
+                    t.fee_currency, 0.0
+                ) + float(t.fee)
                 pos.fees += float(t.fee)
             except Exception:
                 pass
@@ -218,10 +235,14 @@ class PerformanceService:
                 continue
 
             # Samma riktning -> utöka position och uppdatera avg_price
-            if (pos.net_amount > 0 and amount > 0) or (pos.net_amount < 0 and amount < 0):
+            if (pos.net_amount > 0 and amount > 0) or (
+                pos.net_amount < 0 and amount < 0
+            ):
                 total_qty = abs(pos.net_amount) + abs(amount)
                 if total_qty > 0:
-                    pos.avg_price = ((abs(pos.net_amount) * pos.avg_price) + (abs(amount) * price)) / total_qty
+                    pos.avg_price = (
+                        (abs(pos.net_amount) * pos.avg_price) + (abs(amount) * price)
+                    ) / total_qty
                 pos.net_amount += amount
                 continue
 
@@ -237,7 +258,9 @@ class PerformanceService:
             if new_net == 0:
                 pos.net_amount = 0.0
                 pos.avg_price = 0.0
-            elif (pos.net_amount > 0 and new_net < 0) or (pos.net_amount < 0 and new_net > 0):
+            elif (pos.net_amount > 0 and new_net < 0) or (
+                pos.net_amount < 0 and new_net > 0
+            ):
                 # Vi har stängt hela och öppnat ny i motsatt riktning för residual
                 residual = new_net
                 pos.net_amount = residual
@@ -277,7 +300,9 @@ class PerformanceService:
                 "base": base,
                 "quote": quote,
                 "realized": round(st.realized_pnl, 8),
-                "realized_usd": (round(realized_usd, 8) if realized_usd is not None else None),
+                "realized_usd": (
+                    round(realized_usd, 8) if realized_usd is not None else None
+                ),
                 "fx_quote_usd": round(fx, 8) if fx > 0 else None,
                 "open_amount": round(st.net_amount, 8),
                 "avg_price": round(st.avg_price, 8),
@@ -309,33 +334,79 @@ class PerformanceService:
 
     # ---- Equity (USD) + snapshots ----
     async def compute_current_equity(self) -> dict[str, Any]:
-        """Beräkna equity i USD:
+        """Beräkna equity i USD med timeout på alla calls:
         - Summan av alla plånböcker konverterade till USD (USD och USD-stablecoins → 1.0)
         - Plus summerad unrealized PnL (om tillgängligt)
         """
-        wallets = await self.wallet_service.get_wallets()
-        positions = await self.positions_service.get_positions()
+        try:
+            import asyncio
 
-        wallets_usd_total = 0.0
-        for w in wallets:
-            cur = (w.currency or "").upper()
-            fx = 1.0 if cur == "USD" or self._is_usd_stablecoin(cur) else await self._fx_to_usd(cur)
-            try:
-                wallets_usd_total += float(w.balance) * (fx if fx > 0 else 0.0)
-            except Exception:
-                # Ignorera korrupta värden
-                pass
+            # Skapa tasks för wallet och position calls med timeout
+            wallets_task = asyncio.create_task(
+                asyncio.wait_for(self.wallet_service.get_wallets(), timeout=1.0)
+            )
+            positions_task = asyncio.create_task(
+                asyncio.wait_for(self.positions_service.get_positions(), timeout=1.0)
+            )
 
-        # OBS: profit_loss från Bitfinex är normalt i quote-valuta; i praktiken USD för USD-par
-        # Vi antar USD här. (För icke-USD-par kan detta förbättras genom FX per position.)
-        unrealized = sum(float(p.profit_loss or 0.0) for p in positions)
+            # Vänta på båda med total timeout
+            wallets, positions = await asyncio.wait_for(
+                asyncio.gather(wallets_task, positions_task, return_exceptions=True),
+                timeout=2.0,
+            )
 
-        return {
-            "total_usd": round(float(wallets_usd_total) + float(unrealized), 8),
-            "wallets_usd": round(float(wallets_usd_total), 8),
-            "unrealized_pnl_usd": round(float(unrealized), 8),
-            "positions_count": len(positions),
-        }
+            # Hantera exceptions från tasks
+            if isinstance(wallets, Exception):
+                logger.warning(f"⚠️ Wallet fetch failed: {wallets}")
+                wallets = []
+            if isinstance(positions, Exception):
+                logger.warning(f"⚠️ Position fetch failed: {positions}")
+                positions = []
+
+            wallets_usd_total = 0.0
+            for w in wallets:
+                cur = (w.currency or "").upper()
+                try:
+                    fx = (
+                        1.0
+                        if cur == "USD" or self._is_usd_stablecoin(cur)
+                        else await asyncio.wait_for(self._fx_to_usd(cur), timeout=0.5)
+                    )
+                    wallets_usd_total += float(w.balance) * (fx if fx > 0 else 0.0)
+                except TimeoutError:
+                    logger.warning(f"⚠️ FX timeout for {cur}, using 0.0")
+                    wallets_usd_total += 0.0
+                except Exception:
+                    # Ignorera korrupta värden
+                    pass
+
+            # OBS: profit_loss från Bitfinex är normalt i quote-valuta; i praktiken USD för USD-par
+            # Vi antar USD här. (För icke-USD-par kan detta förbättras genom FX per position.)
+            unrealized = sum(float(p.profit_loss or 0.0) for p in positions)
+
+            return {
+                "total_usd": round(float(wallets_usd_total) + float(unrealized), 8),
+                "wallets_usd": round(float(wallets_usd_total), 8),
+                "unrealized_pnl_usd": round(float(unrealized), 8),
+                "positions_count": len(positions),
+            }
+
+        except TimeoutError:
+            logger.warning("⚠️ Equity computation timeout - returning fallback")
+            return {
+                "total_usd": 0.0,
+                "wallets_usd": 0.0,
+                "unrealized_pnl_usd": 0.0,
+                "positions_count": 0,
+            }
+        except Exception as e:
+            logger.error(f"❌ Equity computation error: {e}")
+            return {
+                "total_usd": 0.0,
+                "wallets_usd": 0.0,
+                "unrealized_pnl_usd": 0.0,
+                "positions_count": 0,
+            }
 
     def _now_local_date(self) -> str:
         tzname = getattr(self.settings, "TIMEZONE", None) or "UTC"
@@ -377,7 +448,9 @@ class PerformanceService:
         equity = await self.compute_current_equity()
         # Ta med realized_usd (kumulativ) i snapshot
         realized = await self.compute_realized_pnl(limit=1000)
-        realized_usd = float((realized.get("totals", {}) or {}).get("realized_usd", 0.0) or 0.0)
+        realized_usd = float(
+            (realized.get("totals", {}) or {}).get("realized_usd", 0.0) or 0.0
+        )
         today = self._now_local_date()
 
         data = self._load_history()
@@ -408,7 +481,9 @@ class PerformanceService:
                 if prev_total is not None:
                     row["day_change_usd"] = round(equity["total_usd"] - prev_total, 8)
                 if prev_realized_usd is not None:
-                    row["realized_day_change_usd"] = round(realized_usd - prev_realized_usd, 8)
+                    row["realized_day_change_usd"] = round(
+                        realized_usd - prev_realized_usd, 8
+                    )
                 updated = True
                 break
         if not updated:
@@ -417,9 +492,15 @@ class PerformanceService:
                     "date": today,
                     **equity,
                     "realized_usd": round(realized_usd, 8),
-                    "day_change_usd": (round((equity["total_usd"] - prev_total), 8) if prev_total is not None else 0.0),
+                    "day_change_usd": (
+                        round((equity["total_usd"] - prev_total), 8)
+                        if prev_total is not None
+                        else 0.0
+                    ),
                     "realized_day_change_usd": (
-                        round((realized_usd - prev_realized_usd), 8) if prev_realized_usd is not None else 0.0
+                        round((realized_usd - prev_realized_usd), 8)
+                        if prev_realized_usd is not None
+                        else 0.0
                     ),
                 }
             )
@@ -429,8 +510,14 @@ class PerformanceService:
         self._save_history(data)
 
         # Beräkna dagliga diffar för retur-snapshot (även om historik var tom)
-        day_change = 0.0 if prev_total is None else round(equity["total_usd"] - prev_total, 8)
-        realized_day_change = 0.0 if prev_realized_usd is None else round(realized_usd - prev_realized_usd, 8)
+        day_change = (
+            0.0 if prev_total is None else round(equity["total_usd"] - prev_total, 8)
+        )
+        realized_day_change = (
+            0.0
+            if prev_realized_usd is None
+            else round(realized_usd - prev_realized_usd, 8)
+        )
 
         return {
             "snapshot": {

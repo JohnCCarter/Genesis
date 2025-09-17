@@ -10,17 +10,21 @@ from typing import Any, Dict
 
 import jwt
 
-from config.settings import Settings
+from config.settings import settings
 from services.exchange_client import get_exchange_client
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
 # Bitfinex WebSocket API credentials - separata nycklar för WebSocket
-settings = Settings()
+# settings = Settings() # Remove this line
 # Logga status (utan att visa nycklarna)
-logger.info(f"WebSocket API Key status: {'✅ Konfigurerad' if settings.BITFINEX_WS_API_KEY else '❌ Saknas'}")
-logger.info(f"WebSocket API Secret status: {'✅ Konfigurerad' if settings.BITFINEX_WS_API_SECRET else '❌ Saknas'}")
+logger.info(
+    f"WebSocket API Key status: {'✅ Konfigurerad' if settings.BITFINEX_WS_API_KEY else '❌ Saknas'}"
+)
+logger.info(
+    f"WebSocket API Secret status: {'✅ Konfigurerad' if settings.BITFINEX_WS_API_SECRET else '❌ Saknas'}"
+)
 
 
 def build_ws_auth_payload() -> str:
@@ -87,7 +91,9 @@ def generate_token(user_id: str, scope: str = "read", expiry_minutes: int = 15) 
             "user_id": user_id,
         }
     except Exception as e:
-        logger.error(f"Fel vid generering av tokens: {e}")
+        from utils.token_masking import safe_log_data
+
+        logger.error(safe_log_data(e, "Fel vid generering av tokens"))
         return None
 
 
@@ -116,17 +122,25 @@ def validate_token(token: str) -> Dict[str, Any]:
             logger.warning(f"Token har löpt ut för användare {payload.get('sub')}")
             return None
 
-        logger.info(f"{token_type.capitalize()}-token validerad för användare {payload.get('sub')}")
+        logger.info(
+            f"{token_type.capitalize()}-token validerad för användare {payload.get('sub')}"
+        )
         return payload
 
     except jwt.ExpiredSignatureError:
         logger.warning("Token har löpt ut")
         return None
     except jwt.InvalidTokenError as e:
-        logger.warning(f"Ogiltig token: {e}")
+        from utils.token_masking import mask_token, safe_log_data
+
+        logger.warning(safe_log_data(e, f"Ogiltig token: {mask_token(token)}"))
         return None
     except Exception as e:
-        logger.error(f"Fel vid validering av token: {e}")
+        from utils.token_masking import mask_token, safe_log_data
+
+        logger.error(
+            safe_log_data(e, f"Fel vid validering av token: {mask_token(token)}")
+        )
         return None
 
 
@@ -204,13 +218,17 @@ def authenticate_socket_io(environ) -> bool:
     """
     try:
         # Detaljerad loggning för debugging
-        logger.info(f"Socket.IO anslutningsförsök från {environ.get('REMOTE_ADDR', 'okänd')}")
+        logger.info(
+            f"Socket.IO anslutningsförsök från {environ.get('REMOTE_ADDR', 'okänd')}"
+        )
         logger.info(f"HTTP_USER_AGENT: {environ.get('HTTP_USER_AGENT', 'okänd')}")
 
         # Temporär fix: Tillåt anslutning från localhost utan autentisering för utveckling
         remote_addr = environ.get("REMOTE_ADDR", "")
         if remote_addr in ["127.0.0.1", "localhost", "::1"]:
-            logger.info("🔓 Tillåter localhost-anslutning utan autentisering (utvecklingsläge)")
+            logger.info(
+                "🔓 Tillåter localhost-anslutning utan autentisering (utvecklingsläge)"
+            )
             environ["user"] = {"sub": "localhost_user", "scope": "read"}
             return True
 
@@ -226,17 +244,23 @@ def authenticate_socket_io(environ) -> bool:
             token_param = params.get("token", [None])[0]
 
             if token_param:
-                logger.warning("⚠️ Token skickades via URL-parameter istället för Authorization-header")
+                logger.warning(
+                    "⚠️ Token skickades via URL-parameter istället för Authorization-header"
+                )
                 auth_header = f"Bearer {token_param}"
             else:
-                logger.warning("❌ Ingen Authorization-header eller token-parameter hittades")
+                logger.warning(
+                    "❌ Ingen Authorization-header eller token-parameter hittades"
+                )
                 return False
 
         # Extrahera token från Authorization-header (format: "Bearer TOKEN")
         if auth_header.startswith("Bearer "):
             token = auth_header[7:]  # Ta bort "Bearer " prefix
         else:
-            logger.warning("❌ Felaktigt format på Authorization-header (måste vara 'Bearer TOKEN')")
+            logger.warning(
+                "❌ Felaktigt format på Authorization-header (måste vara 'Bearer TOKEN')"
+            )
             return False
 
         # Validera token
@@ -252,7 +276,9 @@ def authenticate_socket_io(environ) -> bool:
 
         # Tillåt max 5 minuters drift mellan klient och server
         if abs(current_time - token_iat) > 300:
-            logger.warning(f"⚠️ Möjlig NTP-drift detekterad. Server: {current_time}, Token: {token_iat}")
+            logger.warning(
+                f"⚠️ Möjlig NTP-drift detekterad. Server: {current_time}, Token: {token_iat}"
+            )
             # Vi tillåter det ändå men loggar varningen
 
         # Sätt användarinformation i environ för senare användning

@@ -10,10 +10,8 @@ from __future__ import annotations
 import json
 from typing import Any
 
-import httpx
-
-from config.settings import Settings
-from rest.auth import build_auth_headers
+from services.exchange_client import get_exchange_client
+from config.settings import settings
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -21,8 +19,11 @@ logger = get_logger(__name__)
 
 class FundingService:
     def __init__(self) -> None:
-        self.settings = Settings()
-        self.base_url = getattr(self.settings, "BITFINEX_AUTH_API_URL", None) or self.settings.BITFINEX_API_URL
+        self.settings = settings
+        self.base_url = (
+            getattr(self.settings, "BITFINEX_AUTH_API_URL", None)
+            or self.settings.BITFINEX_API_URL
+        )
 
     async def transfer(
         self,
@@ -47,21 +48,23 @@ class FundingService:
             "currency": str(currency).upper(),
             "amount": str(amount),
         }
-        body_json = json.dumps(payload, separators=(",", ":"), ensure_ascii=False)
-        headers = build_auth_headers(endpoint, payload_str=body_json)
-        url = f"{self.base_url}/{endpoint}"
         try:
-            async with httpx.AsyncClient(timeout=self.settings.ORDER_HTTP_TIMEOUT) as client:
-                logger.info(
-                    "🌐 REST API: Transfer %s → %s %s %s",
-                    from_wallet,
-                    to_wallet,
-                    amount,
-                    currency,
-                )
-                resp = await client.post(url, content=body_json.encode("utf-8"), headers=headers)
-                resp.raise_for_status()
-                return resp.json()
+            ec = get_exchange_client()
+            logger.info(
+                "🌐 REST API: Transfer %s → %s %s %s",
+                from_wallet,
+                to_wallet,
+                amount,
+                currency,
+            )
+            resp = await ec.signed_request(
+                method="post",
+                endpoint=endpoint,
+                body=payload,
+                timeout=self.settings.ORDER_HTTP_TIMEOUT,
+            )
+            resp.raise_for_status()
+            return resp.json()
         except Exception as e:
             logger.error("Transfer error: %s", e)
             # Läck inte intern feltext externt
@@ -93,17 +96,19 @@ class FundingService:
             payload["end"] = int(end)
         if limit is not None:
             payload["limit"] = int(limit)
-        # Bitfinex v2 kräver ofta tom JSON {} även utan filter
-        body_json = json.dumps(payload, separators=(",", ":"), ensure_ascii=False)
-        headers = build_auth_headers(endpoint, payload_str=body_json)
-        url = f"{self.base_url}/{endpoint}"
+
         try:
-            async with httpx.AsyncClient(timeout=self.settings.ORDER_HTTP_TIMEOUT) as client:
-                logger.info("🌐 REST API: Movements fetch (%s)", currency or "all")
-                resp = await client.post(url, content=body_json.encode("utf-8"), headers=headers)
-                resp.raise_for_status()
-                data = resp.json()
-                return data if isinstance(data, list) else (data or [])
+            ec = get_exchange_client()
+            logger.info("🌐 REST API: Movements fetch (%s)", currency or "all")
+            resp = await ec.signed_request(
+                method="post",
+                endpoint=endpoint,
+                body=payload,
+                timeout=self.settings.ORDER_HTTP_TIMEOUT,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            return data if isinstance(data, list) else (data or [])
         except Exception as e:
             logger.error("Movements error: %s", e)
             # Läck inte intern feltext externt

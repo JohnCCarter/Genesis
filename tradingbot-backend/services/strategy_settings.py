@@ -11,7 +11,7 @@ import os
 from dataclasses import asdict, dataclass
 from typing import Any
 
-from config.settings import Settings
+from config.settings import settings, Settings
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -56,8 +56,8 @@ class StrategySettings:
 
 
 class StrategySettingsService:
-    def __init__(self, settings: Settings | None = None):
-        self.settings = settings or Settings()
+    def __init__(self, settings_override: Settings | None = None):
+        self.settings = settings_override or settings
         # Bygg absolut sökväg till config-katalogen relativt projektroten
         base_dir = os.path.dirname(os.path.dirname(__file__))
         cfg_dir = os.path.join(base_dir, "config")
@@ -93,7 +93,9 @@ class StrategySettingsService:
                 data = json.load(f)
                 base = StrategySettings.from_dict(data)
         except FileNotFoundError:
-            logger.info("Inga strategiinställningar hittades – använder default och skapar fil.")
+            logger.info(
+                "Inga strategiinställningar hittades – använder default och skapar fil."
+            )
             base = StrategySettings()
             self.save_settings(base)
         except Exception as e:
@@ -115,7 +117,9 @@ class StrategySettingsService:
                 logger.warning(f"Kunde inte applicera symboloverride för {symbol}: {e}")
         return base.normalized()
 
-    def save_settings(self, settings_obj: StrategySettings, symbol: str | None = None) -> StrategySettings:
+    def save_settings(
+        self, settings_obj: StrategySettings, symbol: str | None = None
+    ) -> StrategySettings:
         try:
             normalized = settings_obj.normalized()
             if symbol:

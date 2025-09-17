@@ -1,5 +1,5 @@
+import { getWith, post } from '@lib/api';
 import React from 'react';
-import { get, post } from '@lib/api';
 
 type DayKey = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
 const DAY_KEYS: DayKey[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
@@ -38,12 +38,12 @@ export function RiskPanel() {
     const refresh = React.useCallback(async () => {
         try {
             setError(null);
-            const [s, w] = await Promise.all([
-                get('/api/v2/risk/status').catch(() => null),
-                get('/api/v2/risk/windows').catch(() => null),
+            const [s] = await Promise.all([
+                getWith('/api/v2/risk/unified/status', { timeout: 10000, maxRetries: 0 }).catch(() => null),
             ]);
             if (s) setStatus(s);
-            if (w) {
+            if (s && s.trading_window) {
+                const w = s.trading_window;
                 setWindowsPayload(w);
                 setEditTz(w.timezone || 'Europe/Stockholm');
                 setEditPaused(!!w.paused);
@@ -67,7 +67,7 @@ export function RiskPanel() {
     async function pauseResume(pause: boolean) {
         try {
             setLoading(true);
-            await post(pause ? '/api/v2/risk/pause' : '/api/v2/risk/resume');
+            await post(pause ? '/api/v2/risk/unified/pause' : '/api/v2/risk/unified/resume');
             await refresh();
         } finally {
             setLoading(false);
@@ -77,7 +77,7 @@ export function RiskPanel() {
     async function resetCircuit() {
         try {
             setLoading(true);
-            await post('/api/v2/risk/circuit/reset', { resume: true, clear_errors: true });
+            await post('/api/v2/risk/unified/reset-circuit-breaker');
             await refresh();
         } finally {
             setLoading(false);
@@ -140,7 +140,7 @@ export function RiskPanel() {
                     if (!validTime(a) || !validTime(b)) throw new Error(`Ogiltig tid i ${k.toUpperCase()}: ${a}-${b}`);
                 }
             }
-            await post('/api/v2/risk/windows', {
+            await post('/api/v2/risk/unified/windows/update', {
                 timezone: editTz,
                 windows: windowsPayload,
                 paused: editPaused,

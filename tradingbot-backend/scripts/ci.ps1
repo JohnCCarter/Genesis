@@ -29,4 +29,21 @@ python -m bandit -c bandit.yaml -r services rest utils models indicators -q -f j
 Write-Host '=== Pylint (report only) ==='
 python -m pylint services rest utils models indicators --exit-zero -j 0
 
+# Path hygiene: block accidental /api/v2/v2 patterns
+# Rule: In files that define APIRouter(prefix="/api/v2"), disallow route decorators starting with "/v2/"
+Write-Host '=== Path hygiene check (/api/v2/v2 guard) ==='
+$routeFiles = Get-ChildItem -Recurse -File rest | Where-Object { $_.Extension -eq '.py' }
+$violations = @()
+foreach ($f in $routeFiles) {
+  $content = Get-Content -Raw $f.FullName
+  if ($content -match 'APIRouter\(\s*prefix\s*=\s*"/api/v2"') {
+    if ($content -match '@router\.(get|post|put|delete|patch)\("/v2/') {
+      $violations += $f.FullName
+    }
+  }
+}
+if ($violations.Count -gt 0) {
+  Write-Error ("Path hygiene violation: '/v2/*' routes found in files already under APIRouter(prefix='/api/v2'). Files:\n" + ($violations -join "`n"))
+}
+
 Write-Host 'CI checks completed.'

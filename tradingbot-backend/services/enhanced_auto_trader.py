@@ -8,7 +8,8 @@ from services.market_data_facade import get_market_data
 from services.signal_service import SignalService as _StdSignalService
 from services.performance_tracker import get_performance_tracker
 from services.realtime_strategy import RealtimeStrategyService
-from services.signal_generator import SignalGeneratorService
+
+# from services.signal_generator import SignalGeneratorService  # Cirkulär import - inte använd
 from services.trading_integration import TradingIntegrationService
 from utils.logger import get_logger
 
@@ -52,7 +53,9 @@ class EnhancedAutoTrader:
             _enhanced_trader_instance = cls()
         return _enhanced_trader_instance
 
-    async def start_enhanced_trading(self, symbol: str, callback: Callable | None = None):
+    async def start_enhanced_trading(
+        self, symbol: str, callback: Callable | None = None
+    ):
         """Starta enhanced auto-trading för en symbol"""
         try:
             if symbol in self.active_symbols:
@@ -66,7 +69,9 @@ class EnhancedAutoTrader:
                 self.active_symbols[symbol] = {}
 
             # Starta realtidsövervakning för snabb execution
-            await self.realtime_strategy.start_monitoring(symbol, self._handle_realtime_signal)
+            await self.realtime_strategy.start_monitoring(
+                symbol, self._handle_realtime_signal
+            )
 
             # Hämta initial signal
             await self._get_enhanced_signal(symbol)
@@ -141,20 +146,30 @@ class EnhancedAutoTrader:
             signal = SignalResponse(
                 symbol=symbol,
                 signal_type=(
-                    "BUY" if sc.recommendation == "buy" else ("SELL" if sc.recommendation == "sell" else "HOLD")
+                    "BUY"
+                    if sc.recommendation == "buy"
+                    else ("SELL" if sc.recommendation == "sell" else "HOLD")
                 ),
                 confidence_score=sc.confidence,
                 trading_probability=sc.probability,
                 recommendation=(
                     "STRONG_BUY"
                     if sc.recommendation == "buy" and sc.probability > 70
-                    else ("BUY" if sc.recommendation == "buy" else ("HOLD" if sc.recommendation == "hold" else "AVOID"))
+                    else (
+                        "BUY"
+                        if sc.recommendation == "buy"
+                        else ("HOLD" if sc.recommendation == "hold" else "AVOID")
+                    )
                 ),
                 timestamp=datetime.now(),
                 strength=(
                     "STRONG"
                     if sc.confidence >= self.thresholds.strong_signal_min
-                    else ("MEDIUM" if sc.confidence >= self.thresholds.medium_signal_min else "WEAK")
+                    else (
+                        "MEDIUM"
+                        if sc.confidence >= self.thresholds.medium_signal_min
+                        else "WEAK"
+                    )
                 ),
                 reason=f"Confidence: {sc.confidence:.1f}%, Probability: {sc.probability:.1f}%, Source: {sc.source}",
                 current_price=None,
@@ -198,7 +213,9 @@ class EnhancedAutoTrader:
             logger.error(f"❌ Fel vid trade beslut: {e}")
             return False
 
-    async def _execute_enhanced_trade(self, symbol: str, signal: SignalResponse, realtime_result: dict):
+    async def _execute_enhanced_trade(
+        self, symbol: str, signal: SignalResponse, realtime_result: dict
+    ):
         """Utför trade med enhanced signal men befintligt execution system"""
         try:
             # Beräkna position storlek baserat på confidence
@@ -220,7 +237,9 @@ class EnhancedAutoTrader:
             self._last_trade_time[symbol] = datetime.now()
 
             # Registrera trade i performance tracker
-            trade_id = self.performance_tracker.record_trade(symbol, signal, trade_result, datetime.now())
+            trade_id = self.performance_tracker.record_trade(
+                symbol, signal, trade_result, datetime.now()
+            )
 
             # Logga resultat
             logger.info(
@@ -229,7 +248,10 @@ class EnhancedAutoTrader:
             )
 
             # Anropa callback om det finns
-            if symbol in self.active_symbols and "callback" in self.active_symbols[symbol]:
+            if (
+                symbol in self.active_symbols
+                and "callback" in self.active_symbols[symbol]
+            ):
                 callback = self.active_symbols[symbol]["callback"]
                 if callback:
                     await callback(trade_result)
@@ -247,13 +269,20 @@ class EnhancedAutoTrader:
             confidence_multiplier = signal.confidence_score / 100.0
 
             # Justera baserat på signal styrka
-            strength_multiplier = {"STRONG": 1.5, "MEDIUM": 1.0, "WEAK": 0.5}.get(signal.strength, 1.0)
+            strength_multiplier = {"STRONG": 1.5, "MEDIUM": 1.0, "WEAK": 0.5}.get(
+                signal.strength, 1.0
+            )
 
             # Justera baserat på trading probability
             probability_multiplier = signal.trading_probability / 100.0
 
             # Kombinera alla faktorer
-            final_size = base_size * confidence_multiplier * strength_multiplier * probability_multiplier
+            final_size = (
+                base_size
+                * confidence_multiplier
+                * strength_multiplier
+                * probability_multiplier
+            )
 
             # Begränsa till rimliga gränser
             final_size = max(0.0001, min(0.01, final_size))
@@ -356,7 +385,9 @@ class EnhancedAutoTrader:
             for symbol in symbols_to_stop:
                 await self.stop_enhanced_trading(symbol)
 
-            logger.info(f"🛑 Stoppade all enhanced auto-trading ({len(symbols_to_stop)} symboler)")
+            logger.info(
+                f"🛑 Stoppade all enhanced auto-trading ({len(symbols_to_stop)} symboler)"
+            )
 
         except Exception as e:
             logger.error(f"❌ Fel vid stopp av all enhanced trading: {e}")

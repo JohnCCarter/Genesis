@@ -1,0 +1,148 @@
+﻿C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\config\settings.py:67:     WS_SUBSCRIBE_SYMBOLS: str | None = None
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\config\settings.py:148:     # Vänta kort på första WS‑tick efter auto‑subscribe innan
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:86: # Hjälpfunktion för att emit:a notifieringar via Socket.IO
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:87: def _emit_notification(event_type: str, title: str, payload: dict):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:92:             socket_app.emit(
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:157: class WSUnsubscribeRequest(BaseModel):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:163: class WSSubscribeRequest(BaseModel):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:825:             _emit_notification(
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:843:                     _emit_notification(
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:937:         _emit_notification("info", "Alla ordrar avbrutna", {"response": result})
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:960:         _emit_notification("info", "Ordrar avbrutna för symbol", {"symbol": symbol, "response": result})
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:1567:                 socket_app.emit(
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:1748:                 await bitfinex_ws.subscribe_ticker(eff, _cb)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:2029: # Resync endpoint: re‑subscribe + REST snapshot fetch
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:2033:         # WS re-subscribe (idempotent skydd finns i subscribe)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:2034:         await bitfinex_ws.subscribe_ticker(symbol, bitfinex_ws._handle_ticker_with_strategy)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:2073: @router.post("/ws/subscribe")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:2074: async def ws_subscribe(req: WSSubscribeRequest, _: bool = Depends(require_auth)):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:2081:             await bitfinex_ws.subscribe_ticker(sym, bitfinex_ws._handle_ticker_with_strategy)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:2084:             await bitfinex_ws.subscribe_trades(sym, bitfinex_ws._handle_ticker_with_strategy)  # återanvänd callback
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:2095:             await bitfinex_ws.subscribe_candles(sym, tf, bitfinex_ws._handle_ticker_with_strategy)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:2103:         logger.exception(f"WS subscribe error: {e}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:2107: @router.post("/ws/unsubscribe")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:2108: async def ws_unsubscribe(req: WSUnsubscribeRequest, _: bool = Depends(require_auth)):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:2124:         await bitfinex_ws.unsubscribe(sub_key)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:2129:         logger.exception(f"WS unsubscribe error: {e}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:2399:                 env_syms = (getattr(s, "WS_SUBSCRIBE_SYMBOLS", None) or "").strip()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:2462:                 env_syms = (getattr(s, "WS_SUBSCRIBE_SYMBOLS", None) or "").strip()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:2778:         _emit_notification("info", "Auto trading startad", {"symbol": req.symbol})
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:2789:         _emit_notification("info", "Auto trading stoppad", {"symbol": req.symbol})
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:2818:         _emit_notification("info", "Auto trading stoppad (alla)", {"symbols": []})
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:2839:             _emit_notification("info", "Auto trading startad (batch)", {"symbols": started})
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:3671:         _emit_notification(
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4098:         _emit_notification(
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4114:         _emit_notification(
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4192:         # Auto‑subscribe när WS Strategy slås på
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4196:                 raw = (getattr(s, "WS_SUBSCRIBE_SYMBOLS", None) or "").strip()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4209:                             _ws.subscribe_with_strategy_evaluation(sym, _ws._handle_ticker_with_strategy)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4403:         _emit_notification("info", "Dry run", {"enabled": bool(payload.enabled)})
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4434:         _emit_notification("info", "Trading paused", {"enabled": bool(payload.enabled)})
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4472:         _emit_notification("info", "Prob model", {"enabled": bool(payload.enabled)})
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4495:         _emit_notification("info", "Autotrade", {"enabled": bool(payload.enabled)})
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4594:         _emit_notification("info", "Scheduler", {"enabled": bool(payload.enabled)})
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4629:         raw_symbols = (settings.WS_SUBSCRIBE_SYMBOLS or "").strip()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4882:         _emit_notification("info", "Enhanced Auto-trading startad", {"symbol": symbol})
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:4905:         _emit_notification("info", "Enhanced Auto-trading stoppad", {"symbol": symbol})
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\rest\routes.py:5602:         _emit_notification("info", "All Enhanced Auto-trading stoppad", {})
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_data.py:329:                 # 0b) Auto-subscribe om inte färsk WS-data och vi inte redan sub:at
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_data.py:332:                     already_subscribed = sub_key in getattr(bitfinex_ws, "subscriptions", {})
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_data.py:333:                     logger.debug(f"🔍 WS-subscription för {symbol}: already_subscribed={already_subscribed}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_data.py:335:                     if not already_subscribed:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_data.py:340:                         await bitfinex_ws.subscribe_ticker(eff_symbol, bitfinex_ws._handle_ticker_with_strategy)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_data.py:378:                     logger.warning(f"⚠️ WS auto-subscribe misslyckades för {symbol}: {e}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:61:         # Spåra önskade symboler (rå input) för auto-resubscribe
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:78:         # Spårning av subkey -> ws/chanId för unsubscribe
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:97:         # Spåra candles-subs för auto-resubscribe
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:707:         """Schemalägger reconnect med exp backoff + jitter och auto-resubscribe."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:736:             # Auto-resubscribe tickers
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:740:                         await self.subscribe_ticker(raw, self._handle_ticker_with_strategy)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:746:             # Auto-resubscribe candles
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:750:                         await self.subscribe_candles(sym, tf, cb)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:759:     async def subscribe_ticker(self, symbol: str, callback: Callable):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:778:                     logger.warning("⛔ WS skip subscribe: pair_not_listed %s", eff_symbol)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:792:             # Registrera önskad symbol (rå) för framtida refresh/resubscribe
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:805:                     logger.warning("⛔ WS skip subscribe: pair_not_listed %s", eff_symbol)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:810:             subscribe_msg = {
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:811:                 "event": "subscribe",
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:819:                 logger.warning("WS subscribe_ticker: ingen anslutning")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:821:             await target_ws.send(json.dumps(subscribe_msg))
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:822:             self.subscriptions[key] = subscribe_msg
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:828:             # Markera var subben ligger (för unsubscribe)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:839:     async def unsubscribe(self, sub_key: str):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:848:             msg = {"event": "unsubscribe", "chanId": chan_id}
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:862:             logger.info("🔕 Unsubscribed %s (chanId=%s)", sub_key, chan_id)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:864:             logger.warning("Unsubscribe fel för %s: %s", sub_key, e)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:867:         """Refreshar configs periodiskt och resubscribe:ar saknade listade par för önskade symboler."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:883:                                 logger.info("🔄 WS resubscribe: %s (eff=%s)", raw, eff)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:884:                                 await self.subscribe_ticker(raw, self._handle_ticker_with_strategy)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:893:     async def subscribe_trades(self, symbol: str, callback: Callable):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:917:             subscribe_msg = {
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:918:                 "event": "subscribe",
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:937:                 logger.warning("WS subscribe_trades: ingen anslutning")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:939:             await target_ws.send(json.dumps(subscribe_msg))
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:941:             self.subscriptions[key] = subscribe_msg
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:954:     async def subscribe_with_strategy_evaluation(self, symbol: str, callback: Callable):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:970:             await self.subscribe_ticker(symbol, self._handle_ticker_with_strategy)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:977:     async def subscribe_candles(self, symbol: str, timeframe: str, callback: Callable):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:996:             msg = {"event": "subscribe", "channel": "candles", "key": ckey}
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:1014:                 logger.warning("WS subscribe_candles: ingen anslutning")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:1025:             # Spåra för auto-resubscribe
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:1044:     async def subscribe_book(
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:1070:                 "event": "subscribe",
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:1078:                 logger.warning("WS subscribe_book: ingen anslutning")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:1407:         """Hanterar event-meddelanden (subscribe, auth, etc.)."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:1411:             if event == "subscribed":
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\bitfinex_websocket.py:1463:                 if "subscribe: dup" in msg:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\notifications.py:43:             await socket_app.emit(
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\realtime_strategy.py:43:             await bitfinex_ws.subscribe_with_strategy_evaluation(symbol, self._handle_strategy_result)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\realtime_strategy.py:114:             await socket_app.emit("strategy_signal", result)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\risk_manager.py:169:                         socket_app.emit(
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\scheduler.py:159:                     socket_app.emit(
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\scheduler.py:217:                 # fallback till WS_SUBSCRIBE_SYMBOLS eller standard BTCUSD
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\scheduler.py:218:                 env_syms = (getattr(s, "WS_SUBSCRIBE_SYMBOLS", None) or "").strip()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\scheduler.py:325:                 env_syms = (getattr(s, "WS_SUBSCRIBE_SYMBOLS", None) or "").strip()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\scheduler.py:432:                             socket_app.emit(
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\signal_generator.py:379:         """Hämta lista av aktiva symboler – läs från WS_SUBSCRIBE_SYMBOLS i .env.
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\signal_generator.py:387:             raw = (s.WS_SUBSCRIBE_SYMBOLS or "").strip()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\unified_signal_service.py:63:             raw_symbols = (settings.WS_SUBSCRIBE_SYMBOLS or "").strip()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\watchlist_service.py:5: - Hämta symboler (via Settings/WS_SUBSCRIBE_SYMBOLS eller testlista)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\watchlist_service.py:56:                 env_syms = (Settings().WS_SUBSCRIBE_SYMBOLS or "").strip()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\watchlist_service.py:105:         env_syms = (Settings().WS_SUBSCRIBE_SYMBOLS or "").strip()
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\ws_first_data_service.py:113:             if settings.WS_SUBSCRIBE_SYMBOLS:
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\ws_first_data_service.py:114:                 symbols = [s.strip() for s in settings.WS_SUBSCRIBE_SYMBOLS.split(",")]
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\ws_first_data_service.py:126:                         await bitfinex_ws.subscribe_ticker(
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\services\ws_first_data_service.py:137:                             await bitfinex_ws.subscribe_candles(symbol=symbol, timeframe=tf, callback=_cb)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\tests\test_realtime.py:191:             await bitfinex_ws.subscribe_ticker(symbol, test_callback)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\manager.py:34: async def safe_emit(event: str, data: dict, room: str = None, skip_sid: str = None):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\manager.py:35:     """Säker emit med UI push kontroll."""
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\manager.py:41:             await socket_app.emit(event, data, room=room, skip_sid=skip_sid)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\manager.py:43:             await socket_app.emit(event, data, skip_sid=skip_sid)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\manager.py:90:         await socket_app.emit("authenticated", {"status": "success", "user": user.get("sub")}, room=sid)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\manager.py:118:             await socket_app.emit("token_generated", token_response, room=sid)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\manager.py:121:             await socket_app.emit("token_error", {"error": "Kunde inte generera token"}, room=sid)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\manager.py:126:         await socket_app.emit("token_error", {"error": str(e)}, room=sid)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\manager.py:136:             await socket_app.emit("token_error", {"error": "Refresh token saknas"}, room=sid)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\manager.py:144:             await socket_app.emit("token_refreshed", token_response, room=sid)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\manager.py:147:             await socket_app.emit("token_error", {"error": "Kunde inte förnya token"}, room=sid)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\manager.py:152:         await socket_app.emit("token_error", {"error": str(e)}, room=sid)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\manager.py:207:                 await socket_app.emit("wallet_snapshot", wallets, room=sid)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\manager.py:218:                 await socket_app.emit("position_snapshot", positions, room=sid)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\manager.py:230:                 await socket_app.emit(
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\manager.py:264:         def _emit_safe(event: str, payload):
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\manager.py:267:                 asyncio.create_task(socket_app.emit(event, payload))
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\manager.py:269:                 logger.error(f"Fel vid emit av {event}: {e}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\manager.py:276:                 _emit_safe("order_snapshot", snapshot)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\manager.py:284:                 _emit_safe("order_new", order)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\manager.py:292:                 _emit_safe("order_update", order)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\manager.py:300:                 _emit_safe("order_cancel", order)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\manager.py:310:                 _emit_safe("trade_executed", trade)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\manager.py:318:                 _emit_safe("trade_update", trade)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\manager.py:352:     # Hjälpmetod för att emit:a notifieringar
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\manager.py:356:             await socket_app.emit(
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\manager.py:361:             logger.error(f"Fel vid notification emit: {e}")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\position_handler.py:180:             asyncio.create_task(self.sio.emit("position_update", formatted_position))
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\position_handler.py:227:             asyncio.create_task(self.sio.emit("position_snapshot", formatted_positions))
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\position_handler.py:262:             asyncio.create_task(self.sio.emit("position_close", formatted_position))
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\wallet_handler.py:172:             asyncio.create_task(self.sio.emit("wallet_update", formatted_wallet))
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\ws\wallet_handler.py:215:             asyncio.create_task(self.sio.emit("wallet_snapshot", formatted_wallets))

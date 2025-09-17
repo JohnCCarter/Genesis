@@ -11,10 +11,12 @@ function App() {
                 <nav style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
                     <Link to="/">Dashboard</Link>
                     <Link to="/debug">Debug</Link>
+                    
                 </nav>
                 <Routes>
                     <Route path="/" element={<DashboardPage />} />
                     <Route path="/debug" element={<DebugPage />} />
+                    
                 </Routes>
             </div>
         </BrowserRouter>

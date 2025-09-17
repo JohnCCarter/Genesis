@@ -9,7 +9,7 @@ import os
 from dataclasses import dataclass
 from datetime import date, datetime
 
-from config.settings import Settings
+from config.settings import settings, Settings
 from services.trading_window import TradingWindowService
 from utils.logger import get_logger
 
@@ -29,8 +29,8 @@ class TradeCounterState:
 
 
 class TradeCounterService:
-    def __init__(self, settings: Settings | None = None):
-        self.settings = settings or Settings()
+    def __init__(self, settings_override: Settings | None = None):
+        self.settings = settings_override or settings
         has_zoneinfo = ZoneInfo is not None
         self.tz = ZoneInfo(self.settings.TIMEZONE) if has_zoneinfo else None
         self.state = TradeCounterState(day=self._today())
@@ -84,7 +84,10 @@ class TradeCounterService:
             "cooldown_seconds": self._cooldown_seconds_current(),
             "cooldown_active": (
                 self.state.last_trade_ts is not None
-                and ((self._now() - self.state.last_trade_ts).total_seconds() < self._cooldown_seconds_current())
+                and (
+                    (self._now() - self.state.last_trade_ts).total_seconds()
+                    < self._cooldown_seconds_current()
+                )
             ),
             "per_symbol": self.symbol_counts.copy(),
         }
@@ -112,7 +115,10 @@ class TradeCounterService:
                 except Exception:
                     self.state.day = self._today()
             self.state.count = int(data.get("count", 0))
-            self.symbol_counts = {str(k).upper(): int(v) for k, v in (data.get("per_symbol", {}) or {}).items()}
+            self.symbol_counts = {
+                str(k).upper(): int(v)
+                for k, v in (data.get("per_symbol", {}) or {}).items()
+            }
         except Exception:
             # korrupt fil – börja om
             self.state = TradeCounterState(day=self._today())

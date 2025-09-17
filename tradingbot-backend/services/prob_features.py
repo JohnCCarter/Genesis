@@ -63,7 +63,9 @@ def compute_features_from_candles(candles: list[list[float]]) -> dict[str, float
     }
 
 
-def label_sequence(candles: list[list[float]], horizon: int, tp: float, sl: float) -> list[str]:
+def label_sequence(
+    candles: list[list[float]], horizon: int, tp: float, sl: float
+) -> list[str]:
     """
     Label each index i with buy/sell/hold based on future returns within horizon.
     - buy if max_future_return >= tp
@@ -92,7 +94,9 @@ def label_sequence(candles: list[list[float]], horizon: int, tp: float, sl: floa
     return labels
 
 
-def build_dataset(candles: list[list[float]], horizon: int, tp: float, sl: float) -> list[dict[str, Any]]:
+def build_dataset(
+    candles: list[list[float]], horizon: int, tp: float, sl: float
+) -> list[dict[str, Any]]:
     """
     Build a small dataset of features + label aligned by dropping last horizon samples.
     Returns list of dicts: {ema_diff, rsi_norm, atr_pct, price, label}

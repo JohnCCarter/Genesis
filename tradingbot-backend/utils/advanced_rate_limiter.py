@@ -13,9 +13,11 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Awaitable, Callable, ParamSpec, TypeVar
 
-from config.settings import Settings
+from config.settings import settings
 from services.metrics import _labels_to_str, metrics_store
+from services.metrics_client import get_metrics_client
 from utils.logger import get_logger
+from services.unified_circuit_breaker_service import unified_circuit_breaker_service
 
 logger = get_logger(__name__)
 
@@ -67,15 +69,41 @@ class TokenBucket:
 
 
 class AdvancedRateLimiter:
-    """Advanced rate limiter med token-bucket och endpoint-specifika limits"""
+    """
+    Advanced rate limiter med token-bucket, concurrency‑semaforer och enkel
+    transport‑nivå circuit breaker per endpoint.
 
-    def __init__(self, settings: Settings | None = None):
-        self.settings = settings or Settings()
+    _cb_state struktur per endpoint‑nyckel (str):
+      {
+        "fail_count": int,      # antal på varandra följande fel (ökar i note_failure, nollas i note_success)
+        "open_until": float,    # epoch‑sek tills breaker är öppen (can_request==False om now < open_until)
+        "last_failure": float,  # epoch‑sek för senaste felet (observationsvärde)
+      }
+
+    Semantik:
+      - can_request(endpoint): True om nuvarande tid >= open_until
+      - time_until_open(endpoint): sekunder kvar tills closed/half‑open
+      - note_failure(endpoint, status_code, retry_after):
+          * ökar fail_count och sätter open_until enligt Retry‑After om finns,
+            annars exponentiell backoff (2^min(6, fail_count)).
+          * signalerar även UnifiedCircuitBreakerService (transport‑källa)
+      - note_success(endpoint): nollar fail_count/open_until/last_failure och
+            signalerar UnifiedCircuitBreakerService om återhämtning.
+
+    Användning: Exponeras via get_advanced_rate_limiter().
+    För felsökning: se `/api/v2/debug/rate_limiter` som visar nyckelvärden samt
+    `time_until_open` för utvalda endpoints.
+    """
+
+    def __init__(self, settings_override=None):
+        self.settings = settings_override or settings
         self._buckets: dict[EndpointType, TokenBucket] = {}
         self._endpoint_mapping: dict[str, EndpointType] = {}
-        self._lock = asyncio.Lock()
+        # Per-event-loop locks: asyncio.Lock är loop-bundet
+        self._locks_by_loop: dict[int, asyncio.Lock] = {}
         # Concurrency caps per endpoint-typ
-        self._semaphores: dict[EndpointType, asyncio.Semaphore] = {}
+        # OBS: asyncio.Semaphore är loop-bundet. Håll per-loop map.
+        self._semaphores: dict[int, dict[EndpointType, asyncio.Semaphore]] = {}
         # Server busy tracking (för kompatibilitet med äldre anrop)
         self._server_busy_count: int = 0
         self._last_server_busy_time: float = 0.0
@@ -84,7 +112,19 @@ class AdvancedRateLimiter:
         self._cb_state: dict[str, dict] = {}
         self._setup_buckets()
         self._setup_endpoint_mapping()
-        self._setup_semaphores()
+
+    def _get_lock(self) -> asyncio.Lock:
+        """Hämta ett asyncio.Lock bundet till aktuell event loop."""
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None  # type: ignore[assignment]
+        loop_id = id(loop)
+        lock = self._locks_by_loop.get(loop_id)
+        if lock is None:
+            lock = asyncio.Lock()
+            self._locks_by_loop[loop_id] = lock
+        return lock
 
     def _setup_buckets(self) -> None:
         """Sätt upp token buckets för olika endpoint-typer"""
@@ -114,15 +154,9 @@ class AdvancedRateLimiter:
             )
 
     def _setup_semaphores(self) -> None:
-        """Sätt upp concurrency-semaforer för endpoint-typer."""
-        pub = max(1, int(getattr(self.settings, "PUBLIC_REST_CONCURRENCY", 2) or 1))
-        prv = max(1, int(getattr(self.settings, "PRIVATE_REST_CONCURRENCY", 1) or 1))
-        self._semaphores = {
-            EndpointType.PUBLIC_MARKET: asyncio.Semaphore(pub),
-            EndpointType.PRIVATE_ACCOUNT: asyncio.Semaphore(prv),
-            EndpointType.PRIVATE_TRADING: asyncio.Semaphore(prv),
-            EndpointType.PRIVATE_MARGIN: asyncio.Semaphore(prv),
-        }
+        """Init default-konfig; faktiska semaforer skapas per event loop vid behov."""
+        # Inget att göra här längre; behåll metoden för bakåtkompatibilitet
+        pass
 
     def _setup_endpoint_mapping(self) -> None:
         """Mappa API endpoints till endpoint-typer"""
@@ -155,7 +189,7 @@ class AdvancedRateLimiter:
                 mapping_part_stripped = mapping_part.strip()
                 if not mapping_part_stripped or "=>" not in mapping_part_stripped:
                     continue
-                rx, typ = [x.strip() for x in mapping_part_stripped.split("=>", 1)]
+                rx, typ = (x.strip() for x in mapping_part_stripped.split("=>", 1))
                 try:
                     et = EndpointType[typ]
                 except Exception:
@@ -197,7 +231,25 @@ class AdvancedRateLimiter:
 
     def _get_semaphore(self, endpoint: str) -> asyncio.Semaphore:
         et = self._classify_endpoint(endpoint)
-        return self._semaphores[et]
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None  # type: ignore
+        loop_id = id(loop)
+        semaphores = self._semaphores.get(loop_id)
+        if semaphores is None:
+            pub = max(1, int(getattr(self.settings, "PUBLIC_REST_CONCURRENCY", 2) or 1))
+            prv = max(
+                1, int(getattr(self.settings, "PRIVATE_REST_CONCURRENCY", 1) or 1)
+            )
+            semaphores = {
+                EndpointType.PUBLIC_MARKET: asyncio.Semaphore(pub),
+                EndpointType.PRIVATE_ACCOUNT: asyncio.Semaphore(prv),
+                EndpointType.PRIVATE_TRADING: asyncio.Semaphore(prv),
+                EndpointType.PRIVATE_MARGIN: asyncio.Semaphore(prv),
+            }
+            self._semaphores[loop_id] = semaphores
+        return semaphores[et]
 
     async def wait_if_needed(self, endpoint: str, tokens: int = 1) -> float:
         """
@@ -216,7 +268,7 @@ class AdvancedRateLimiter:
         endpoint_type = self._classify_endpoint(endpoint)
         bucket = self._buckets[endpoint_type]
 
-        async with self._lock:
+        async with self._get_lock():
             if bucket.consume(tokens):
                 # Tokens tillgängliga, ingen väntan
                 return 0.0
@@ -225,7 +277,9 @@ class AdvancedRateLimiter:
             wait_time = bucket.time_to_tokens(tokens)
 
             if wait_time > 0:
-                logger.warning(f"Rate limit nått för {endpoint_type.value} ({endpoint}), väntar {wait_time:.1f}s")
+                logger.warning(
+                    f"Rate limit nått för {endpoint_type.value} ({endpoint}), väntar {wait_time:.1f}s"
+                )
                 await asyncio.sleep(wait_time)
 
                 # Konsumera tokens efter väntan
@@ -282,19 +336,29 @@ class AdvancedRateLimiter:
             bucket.tokens = bucket.capacity
             bucket.last_refill = time.time()
 
-    async def handle_server_busy(self, endpoint: str = "default") -> float:  # noqa: ARG002
+    async def handle_server_busy(self, _endpoint: str = "default") -> float:
         """Kompatibilitets-API: hantera server busy med adaptiv backoff."""
         now = time.time()
         self._server_busy_count += 1
         # Anpassa multiplier beroende på hur tätt felen kommer
         if now - self._last_server_busy_time < 60:
-            self._adaptive_backoff_multiplier = min(4.0, self._adaptive_backoff_multiplier * 1.5)
+            self._adaptive_backoff_multiplier = min(
+                4.0, self._adaptive_backoff_multiplier * 1.5
+            )
         else:
-            self._adaptive_backoff_multiplier = max(1.0, self._adaptive_backoff_multiplier * 0.8)
+            self._adaptive_backoff_multiplier = max(
+                1.0, self._adaptive_backoff_multiplier * 0.8
+            )
         self._last_server_busy_time = now
 
-        base_min = float(getattr(self.settings, "BITFINEX_SERVER_BUSY_BACKOFF_MIN_SECONDS", 10.0) or 10.0)
-        base_max = float(getattr(self.settings, "BITFINEX_SERVER_BUSY_BACKOFF_MAX_SECONDS", 30.0) or 30.0)
+        base_min = float(
+            getattr(self.settings, "BITFINEX_SERVER_BUSY_BACKOFF_MIN_SECONDS", 10.0)
+            or 10.0
+        )
+        base_max = float(
+            getattr(self.settings, "BITFINEX_SERVER_BUSY_BACKOFF_MAX_SECONDS", 30.0)
+            or 30.0
+        )
         wait_time = random.uniform(
             base_min * self._adaptive_backoff_multiplier,
             base_max * self._adaptive_backoff_multiplier,
@@ -312,15 +376,24 @@ class AdvancedRateLimiter:
         return str(endpoint or "default")
 
     def time_until_open(self, endpoint: str) -> float:
+        """Sekunder kvar tills circuit för endpoint är closed.
+
+        Returnerar 0 när closed (eller ej öppnad). Bygger på `open_until` i
+        `_cb_state` (epoch‑sek)."""
         st = self._cb_state.get(self._cb_key(endpoint)) or {}
         open_until = float(st.get("open_until", 0.0) or 0.0)
         now = time.time()
         return max(0.0, open_until - now)
 
     def can_request(self, endpoint: str) -> bool:
+        """True om endpoint‑circuit är closed (dvs `time_until_open` är 0)."""
         return self.time_until_open(endpoint) <= 0.0
 
     def note_success(self, endpoint: str) -> None:
+        """Notera framgång och återställ transport‑CB för endpoint.
+
+        Nollställer fail_count/open_until/last_failure och signalerar Unified
+        CB om återhämtning. Idempotent om state saknas."""
         key = self._cb_key(endpoint)
         st = self._cb_state.get(key)
         if st:
@@ -328,8 +401,23 @@ class AdvancedRateLimiter:
             st["open_until"] = 0.0
             st["last_failure"] = 0.0
             self._cb_state[key] = st
+        # Signalera unified CB
+        try:
+            unified_circuit_breaker_service.on_event(
+                source="transport", endpoint=endpoint, success=True
+            )
+        except Exception:
+            pass
 
-    def note_failure(self, endpoint: str, status_code: int, retry_after: str | None = None) -> float:
+    def note_failure(
+        self, endpoint: str, status_code: int, retry_after: str | None = None
+    ) -> float:
+        """Notera fel och öppna transport‑CB för endpoint enligt backoff.
+
+        - Om `retry_after` kan tolkas som sekunder används det som minsta
+          cooldown. Annars används exponentiell backoff 2^min(6, fail_count).
+        - Uppdaterar `_cb_state` och returnerar aktuell cooldown i sekunder.
+        - Signal skickas till UnifiedCircuitBreakerService (source="transport")."""
         key = self._cb_key(endpoint)
         st = self._cb_state.get(key) or {
             "fail_count": 0,
@@ -360,6 +448,17 @@ class AdvancedRateLimiter:
             )
         except Exception:
             pass
+        # Signalera unified CB
+        try:
+            unified_circuit_breaker_service.on_event(
+                source="transport",
+                endpoint=endpoint,
+                status_code=status_code,
+                success=False,
+                retry_after=retry_after,
+            )
+        except Exception:
+            pass
         return cooldown
 
 
@@ -371,7 +470,7 @@ def get_advanced_rate_limiter() -> AdvancedRateLimiter:
     """Returnerar global advanced rate limiter instans"""
     global _advanced_rate_limiter
     if _advanced_rate_limiter is None:
-        _advanced_rate_limiter = AdvancedRateLimiter()
+        _advanced_rate_limiter = AdvancedRateLimiter(settings)
     return _advanced_rate_limiter
 
 
@@ -396,3 +495,6 @@ def limit_endpoint(
         return _wrapper
 
     return _decorator
+
+
+# (duplikat borttaget; se tidigare global instans och funktion ovan)

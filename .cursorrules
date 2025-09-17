@@ -1,0 +1,62 @@
+Project collaboration rules for AI agents (Cursor + Codex)
+
+Core goals
+
+- Avoid file conflicts: use per-file locks before editing.
+- Keep changes minimal, targeted, and well logged.
+- Never touch secrets or local env files.
+
+Locking policy
+
+- Before editing a file, create a lock in `.agent-locks/` using one of:
+  - Run: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/agent_lock.ps1 lock -Path "<relative-path>" -By "<AgentName>" -Reason "<why>"`
+  - OR create a text file: `.agent-locks/<sanitized-path>.lock` with JSON: `{ "path": "<relative-path>", "locked_by": "<AgentName>", "reason": "...", "created_at": "<ISO-8601 UTC>" }`.
+- Do not modify a file if a lock exists and you are not the lock owner.
+- When done, remove the lock via the script `unlock` command or by deleting the lock file you own.
+
+Agent messaging
+
+- Use `scripts/agent_communication.ps1` for coordination messages and status heartbeats.
+- Examples:
+  - Send: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/agent_communication.ps1 send -Message "..." -To "Cursor" -From "Codex" -Priority normal -Context "..."`
+  - Read: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/agent_communication.ps1 read -Agent "Cursor"`
+  - Status: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/agent_communication.ps1 status`
+  - Heartbeat/update: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/agent_communication.ps1 update-status -Agent "Codex" -Status busy -Task "..."`
+  - Optional lock notifications: add `-Notify` flag to `scripts/agent_lock.ps1` to auto-message the other agent on lock/unlock.
+
+Notifications
+
+- Console notifications for new unread messages: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/agent_notification.ps1 check -Agent "Cursor"`
+- Background monitor (event-driven): `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/agent_notification.ps1 monitor -Agent "Cursor" -Watch -AutoReply -Toast -Sound -OnlyHigh`
+- Polling fallback: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/agent_notification.ps1 monitor -Agent "Cursor" -IntervalSeconds 15`
+
+Brainstorm threads
+
+- Use `context` starting with `brainstorm:` (e.g., `brainstorm:UI-state`) or prefix message with `/brainstorm` to log into `AGENT_THREADS.md`.
+- Enable logging: add `-LogThreads` to the monitor command (optional `-ThreadsFile 'AGENT_THREADS.md'`).
+
+Editing conventions
+
+- Prefer PowerShell on Windows. Quote paths with spaces/åäö using single quotes.
+- Do not reformat unrelated files; keep diffs surgical.
+- Add a short change note at the top of modified scripts as a comment header:
+  - `# AI Change: <what/why> (Agent: <name>, Date: <YYYY-MM-DD>)`
+
+Safety boundaries
+
+- Do not edit or read-check-in local secret files:
+  - Any `*.env`, `tradingbot-backend/.env`, frontend `.env*` except `.env.example`.
+- Do not commit generated logs, temp artifacts, or `.agent-locks/`.
+
+Coordination
+
+- Use `AGENT_PLAN.md` to note current focus and next steps.
+- Keep changes in small, reviewable chunks and prefer separate commits per concern.
+
+Testing
+
+- For backend changes, prefer running `tradingbot-backend/scripts/ci.ps1` or the narrowest tests that cover touched code before broad runs.
+
+Agent names
+
+- Use `Codex` for this assistant and `Cursor` for the Cursor AI.

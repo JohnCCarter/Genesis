@@ -8,7 +8,9 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 from bs4 import BeautifulSoup
 
 # Konfigurera loggning
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 
@@ -45,7 +47,9 @@ class JsonExtractor:
                 lines.append(line)
         return " ".join(lines)
 
-    def extract_balanced_json(self, text: str, start: int = 0) -> Optional[Tuple[str, int]]:
+    def extract_balanced_json(
+        self, text: str, start: int = 0
+    ) -> Optional[Tuple[str, int]]:
         """
         Extraherar ett balanserat JSON-objekt eller array från text
 
@@ -148,7 +152,9 @@ class JsonExtractor:
 
         return json_objects
 
-    def extract_json_from_html(self, html_content: str) -> List[Union[Dict[str, Any], List[Any]]]:
+    def extract_json_from_html(
+        self, html_content: str
+    ) -> List[Union[Dict[str, Any], List[Any]]]:
         """
         Extraherar JSON-objekt och arrays från HTML-innehåll
 
@@ -172,7 +178,9 @@ class JsonExtractor:
 
         return json_objects
 
-    def save_json(self, json_obj: Union[Dict[str, Any], List[Any]], filename: str) -> None:
+    def save_json(
+        self, json_obj: Union[Dict[str, Any], List[Any]], filename: str
+    ) -> None:
         """
         Sparar JSON-objekt eller array till fil
 
@@ -192,7 +200,9 @@ class JsonExtractor:
             json.dump(json_obj, f, indent=2, ensure_ascii=False)
         logger.info(f"Saved JSON to {output_path}")
 
-    def process_file(self, filename: str) -> Optional[List[Union[Dict[str, Any], List[Any]]]]:
+    def process_file(
+        self, filename: str
+    ) -> Optional[List[Union[Dict[str, Any], List[Any]]]]:
         """
         Bearbetar en enskild fil
 
@@ -230,7 +240,9 @@ class JsonExtractor:
             json_objects = self.extract_json_from_html(content)
 
             if json_objects:
-                logger.info(f"Found {len(json_objects)} JSON objects/arrays in {filename}")
+                logger.info(
+                    f"Found {len(json_objects)} JSON objects/arrays in {filename}"
+                )
                 # Spara varje JSON-objekt/array separat
                 for i, obj in enumerate(json_objects):
                     base_name = os.path.splitext(filename)[0]

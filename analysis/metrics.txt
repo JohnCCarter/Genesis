@@ -1,0 +1,408 @@
+﻿
+.venv\Lib\site-packages\bandit\core\manager.py:71:        self.metrics = metrics.Metrics()
+.venv\Lib\site-packages\bandit\core\manager.py:299:        self.metrics.aggregate()
+.venv\Lib\site-packages\bandit\core\manager.py:306:            self.metrics.begin(fname)
+.venv\Lib\site-packages\bandit\core\manager.py:307:            self.metrics.count_locs(lines)
+.venv\Lib\site-packages\bandit\core\manager.py:324:            self.metrics.count_issues([score])
+.venv\Lib\site-packages\bandit\core\metrics.py:81:        """Do final aggregation of metrics."""
+.venv\Lib\site-packages\bandit\core\metrics.py:82:        c = collections.Counter()
+.venv\Lib\site-packages\bandit\core\tester.py:87:                            self.metrics.note_nosec()
+.venv\Lib\site-packages\bandit\core\tester.py:93:                            self.metrics.note_skipped_test()
+.venv\Lib\site-packages\bandit\formatters\html.py:379:        loc=manager.metrics.data["_totals"]["loc"],
+.venv\Lib\site-packages\bandit\formatters\html.py:380:        nosec=manager.metrics.data["_totals"]["nosec"],
+.venv\Lib\site-packages\bandit\formatters\json.py:137:    machine_output["metrics"] = manager.metrics.data
+.venv\Lib\site-packages\bandit\formatters\sarif.py:175:                properties={"metrics": manager.metrics.data},
+.venv\Lib\site-packages\bandit\formatters\screen.py:98:                    manager.metrics.data["_totals"][f"{criteria}.{rank}"],
+.venv\Lib\site-packages\bandit\formatters\screen.py:218:            % (manager.metrics.data["_totals"]["loc"])
+.venv\Lib\site-packages\bandit\formatters\screen.py:223:            % (manager.metrics.data["_totals"]["nosec"])
+.venv\Lib\site-packages\bandit\formatters\text.py:72:                    manager.metrics.data["_totals"][f"{criteria}.{rank}"],
+.venv\Lib\site-packages\bandit\formatters\text.py:174:            % (manager.metrics.data["_totals"]["loc"])
+.venv\Lib\site-packages\bandit\formatters\text.py:179:            % (manager.metrics.data["_totals"]["nosec"])
+.venv\Lib\site-packages\bandit\formatters\text.py:184:            % (manager.metrics.data["_totals"]["skipped_tests"])
+.venv\Lib\site-packages\bandit\formatters\yaml.py:108:    machine_output["metrics"] = manager.metrics.data
+.venv\Lib\site-packages\bs4\__init__.py:494:        self.open_tag_counter = Counter()
+.venv\Lib\site-packages\charset_normalizer\cd.py:366:        sequence_frequencies: TypeCounter[str] = Counter(layer)
+.venv\Lib\site-packages\coverage\html.py:484:        contexts = collections.Counter(c for cline in file_data.lines for c in cline.contexts)
+.venv\Lib\site-packages\dill\_objects.py:227:a['CounterType'] = collections.Counter(_dict)
+.venv\Lib\site-packages\filelock\asyncio.py:226:        start_time = time.perf_counter()
+.venv\Lib\site-packages\filelock\asyncio.py:238:                if 0 <= timeout < time.perf_counter() - start_time:
+.venv\Lib\site-packages\filelock\_api.py:267:    def lock_counter(self) -> int:
+.venv\Lib\site-packages\filelock\_api.py:327:        start_time = time.perf_counter()
+.venv\Lib\site-packages\filelock\_api.py:339:                if 0 <= timeout < time.perf_counter() - start_time:
+.venv\Lib\site-packages\httpx\_utils.py:306:        self.started = time.perf_counter()
+.venv\Lib\site-packages\httpx\_utils.py:312:        now = time.perf_counter()
+.venv\Lib\site-packages\mypy\report.py:296:        total_counter: collections.Counter[int] = collections.Counter()
+.venv\Lib\site-packages\mypy\report.py:538:            counter: collections.Counter[int] = collections.Counter()
+.venv\Lib\site-packages\mypy\stats.py:103:        self.type_of_any_counter: Counter[int] = Counter()
+.venv\Lib\site-packages\mypyc\irbuild\for_helpers.py:949:class ForInfiniteCounter(ForGenerator):
+.venv\Lib\site-packages\mypyc\irbuild\for_helpers.py:984:        self.index_gen = ForInfiniteCounter(
+.venv\Lib\site-packages\numpy\core\records.py:82:        for item, counts in Counter(list).items()
+.venv\Lib\site-packages\numpy\core\tests\test_arrayprint.py:102:        class DuckCounter(np.ndarray):
+.venv\Lib\site-packages\numpy\f2py\crackfortran.py:820:            raise Exception('crackline: groupcounter(=%s) is nonpositive. '
+.venv\Lib\site-packages\numpy\f2py\symbolic.py:1154:def _counter():
+.venv\Lib\site-packages\numpy\f2py\symbolic.py:1162:COUNTER = _counter()
+.venv\Lib\site-packages\numpy\f2py\tests\test_crackfortran.py:313:                    t0 = time.perf_counter()
+.venv\Lib\site-packages\numpy\f2py\tests\test_crackfortran.py:315:                    times.append(time.perf_counter() - t0)
+.venv\Lib\site-packages\numpy\testing\_private\utils.py:110:            hc = win32pdh.AddCounter(hq, path)
+.venv\Lib\site-packages\numpy\testing\_private\utils.py:116:                win32pdh.RemoveCounter(hc)
+.venv\Lib\site-packages\numpy\tests\test__all__.py:8:    dups = {k: v for k, v in collections.Counter(np.__all__).items() if v > 1}
+.venv\Lib\site-packages\pandas\tests\base\test_value_counts.py:28:    counter = collections.Counter(obj)
+.venv\Lib\site-packages\pandas\tests\base\test_value_counts.py:79:    counter = collections.Counter(obj.dropna())
+.venv\Lib\site-packages\pandas\tests\groupby\test_groupby.py:1327:    assert metrics.columns.name is None
+.venv\Lib\site-packages\pandas\tests\groupby\test_groupby.py:1329:    assert metrics.columns.name == "metrics"
+.venv\Lib\site-packages\pandas\tests\groupby\test_groupby.py:1331:    assert metrics.columns.name is None
+.venv\Lib\site-packages\pandas\tests\series\methods\test_map.py:278:def test_map_counter():
+.venv\Lib\site-packages\pandas\tests\series\methods\test_map.py:280:    counter = Counter()
+.venv\Lib\site-packages\pandas\tests\series\methods\test_to_dict.py:22:        from_constructor = Series(collections.Counter(datetime_series.items()))
+.venv\Lib\site-packages\pandas\_testing\__init__.py:701:        cnt: Counter[str] = collections.Counter()
+.venv\Lib\site-packages\pip\_internal\utils\retry.py:34:            start_time = perf_counter()
+.venv\Lib\site-packages\pip\_internal\utils\retry.py:39:                    if perf_counter() - start_time > stop_after_delay:
+.venv\Lib\site-packages\pip\_vendor\rich\pretty.py:383:    Counter: lambda _object: ("Counter({", "})", "Counter()"),
+.venv\Lib\site-packages\pip\_vendor\rich\pretty.py:986:        "counter": Counter(
+.venv\Lib\site-packages\pkg_resources\_vendor\more_itertools\more.py:826:    counts = Counter(chain.from_iterable(map(set, pool)))
+.venv\Lib\site-packages\psutil\_pslinux.py:527:    """Return swap memory metrics."""
+.venv\Lib\site-packages\psutil\_pslinux.py:1481:    # Base metrics.
+.venv\Lib\site-packages\psutil\_pssunos.py:124:    """Report virtual memory metrics."""
+.venv\Lib\site-packages\psutil\_pssunos.py:135:    """Report swap memory metrics."""
+.venv\Lib\site-packages\psutil\_pswindows.py:356:        cext.init_loadavg_counter()
+.venv\Lib\site-packages\psutil\tests\test_bsd.py:430:        self.assertEqual(metrics.percent, percent)
+.venv\Lib\site-packages\psutil\tests\test_bsd.py:432:            self.assertEqual(metrics.secsleft, psutil.POWER_TIME_UNLIMITED)
+.venv\Lib\site-packages\psutil\tests\test_bsd.py:434:            self.assertEqual(secs2hours(metrics.secsleft), remaining_time)
+.venv\Lib\site-packages\psutil\tests\test_linux.py:583:        """Return True if /proc/meminfo provides swap metrics."""
+.venv\Lib\site-packages\pydantic\json_schema.py:2283:        json_refs: dict[JsonRef, int] = Counter()
+.venv\Lib\site-packages\pydantic\v1\fields.py:1031:            return CollectionCounter(result), None
+.venv\Lib\site-packages\pygments\lexers\igor.py:28:    url = 'http://www.wavemetrics.com'
+.venv\Lib\site-packages\pygments\lexers\promql.py:5:    Lexer for Prometheus Query Language.
+.venv\Lib\site-packages\pygments\lexers\promql.py:23:    https://github.com/prometheus/prometheus/tree/master/promql/parser
+.venv\Lib\site-packages\pygments\lexers\promql.py:29:    url = 'https://prometheus.io/docs/prometheus/latest/querying/basics/'
+.venv\Lib\site-packages\pygments\lexers\sql.py:1036:        tokens = collections.Counter(text.split())
+.venv\Lib\site-packages\pylint\checkers\imports.py:692:        counter = collections.Counter(names)
+.venv\Lib\site-packages\pylint\checkers\strings.py:442:        counter = collections.Counter(
+.venv\Lib\site-packages\pylint\checkers\strings.py:836:        string_delimiters: Counter[str] = collections.Counter()
+.venv\Lib\site-packages\pylint\checkers\base\basic_checker.py:955:            names = collections.Counter(found_names)
+.venv\Lib\site-packages\pylint\pyreverse\inspector.py:52:    def init_counter(self, start_value: int = 0) -> None:
+.venv\Lib\site-packages\pylint\testutils\lint_module_test.py:162:        messages: MessageCounter = Counter()
+.venv\Lib\site-packages\pylint\testutils\lint_module_test.py:222:            expected_msgs = Counter()
+.venv\Lib\site-packages\pylint\testutils\lint_module_test.py:233:        received_msgs: MessageCounter = Counter()
+.venv\Lib\site-packages\rich\pretty.py:383:    Counter: lambda _object: ("Counter({", "})", "Counter()"),
+.venv\Lib\site-packages\rich\pretty.py:986:        "counter": Counter(
+.venv\Lib\site-packages\setuptools\_vendor\typing_extensions.py:430:    class Counter(collections.Counter,
+.venv\Lib\site-packages\setuptools\_vendor\typing_extensions.py:438:                return collections.Counter(*args, **kwds)
+.venv\Lib\site-packages\setuptools\_vendor\more_itertools\more.py:734:    counts = Counter(chain.from_iterable(map(set, pool)))
+.venv\Lib\site-packages\websockets\legacy\protocol.py:862:        ping_timestamp = time.perf_counter()
+.venv\Lib\site-packages\websockets\legacy\protocol.py:1138:                    pong_timestamp = time.perf_counter()
+.venv\Lib\site-packages\_pytest\python.py:1000:            id_counts = Counter(resolved_ids)
+.venv\Lib\site-packages\_pytest\runner.py:339:        precise_start = timing.perf_counter()
+.venv\Lib\site-packages\_pytest\runner.py:348:        precise_stop = timing.perf_counter()
+.venv\Lib\site-packages\_pytest\terminal.py:826:                counts = Counter(item.nodeid.split("::", 1)[0] for item in items)
+.venv\Lib\site-packages\_pytest\terminal.py:986:                counts_by_filename = Counter(
+scripts\mcp\.venv\Lib\site-packages\click\core.py:983:            opts_counter = Counter(opts)
+scripts\mcp\.venv\Lib\site-packages\httpx\_client.py:157:        elapsed = time.perf_counter() - self._start
+scripts\mcp\.venv\Lib\site-packages\httpx\_client.py:180:        elapsed = time.perf_counter() - self._start
+scripts\mcp\.venv\Lib\site-packages\httpx\_client.py:1006:        start = time.perf_counter()
+scripts\mcp\.venv\Lib\site-packages\httpx\_client.py:1722:        start = time.perf_counter()
+scripts\mcp\.venv\Lib\site-packages\pip\_internal\utils\retry.py:34:            start_time = perf_counter()
+scripts\mcp\.venv\Lib\site-packages\pip\_internal\utils\retry.py:39:                    if perf_counter() - start_time > stop_after_delay:
+scripts\mcp\.venv\Lib\site-packages\pip\_vendor\rich\pretty.py:383:    Counter: lambda _object: ("Counter({", "})", "Counter()"),
+scripts\mcp\.venv\Lib\site-packages\pip\_vendor\rich\pretty.py:986:        "counter": Counter(
+scripts\mcp\.venv\Lib\site-packages\pkg_resources\_vendor\more_itertools\more.py:826:    counts = Counter(chain.from_iterable(map(set, pool)))
+scripts\mcp\.venv\Lib\site-packages\pydantic\json_schema.py:2283:        json_refs: dict[JsonRef, int] = Counter()
+scripts\mcp\.venv\Lib\site-packages\pydantic\v1\fields.py:1031:            return CollectionCounter(result), None
+scripts\mcp\.venv\Lib\site-packages\setuptools\_vendor\typing_extensions.py:430:    class Counter(collections.Counter,
+scripts\mcp\.venv\Lib\site-packages\setuptools\_vendor\typing_extensions.py:438:                return collections.Counter(*args, **kwds)
+scripts\mcp\.venv\Lib\site-packages\setuptools\_vendor\more_itertools\more.py:734:    counts = Counter(chain.from_iterable(map(set, pool)))
+scripts\mcp\.venv\Lib\site-packages\win32\lib\win32pdhquery.py:49:    query.addperfcounter(object, counter, machine=None) # add a standard performance counter
+scripts\mcp\.venv\Lib\site-packages\win32\lib\win32pdhquery.py:50:    query.addinstcounter(object, counter,machine=None,objtype = 'Process',volatile=1,format = win32pdh.PDH_FMT_LONG) # add a possibly volatile counter
+scripts\mcp\.venv\Lib\site-packages\win32\lib\win32pdhquery.py:188:                query.addcounter()
+scripts\mcp\.venv\Lib\site-packages\win32\lib\win32pdhquery.py:192:    def rawaddcounter(self, object, counter, instance=None, inum=-1, machine=None):
+scripts\mcp\.venv\Lib\site-packages\win32\lib\win32pdhquery.py:203:    def addcounter(self, object, counter, instance=None, inum=-1, machine=None):
+scripts\mcp\.venv\Lib\site-packages\win32\lib\win32pdhquery.py:213:                query.addcounter('Memory','Available Bytes')
+scripts\mcp\.venv\Lib\site-packages\win32\lib\win32pdhquery.py:217:                self.rawaddcounter(object, counter, instance, inum, machine)
+scripts\mcp\.venv\Lib\site-packages\win32\lib\win32pdhquery.py:239:                        self.counters.append(win32pdh.AddCounter(base, path))
+scripts\mcp\.venv\Lib\site-packages\win32\lib\win32pdhquery.py:372:    def addperfcounter(self, object, counter, machine=None):
+scripts\mcp\.venv\Lib\site-packages\win32\lib\win32pdhquery.py:383:                query.addperfcounter('Memory', 'Available Bytes')
+scripts\mcp\.venv\Lib\site-packages\win32\lib\win32pdhquery.py:386:                query.addcounter('Memory', 'Available Bytes')
+scripts\mcp\.venv\Lib\site-packages\win32\lib\win32pdhquery.py:388:        BaseQuery.addcounter(self, object=object, counter=counter, machine=machine)
+scripts\mcp\.venv\Lib\site-packages\win32\lib\win32pdhquery.py:390:    def addinstcounter(
+scripts\mcp\.venv\Lib\site-packages\win32\lib\win32pdhquery.py:404:                query.addinstcounter('python','Virtual Bytes')
+scripts\mcp\.venv\Lib\site-packages\win32\lib\win32pdhquery.py:475:                self.counters.append(win32pdh.AddCounter(self._base, path))
+scripts\mcp\.venv\Lib\site-packages\win32\lib\win32pdhutil.py:70:        hc = win32pdh.AddCounter(hq, path)
+scripts\mcp\.venv\Lib\site-packages\win32\lib\win32pdhutil.py:76:            win32pdh.RemoveCounter(hc)
+scripts\mcp\.venv\Lib\site-packages\win32\lib\win32pdhutil.py:146:                hcs.append(win32pdh.AddCounter(hq, path))
+scripts\mcp\.venv\Lib\site-packages\win32\lib\win32pdhutil.py:156:                win32pdh.RemoveCounter(hc)
+scripts\mcp\.venv\Lib\site-packages\win32com\demos\eventsApartmentThreaded.py:49:    start = time.perf_counter()
+scripts\mcp\.venv\Lib\site-packages\win32com\demos\eventsApartmentThreaded.py:60:        if (time.perf_counter() - start) > timeout:
+scripts\mcp\.venv\Lib\site-packages\win32com\servers\test_pycomtest.py:68:    def GetSimpleCounter(self):
+scripts\mcp\.venv\Lib\site-packages\win32com\test\testPyComTest.py:185:    counter = o.GetSimpleCounter()
+scripts\mcp\.venv\Lib\site-packages\win32com\test\testPyComTest.py:186:    TestCounter(counter, is_generated)
+scripts\mcp\.venv\Lib\site-packages\win32com\test\testPyComTest.py:460:    TestCounter(counter, False)
+scripts\mcp\.venv\Lib\site-packages\win32com\test\testPyComTest.py:530:    TestCounter(counter, True)
+scripts\mcp\.venv\Lib\site-packages\win32com\test\testPyComTest.py:544:    TestCounter(coclass, True)
+scripts\mcp\.venv\Lib\site-packages\win32com\test\testPyComTest.py:765:def TestCounter(counter, bIsGenerated):
+scripts\openai_batch\.venv\Lib\site-packages\httpx\_client.py:157:        elapsed = time.perf_counter() - self._start
+scripts\openai_batch\.venv\Lib\site-packages\httpx\_client.py:180:        elapsed = time.perf_counter() - self._start
+scripts\openai_batch\.venv\Lib\site-packages\httpx\_client.py:1006:        start = time.perf_counter()
+scripts\openai_batch\.venv\Lib\site-packages\httpx\_client.py:1722:        start = time.perf_counter()
+scripts\openai_batch\.venv\Lib\site-packages\openai\helpers\microphone.py:60:        start_time = time.perf_counter()
+scripts\openai_batch\.venv\Lib\site-packages\openai\helpers\microphone.py:68:            execution_time = time.perf_counter() - start_time
+scripts\openai_batch\.venv\Lib\site-packages\pip\_vendor\rich\pretty.py:363:    Counter: lambda _object: ("Counter({", "})", "Counter()"),
+scripts\openai_batch\.venv\Lib\site-packages\pip\_vendor\rich\pretty.py:964:        "counter": Counter(
+scripts\openai_batch\.venv\Lib\site-packages\pkg_resources\_vendor\more_itertools\more.py:826:    counts = Counter(chain.from_iterable(map(set, pool)))
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\json_schema.py:2283:        json_refs: dict[JsonRef, int] = Counter()
+scripts\openai_batch\.venv\Lib\site-packages\pydantic\v1\fields.py:1031:            return CollectionCounter(result), None
+scripts\openai_batch\.venv\Lib\site-packages\setuptools\_vendor\typing_extensions.py:430:    class Counter(collections.Counter,
+scripts\openai_batch\.venv\Lib\site-packages\setuptools\_vendor\typing_extensions.py:438:                return collections.Counter(*args, **kwds)
+scripts\openai_batch\.venv\Lib\site-packages\setuptools\_vendor\more_itertools\more.py:734:    counts = Counter(chain.from_iterable(map(set, pool)))
+tradingbot-backend\main.py:56:    from services.metrics import observe_latency, render_prometheus_text
+tradingbot-backend\main.py:107:            _t0 = _t.perf_counter()
+tradingbot-backend\main.py:110:                _t1 = _t.perf_counter()
+tradingbot-backend\main.py:120:                    _ta = _t.perf_counter()
+tradingbot-backend\main.py:122:                    _tb = _t.perf_counter()
+tradingbot-backend\main.py:355:    """Prometheus metrics (root) med valfritt skydd via miljövariabler.
+tradingbot-backend\main.py:454:    txt = render_prometheus_text()
+tradingbot-backend\main.py:479:    start = time.perf_counter()
+tradingbot-backend\main.py:483:        duration_ms = int((time.perf_counter() - start) * 1000)
+tradingbot-backend\main.py:528:        duration_ms = int((time.perf_counter() - start) * 1000)
+tradingbot-backend\.venv\Lib\site-packages\bandit\core\manager.py:71:        self.metrics = metrics.Metrics()
+tradingbot-backend\.venv\Lib\site-packages\bandit\core\manager.py:299:        self.metrics.aggregate()
+tradingbot-backend\.venv\Lib\site-packages\bandit\core\manager.py:306:            self.metrics.begin(fname)
+tradingbot-backend\.venv\Lib\site-packages\bandit\core\manager.py:307:            self.metrics.count_locs(lines)
+tradingbot-backend\.venv\Lib\site-packages\bandit\core\manager.py:324:            self.metrics.count_issues([score])
+tradingbot-backend\.venv\Lib\site-packages\bandit\core\metrics.py:81:        """Do final aggregation of metrics."""
+tradingbot-backend\.venv\Lib\site-packages\bandit\core\metrics.py:82:        c = collections.Counter()
+tradingbot-backend\.venv\Lib\site-packages\bandit\core\tester.py:87:                            self.metrics.note_nosec()
+tradingbot-backend\.venv\Lib\site-packages\bandit\core\tester.py:93:                            self.metrics.note_skipped_test()
+tradingbot-backend\.venv\Lib\site-packages\bandit\formatters\html.py:379:        loc=manager.metrics.data["_totals"]["loc"],
+tradingbot-backend\.venv\Lib\site-packages\bandit\formatters\html.py:380:        nosec=manager.metrics.data["_totals"]["nosec"],
+tradingbot-backend\.venv\Lib\site-packages\bandit\formatters\json.py:137:    machine_output["metrics"] = manager.metrics.data
+tradingbot-backend\.venv\Lib\site-packages\bandit\formatters\sarif.py:175:                properties={"metrics": manager.metrics.data},
+tradingbot-backend\.venv\Lib\site-packages\bandit\formatters\screen.py:98:                    manager.metrics.data["_totals"][f"{criteria}.{rank}"],
+tradingbot-backend\.venv\Lib\site-packages\bandit\formatters\screen.py:218:            % (manager.metrics.data["_totals"]["loc"])
+tradingbot-backend\.venv\Lib\site-packages\bandit\formatters\screen.py:223:            % (manager.metrics.data["_totals"]["nosec"])
+tradingbot-backend\.venv\Lib\site-packages\bandit\formatters\text.py:72:                    manager.metrics.data["_totals"][f"{criteria}.{rank}"],
+tradingbot-backend\.venv\Lib\site-packages\bandit\formatters\text.py:174:            % (manager.metrics.data["_totals"]["loc"])
+tradingbot-backend\.venv\Lib\site-packages\bandit\formatters\text.py:179:            % (manager.metrics.data["_totals"]["nosec"])
+tradingbot-backend\.venv\Lib\site-packages\bandit\formatters\text.py:184:            % (manager.metrics.data["_totals"]["skipped_tests"])
+tradingbot-backend\.venv\Lib\site-packages\bandit\formatters\yaml.py:108:    machine_output["metrics"] = manager.metrics.data
+tradingbot-backend\.venv\Lib\site-packages\bs4\__init__.py:494:        self.open_tag_counter = Counter()
+tradingbot-backend\.venv\Lib\site-packages\charset_normalizer\cd.py:366:        sequence_frequencies: TypeCounter[str] = Counter(layer)
+tradingbot-backend\.venv\Lib\site-packages\click\core.py:983:            opts_counter = Counter(opts)
+tradingbot-backend\.venv\Lib\site-packages\filelock\asyncio.py:226:        start_time = time.perf_counter()
+tradingbot-backend\.venv\Lib\site-packages\filelock\asyncio.py:238:                if 0 <= timeout < time.perf_counter() - start_time:
+tradingbot-backend\.venv\Lib\site-packages\filelock\_api.py:267:    def lock_counter(self) -> int:
+tradingbot-backend\.venv\Lib\site-packages\filelock\_api.py:327:        start_time = time.perf_counter()
+tradingbot-backend\.venv\Lib\site-packages\filelock\_api.py:339:                if 0 <= timeout < time.perf_counter() - start_time:
+tradingbot-backend\.venv\Lib\site-packages\httpx\_utils.py:331:        self.started = time.perf_counter()
+tradingbot-backend\.venv\Lib\site-packages\httpx\_utils.py:337:        now = time.perf_counter()
+tradingbot-backend\.venv\Lib\site-packages\numpy\core\records.py:82:        for item, counts in Counter(list).items()
+tradingbot-backend\.venv\Lib\site-packages\numpy\core\tests\test_arrayprint.py:101:        class DuckCounter(np.ndarray):
+tradingbot-backend\.venv\Lib\site-packages\numpy\f2py\crackfortran.py:822:            raise Exception('crackline: groupcounter(=%s) is nonpositive. '
+tradingbot-backend\.venv\Lib\site-packages\numpy\f2py\symbolic.py:1154:def _counter():
+tradingbot-backend\.venv\Lib\site-packages\numpy\f2py\symbolic.py:1162:COUNTER = _counter()
+tradingbot-backend\.venv\Lib\site-packages\numpy\testing\_private\utils.py:177:            hc = win32pdh.AddCounter(hq, path)
+tradingbot-backend\.venv\Lib\site-packages\numpy\testing\_private\utils.py:183:                win32pdh.RemoveCounter(hc)
+tradingbot-backend\.venv\Lib\site-packages\numpy\tests\test__all__.py:8:    dups = {k: v for k, v in collections.Counter(np.__all__).items() if v > 1}
+tradingbot-backend\.venv\Lib\site-packages\pandas\tests\apply\test_series_apply.py:575:def test_map_counter():
+tradingbot-backend\.venv\Lib\site-packages\pandas\tests\apply\test_series_apply.py:577:    counter = Counter()
+tradingbot-backend\.venv\Lib\site-packages\pandas\tests\base\test_value_counts.py:27:    counter = collections.Counter(obj)
+tradingbot-backend\.venv\Lib\site-packages\pandas\tests\base\test_value_counts.py:77:    counter = collections.Counter(obj.dropna())
+tradingbot-backend\.venv\Lib\site-packages\pandas\tests\groupby\test_groupby.py:1242:    assert metrics.columns.name is None
+tradingbot-backend\.venv\Lib\site-packages\pandas\tests\groupby\test_groupby.py:1244:    assert metrics.columns.name == "metrics"
+tradingbot-backend\.venv\Lib\site-packages\pandas\tests\groupby\test_groupby.py:1246:    assert metrics.columns.name is None
+tradingbot-backend\.venv\Lib\site-packages\pandas\tests\series\methods\test_to_dict.py:22:        from_constructor = Series(collections.Counter(datetime_series.items()))
+tradingbot-backend\.venv\Lib\site-packages\pandas\_testing\__init__.py:644:        cnt: Counter[str] = collections.Counter()
+tradingbot-backend\.venv\Lib\site-packages\pip\_vendor\rich\pretty.py:363:    Counter: lambda _object: ("Counter({", "})", "Counter()"),
+tradingbot-backend\.venv\Lib\site-packages\pip\_vendor\rich\pretty.py:964:        "counter": Counter(
+tradingbot-backend\.venv\Lib\site-packages\pydantic\fields.py:1031:            return CollectionCounter(result), None
+tradingbot-backend\.venv\Lib\site-packages\pygments\lexers\igor.py:28:    url = 'http://www.wavemetrics.com'
+tradingbot-backend\.venv\Lib\site-packages\pygments\lexers\promql.py:5:    Lexer for Prometheus Query Language.
+tradingbot-backend\.venv\Lib\site-packages\pygments\lexers\promql.py:23:    https://github.com/prometheus/prometheus/tree/master/promql/parser
+tradingbot-backend\.venv\Lib\site-packages\pygments\lexers\promql.py:29:    url = 'https://prometheus.io/docs/prometheus/latest/querying/basics/'
+tradingbot-backend\.venv\Lib\site-packages\pygments\lexers\sql.py:1036:        tokens = collections.Counter(text.split())
+tradingbot-backend\.venv\Lib\site-packages\rich\pretty.py:383:    Counter: lambda _object: ("Counter({", "})", "Counter()"),
+tradingbot-backend\.venv\Lib\site-packages\rich\pretty.py:986:        "counter": Counter(
+tradingbot-backend\.venv\Lib\site-packages\setuptools\_vendor\more_itertools\more.py:818:    counts = Counter(chain.from_iterable(map(set, pool)))
+tradingbot-backend\.venv\Lib\site-packages\websockets\legacy\protocol.py:858:        ping_timestamp = time.perf_counter()
+tradingbot-backend\.venv\Lib\site-packages\websockets\legacy\protocol.py:1134:                    pong_timestamp = time.perf_counter()
+tradingbot-backend\.venv\Lib\site-packages\_pytest\python.py:1008:            id_counts = Counter(resolved_ids)
+tradingbot-backend\.venv\Lib\site-packages\_pytest\runner.py:339:        precise_start = timing.perf_counter()
+tradingbot-backend\.venv\Lib\site-packages\_pytest\runner.py:348:        precise_stop = timing.perf_counter()
+tradingbot-backend\.venv\Lib\site-packages\_pytest\terminal.py:781:                counts = Counter(item.nodeid.split("::", 1)[0] for item in items)
+tradingbot-backend\.venv\Lib\site-packages\_pytest\terminal.py:941:                counts_by_filename = Counter(
+tradingbot-backend\rest\order_history.py:286:                _t0 = time.perf_counter()
+tradingbot-backend\rest\order_history.py:299:                    _t1 = time.perf_counter()
+tradingbot-backend\rest\positions.py:110:                _t0 = time.perf_counter()
+tradingbot-backend\rest\positions.py:119:                _t1 = time.perf_counter()
+tradingbot-backend\rest\routes.py:39:from services.metrics import get_metrics_summary, inc_labeled, render_prometheus_text
+tradingbot-backend\rest\routes.py:2387:    """Kör validering direkt (utan att invänta schemaläggare) och uppdatera metrics."""
+tradingbot-backend\rest\routes.py:3242:async def get_trade_counter(_: bool = Depends(require_auth)):
+tradingbot-backend\rest\routes.py:3682:# Metrics endpoint (Prometheus text format)
+tradingbot-backend\rest\routes.py:3718:        text = render_prometheus_text()
+tradingbot-backend\rest\routes.py:5133:            "timestamp": metrics.timestamp.isoformat(),
+tradingbot-backend\rest\routes.py:5134:            "cpu_percent": metrics.cpu_percent,
+tradingbot-backend\rest\routes.py:5135:            "memory_percent": metrics.memory_percent,
+tradingbot-backend\rest\routes.py:5136:            "memory_used_gb": metrics.memory_used_gb,
+tradingbot-backend\rest\routes.py:5137:            "memory_total_gb": metrics.memory_total_gb,
+tradingbot-backend\rest\routes.py:5138:            "disk_percent": metrics.disk_percent,
+tradingbot-backend\rest\routes.py:5139:            "disk_used_gb": metrics.disk_used_gb,
+tradingbot-backend\rest\routes.py:5140:            "disk_total_gb": metrics.disk_total_gb,
+tradingbot-backend\rest\routes.py:5141:            "load_average": metrics.load_average,
+tradingbot-backend\rest\routes.py:5150:    """Hämta rate limiter metrics."""
+tradingbot-backend\rest\routes.py:5156:            "timestamp": metrics.timestamp.isoformat(),
+tradingbot-backend\rest\routes.py:5157:            "tokens_available": metrics.tokens_available,
+tradingbot-backend\rest\routes.py:5158:            "utilization_percent": metrics.utilization_percent,
+tradingbot-backend\rest\routes.py:5159:            "requests_per_second": metrics.requests_per_second,
+tradingbot-backend\rest\routes.py:5160:            "blocked_requests": metrics.blocked_requests,
+tradingbot-backend\rest\routes.py:5161:            "endpoint_patterns": metrics.endpoint_patterns,
+tradingbot-backend\rest\routes.py:5170:    """Hämta exchange API metrics."""
+tradingbot-backend\rest\routes.py:5176:            "timestamp": metrics.timestamp.isoformat(),
+tradingbot-backend\rest\routes.py:5177:            "total_requests": metrics.total_requests,
+tradingbot-backend\rest\routes.py:5178:            "failed_requests": metrics.failed_requests,
+tradingbot-backend\rest\routes.py:5179:            "rate_limited_requests": metrics.rate_limited_requests,
+tradingbot-backend\rest\routes.py:5180:            "average_latency_ms": metrics.average_latency_ms,
+tradingbot-backend\rest\routes.py:5181:            "p95_latency_ms": metrics.p95_latency_ms,
+tradingbot-backend\rest\routes.py:5182:            "p99_latency_ms": metrics.p99_latency_ms,
+tradingbot-backend\rest\routes.py:5183:            "error_rate_percent": metrics.error_rate_percent,
+tradingbot-backend\rest\routes.py:5192:    """Hämta trading metrics."""
+tradingbot-backend\rest\routes.py:5198:            "timestamp": metrics.timestamp.isoformat(),
+tradingbot-backend\rest\routes.py:5199:            "total_orders": metrics.total_orders,
+tradingbot-backend\rest\routes.py:5200:            "successful_orders": metrics.successful_orders,
+tradingbot-backend\rest\routes.py:5201:            "failed_orders": metrics.failed_orders,
+tradingbot-backend\rest\routes.py:5202:            "order_success_rate": metrics.order_success_rate,
+tradingbot-backend\rest\routes.py:5203:            "average_order_latency_ms": metrics.average_order_latency_ms,
+tradingbot-backend\rest\routes.py:5204:            "orders_per_minute": metrics.orders_per_minute,
+tradingbot-backend\rest\routes.py:5428:                        "accuracy": result.metrics.get("accuracy", 0),
+tradingbot-backend\rest\routes.py:5429:                        "total_return": result.metrics.get("total_return", 0),
+tradingbot-backend\rest\routes.py:5430:                        "final_capital": result.metrics.get("final_capital", 0),
+tradingbot-backend\rest\wallet.py:89:            _t0 = time.perf_counter()
+tradingbot-backend\rest\wallet.py:98:                _t1 = time.perf_counter()
+tradingbot-backend\scripts\log_hanging_files.py:166:        start_time = time.perf_counter()
+tradingbot-backend\scripts\log_hanging_files.py:168:        duration = (time.perf_counter() - start_time) * 1000
+tradingbot-backend\scripts\log_hanging_files.py:185:        start_time = time.perf_counter()
+tradingbot-backend\scripts\log_hanging_files.py:187:        duration = (time.perf_counter() - start_time) * 1000
+tradingbot-backend\scripts\log_hanging_files.py:204:        start_time = time.perf_counter()
+tradingbot-backend\scripts\log_hanging_files.py:206:        duration = (time.perf_counter() - start_time) * 1000
+tradingbot-backend\scripts\test_hanging_fixes.py:59:        start_time = time.perf_counter()
+tradingbot-backend\scripts\test_hanging_fixes.py:64:        duration = (time.perf_counter() - start_time) * 1000
+tradingbot-backend\scripts\test_hanging_fixes.py:86:        start_time = time.perf_counter()
+tradingbot-backend\scripts\test_hanging_fixes.py:88:        duration = (time.perf_counter() - start_time) * 1000
+tradingbot-backend\scripts\test_hanging_fixes.py:120:        start_time = time.perf_counter()
+tradingbot-backend\scripts\test_hanging_fixes.py:122:        duration = (time.perf_counter() - start_time) * 1000
+tradingbot-backend\scripts\test_isolation.py:36:        start_time = time.perf_counter()
+tradingbot-backend\scripts\test_isolation.py:38:        duration = (time.perf_counter() - start_time) * 1000
+tradingbot-backend\services\bitfinex_data.py:124:                    _t0 = time.perf_counter()
+tradingbot-backend\services\bitfinex_data.py:127:                    _t1 = time.perf_counter()
+tradingbot-backend\services\bitfinex_data.py:427:                            _t0 = time.perf_counter()
+tradingbot-backend\services\bitfinex_data.py:430:                            _t1 = time.perf_counter()
+tradingbot-backend\services\bitfinex_data.py:683:            _t0 = _t.perf_counter()
+tradingbot-backend\services\bitfinex_data.py:688:                _t1 = _t.perf_counter()
+tradingbot-backend\services\bitfinex_data.py:730:            _t0 = _t.perf_counter()
+tradingbot-backend\services\bitfinex_data.py:735:                _t1 = _t.perf_counter()
+tradingbot-backend\services\bitfinex_websocket.py:148:            _t0 = _t.perf_counter()
+tradingbot-backend\services\bitfinex_websocket.py:150:            _t1 = _t.perf_counter()
+tradingbot-backend\services\enhanced_observability_service.py:50:    """Rate limiter metrics."""
+tradingbot-backend\services\enhanced_observability_service.py:62:    """Exchange API metrics."""
+tradingbot-backend\services\enhanced_observability_service.py:77:    """Circuit breaker metrics."""
+tradingbot-backend\services\enhanced_observability_service.py:90:    """WebSocket metrics."""
+tradingbot-backend\services\enhanced_observability_service.py:104:    """Trading metrics."""
+tradingbot-backend\services\enhanced_observability_service.py:148:            metrics.cpu_percent = psutil.cpu_percent(interval=None)
+tradingbot-backend\services\enhanced_observability_service.py:152:            metrics.memory_percent = memory.percent
+tradingbot-backend\services\enhanced_observability_service.py:153:            metrics.memory_used_gb = memory.used / (1024**3)
+tradingbot-backend\services\enhanced_observability_service.py:154:            metrics.memory_total_gb = memory.total / (1024**3)
+tradingbot-backend\services\enhanced_observability_service.py:158:            metrics.disk_percent = (disk.used / disk.total) * 100
+tradingbot-backend\services\enhanced_observability_service.py:159:            metrics.disk_used_gb = disk.used / (1024**3)
+tradingbot-backend\services\enhanced_observability_service.py:160:            metrics.disk_total_gb = disk.total / (1024**3)
+tradingbot-backend\services\enhanced_observability_service.py:164:                metrics.load_average = list(psutil.getloadavg())
+tradingbot-backend\services\enhanced_observability_service.py:166:                metrics.load_average = [0.0, 0.0, 0.0]  # Windows fallback
+tradingbot-backend\services\enhanced_observability_service.py:168:            logger.debug(f"📊 System metrics: CPU {metrics.cpu_percent}%, RAM {metrics.memory_percent}%")
+tradingbot-backend\services\enhanced_observability_service.py:176:        """Hämta rate limiter metrics."""
+tradingbot-backend\services\enhanced_observability_service.py:183:                metrics.tokens_available = status.get('tokens_available', {})
+tradingbot-backend\services\enhanced_observability_service.py:184:                metrics.utilization_percent = status.get('utilization_percent', {})
+tradingbot-backend\services\enhanced_observability_service.py:185:                metrics.requests_per_second = status.get('requests_per_second', {})
+tradingbot-backend\services\enhanced_observability_service.py:186:                metrics.blocked_requests = status.get('blocked_requests', {})
+tradingbot-backend\services\enhanced_observability_service.py:187:                metrics.endpoint_patterns = status.get('endpoint_patterns', {})
+tradingbot-backend\services\enhanced_observability_service.py:189:            logger.debug(f"📊 Rate limiter metrics: {len(metrics.tokens_available)} patterns")
+tradingbot-backend\services\enhanced_observability_service.py:197:        """Hämta exchange API metrics."""
+tradingbot-backend\services\enhanced_observability_service.py:202:            metrics.total_requests = metrics_store.get('orders_total', 0)
+tradingbot-backend\services\enhanced_observability_service.py:203:            metrics.failed_requests = metrics_store.get('orders_failed_total', 0)
+tradingbot-backend\services\enhanced_observability_service.py:204:            metrics.rate_limited_requests = metrics_store.get('rate_limited_total', 0)
+tradingbot-backend\services\enhanced_observability_service.py:214:                metrics.average_latency_ms = sum(all_latencies) / len(all_latencies)
+tradingbot-backend\services\enhanced_observability_service.py:215:                metrics.p95_latency_ms = all_latencies[int(len(all_latencies) * 0.95)]
+tradingbot-backend\services\enhanced_observability_service.py:216:                metrics.p99_latency_ms = all_latencies[int(len(all_latencies) * 0.99)]
+tradingbot-backend\services\enhanced_observability_service.py:219:            if metrics.total_requests > 0:
+tradingbot-backend\services\enhanced_observability_service.py:220:                metrics.error_rate_percent = (metrics.failed_requests / metrics.total_requests) * 100
+tradingbot-backend\services\enhanced_observability_service.py:223:                f"📊 Exchange metrics: {metrics.total_requests} requests, {metrics.error_rate_percent:.1f}% error rate"
+tradingbot-backend\services\enhanced_observability_service.py:232:        """Hämta circuit breaker metrics."""
+tradingbot-backend\services\enhanced_observability_service.py:241:            metrics.trading_circuit_breaker_open = False
+tradingbot-backend\services\enhanced_observability_service.py:242:            metrics.transport_circuit_breaker_open = False
+tradingbot-backend\services\enhanced_observability_service.py:243:            metrics.trading_errors_count = 0
+tradingbot-backend\services\enhanced_observability_service.py:244:            metrics.transport_errors_count = 0
+tradingbot-backend\services\enhanced_observability_service.py:254:        """Hämta WebSocket metrics."""
+tradingbot-backend\services\enhanced_observability_service.py:260:            metrics.connected_sockets = len(ws_pool.get('sockets', []))
+tradingbot-backend\services\enhanced_observability_service.py:261:            metrics.max_sockets = ws_pool.get('max_sockets', 0)
+tradingbot-backend\services\enhanced_observability_service.py:262:            metrics.active_subscriptions = sum(s.get('subs', 0) for s in ws_pool.get('sockets', []))
+tradingbot-backend\services\enhanced_observability_service.py:263:            metrics.max_subscriptions = ws_pool.get('max_subs', 0)
+tradingbot-backend\services\enhanced_observability_service.py:266:                f"📊 WebSocket metrics: {metrics.connected_sockets} sockets, {metrics.active_subscriptions} subs"
+tradingbot-backend\services\enhanced_observability_service.py:275:        """Hämta trading metrics."""
+tradingbot-backend\services\enhanced_observability_service.py:280:            metrics.total_orders = metrics_store.get('orders_total', 0)
+tradingbot-backend\services\enhanced_observability_service.py:281:            metrics.successful_orders = metrics.total_orders - metrics_store.get('orders_failed_total', 0)
+tradingbot-backend\services\enhanced_observability_service.py:282:            metrics.failed_orders = metrics_store.get('orders_failed_total', 0)
+tradingbot-backend\services\enhanced_observability_service.py:285:            if metrics.total_orders > 0:
+tradingbot-backend\services\enhanced_observability_service.py:286:                metrics.order_success_rate = (metrics.successful_orders / metrics.total_orders) * 100
+tradingbot-backend\services\enhanced_observability_service.py:290:            if metrics.total_orders > 0:
+tradingbot-backend\services\enhanced_observability_service.py:291:                metrics.average_order_latency_ms = order_submit_ms / metrics.total_orders
+tradingbot-backend\services\enhanced_observability_service.py:294:                f"📊 Trading metrics: {metrics.total_orders} orders, {metrics.order_success_rate:.1f}% success rate"
+tradingbot-backend\services\enhanced_observability_service.py:345:                    "cpu_percent": system_metrics.cpu_percent,
+tradingbot-backend\services\enhanced_observability_service.py:346:                    "memory_percent": system_metrics.memory_percent,
+tradingbot-backend\services\enhanced_observability_service.py:347:                    "memory_used_gb": system_metrics.memory_used_gb,
+tradingbot-backend\services\enhanced_observability_service.py:348:                    "memory_total_gb": system_metrics.memory_total_gb,
+tradingbot-backend\services\enhanced_observability_service.py:349:                    "disk_percent": system_metrics.disk_percent,
+tradingbot-backend\services\enhanced_observability_service.py:350:                    "disk_used_gb": system_metrics.disk_used_gb,
+tradingbot-backend\services\enhanced_observability_service.py:351:                    "disk_total_gb": system_metrics.disk_total_gb,
+tradingbot-backend\services\enhanced_observability_service.py:352:                    "load_average": system_metrics.load_average,
+tradingbot-backend\services\enhanced_observability_service.py:355:                    "tokens_available": rate_limiter_metrics.tokens_available,
+tradingbot-backend\services\enhanced_observability_service.py:356:                    "utilization_percent": rate_limiter_metrics.utilization_percent,
+tradingbot-backend\services\enhanced_observability_service.py:357:                    "requests_per_second": rate_limiter_metrics.requests_per_second,
+tradingbot-backend\services\enhanced_observability_service.py:358:                    "blocked_requests": rate_limiter_metrics.blocked_requests,
+tradingbot-backend\services\enhanced_observability_service.py:359:                    "endpoint_patterns": rate_limiter_metrics.endpoint_patterns,
+tradingbot-backend\services\enhanced_observability_service.py:362:                    "total_requests": exchange_metrics.total_requests,
+tradingbot-backend\services\enhanced_observability_service.py:363:                    "failed_requests": exchange_metrics.failed_requests,
+tradingbot-backend\services\enhanced_observability_service.py:364:                    "rate_limited_requests": exchange_metrics.rate_limited_requests,
+tradingbot-backend\services\enhanced_observability_service.py:365:                    "average_latency_ms": exchange_metrics.average_latency_ms,
+tradingbot-backend\services\enhanced_observability_service.py:366:                    "p95_latency_ms": exchange_metrics.p95_latency_ms,
+tradingbot-backend\services\enhanced_observability_service.py:367:                    "p99_latency_ms": exchange_metrics.p99_latency_ms,
+tradingbot-backend\services\enhanced_observability_service.py:368:                    "error_rate_percent": exchange_metrics.error_rate_percent,
+tradingbot-backend\services\enhanced_observability_service.py:371:                    "trading_open": circuit_breaker_metrics.trading_circuit_breaker_open,
+tradingbot-backend\services\enhanced_observability_service.py:372:                    "transport_open": circuit_breaker_metrics.transport_circuit_breaker_open,
+tradingbot-backend\services\enhanced_observability_service.py:373:                    "trading_errors_count": circuit_breaker_metrics.trading_errors_count,
+tradingbot-backend\services\enhanced_observability_service.py:374:                    "transport_errors_count": circuit_breaker_metrics.transport_errors_count,
+tradingbot-backend\services\enhanced_observability_service.py:377:                    "connected_sockets": websocket_metrics.connected_sockets,
+tradingbot-backend\services\enhanced_observability_service.py:378:                    "max_sockets": websocket_metrics.max_sockets,
+tradingbot-backend\services\enhanced_observability_service.py:379:                    "active_subscriptions": websocket_metrics.active_subscriptions,
+tradingbot-backend\services\enhanced_observability_service.py:380:                    "max_subscriptions": websocket_metrics.max_subscriptions,
+tradingbot-backend\services\enhanced_observability_service.py:381:                    "messages_per_second": websocket_metrics.messages_per_second,
+tradingbot-backend\services\enhanced_observability_service.py:382:                    "reconnect_count": websocket_metrics.reconnect_count,
+tradingbot-backend\services\enhanced_observability_service.py:385:                    "total_orders": trading_metrics.total_orders,
+tradingbot-backend\services\enhanced_observability_service.py:386:                    "successful_orders": trading_metrics.successful_orders,
+tradingbot-backend\services\enhanced_observability_service.py:387:                    "failed_orders": trading_metrics.failed_orders,
+tradingbot-backend\services\enhanced_observability_service.py:388:                    "order_success_rate": trading_metrics.order_success_rate,
+tradingbot-backend\services\enhanced_observability_service.py:389:                    "average_order_latency_ms": trading_metrics.average_order_latency_ms,
+tradingbot-backend\services\enhanced_observability_service.py:390:                    "orders_per_minute": trading_metrics.orders_per_minute,
+tradingbot-backend\services\market_data_facade.py:38:        start_time = time.perf_counter()
+tradingbot-backend\services\market_data_facade.py:47:                    f"marketdata.source=rest reason=forced_mode symbol={symbol} lag_ms={(time.perf_counter() - start_time) * 1000:.1f}"
+tradingbot-backend\services\market_data_facade.py:57:                lag_ms = (time.perf_counter() - start_time) * 1000
+tradingbot-backend\services\market_data_facade.py:63:                lag_ms = (time.perf_counter() - start_time) * 1000
+tradingbot-backend\services\market_data_facade.py:68:            lag_ms = (time.perf_counter() - start_time) * 1000
+tradingbot-backend\services\metrics.py:2:Metrics store för enkel Prometheus-export.
+tradingbot-backend\services\metrics.py:64:    # Enkel label-escaping för Prometheus-formatteringen
+tradingbot-backend\services\metrics.py:157:def render_prometheus_text() -> str:
+tradingbot-backend\services\prob_validation.py:58:    compute metrics. Returns summary dict with overall Brier/LogLoss
+tradingbot-backend\services\validation_service.py:157:                f"🧪 Probability validation slutförd för {symbol}: {validation_metrics.get('accuracy', 0):.3f} accuracy"
+tradingbot-backend\services\validation_service.py:221:                f"🧪 Strategy validation slutförd för {symbol}: {strategy_metrics.get('total_return', 0):.3f} return"
+tradingbot-backend\services\validation_service.py:292:                f"🧪 Backtest slutförd för {symbol}: {backtest_metrics.get('final_capital', 0):.2f} final capital"
+tradingbot-backend\services\validation_service.py:307:        """Beräkna probability validation metrics."""
+tradingbot-backend\utils\advanced_rate_limiter.py:266:        """Skicka limiter-stats till metrics_store för Prometheus-export."""
+tradingbot-backend\utils\server_timing.py:45:        self._t0 = time.perf_counter()
+tradingbot-backend\utils\server_timing.py:50:            dt_ms = (time.perf_counter() - self._t0) * 1000.0
+
+

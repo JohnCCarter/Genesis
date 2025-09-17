@@ -14,7 +14,7 @@ import asyncio
 import re
 from datetime import UTC, datetime, timedelta
 
-from config.settings import Settings
+from config.settings import settings
 from utils.candle_cache import candle_cache
 from utils.logger import get_logger
 
@@ -101,7 +101,9 @@ class SchedulerService:
                 now = datetime.now(UTC)
                 if now >= next_run_at:
                     await self._safe_run_equity_snapshot(reason="interval")
-                    next_run_at = now.replace(microsecond=0) + timedelta(seconds=self.snapshot_interval_seconds)
+                    next_run_at = now.replace(microsecond=0) + timedelta(
+                        seconds=self.snapshot_interval_seconds
+                    )
                 # Kör cache-retention högst en gång per 12 timmar (minska frekvensen)
                 await self._maybe_enforce_cache_retention(now)
                 # Kör probabilistisk validering enligt intervall
@@ -114,7 +116,8 @@ class SchedulerService:
                 # Cleanup: Rensa completed tasks var 10:e minut
                 if (
                     not hasattr(self, "_last_task_cleanup")
-                    or (now - getattr(self, "_last_task_cleanup", now)).total_seconds() > 600
+                    or (now - getattr(self, "_last_task_cleanup", now)).total_seconds()
+                    > 600
                 ):
                     self._cleanup_completed_tasks()
                     self._last_task_cleanup = now
@@ -171,15 +174,17 @@ class SchedulerService:
             logger.warning("%s", f"Kunde inte ta equity-snapshot: {e}")
 
     async def _maybe_enforce_cache_retention(self, now: datetime) -> None:
-        """Enforce TTL/retention på candle-cache med låg frekvens.
+        """Enforce TTL/retention på candle-cache med låg frekvents.
 
         Läser inställningar vid varje körning så ändringar i .env fångas.
         Kör endast om minst 12 timmar förflutit sedan senaste körning.
         """
         try:
-            if self._last_retention_at and (now - self._last_retention_at) < timedelta(hours=12):
+            if self._last_retention_at and (now - self._last_retention_at) < timedelta(
+                hours=12
+            ):
                 return
-            s = Settings()
+            s = settings
             days = int(getattr(s, "CANDLE_CACHE_RETENTION_DAYS", 0) or 0)
             max_rows = int(getattr(s, "CANDLE_CACHE_MAX_ROWS_PER_PAIR", 0) or 0)
             if days <= 0 and max_rows <= 0:
@@ -202,13 +207,15 @@ class SchedulerService:
             from services.metrics import metrics_store
             from services.prob_validation import validate_on_candles
 
-            s = Settings()
+            s = settings
             if not bool(getattr(s, "PROB_VALIDATE_ENABLED", True)):
                 return
-            interval_minutes = int(getattr(s, "PROB_VALIDATE_INTERVAL_MINUTES", 60) or 60)
-            if self._last_prob_validate_at and (now - self._last_prob_validate_at) < timedelta(
-                minutes=max(1, interval_minutes)
-            ):
+            interval_minutes = int(
+                getattr(s, "PROB_VALIDATE_INTERVAL_MINUTES", 60) or 60
+            )
+            if self._last_prob_validate_at and (
+                now - self._last_prob_validate_at
+            ) < timedelta(minutes=max(1, interval_minutes)):
                 return
             raw_syms = (getattr(s, "PROB_VALIDATE_SYMBOLS", None) or "").strip()
             if raw_syms:
@@ -234,8 +241,12 @@ class SchedulerService:
                     res = validate_on_candles(
                         candles,
                         horizon=int(getattr(s, "PROB_MODEL_TIME_HORIZON", 20) or 20),
-                        tp=float(getattr(s, "PROB_MODEL_EV_THRESHOLD", 0.0005) or 0.0005),
-                        sl=float(getattr(s, "PROB_MODEL_EV_THRESHOLD", 0.0005) or 0.0005),
+                        tp=float(
+                            getattr(s, "PROB_MODEL_EV_THRESHOLD", 0.0005) or 0.0005
+                        ),
+                        sl=float(
+                            getattr(s, "PROB_MODEL_EV_THRESHOLD", 0.0005) or 0.0005
+                        ),
                         max_samples=max_samples,
                     )
                     key = f"{sym}|{tf}"
@@ -254,13 +265,13 @@ class SchedulerService:
                     logger.debug(f"prob validation misslyckades för {sym}: {ie}")
             # aggregat (medel över symboler)
             if agg_brier_vals:
-                metrics_store.setdefault("prob_validation", {})["brier"] = sum(agg_brier_vals) / max(
-                    1, len(agg_brier_vals)
-                )
+                metrics_store.setdefault("prob_validation", {})["brier"] = sum(
+                    agg_brier_vals
+                ) / max(1, len(agg_brier_vals))
             if agg_logloss_vals:
-                metrics_store.setdefault("prob_validation", {})["logloss"] = sum(agg_logloss_vals) / max(
-                    1, len(agg_logloss_vals)
-                )
+                metrics_store.setdefault("prob_validation", {})["logloss"] = sum(
+                    agg_logloss_vals
+                ) / max(1, len(agg_logloss_vals))
             # rolling windows
             try:
                 windows_raw = getattr(s, "PROB_VALIDATE_WINDOWS_MINUTES", None) or ""
@@ -268,7 +279,11 @@ class SchedulerService:
                     from time import time as _now
 
                     now_ts = int(_now())
-                    windows = [int(x) for x in windows_raw.split(",") if str(x).strip().isdigit()]
+                    windows = [
+                        int(x)
+                        for x in windows_raw.split(",")
+                        if str(x).strip().isdigit()
+                    ]
                     pv = metrics_store.setdefault("prob_validation", {})
                     roll = pv.setdefault("rolling", {})
                     # Lägg till punkt för varje fönster
@@ -283,7 +298,9 @@ class SchedulerService:
                             }
                         )
                         # Retention grooming per fönster
-                        max_pts = int(getattr(s, "PROB_VALIDATE_HISTORY_MAX_POINTS", 1000) or 1000)
+                        max_pts = int(
+                            getattr(s, "PROB_VALIDATE_HISTORY_MAX_POINTS", 1000) or 1000
+                        )
                         if len(arr) > max_pts:
                             del arr[: len(arr) - max_pts]
             except Exception:
@@ -310,13 +327,13 @@ class SchedulerService:
             from services.prob_model import prob_model
             from services.prob_train import train_and_export
 
-            s = Settings()
+            s = settings
             if not bool(getattr(s, "PROB_RETRAIN_ENABLED", False)):
                 return
             interval_hours = int(getattr(s, "PROB_RETRAIN_INTERVAL_HOURS", 24) or 24)
-            if self._last_prob_retrain_at and (now - self._last_prob_retrain_at) < timedelta(
-                hours=max(1, interval_hours)
-            ):
+            if self._last_prob_retrain_at and (
+                now - self._last_prob_retrain_at
+            ) < timedelta(hours=max(1, interval_hours)):
                 return
             raw_syms = (getattr(s, "PROB_RETRAIN_SYMBOLS", None) or "").strip()
             if raw_syms:
@@ -355,7 +372,9 @@ class SchedulerService:
                         pass
                     fname = f"{clean}_{tf}.json"
                     out_path = os.path.join(out_dir, fname)
-                    train_and_export(candles, horizon=horizon, tp=tp, sl=sl, out_path=out_path)
+                    train_and_export(
+                        candles, horizon=horizon, tp=tp, sl=sl, out_path=out_path
+                    )
                     metrics_store.setdefault("prob_retrain", {})["events"] = (
                         int(metrics_store.get("prob_retrain", {}).get("events", 0)) + 1
                     )
@@ -364,7 +383,9 @@ class SchedulerService:
             # försök reload om PROB_MODEL_FILE pekar på en fil vi just skrev
             try:
                 if prob_model.reload():
-                    metrics_store.setdefault("prob_retrain", {})["last_success"] = int(now.timestamp())
+                    metrics_store.setdefault("prob_retrain", {})["last_success"] = int(
+                        now.timestamp()
+                    )
             except Exception:
                 pass
             self._last_prob_retrain_at = now
@@ -380,73 +401,15 @@ class SchedulerService:
         OPTIMERAD: Ökad från 1 minut till 15 minuter för att minska API-anrop.
         """
         try:
-            from services.symbols import SymbolService
+            from services.coordinator import get_coordinator
 
             # OPTIMERING: Ökad från 1 minut till 15 minuter
             interval_minutes = 15
-            if self._last_regime_update_at and (now - self._last_regime_update_at) < timedelta(
-                minutes=max(1, interval_minutes)
-            ):
+            if self._last_regime_update_at and (
+                now - self._last_regime_update_at
+            ) < timedelta(minutes=max(1, interval_minutes)):
                 return
-
-            # Kontrollera om auto-regim är aktiverat
-            try:
-                import json
-                import os
-
-                cfg_path = os.path.join(
-                    os.path.dirname(os.path.dirname(__file__)),
-                    "config",
-                    "strategy_settings.json",
-                )
-                with open(cfg_path, encoding="utf-8") as f:
-                    data = json.load(f)
-                auto_regime = bool(data.get("AUTO_REGIME_ENABLED", True))
-                auto_weights = bool(data.get("AUTO_WEIGHTS_ENABLED", True))
-                if not (auto_regime and auto_weights):
-                    return
-            except Exception:
-                return
-
-            # Hämta aktiva symboler
-            sym_svc = SymbolService()
-            await sym_svc.refresh()
-
-            # OPTIMERING: Batch-uppdatera regim för alla symboler
-            symbols = sym_svc.get_symbols(test_only=True, fmt="v2")[:5]  # Begränsa till 5 symboler
-
-            try:
-                from services.strategy import update_settings_from_regime_batch
-
-                # Batch-uppdatera alla symboler på en gång
-                all_weights = update_settings_from_regime_batch(symbols)
-
-                for symbol, new_weights in all_weights.items():
-                    logger.info(f"🔄 Automatisk regim-uppdatering för {symbol}: {new_weights}")
-
-                    # Skicka notifikation till UI
-                    try:
-                        from ws.manager import socket_app
-
-                        asyncio.create_task(
-                            socket_app.emit(
-                                "notification",
-                                {
-                                    "type": "info",
-                                    "title": "Regim uppdaterad",
-                                    "payload": {
-                                        "symbol": symbol,
-                                        "weights": new_weights,
-                                        "timestamp": now.isoformat(),
-                                    },
-                                },
-                            )
-                        )
-                    except Exception:
-                        pass
-
-            except Exception as e:
-                logger.warning(f"Kunde inte batch-uppdatera regim: {e}")
+            await get_coordinator().update_regime()
 
             self._last_regime_update_at = now
 

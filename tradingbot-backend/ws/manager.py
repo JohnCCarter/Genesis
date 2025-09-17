@@ -9,7 +9,7 @@ from typing import Callable, Optional
 
 import socketio
 
-from config.settings import Settings
+from config.settings import settings
 from services.bracket_manager import bracket_manager
 from utils.logger import get_logger
 from ws.auth import authenticate_socket_io, generate_token
@@ -19,22 +19,52 @@ from ws.wallet_handler import WSWalletHandler
 logger = get_logger(__name__)
 
 # Skapa Socket.IO-server med autentisering
-socket_app = socketio.AsyncServer(async_mode="asgi", cors_allowed_origins="*", logger=True, engineio_logger=True)
+socket_app = socketio.AsyncServer(
+    async_mode="asgi", cors_allowed_origins="*", logger=True, engineio_logger=True
+)
+
+
+def is_ui_push_enabled() -> bool:
+    """Kontrollera om UI push är aktiverat via environment flag."""
+    try:
+        return getattr(settings, "UI_PUSH_ENABLED", True)
+    except Exception:
+        return True
+
+
+async def safe_emit(event: str, data: dict, room: str = None, skip_sid: str = None):
+    """Säker emit med UI push kontroll."""
+    if not is_ui_push_enabled():
+        return
+
+    try:
+        if room:
+            await socket_app.emit(event, data, room=room, skip_sid=skip_sid)
+        else:
+            await socket_app.emit(event, data, skip_sid=skip_sid)
+    except Exception as e:
+        logger.warning(f"UI push misslyckades: {e}")
 
 
 # Wrapper för Socket.IO applikation med autentisering
 # Använd auth middleware för att hantera autentisering
 async def socket_auth_middleware(environ, send):
     # Logga anslutningsförsök
-    logger.info(f"Socket.IO anslutningsförsök via middleware: {environ.get('REMOTE_ADDR', 'okänd')}")
+    logger.info(
+        f"Socket.IO anslutningsförsök via middleware: {environ.get('REMOTE_ADDR', 'okänd')}"
+    )
 
     # Använd autentiseringsfunktionen
     if authenticate_socket_io(environ):
         # Kopiera user till socket.io_user för kompatibilitet
-        environ["socket.io_user"] = environ.get("user", {"sub": "unknown", "scope": "none"})
+        environ["socket.io_user"] = environ.get(
+            "user", {"sub": "unknown", "scope": "none"}
+        )
         return True
     else:
-        logger.warning(f"❌ Socket.IO autentisering misslyckades från {environ.get('REMOTE_ADDR', 'okänd')}")
+        logger.warning(
+            f"❌ Socket.IO autentisering misslyckades från {environ.get('REMOTE_ADDR', 'okänd')}"
+        )
         return False
 
 
@@ -56,15 +86,17 @@ async def connect(sid, environ):
         try:
             from services.runtime_config import get_bool as _rc_get_bool
 
-            auth_required = bool(_rc_get_bool("AUTH_REQUIRED", Settings().AUTH_REQUIRED))
+            auth_required = bool(_rc_get_bool("AUTH_REQUIRED", settings.AUTH_REQUIRED))
         except Exception:
-            auth_required = bool(Settings().AUTH_REQUIRED)
+            auth_required = bool(settings.AUTH_REQUIRED)
         if auth_required and not authenticate_socket_io(environ):
             logger.warning(f"❌ Socket.IO autentisering misslyckades för sid: {sid}")
             raise ConnectionRefusedError("unauthorized")
 
         user = environ.get("user", {"sub": "unknown"})
-        await socket_app.emit("authenticated", {"status": "success", "user": user.get("sub")}, room=sid)
+        await socket_app.emit(
+            "authenticated", {"status": "success", "user": user.get("sub")}, room=sid
+        )
         logger.info(f"✅ Socket.IO-klient autentiserad och ansluten: {sid}")
         return True
     except ConnectionRefusedError:
@@ -95,7 +127,9 @@ async def request_token(sid, data):
             await socket_app.emit("token_generated", token_response, room=sid)
             logger.info(f"✅ Token genererad för användare: {user_id}")
         else:
-            await socket_app.emit("token_error", {"error": "Kunde inte generera token"}, room=sid)
+            await socket_app.emit(
+                "token_error", {"error": "Kunde inte generera token"}, room=sid
+            )
             logger.error(f"❌ Fel vid generering av token för användare: {user_id}")
 
     except Exception as e:
@@ -110,7 +144,9 @@ async def refresh_token(sid, data):
         refresh_token = data.get("refresh_token")
 
         if not refresh_token:
-            await socket_app.emit("token_error", {"error": "Refresh token saknas"}, room=sid)
+            await socket_app.emit(
+                "token_error", {"error": "Refresh token saknas"}, room=sid
+            )
             logger.warning("❌ Refresh token saknas i begäran")
             return
 
@@ -119,9 +155,13 @@ async def refresh_token(sid, data):
 
         if token_response:
             await socket_app.emit("token_refreshed", token_response, room=sid)
-            logger.info(f"✅ Token förnyad för användare: {token_response.get('user_id')}")
+            logger.info(
+                f"✅ Token förnyad för användare: {token_response.get('user_id')}"
+            )
         else:
-            await socket_app.emit("token_error", {"error": "Kunde inte förnya token"}, room=sid)
+            await socket_app.emit(
+                "token_error", {"error": "Kunde inte förnya token"}, room=sid
+            )
             logger.warning("❌ Kunde inte förnya token")
 
     except Exception as e:

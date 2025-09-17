@@ -1,0 +1,8 @@
+﻿C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\main.py:279:     @app.get("/docs", include_in_schema=False)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\main.py:289:     @app.get("/docs/oauth2-redirect", include_in_schema=False)
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\main.py:299: @app.get("/")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\main.py:313: @app.get("/health")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\main.py:319: @app.get("/time")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\main.py:343: @app.get("/prob-test")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\main.py:353: @app.get("/metrics")
+C:\Users\fa06662\HCP\Hämtade filer\Genesis\tradingbot-backend\main.py:461: @app.get("/metrics/summary")
