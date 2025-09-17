@@ -27,7 +27,9 @@ class WSPositionHandler:
         """
         self.sio = sio_client
         self.bitfinex_ws = bitfinex_ws_service
-        self.settings = Settings()
+        from config.settings import settings as _settings
+
+        self.settings = _settings
         self.authenticated = False
         self.positions = []
         self.position_callbacks = []
@@ -51,17 +53,13 @@ class WSPositionHandler:
 
             def on_auth_response(msg):
                 if isinstance(msg, list) and msg[1] == "ps":
-                    logger.info(
-                        "WebSocket autentisering lyckades för positionsuppdateringar"
-                    )
+                    logger.info("WebSocket autentisering lyckades för positionsuppdateringar")
                     self.positions = msg[2] if len(msg) > 2 else []
                     self.authenticated = True
                     if not auth_future.done():
                         auth_future.set_result(True)
                 elif isinstance(msg, list) and msg[1] == "error":
-                    logger.error(
-                        f"WebSocket autentiseringsfel för positionsuppdateringar: {msg}"
-                    )
+                    logger.error(f"WebSocket autentiseringsfel för positionsuppdateringar: {msg}")
                     if not auth_future.done():
                         auth_future.set_result(False)
 
@@ -77,20 +75,14 @@ class WSPositionHandler:
                 result = await asyncio.wait_for(auth_future, timeout=10.0)
                 return result
             except asyncio.TimeoutError:
-                logger.error(
-                    "Timeout vid WebSocket-autentisering för positionsuppdateringar"
-                )
+                logger.error("Timeout vid WebSocket-autentisering för positionsuppdateringar")
                 return False
 
         except Exception as e:
-            logger.exception(
-                f"Fel vid WebSocket-autentisering för positionsuppdateringar: {e}"
-            )
+            logger.exception(f"Fel vid WebSocket-autentisering för positionsuppdateringar: {e}")
             return False
 
-    def register_position_callback(
-        self, callback: Callable[[List[Dict[str, Any]]], None]
-    ) -> None:
+    def register_position_callback(self, callback: Callable[[List[Dict[str, Any]]], None]) -> None:
         """
         Registrerar en callback-funktion som anropas när positionsuppdateringar tas emot.
 
@@ -159,11 +151,7 @@ class WSPositionHandler:
             # Uppdatera intern positionslista
             updated = False
             for i, position in enumerate(self.positions):
-                if (
-                    isinstance(position, list)
-                    and len(position) >= 1
-                    and position[0] == symbol
-                ):
+                if isinstance(position, list) and len(position) >= 1 and position[0] == symbol:
                     self.positions[i] = position_data
                     updated = True
                     break
@@ -240,9 +228,7 @@ class WSPositionHandler:
             # Skicka uppdatering till frontend via Socket.IO
             asyncio.create_task(self.sio.emit("position_snapshot", formatted_positions))
 
-            logger.info(
-                f"Positions-snapshot bearbetad: {len(formatted_positions)} positioner"
-            )
+            logger.info(f"Positions-snapshot bearbetad: {len(formatted_positions)} positioner")
 
         except Exception as e:
             logger.error(f"Fel vid bearbetning av positions-snapshot: {e}")
@@ -262,11 +248,7 @@ class WSPositionHandler:
             symbol = position_data[0]
 
             # Ta bort från intern positionslista
-            self.positions = [
-                p
-                for p in self.positions
-                if not (isinstance(p, list) and len(p) >= 1 and p[0] == symbol)
-            ]
+            self.positions = [p for p in self.positions if not (isinstance(p, list) and len(p) >= 1 and p[0] == symbol)]
 
             # Formatera position för callbacks
             formatted_position = {"symbol": symbol, "status": "CLOSED", "closed": True}

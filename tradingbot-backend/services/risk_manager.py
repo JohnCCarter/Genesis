@@ -24,7 +24,12 @@ _CB_OPENED_AT: datetime | None = None
 
 class RiskManager:
     def __init__(self, settings: Settings | None = None):
-        self.settings = settings or Settings()
+        if settings is None:
+            from config.settings import settings as _settings
+
+            self.settings = _settings
+        else:
+            self.settings = settings
         self.policy = RiskPolicyEngine(self.settings)
         # Backwards-compat: exponera underliggande services så gamla tester fungerar
         self.trading_window = self.policy.constraints.trading_window
@@ -41,15 +46,11 @@ class RiskManager:
         price: float | None = None,
     ) -> tuple[bool, str | None]:
         # Avbryt tidigt om risk är avstängd
-        if not rc.get_bool(
-            "RISK_ENABLED", getattr(self.settings, "RISK_ENABLED", True)
-        ):
+        if not rc.get_bool("RISK_ENABLED", getattr(self.settings, "RISK_ENABLED", True)):
             return True, None
         # 1) Kör policy/constraints först (matchar testernas förväntningar)
         # Kör constraints via policy men låt RiskGuards hanteras lokalt här
-        decision = self.policy.evaluate(
-            symbol=symbol, amount=amount, price=price, include_guards=False
-        )
+        decision = self.policy.evaluate(symbol=symbol, amount=amount, price=price, include_guards=False)
         if not decision.allowed:
             return False, decision.reason
 
@@ -95,9 +96,7 @@ class RiskManager:
             self.trading_window.set_paused(True)
             global _CB_OPENED_AT
             _CB_OPENED_AT = datetime.utcnow()
-            logger.warning(
-                "🚨 TradingCircuitBreaker aktiverad: pausar handel pga felspikar"
-            )
+            logger.warning("🚨 TradingCircuitBreaker aktiverad: pausar handel pga felspikar")
             try:
                 # Behåll bakåtkompatibel nyckel + ny namngiven nyckel
                 metrics_store["circuit_breaker_active"] = 1
@@ -123,9 +122,7 @@ class RiskManager:
                             "warning",
                             "Circuit breaker aktiverad",
                             {
-                                "since": (
-                                    _CB_OPENED_AT.isoformat() if _CB_OPENED_AT else None
-                                ),
+                                "since": (_CB_OPENED_AT.isoformat() if _CB_OPENED_AT else None),
                                 "errors_in_window": len(self._error_events),
                                 "window_seconds": self.settings.CB_ERROR_WINDOW_SECONDS,
                             },
@@ -166,9 +163,7 @@ class RiskManager:
         }
 
     # --- Circuit Breaker controls ---
-    def circuit_reset(
-        self, *, resume: bool = True, clear_errors: bool = True, notify: bool = True
-    ) -> dict[str, Any]:
+    def circuit_reset(self, *, resume: bool = True, clear_errors: bool = True, notify: bool = True) -> dict[str, Any]:
         """Återställ circuit breaker: rensa fel och återuppta handel om så önskas."""
         try:
             if clear_errors:

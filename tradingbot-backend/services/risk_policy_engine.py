@@ -22,7 +22,12 @@ class PolicyDecision:
 
 class RiskPolicyEngine:
     def __init__(self, settings: Settings | None = None) -> None:
-        self.settings = settings or Settings()
+        if settings is None:
+            from config.settings import settings as _settings
+
+            self.settings = _settings
+        else:
+            self.settings = settings
         self.constraints = TradeConstraintsService(self.settings)
 
     def evaluate(
@@ -34,9 +39,7 @@ class RiskPolicyEngine:
         include_guards: bool = True,
     ) -> PolicyDecision:
         # Avbryt alla riskkontroller om risk är avstängd
-        if not rc.get_bool(
-            "RISK_ENABLED", getattr(self.settings, "RISK_ENABLED", True)
-        ):
+        if not rc.get_bool("RISK_ENABLED", getattr(self.settings, "RISK_ENABLED", True)):
             return PolicyDecision(True)
         # 1) Utvärdera båda källorna och prioritera tydliga driftstopp (paused/fönster) före guards.
         guard_blocked = False
