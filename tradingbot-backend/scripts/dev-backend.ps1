@@ -13,6 +13,16 @@ $uvicorn_args = @(
     "--port", "8000",
     "--reload",
     "--reload-dir", ".",
+    # Exkludera mappar/filer som inte bör trigga reload
+    "--reload-exclude", "logs/*",
+    "--reload-exclude", "**/*.sqlite*",
+    "--reload-exclude", "**/*.db",
+    "--reload-exclude", "**/__pycache__/*",
+    "--reload-exclude", "**/.pytest_cache/*",
+    "--reload-exclude", "**/.agent-locks/*",
+    "--reload-exclude", "**/node_modules/*",
+    "--reload-exclude", "**/dist/*",
+    "--reload-exclude", "**/.venv/*",
     "main:app"
 )
 
