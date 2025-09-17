@@ -94,8 +94,18 @@ def train_and_export(
     # Step 5: Ensure the safe directory exists
     os.makedirs(safe_root, exist_ok=True)
 
+    exp-prob-only
     # Step 6: Create a completely new path variable to break data flow analysis concerns
     final_clean_path = os.path.join(os.path.abspath("config/models"), safe_filename)
+
+    # Step 6: Realpath containment check to ensure no breakout is possible
+    real_root = os.path.realpath(safe_root)
+    real_path = os.path.realpath(safe_path)
+    if not (real_path.startswith(real_root + os.sep) or real_path == real_root):
+        raise ValueError(f"Output path not within safe directory: {real_path}")
+
+    final_clean_path = real_path  # Path is known-safe at this point
+    main
 
     samples = build_dataset(candles, horizon=horizon, tp=tp, sl=sl)
     if not samples:
