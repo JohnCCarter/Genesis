@@ -24,7 +24,13 @@ class ProbabilityModel:
 
     def _try_load(self) -> bool:
         try:
-            path = self.settings.PROB_MODEL_FILE
+            # Läs modellfil från runtime_config (POST /prob/config kan uppdatera) med fallback till Settings
+            try:
+                import services.runtime_config as rc  # lazy import to avoid cycles
+
+                path = rc.get_str("PROB_MODEL_FILE", getattr(self.settings, "PROB_MODEL_FILE", None))
+            except Exception:
+                path = getattr(self.settings, "PROB_MODEL_FILE", None)
             if not path:
                 return False
             with open(path, encoding="utf-8") as f:
