@@ -6019,3 +6019,24 @@ async def agents_status(_: bool = Depends(require_auth)) -> Any:
 async def agents_notifications(_: bool = Depends(require_auth)) -> Any:
     """Returnerar notifieringsstatus (read-only)."""
     return _read_comm_file("notifications.json") or {}
+
+
+@router.post("/prob/validate")
+async def prob_validate(req: ProbValidateRequest, _: bool = Depends(require_auth)):
+    """Kompatibilitets-endpoint för äldre tester: beräkna Brier/LogLoss på senaste candles."""
+    try:
+        data = get_market_data()
+        candles = await data.get_candles(req.symbol, req.timeframe, int(max(req.limit, 10)))
+        if not candles:
+            return {"samples": 0, "brier": None, "logloss": None, "by_label": {}}
+        res = validate_on_candles(
+            candles,
+            horizon=int(max(1, req.horizon)),
+            tp=float(max(0.0, req.tp)),
+            sl=float(max(0.0, req.sl)),
+            max_samples=req.max_samples,
+        )
+        return res
+    except Exception as e:
+        logger.exception(f"prob/validate error: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) from e
