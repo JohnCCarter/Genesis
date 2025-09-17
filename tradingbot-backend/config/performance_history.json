@@ -152,12 +152,12 @@
     },
     {
       "date": "2025-09-17",
-      "total_usd": 200410.43432139,
+      "total_usd": 200401.05312139,
       "wallets_usd": 199804.80952139,
-      "unrealized_pnl_usd": 605.6248,
+      "unrealized_pnl_usd": 596.2436,
       "positions_count": 3,
       "realized_usd": 0.0,
-      "day_change_usd": -104.3409,
+      "day_change_usd": -113.7221,
       "realized_day_change_usd": 0.0
     }
   ]

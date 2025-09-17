@@ -2628,12 +2628,21 @@ class ProbFeatureLogQuery(BaseModel):
 async def prob_get_config(_: bool = Depends(require_auth)):
     try:
         s = settings
+        try:
+            # Läs aktuella thresholds via runtime_config med fallback till Settings
+            ev_th = float(rc.get_float("PROB_MODEL_EV_THRESHOLD", getattr(s, "PROB_MODEL_EV_THRESHOLD", 0.0) or 0.0))
+            conf_min = float(
+                rc.get_float("PROB_MODEL_CONFIDENCE_MIN", getattr(s, "PROB_MODEL_CONFIDENCE_MIN", 0.0) or 0.0)
+            )
+        except Exception:
+            ev_th = float(getattr(s, "PROB_MODEL_EV_THRESHOLD", 0.0) or 0.0)
+            conf_min = float(getattr(s, "PROB_MODEL_CONFIDENCE_MIN", 0.0) or 0.0)
 
         return {
             "model_enabled": bool(getattr(s, "PROB_MODEL_ENABLED", False)),
             "model_file": getattr(s, "PROB_MODEL_FILE", None),
-            "ev_threshold": float(getattr(s, "PROB_MODEL_EV_THRESHOLD", 0.0) or 0.0),
-            "confidence_min": float(getattr(s, "PROB_MODEL_CONFIDENCE_MIN", 0.0) or 0.0),
+            "ev_threshold": ev_th,
+            "confidence_min": conf_min,
             "autotrade_enabled": bool(
                 rc.get_bool(
                     "PROB_AUTOTRADE_ENABLED",
@@ -2679,8 +2688,16 @@ async def prob_update_config(req: ProbConfigUpdateRequest, _: bool = Depends(req
                 pass
         if req.ev_threshold is not None:
             rc.set_float("PROB_MODEL_EV_THRESHOLD", float(req.ev_threshold))
+            try:
+                settings.PROB_MODEL_EV_THRESHOLD = float(req.ev_threshold)
+            except Exception:
+                pass
         if req.confidence_min is not None:
             rc.set_float("PROB_MODEL_CONFIDENCE_MIN", float(req.confidence_min))
+            try:
+                settings.PROB_MODEL_CONFIDENCE_MIN = float(req.confidence_min)
+            except Exception:
+                pass
         if req.autotrade_enabled is not None:
             rc.set_bool("PROB_AUTOTRADE_ENABLED", bool(req.autotrade_enabled))
         if req.size_max_risk_pct is not None:
