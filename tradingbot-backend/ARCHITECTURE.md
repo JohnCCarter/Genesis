@@ -1,17 +1,18 @@
 📘 Arkitekturöversikt - Genesis Trading Bot
 
-🚀 1. Startup-sekvens och Initialisering
+🚀 1. Startup‑sekvens och initialisering
 Ordning vid startup (main.py):
+
 - Miljövariabler & Settings (Rad 33)
   - Laddar .env fil automatiskt
-  - Skapar singleton Settings instans
+  - Skapar singleton Settings‑instans (använd `from config.settings import settings`)
   - Sätter os.environ värden
 - Core Module Imports (Rad 40-63)
   - ws.manager.socket_app - WebSocket hantering
   - rest.routes.rest_router - REST API endpoints
   - services.bitfinex_websocket.bitfinex_ws - Bitfinex WebSocket
   - services.metrics_client - Metrics och monitoring
-- WebSocket Connection (Rad 94-126)
+- WebSocket‑koppling (Rad 94-126)
   - Ansluter till Bitfinex WebSocket (5s timeout)
   - WebSocket autentisering (3s timeout)
   - Kopplar WebSocket till enhetliga services
@@ -26,8 +27,14 @@ Ordning vid startup (main.py):
   - Startar services.circuit_breaker_recovery
   - Hanterar automatisk återhämtning från fel
 
+🔌 HTTP‑klienter (httpx)
+
+- Använd `services/http.py:get_async_client()` för per‑event‑loop klienter
+- Stäng alla via `services/http.py:close_http_clients()` i shutdown‑sekvensen
+
 🔄 2. REST API Endpoints och Anropsmönster
 Huvudkategorier av endpoints:
+
 - Autentisering & Tokens
   - POST /api/v2/auth/ws-token - Genererar WebSocket token
   - GET /api/v2/auth/verify - Verifierar token
@@ -53,6 +60,7 @@ Huvudkategorier av endpoints:
 
 🌐 3. WebSocket Event Handlers
 Bitfinex WebSocket Events:
+
 - Autentisering
   - auth - WebSocket autentisering (1 gång vid startup + vid reconnect)
 - Marknadsdata (Public)
@@ -74,18 +82,21 @@ Bitfinex WebSocket Events:
 
 ⏰ 4. Scheduler Tasks och Exekveringsfrekvens
 UnifiedSchedulerService jobb:
+
 - Critical Priority (30s): health_check, circuit_breaker_monitor
 - High Priority (60s): equity_snapshot
 - Medium Priority (300s): prob_validation, regime_update
 - Low Priority (1800s): cache_retention, prob_retraining
 
 📈 5. Anropsvolym per Komponent (uppskattning)
+
 - REST API: 500-2000 anrop/dag
 - WebSocket Events: 10,000-50,000 events/dag
 - Scheduler Tasks: 1,000-5,000 exekveringar/dag
 - Bitfinex API: 100-500 anrop/dag (rate limited)
 
-�� 6. Kritiska Anropskedjor
+🧩 6. Kritiska anropskedjor
+
 - Orderläggning (place_order_endpoint)
   - Autentisering → Rate limiting → Dry run check → Order validation → Risk kontroll → Idempotency → Symbol resolution → REST API call → (ev.) WS fallback
 - Signal Generation
@@ -93,7 +104,14 @@ UnifiedSchedulerService jobb:
 - WebSocket Data Flow
   - WS connect → Auth → Subscribe → Event handlers → Process → UI emit
 
+🛑 9. Shutdown & städning
+
+- Stäng HTTP‑klienter: `close_http_clients()`
+- Stäng WebSocket och avsubscribera
+- Flusha metrics/loggar
+
 🎯 7. Performance Bottlenecks
+
 - Symbol Resolution (per order)
 - Market Data Fetching (hög frekvens)
 - WebSocket Reconnection (dataförlust-risk)
@@ -101,6 +119,7 @@ UnifiedSchedulerService jobb:
 - Rate Limiting (throughput)
 
 📊 8. Monitoring och Metrics
+
 - API Response Times: P95 < 2.5s, P99 < 3.5s
 - WebSocket Reconnection Rate: < 1%/h
 - Order Success Rate: > 95%
@@ -108,9 +127,8 @@ UnifiedSchedulerService jobb:
 - Memory Usage: < 80%
 
 📎 Sammanfattning av Anropsflöde
+
 - Startup: Settings → Imports → WS connect/auth → Components → Scheduler → Recovery
 - Volym: REST (500–2000), WS (10k–50k), Scheduler (1k–5k), Bitfinex (100–500)
 - Flöden: Order (9 steg), Signal (6 steg), WS (6 steg)
 - Resiliens: WS‑fallback för REST, circuit breakers, rate limiting
-
-
