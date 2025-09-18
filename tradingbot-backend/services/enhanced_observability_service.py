@@ -470,7 +470,8 @@ class EnhancedObservabilityService:
                 alerts.append(f"Exchange error rate kritisk: {exchange.error_rate_percent:.1f}%")
 
         except Exception as e:
-            alerts.append(f"Fel vid kontroll av alerts: {e}")
+            logger.exception(f"Fel vid kontroll av alerts: {e}")
+            alerts.append("Fel vid kontroll av alerts")
 
         return alerts
 
