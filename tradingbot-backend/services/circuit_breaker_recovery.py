@@ -228,7 +228,7 @@ class CircuitBreakerRecoveryService:
             logger.error(f"❌ Fel vid hämtning av recovery status: {e}")
             return {
                 "is_running": self.is_running,
-                "error": str(e),
+                "error": "Internal server error",
             }
 
 
