@@ -353,7 +353,9 @@ async def prob_trade(req: ProbTradeRequest, _bypass_auth: bool = Depends(securit
                         pass
                 except Exception:
                     pass
-                return {"ok": False, "error": f"risk_blocked:{reason}"}
+                # Avoid leaking internal error details to clients
+                err_msg = "risk_evaluation_failed" if str(reason).startswith("evaluation_error") else f"risk_blocked:{reason}"
+                return {"ok": False, "error": err_msg}
         except Exception:
             pass
         # Mät latens för orderläggningen
