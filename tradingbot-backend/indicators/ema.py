@@ -25,9 +25,7 @@ def calculate_ema(prices: list[float], period: int = 14) -> float | None:
         float: EMA-värde eller None om otillräcklig data
     """
     if len(prices) < period:
-        logger.warning(
-            f"Otillräcklig data för EMA-beräkning. Kräver {period}, fick {len(prices)}"
-        )
+        logger.warning(f"Otillräcklig data för EMA-beräkning. Kräver {period}, fick {len(prices)}")
         return None
 
     series = pd.Series(prices)
@@ -37,9 +35,7 @@ def calculate_ema(prices: list[float], period: int = 14) -> float | None:
     return round(ema_value, 4)
 
 
-def ema_z(
-    close: list[float], fast: int = 3, slow: int = 7, z_win: int = 200
-) -> list[float]:
+def ema_z(close: list[float], fast: int = 3, slow: int = 7, z_win: int = 200) -> list[float]:
     """
     Beräknar EMA Z-score för trendanalys.
 

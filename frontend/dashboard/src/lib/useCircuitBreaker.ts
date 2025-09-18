@@ -41,10 +41,10 @@ export function useCircuitBreaker() {
     try {
       // Reset circuit breaker
       resetCircuitBreaker();
-      
+
       // Wait for reset to take effect
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       // Check backend health
       const isOnline = await checkBackendHealth();
       updateState();
@@ -60,11 +60,11 @@ export function useCircuitBreaker() {
     if (!state.isOpen) {
       return 'Backend connection is healthy';
     }
-    
+
     if (state.recoveryTimeRemaining > 0) {
       return `Backend offline - auto-retry in ${Math.ceil(state.recoveryTimeRemaining / 1000)}s`;
     }
-    
+
     return 'Backend offline - ready for manual retry';
   }, [state]);
 

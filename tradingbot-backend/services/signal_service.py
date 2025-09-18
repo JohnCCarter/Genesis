@@ -59,16 +59,12 @@ class SignalService:
         if prob_model.enabled:
             feats = {"ema": float(ema_z_value or 0.0), "rsi": float(adx_value or 0.0)}
             p = prob_model.predict_proba(feats)
-            model_prob_pct = (
-                max(float(p.get("buy", 0.0)), float(p.get("sell", 0.0))) * 100.0
-            )
+            model_prob_pct = max(float(p.get("buy", 0.0)), float(p.get("sell", 0.0))) * 100.0
 
         # Prob-only (ingen heuristik):
         if model_prob_pct is not None:
             probability = round(model_prob_pct, 1)
-            source: Literal["deterministic", "probabilistic", "hybrid"] = (
-                "probabilistic"
-            )
+            source: Literal["deterministic", "probabilistic", "hybrid"] = "probabilistic"
         else:
             probability = 0.0
             source = "probabilistic"
@@ -78,8 +74,7 @@ class SignalService:
             recommendation=rec,
             confidence=conf,
             probability=probability,
-            features=features
-            or {"adx_value": adx_value, "ema_z_value": ema_z_value, "regime": regime},
+            features=features or {"adx_value": adx_value, "ema_z_value": ema_z_value, "regime": regime},
             source=source,
         )
 

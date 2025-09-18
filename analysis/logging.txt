@@ -10416,5 +10416,3 @@ tradingbot-backend\ws\wallet_handler.py:188:                logger.warning(f"Ogi
 tradingbot-backend\ws\wallet_handler.py:212:                    logger.error(f"Fel i plånboks-callback: {e}")
 tradingbot-backend\ws\wallet_handler.py:217:            logger.info(f"Plånboks-snapshot bearbetad: {len(formatted_wallets)} plånböcker")
 tradingbot-backend\ws\wallet_handler.py:220:            logger.error(f"Fel vid bearbetning av plånboks-snapshot: {e}")
-
-

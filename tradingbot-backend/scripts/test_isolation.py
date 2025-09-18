@@ -76,9 +76,7 @@ async def test_websocket_status():
         from services.bitfinex_websocket import bitfinex_ws
 
         logger.info(f"✅ WebSocket connected: {bitfinex_ws.is_connected}")
-        logger.info(
-            f"✅ WebSocket authenticated: {getattr(bitfinex_ws, '_authenticated', False)}"
-        )
+        logger.info(f"✅ WebSocket authenticated: {getattr(bitfinex_ws, '_authenticated', False)}")
 
         return bitfinex_ws.is_connected
 
@@ -125,14 +123,10 @@ async def test_debug_endpoints():
                 logger.warning(f"⚠️ Task dump failed: {response.status_code}")
 
             # Testa rate limiter dump
-            response = await client.get(
-                f"{base_url}/api/v2/debug/rate_limiter", timeout=5.0
-            )
+            response = await client.get(f"{base_url}/api/v2/debug/rate_limiter", timeout=5.0)
             if response.status_code == 200:
                 data = response.json()
-                logger.info(
-                    f"✅ Rate limiter dump: {len(data.get('stats', {}))} buckets"
-                )
+                logger.info(f"✅ Rate limiter dump: {len(data.get('stats', {}))} buckets")
             else:
                 logger.warning(f"⚠️ Rate limiter dump failed: {response.status_code}")
 
@@ -162,9 +156,7 @@ async def run_isolation_tests():
         try:
             result = await test_func()
             results[test_name] = result
-            logger.info(
-                f"{'✅' if result else '❌'} {test_name}: {'PASS' if result else 'FAIL'}"
-            )
+            logger.info(f"{'✅' if result else '❌'} {test_name}: {'PASS' if result else 'FAIL'}")
         except Exception as e:
             logger.error(f"❌ {test_name}: ERROR - {e}")
             results[test_name] = False

@@ -14,7 +14,7 @@ export function CircuitBreakerBanner({ className = '' }: CircuitBreakerBannerPro
     const interval = setInterval(() => {
       const newStatus = getCircuitBreakerStatus();
       setStatus(newStatus);
-      
+
       // Show banner when circuit breaker is open
       if (newStatus.isOpen && !isVisible) {
         setIsVisible(true);
@@ -29,13 +29,13 @@ export function CircuitBreakerBanner({ className = '' }: CircuitBreakerBannerPro
     try {
       // Reset circuit breaker
       resetCircuitBreaker();
-      
+
       // Wait for reset to take effect
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       // Check if backend is actually available
       const isBackendOnline = await checkBackendHealth();
-      
+
       if (isBackendOnline) {
         setIsVisible(false);
         console.log('✅ Backend is back online!');
@@ -55,14 +55,14 @@ export function CircuitBreakerBanner({ className = '' }: CircuitBreakerBannerPro
 
   const getRecoveryTime = () => {
     if (!status.isOpen) return null;
-    
+
     const timeSinceFailure = Date.now() - status.lastFailureTime;
     const recoveryTime = 30000 - timeSinceFailure; // 30 second recovery timeout
-    
+
     if (recoveryTime <= 0) {
       return 'Ready for retry';
     }
-    
+
     return `Auto-retry in ${Math.ceil(recoveryTime / 1000)}s`;
   };
 
@@ -83,12 +83,12 @@ export function CircuitBreakerBanner({ className = '' }: CircuitBreakerBannerPro
                 Backend Connection Lost
               </h3>
               <p className="text-sm text-red-100">
-                {status.failureCount} connection failures detected. 
+                {status.failureCount} connection failures detected.
                 {getRecoveryTime() && ` ${getRecoveryTime()}`}
               </p>
             </div>
           </div>
-          
+
           <div className="flex items-center space-x-2">
             <button
               onClick={handleCheckBackend}
@@ -97,7 +97,7 @@ export function CircuitBreakerBanner({ className = '' }: CircuitBreakerBannerPro
             >
               {isChecking ? 'Checking...' : 'Check Backend'}
             </button>
-            
+
             <button
               onClick={handleDismiss}
               className="px-3 py-1 text-sm text-red-100 hover:text-white"

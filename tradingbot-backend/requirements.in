@@ -1,9 +1,11 @@
 # Direct deps
-fastapi>=0.109,<0.110
+fastapi>=0.116,<0.117
 uvicorn>=0.24,<0.25
 httpx>=0.24,<0.26
 supabase>=2.3,<3
 pydantic-settings>=2.0,<3
+# Enforce secure Starlette to address GHSA-f96h-pmfr-66vw and GHSA-2c2j-9gv5-cj73
+starlette>=0.47.2,<0.48
 
 # Runtime
 websockets>=12,<13

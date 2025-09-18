@@ -65,16 +65,16 @@ export function ApiStatus({ className = '' }: ApiStatusProps) {
                 {status.isOpen ? 'OPEN' : 'CLOSED'}
               </span>
             </div>
-            
+
             <div className="flex justify-between">
               <span className="text-gray-600">Failures:</span>
               <span className="text-gray-900">{status.failureCount}</span>
             </div>
-            
+
             <div className="flex justify-between">
               <span className="text-gray-600">Last failure:</span>
               <span className="text-gray-900">
-                {status.lastFailureTime > 0 
+                {status.lastFailureTime > 0
                   ? `${Math.floor(status.timeSinceLastFailure / 1000)}s ago`
                   : 'Never'
                 }

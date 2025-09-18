@@ -53,9 +53,7 @@ def test_trading_window_persist_reload(tmp_path, monkeypatch):
     tw = TradingWindowService(s)
     now = datetime.utcnow()
     daykey = _today_daykey(now)
-    tw.save_rules(
-        windows={daykey: [("08:00", "17:00")]}, paused=False, max_trades_per_day=7
-    )
+    tw.save_rules(windows={daykey: [("08:00", "17:00")]}, paused=False, max_trades_per_day=7)
     # Ny instans läser från fil
     tw2 = TradingWindowService(Settings())
     assert tw2.get_limits()["max_trades_per_day"] == 7

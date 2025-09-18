@@ -9,6 +9,7 @@ import asyncio
 import random
 import time
 
+import httpx
 from services.http import aget
 
 from config.settings import settings
@@ -67,10 +68,7 @@ class BitfinexDataService:
     def __init__(self):
         self.settings = settings
         # Använd publik bas-URL för public endpoints
-        self.base_url = (
-            getattr(self.settings, "BITFINEX_PUBLIC_API_URL", None)
-            or self.settings.BITFINEX_API_URL
-        )
+        self.base_url = getattr(self.settings, "BITFINEX_PUBLIC_API_URL", None) or self.settings.BITFINEX_API_URL
         # Delad HTTP-klient för bättre prestanda - ANVÄNDER NU GLOBAL KLIENT
         # Global concurrency cap för publika REST-anrop
         try:
@@ -97,9 +95,7 @@ class BitfinexDataService:
             self._public_sems[loop_id] = sem
         return sem
 
-    async def get_candles(
-        self, symbol: str = "tBTCUSD", timeframe: str = "1m", limit: int = 100
-    ) -> list[list] | None:
+    async def get_candles(self, symbol: str = "tBTCUSD", timeframe: str = "1m", limit: int = 100) -> list[list] | None:
         """
         Hämtar candlestick-data från Bitfinex.
 
@@ -149,12 +145,10 @@ class BitfinexDataService:
                     # Circuit breaker + limiter
                     try:
                         endpoint_label = f"candles/{symbol}"
-                        if hasattr(
-                            self.rate_limiter, "can_request"
-                        ) and not self.rate_limiter.can_request(endpoint_label):
-                            wait = float(
-                                self.rate_limiter.time_until_open(endpoint_label)
-                            )
+                        if hasattr(self.rate_limiter, "can_request") and not self.rate_limiter.can_request(
+                            endpoint_label
+                        ):
+                            wait = float(self.rate_limiter.time_until_open(endpoint_label))
                             await asyncio.sleep(max(0.0, wait))
                         await self.rate_limiter.wait_if_needed("candles")
                     except Exception:
@@ -189,9 +183,7 @@ class BitfinexDataService:
                                 cooldown = self.rate_limiter.note_failure(
                                     "candles", int(response.status_code), retry_after
                                 )
-                                logger.warning(
-                                    f"CB öppnad för candles i {cooldown:.1f}s"
-                                )
+                                logger.warning(f"CB öppnad för candles i {cooldown:.1f}s")
                             # Toggle transport CB metric on failure
                             try:
                                 from services.metrics import metrics_store
@@ -243,8 +235,7 @@ class BitfinexDataService:
                             ra_sec = 0.0
                         delay = max(
                             ra_sec,
-                            min(backoff_max, backoff_base * (2**attempt))
-                            + random.uniform(0, 0.1),
+                            min(backoff_max, backoff_base * (2**attempt)) + random.uniform(0, 0.1),
                         )
                         await asyncio.sleep(delay)
                         continue
@@ -285,9 +276,7 @@ class BitfinexDataService:
                     _NOT_LISTED_SEEN[eff_symbol] = now_ts
                 return None
             # Enkel TTL‑cache för ticker (per eff_symbol)
-            _ttl = max(
-                int(getattr(self.settings, "TICKER_CACHE_TTL_SECS", 10) or 10), 1
-            )
+            _ttl = max(int(getattr(self.settings, "TICKER_CACHE_TTL_SECS", 10) or 10), 1)
             cache_key = f"ticker::{eff_symbol}"
             entry = _TICKER_CACHE.get(cache_key)
             now = time.time()
@@ -306,12 +295,8 @@ class BitfinexDataService:
 
             # 0) Om WS har färsk ticker för eff_symbol, använd den och hoppa REST
             try:
-                ws_stale_secs = int(
-                    getattr(self.settings, "WS_TICKER_STALE_SECS", 10) or 10
-                )
-                ws_warmup_ms = int(
-                    getattr(self.settings, "WS_TICKER_WARMUP_MS", 400) or 400
-                )
+                ws_stale_secs = int(getattr(self.settings, "WS_TICKER_STALE_SECS", 10) or 10)
+                ws_warmup_ms = int(getattr(self.settings, "WS_TICKER_WARMUP_MS", 400) or 400)
                 # använd last_tick_ts om tillgängligt
                 import time as _t
 
@@ -322,9 +307,7 @@ class BitfinexDataService:
                 # DEBUG: Logga WebSocket-status
                 ws_connected = getattr(bitfinex_ws, "is_connected", False)
                 ws_has_attr = hasattr(bitfinex_ws, "_last_tick_ts")
-                logger.debug(
-                    f"🔍 WS-status för {symbol}: connected={ws_connected}, has_attr={ws_has_attr}"
-                )
+                logger.debug(f"🔍 WS-status för {symbol}: connected={ws_connected}, has_attr={ws_has_attr}")
 
                 for s in cand_syms:
                     if hasattr(bitfinex_ws, "_last_tick_ts"):
@@ -336,17 +319,11 @@ class BitfinexDataService:
                 # DEBUG: Logga vad vi hittade
                 if last_ts:
                     age_secs = _t.time() - float(last_ts)
-                    logger.debug(
-                        f"📡 WS-data för {symbol}: age={age_secs:.1f}s, price={last_price}"
-                    )
+                    logger.debug(f"📡 WS-data för {symbol}: age={age_secs:.1f}s, price={last_price}")
                 else:
                     logger.debug(f"❌ Ingen WS-data för {symbol}")
 
-                if (
-                    last_ts
-                    and (_t.time() - float(last_ts)) <= ws_stale_secs
-                    and last_price is not None
-                ):
+                if last_ts and (_t.time() - float(last_ts)) <= ws_stale_secs and last_price is not None:
                     logger.info(f"✅ Använder färsk WS-data för {symbol}: {last_price}")
                     # Fyll från senaste fulla WS‑ticker-frame om tillgänglig
                     bid = None
@@ -378,56 +355,32 @@ class BitfinexDataService:
                 # 0b) Auto-subscribe om inte färsk WS-data och vi inte redan sub:at
                 try:
                     sub_key = f"ticker|{eff_symbol}"
-                    already_subscribed = sub_key in getattr(
-                        bitfinex_ws, "subscriptions", {}
-                    )
-                    logger.debug(
-                        f"🔍 WS-subscription för {symbol}: already_subscribed={already_subscribed}"
-                    )
+                    already_subscribed = sub_key in getattr(bitfinex_ws, "subscriptions", {})
+                    logger.debug(f"🔍 WS-subscription för {symbol}: already_subscribed={already_subscribed}")
 
                     if not already_subscribed:
-                        logger.info(
-                            f"📡 Auto-subscribing till WS ticker för {eff_symbol}"
-                        )
+                        logger.info(f"📡 Auto-subscribing till WS ticker för {eff_symbol}")
                         # registrera strategi/ticker-callback om inte finns
-                        if eff_symbol not in getattr(
-                            bitfinex_ws, "strategy_callbacks", {}
-                        ):
-                            bitfinex_ws.strategy_callbacks[eff_symbol] = (
-                                bitfinex_ws._handle_ticker_with_strategy
-                            )
-                        await bitfinex_ws.subscribe_ticker(
-                            eff_symbol, bitfinex_ws._handle_ticker_with_strategy
-                        )
+                        if eff_symbol not in getattr(bitfinex_ws, "strategy_callbacks", {}):
+                            bitfinex_ws.strategy_callbacks[eff_symbol] = bitfinex_ws._handle_ticker_with_strategy
+                        await bitfinex_ws.subscribe_ticker(eff_symbol, bitfinex_ws._handle_ticker_with_strategy)
                         # Vänta kort på första tick innan REST-fallback
                         warmup_deadline = _t.time() + (ws_warmup_ms / 1000.0)
-                        logger.debug(
-                            f"⏳ Väntar på WS-data för {symbol} i {ws_warmup_ms}ms"
-                        )
+                        logger.debug(f"⏳ Väntar på WS-data för {symbol} i {ws_warmup_ms}ms")
                         while _t.time() < warmup_deadline:
                             last_ts = None
                             last_price = None
                             for s in cand_syms:
-                                last_ts = getattr(bitfinex_ws, "_last_tick_ts", {}).get(
-                                    s
-                                )
+                                last_ts = getattr(bitfinex_ws, "_last_tick_ts", {}).get(s)
                                 if last_ts:
                                     last_price = bitfinex_ws.latest_prices.get(s)
                                     break
-                            if (
-                                last_ts
-                                and (_t.time() - float(last_ts)) <= ws_stale_secs
-                                and last_price is not None
-                            ):
-                                logger.info(
-                                    f"✅ Fick WS-data för {symbol} under warmup: {last_price}"
-                                )
+                            if last_ts and (_t.time() - float(last_ts)) <= ws_stale_secs and last_price is not None:
+                                logger.info(f"✅ Fick WS-data för {symbol} under warmup: {last_price}")
                                 frame = None
                                 bid = ask = high = low = volume = None
                                 for s in cand_syms:
-                                    frame = getattr(
-                                        bitfinex_ws, "latest_ticker_frames", {}
-                                    ).get(s)
+                                    frame = getattr(bitfinex_ws, "latest_ticker_frames", {}).get(s)
                                     if frame:
                                         break
                                 if isinstance(frame, dict):
@@ -446,13 +399,9 @@ class BitfinexDataService:
                                     "volume": volume,
                                 }
                             await asyncio.sleep(0.05)
-                        logger.debug(
-                            f"⏰ WS warmup timeout för {symbol}, fallback till REST"
-                        )
+                        logger.debug(f"⏰ WS warmup timeout för {symbol}, fallback till REST")
                 except Exception as e:
-                    logger.warning(
-                        f"⚠️ WS auto-subscribe misslyckades för {symbol}: {e}"
-                    )
+                    logger.warning(f"⚠️ WS auto-subscribe misslyckades för {symbol}: {e}")
             except Exception as e:
                 logger.warning(f"⚠️ WS-logik misslyckades för {symbol}: {e}")
 
@@ -485,17 +434,13 @@ class BitfinexDataService:
 
                 for attempt in range(retries + 1):
                     try:
-                        logger.info(
-                            f"🌐 REST API: Hämtar ticker från {url} (WS-fallback för {symbol})"
-                        )
+                        logger.info(f"🌐 REST API: Hämtar ticker från {url} (WS-fallback för {symbol})")
                         # Circuit breaker + limiter
                         try:
-                            if hasattr(
-                                self.rate_limiter, "can_request"
-                            ) and not self.rate_limiter.can_request("ticker"):
-                                wait = float(
-                                    self.rate_limiter.time_until_open("ticker")
-                                )
+                            if hasattr(self.rate_limiter, "can_request") and not self.rate_limiter.can_request(
+                                "ticker"
+                            ):
+                                wait = float(self.rate_limiter.time_until_open("ticker"))
                                 await asyncio.sleep(max(0.0, wait))
                             await self.rate_limiter.wait_if_needed("ticker")
                         except Exception:
@@ -530,16 +475,12 @@ class BitfinexDataService:
                                         int(response.status_code),
                                         retry_after,
                                     )
-                                    logger.warning(
-                                        f"CB öppnad för ticker i {cooldown:.1f}s"
-                                    )
+                                    logger.warning(f"CB öppnad för ticker i {cooldown:.1f}s")
                                 # Toggle transport CB metric on failure
                                 try:
                                     from services.metrics import metrics_store
 
-                                    metrics_store[
-                                        "transport_circuit_breaker_active"
-                                    ] = 1
+                                    metrics_store["transport_circuit_breaker_active"] = 1
                                 except Exception:
                                     pass
                                 await self.rate_limiter.handle_server_busy("ticker")
@@ -606,8 +547,7 @@ class BitfinexDataService:
                                 ra_sec = 0.0
                             delay = max(
                                 ra_sec,
-                                min(backoff_max, backoff_base * (2**attempt))
-                                + random.uniform(0, 0.1),
+                                min(backoff_max, backoff_base * (2**attempt)) + random.uniform(0, 0.1),
                             )
                             await asyncio.sleep(delay)
                             continue
@@ -644,9 +584,7 @@ class BitfinexDataService:
                 try:
                     logger.info("🌐 REST API: Hämtar tickers (batch)")
                     try:
-                        if hasattr(
-                            self.rate_limiter, "can_request"
-                        ) and not self.rate_limiter.can_request("tickers"):
+                        if hasattr(self.rate_limiter, "can_request") and not self.rate_limiter.can_request("tickers"):
                             wait = float(self.rate_limiter.time_until_open("tickers"))
                             await asyncio.sleep(max(0.0, wait))
                         await self.rate_limiter.wait_if_needed("tickers")
@@ -658,12 +596,8 @@ class BitfinexDataService:
                         try:
                             retry_after = resp.headers.get("Retry-After")
                             if hasattr(self.rate_limiter, "note_failure"):
-                                cooldown = self.rate_limiter.note_failure(
-                                    "tickers", int(resp.status_code), retry_after
-                                )
-                                logger.warning(
-                                    f"CB öppnad för tickers i {cooldown:.1f}s"
-                                )
+                                cooldown = self.rate_limiter.note_failure("tickers", int(resp.status_code), retry_after)
+                                logger.warning(f"CB öppnad för tickers i {cooldown:.1f}s")
                             await self.rate_limiter.handle_server_busy("tickers")
                         except Exception:
                             pass
@@ -692,10 +626,7 @@ class BitfinexDataService:
                             }
                             # Om WS inte levererar ännu, fyll latest_prices som snapshot
                             try:
-                                if (
-                                    out["last_price"] is not None
-                                    and sy not in bitfinex_ws.latest_prices
-                                ):
+                                if out["last_price"] is not None and sy not in bitfinex_ws.latest_prices:
                                     bitfinex_ws.latest_prices[sy] = out["last_price"]
                             except Exception:
                                 pass
@@ -712,18 +643,13 @@ class BitfinexDataService:
                     last_exc = e
                     if attempt < retries:
                         try:
-                            ra = (
-                                resp.headers.get("Retry-After")
-                                if "resp" in locals() and resp is not None
-                                else None
-                            )
+                            ra = resp.headers.get("Retry-After") if "resp" in locals() and resp is not None else None
                             ra_sec = float(ra) if ra is not None else 0.0
                         except Exception:
                             ra_sec = 0.0
                         delay = max(
                             ra_sec,
-                            min(backoff_max, backoff_base * (2**attempt))
-                            + random.uniform(0, 0.1),
+                            min(backoff_max, backoff_base * (2**attempt)) + random.uniform(0, 0.1),
                         )
                         await asyncio.sleep(delay)
                         continue
@@ -851,12 +777,7 @@ class BitfinexDataService:
             # Förväntat format: [[ [RAW, API], [RAW, API], ... ]]
             if isinstance(data, list) and data and isinstance(data[0], list):
                 for row in data[0]:
-                    if (
-                        isinstance(row, list)
-                        and len(row) >= 2
-                        and isinstance(row[0], str)
-                        and isinstance(row[1], str)
-                    ):
+                    if isinstance(row, list) and len(row) >= 2 and isinstance(row[0], str) and isinstance(row[1], str):
                         raw = row[0].upper()
                         api = row[1].upper()
                         fwd[raw] = api
@@ -918,17 +839,13 @@ class BitfinexDataService:
                     try:
                         resp = await aget(url, params=params)
                         if resp.status_code in (429, 500, 502, 503, 504):
-                            raise httpx.HTTPStatusError(
-                                "server busy", request=resp.request, response=resp
-                            )
+                            raise httpx.HTTPStatusError("server busy", request=resp.request, response=resp)
                         candles = resp.json() or []
                         break
                     except Exception as e:
                         last_exc = e
                         if attempt < retries:
-                            delay = min(
-                                backoff_max, backoff_base * (2**attempt)
-                            ) + random.uniform(0, 0.1)
+                            delay = min(backoff_max, backoff_base * (2**attempt)) + random.uniform(0, 0.1)
                             await asyncio.sleep(delay)
                             continue
                         break
@@ -950,9 +867,7 @@ class BitfinexDataService:
                 end_param = oldest_in_batch - 1
                 # Paus mellan batcher för att inte överlasta
                 try:
-                    sleep_ms = int(
-                        getattr(self.settings, "BACKFILL_BATCH_SLEEP_MS", 300) or 300
-                    )
+                    sleep_ms = int(getattr(self.settings, "BACKFILL_BATCH_SLEEP_MS", 300) or 300)
                 except Exception:
                     sleep_ms = 300
                 await asyncio.sleep(max(0.0, sleep_ms / 1000.0))
@@ -961,9 +876,7 @@ class BitfinexDataService:
             logger.warning("Backfill fel: %s", e)
             return 0
 
-    def parse_candles_to_strategy_data(
-        self, candles: list[list]
-    ) -> dict[str, list[float]]:
+    def parse_candles_to_strategy_data(self, candles: list[list]) -> dict[str, list[float]]:
         """
         Konverterar candlestick-data till format för strategiutvärdering.
 

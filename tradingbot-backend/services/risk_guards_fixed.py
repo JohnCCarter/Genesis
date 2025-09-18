@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 from typing import Any
 import services.runtime_config as rc
 
-from config.settings import settings
+from config.settings import settings, Settings
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -29,9 +29,7 @@ class RiskGuardsService:
 
     def __init__(self, settings_override: Settings | None = None):
         self.settings = settings_override or settings
-        self.guards_file = os.path.join(
-            os.path.dirname(os.path.dirname(__file__)), "config", "risk_guards.json"
-        )
+        self.guards_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config", "risk_guards.json")
         self.guards = self._load_guards()
 
     def _load_guards(self) -> dict[str, Any]:
@@ -102,9 +100,7 @@ class RiskGuardsService:
                     equity_data = await perf_service.compute_current_equity()
                     return equity_data.get("total_usd", 0.0)
                 except Exception as e:
-                    logger.warning(
-                        f"⚠️ Kunde inte hämta equity från PerformanceService: {e}"
-                    )
+                    logger.warning(f"⚠️ Kunde inte hämta equity från PerformanceService: {e}")
                     return 0.0
 
             # Kör async funktion med timeout
@@ -146,18 +142,14 @@ class RiskGuardsService:
     def check_max_daily_loss(self) -> tuple[bool, str | None]:
         """Kontrollera max daily loss."""
         try:
-            if not rc.get_bool(
-                "RISK_ENABLED", getattr(self.settings, "RISK_ENABLED", True)
-            ):
+            if not rc.get_bool("RISK_ENABLED", getattr(self.settings, "RISK_ENABLED", True)):
                 return False, None
         except Exception:
             pass
 
         guard = self.guards["max_daily_loss"]
 
-        if guard.get("daily_start_equity") is not None and not guard.get(
-            "daily_start_date"
-        ):
+        if guard.get("daily_start_equity") is not None and not guard.get("daily_start_date"):
             guard["daily_start_date"] = datetime.now().date().isoformat()
             if guard.get("triggered"):
                 guard["triggered"] = False
@@ -173,12 +165,8 @@ class RiskGuardsService:
         daily_loss_pct_early: float | None = None
         if start_equity_early and start_equity_early > 0:
             current_equity_early = self._get_current_equity()
-            daily_loss_pct_early = (
-                (start_equity_early - current_equity_early) / start_equity_early
-            ) * 100
-        if daily_loss_pct_early is not None and daily_loss_pct_early < guard.get(
-            "percentage", 0
-        ):
+            daily_loss_pct_early = ((start_equity_early - current_equity_early) / start_equity_early) * 100
+        if daily_loss_pct_early is not None and daily_loss_pct_early < guard.get("percentage", 0):
             if guard.get("triggered"):
                 guard["triggered"] = False
                 guard["triggered_at"] = None
@@ -186,15 +174,13 @@ class RiskGuardsService:
             return False, None
 
         # If above threshold, signal breach regardless of existing cooldown
-        if daily_loss_pct_early is not None and daily_loss_pct_early >= guard.get(
-            "percentage", 0
-        ):
+        if daily_loss_pct_early is not None and daily_loss_pct_early >= guard.get("percentage", 0):
             if not guard.get("triggered"):
                 guard["triggered"] = True
                 guard["triggered_at"] = datetime.now().isoformat()
-                guard["reason"] = (
-                    f"Daglig förlust {daily_loss_pct_early:.2f}% över threshold {guard.get('percentage', 0)}%"
-                )
+                guard[
+                    "reason"
+                ] = f"Daglig förlust {daily_loss_pct_early:.2f}% över threshold {guard.get('percentage', 0)}%"
                 self._save_guards(self.guards)
                 logger.warning(f"🚨 Max daily loss aktiverat: {guard['reason']}")
             return True, guard["reason"]
@@ -204,9 +190,7 @@ class RiskGuardsService:
     def check_kill_switch(self) -> tuple[bool, str | None]:
         """Kontrollera kill switch."""
         try:
-            if not rc.get_bool(
-                "RISK_ENABLED", getattr(self.settings, "RISK_ENABLED", True)
-            ):
+            if not rc.get_bool("RISK_ENABLED", getattr(self.settings, "RISK_ENABLED", True)):
                 return False, None
         except Exception:
             pass
@@ -224,24 +208,20 @@ class RiskGuardsService:
             if not guard.get("triggered"):
                 guard["triggered"] = True
                 guard["triggered_at"] = datetime.now().isoformat()
-                guard["reason"] = (
-                    f"Drawdown {drawdown_pct:.2f}% över threshold {guard.get('max_drawdown_percentage', 0)}%"
-                )
+                guard[
+                    "reason"
+                ] = f"Drawdown {drawdown_pct:.2f}% över threshold {guard.get('max_drawdown_percentage', 0)}%"
                 self._save_guards(self.guards)
                 logger.warning(f"🚨 Kill switch aktiverat: {guard['reason']}")
             return True, guard["reason"]
 
         return False, None
 
-    def check_exposure_limits(
-        self, symbol: str, amount: float, price: float
-    ) -> tuple[bool, str | None]:
+    def check_exposure_limits(self, symbol: str, amount: float, price: float) -> tuple[bool, str | None]:
         _ = symbol  # markera användning för lint
         """Kontrollera exposure limits."""
         try:
-            if not rc.get_bool(
-                "RISK_ENABLED", getattr(self.settings, "RISK_ENABLED", True)
-            ):
+            if not rc.get_bool("RISK_ENABLED", getattr(self.settings, "RISK_ENABLED", True)):
                 return False, None
         except Exception:
             pass
@@ -268,9 +248,7 @@ class RiskGuardsService:
         _ = symbol  # markera användning för lint
         """Kontrollera volatility guards."""
         try:
-            if not rc.get_bool(
-                "RISK_ENABLED", getattr(self.settings, "RISK_ENABLED", True)
-            ):
+            if not rc.get_bool("RISK_ENABLED", getattr(self.settings, "RISK_ENABLED", True)):
                 return False, None
         except Exception:
             pass
@@ -302,9 +280,7 @@ class RiskGuardsService:
 
             # Exposure limits
             if amount is not None and price is not None:
-                blocked, reason = self.check_exposure_limits(
-                    symbol or "", amount, price
-                )
+                blocked, reason = self.check_exposure_limits(symbol or "", amount, price)
                 if blocked:
                     return True, reason
 
@@ -348,9 +324,7 @@ class RiskGuardsService:
                 daily_loss_pct = ((start_equity - current_equity) / start_equity) * 100
 
             # Beräkna drawdown
-            drawdown_pct = (
-                daily_loss_pct  # Förenklad - i verkligheten skulle detta vara från peak
-            )
+            drawdown_pct = daily_loss_pct  # Förenklad - i verkligheten skulle detta vara från peak
 
             status = {
                 "current_equity": current_equity,

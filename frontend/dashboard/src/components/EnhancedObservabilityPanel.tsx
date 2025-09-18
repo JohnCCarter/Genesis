@@ -144,9 +144,9 @@ export function EnhancedObservabilityPanel() {
             )}
 
             {/* Övergripande hälsa */}
-            <div style={{ 
-                padding: 12, 
-                background: '#f6f8fa', 
+            <div style={{
+                padding: 12,
+                background: '#f6f8fa',
                 borderRadius: 6,
                 border: '1px solid #e1e4e8',
                 marginBottom: 16
@@ -154,29 +154,29 @@ export function EnhancedObservabilityPanel() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
                         <div style={{ fontSize: 16, fontWeight: 'bold' }}>
-                            {getHealthIcon(metrics.summary.overall_health)} 
+                            {getHealthIcon(metrics.summary.overall_health)}
                             Övergripande Hälsa: {metrics.summary.overall_health.toUpperCase()}
                         </div>
                         <div style={{ fontSize: 12, color: '#555' }}>
                             Senaste uppdatering: {lastUpdate ? lastUpdate.toLocaleTimeString() : '-'}
                         </div>
                     </div>
-                    <div style={{ 
-                        fontSize: 12, 
+                    <div style={{
+                        fontSize: 12,
                         color: getHealthColor(metrics.summary.overall_health),
                         fontWeight: 'bold'
                     }}>
                         {metrics.summary.critical_alerts.length} alerts
                     </div>
                 </div>
-                
+
                 {metrics.summary.critical_alerts.length > 0 && (
                     <div style={{ marginTop: 8 }}>
                         <div style={{ fontSize: 12, fontWeight: 'bold', marginBottom: 4 }}>Kritiska Alerts:</div>
                         {metrics.summary.critical_alerts.map((alert, index) => (
-                            <div key={index} style={{ 
-                                fontSize: 11, 
-                                color: '#dc3545', 
+                            <div key={index} style={{
+                                fontSize: 11,
+                                color: '#dc3545',
                                 padding: '2px 0',
                                 borderLeft: '3px solid #dc3545',
                                 paddingLeft: 8
@@ -191,15 +191,15 @@ export function EnhancedObservabilityPanel() {
             {/* System Metrics */}
             <div style={{ marginBottom: 16 }}>
                 <h4 style={{ margin: '0 0 8px' }}>🖥️ System Resurser</h4>
-                <div style={{ 
-                    display: 'grid', 
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+                <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
                     gap: 8,
                     fontSize: 12
                 }}>
-                    <div style={{ 
-                        padding: 8, 
-                        background: '#f6f8fa', 
+                    <div style={{
+                        padding: 8,
+                        background: '#f6f8fa',
                         borderRadius: 4,
                         border: '1px solid #e1e4e8'
                     }}>
@@ -208,9 +208,9 @@ export function EnhancedObservabilityPanel() {
                             {formatNumber(metrics.system.cpu_percent)}%
                         </div>
                     </div>
-                    <div style={{ 
-                        padding: 8, 
-                        background: '#f6f8fa', 
+                    <div style={{
+                        padding: 8,
+                        background: '#f6f8fa',
                         borderRadius: 4,
                         border: '1px solid #e1e4e8'
                     }}>
@@ -219,9 +219,9 @@ export function EnhancedObservabilityPanel() {
                             {formatNumber(metrics.system.memory_percent)}% ({formatNumber(metrics.system.memory_used_gb)} GB)
                         </div>
                     </div>
-                    <div style={{ 
-                        padding: 8, 
-                        background: '#f6f8fa', 
+                    <div style={{
+                        padding: 8,
+                        background: '#f6f8fa',
                         borderRadius: 4,
                         border: '1px solid #e1e4e8'
                     }}>
@@ -230,9 +230,9 @@ export function EnhancedObservabilityPanel() {
                             {formatNumber(metrics.system.disk_percent)}% ({formatNumber(metrics.system.disk_used_gb)} GB)
                         </div>
                     </div>
-                    <div style={{ 
-                        padding: 8, 
-                        background: '#f6f8fa', 
+                    <div style={{
+                        padding: 8,
+                        background: '#f6f8fa',
                         borderRadius: 4,
                         border: '1px solid #e1e4e8'
                     }}>
@@ -247,15 +247,15 @@ export function EnhancedObservabilityPanel() {
             {/* Exchange Metrics */}
             <div style={{ marginBottom: 16 }}>
                 <h4 style={{ margin: '0 0 8px' }}>📡 Exchange API</h4>
-                <div style={{ 
-                    display: 'grid', 
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', 
+                <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
                     gap: 8,
                     fontSize: 12
                 }}>
-                    <div style={{ 
-                        padding: 8, 
-                        background: '#f6f8fa', 
+                    <div style={{
+                        padding: 8,
+                        background: '#f6f8fa',
                         borderRadius: 4,
                         border: '1px solid #e1e4e8'
                     }}>
@@ -264,9 +264,9 @@ export function EnhancedObservabilityPanel() {
                             {metrics.exchange.total_requests.toLocaleString()}
                         </div>
                     </div>
-                    <div style={{ 
-                        padding: 8, 
-                        background: '#f6f8fa', 
+                    <div style={{
+                        padding: 8,
+                        background: '#f6f8fa',
                         borderRadius: 4,
                         border: '1px solid #e1e4e8'
                     }}>
@@ -275,9 +275,9 @@ export function EnhancedObservabilityPanel() {
                             {formatNumber(metrics.exchange.error_rate_percent)}%
                         </div>
                     </div>
-                    <div style={{ 
-                        padding: 8, 
-                        background: '#f6f8fa', 
+                    <div style={{
+                        padding: 8,
+                        background: '#f6f8fa',
                         borderRadius: 4,
                         border: '1px solid #e1e4e8'
                     }}>
@@ -286,9 +286,9 @@ export function EnhancedObservabilityPanel() {
                             {formatNumber(metrics.exchange.average_latency_ms)} ms
                         </div>
                     </div>
-                    <div style={{ 
-                        padding: 8, 
-                        background: '#f6f8fa', 
+                    <div style={{
+                        padding: 8,
+                        background: '#f6f8fa',
                         borderRadius: 4,
                         border: '1px solid #e1e4e8'
                     }}>
@@ -297,9 +297,9 @@ export function EnhancedObservabilityPanel() {
                             {formatNumber(metrics.exchange.p95_latency_ms)} ms
                         </div>
                     </div>
-                    <div style={{ 
-                        padding: 8, 
-                        background: '#f6f8fa', 
+                    <div style={{
+                        padding: 8,
+                        background: '#f6f8fa',
                         borderRadius: 4,
                         border: '1px solid #e1e4e8'
                     }}>
@@ -314,15 +314,15 @@ export function EnhancedObservabilityPanel() {
             {/* Trading Metrics */}
             <div style={{ marginBottom: 16 }}>
                 <h4 style={{ margin: '0 0 8px' }}>💰 Trading</h4>
-                <div style={{ 
-                    display: 'grid', 
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', 
+                <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
                     gap: 8,
                     fontSize: 12
                 }}>
-                    <div style={{ 
-                        padding: 8, 
-                        background: '#f6f8fa', 
+                    <div style={{
+                        padding: 8,
+                        background: '#f6f8fa',
                         borderRadius: 4,
                         border: '1px solid #e1e4e8'
                     }}>
@@ -331,9 +331,9 @@ export function EnhancedObservabilityPanel() {
                             {metrics.trading.total_orders.toLocaleString()}
                         </div>
                     </div>
-                    <div style={{ 
-                        padding: 8, 
-                        background: '#f6f8fa', 
+                    <div style={{
+                        padding: 8,
+                        background: '#f6f8fa',
                         borderRadius: 4,
                         border: '1px solid #e1e4e8'
                     }}>
@@ -342,9 +342,9 @@ export function EnhancedObservabilityPanel() {
                             {formatNumber(metrics.trading.order_success_rate)}%
                         </div>
                     </div>
-                    <div style={{ 
-                        padding: 8, 
-                        background: '#f6f8fa', 
+                    <div style={{
+                        padding: 8,
+                        background: '#f6f8fa',
                         borderRadius: 4,
                         border: '1px solid #e1e4e8'
                     }}>
@@ -353,9 +353,9 @@ export function EnhancedObservabilityPanel() {
                             {formatNumber(metrics.trading.average_order_latency_ms)} ms
                         </div>
                     </div>
-                    <div style={{ 
-                        padding: 8, 
-                        background: '#f6f8fa', 
+                    <div style={{
+                        padding: 8,
+                        background: '#f6f8fa',
                         borderRadius: 4,
                         border: '1px solid #e1e4e8'
                     }}>
@@ -370,15 +370,15 @@ export function EnhancedObservabilityPanel() {
             {/* WebSocket Metrics */}
             <div style={{ marginBottom: 16 }}>
                 <h4 style={{ margin: '0 0 8px' }}>🔌 WebSocket</h4>
-                <div style={{ 
-                    display: 'grid', 
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', 
+                <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
                     gap: 8,
                     fontSize: 12
                 }}>
-                    <div style={{ 
-                        padding: 8, 
-                        background: '#f6f8fa', 
+                    <div style={{
+                        padding: 8,
+                        background: '#f6f8fa',
                         borderRadius: 4,
                         border: '1px solid #e1e4e8'
                     }}>
@@ -387,9 +387,9 @@ export function EnhancedObservabilityPanel() {
                             {metrics.websocket.connected_sockets}/{metrics.websocket.max_sockets}
                         </div>
                     </div>
-                    <div style={{ 
-                        padding: 8, 
-                        background: '#f6f8fa', 
+                    <div style={{
+                        padding: 8,
+                        background: '#f6f8fa',
                         borderRadius: 4,
                         border: '1px solid #e1e4e8'
                     }}>
@@ -398,9 +398,9 @@ export function EnhancedObservabilityPanel() {
                             {metrics.websocket.active_subscriptions}/{metrics.websocket.max_subscriptions}
                         </div>
                     </div>
-                    <div style={{ 
-                        padding: 8, 
-                        background: '#f6f8fa', 
+                    <div style={{
+                        padding: 8,
+                        background: '#f6f8fa',
                         borderRadius: 4,
                         border: '1px solid #e1e4e8'
                     }}>
@@ -409,9 +409,9 @@ export function EnhancedObservabilityPanel() {
                             {formatNumber(metrics.websocket.messages_per_second)}
                         </div>
                     </div>
-                    <div style={{ 
-                        padding: 8, 
-                        background: '#f6f8fa', 
+                    <div style={{
+                        padding: 8,
+                        background: '#f6f8fa',
                         borderRadius: 4,
                         border: '1px solid #e1e4e8'
                     }}>
@@ -426,20 +426,20 @@ export function EnhancedObservabilityPanel() {
             {/* Circuit Breaker Status */}
             <div>
                 <h4 style={{ margin: '0 0 8px' }}>⚡ Circuit Breakers</h4>
-                <div style={{ 
-                    display: 'grid', 
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+                <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
                     gap: 8,
                     fontSize: 12
                 }}>
-                    <div style={{ 
-                        padding: 8, 
-                        background: metrics.circuit_breaker.trading_open ? '#ffebe9' : '#f6f8fa', 
+                    <div style={{
+                        padding: 8,
+                        background: metrics.circuit_breaker.trading_open ? '#ffebe9' : '#f6f8fa',
                         borderRadius: 4,
                         border: `1px solid ${metrics.circuit_breaker.trading_open ? '#dc3545' : '#e1e4e8'}`
                     }}>
                         <div style={{ fontWeight: 'bold' }}>Trading Circuit Breaker</div>
-                        <div style={{ 
+                        <div style={{
                             color: metrics.circuit_breaker.trading_open ? '#dc3545' : '#28a745',
                             fontWeight: 'bold'
                         }}>
@@ -449,14 +449,14 @@ export function EnhancedObservabilityPanel() {
                             Fel: {metrics.circuit_breaker.trading_errors_count}
                         </div>
                     </div>
-                    <div style={{ 
-                        padding: 8, 
-                        background: metrics.circuit_breaker.transport_open ? '#ffebe9' : '#f6f8fa', 
+                    <div style={{
+                        padding: 8,
+                        background: metrics.circuit_breaker.transport_open ? '#ffebe9' : '#f6f8fa',
                         borderRadius: 4,
                         border: `1px solid ${metrics.circuit_breaker.transport_open ? '#dc3545' : '#e1e4e8'}`
                     }}>
                         <div style={{ fontWeight: 'bold' }}>Transport Circuit Breaker</div>
-                        <div style={{ 
+                        <div style={{
                             color: metrics.circuit_breaker.transport_open ? '#dc3545' : '#28a745',
                             fontWeight: 'bold'
                         }}>

@@ -18,12 +18,8 @@ def test_trade_constraints_blocks_on_symbol_daily_limit(monkeypatch):
     monkeypatch.setattr(svc.trading_window, "is_paused", lambda: False)
     monkeypatch.setattr(svc.trading_window, "is_open", lambda: True)
     # set per-symbol limit = 1 and stats show already 1
-    monkeypatch.setattr(
-        svc.trading_window, "get_limits", lambda: {"max_trades_per_symbol_per_day": 1}
-    )
-    monkeypatch.setattr(
-        svc.trade_counter, "stats", lambda: {"per_symbol": {"TBTCUSD": 1}}
-    )
+    monkeypatch.setattr(svc.trading_window, "get_limits", lambda: {"max_trades_per_symbol_per_day": 1})
+    monkeypatch.setattr(svc.trade_counter, "stats", lambda: {"per_symbol": {"TBTCUSD": 1}})
     res = svc.check(symbol="tBTCUSD")
     assert not res.allowed
     assert res.reason == "symbol_daily_trade_limit_reached"
@@ -33,9 +29,7 @@ def test_trade_constraints_passes_and_records(monkeypatch):
     svc = TradeConstraintsService(Settings())
     monkeypatch.setattr(svc.trading_window, "is_paused", lambda: False)
     monkeypatch.setattr(svc.trading_window, "is_open", lambda: True)
-    monkeypatch.setattr(
-        svc.trading_window, "get_limits", lambda: {"max_trades_per_symbol_per_day": 0}
-    )
+    monkeypatch.setattr(svc.trading_window, "get_limits", lambda: {"max_trades_per_symbol_per_day": 0})
     monkeypatch.setattr(svc.trade_counter, "can_execute", lambda: True)
 
     res = svc.check(symbol="tETHUSD")

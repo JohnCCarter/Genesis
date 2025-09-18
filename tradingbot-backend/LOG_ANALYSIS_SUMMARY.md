@@ -70,7 +70,7 @@ python -m uvicorn main:app --host 127.0.0.1 --port 8000 --reload
 
 ## 🎉 **Sammanfattning:**
 
-**Dina hängningsproblem är nu helt lösta!** 
+**Dina hängningsproblem är nu helt lösta!**
 
 RiskGuardsService var huvudorsaken till hängningarna. Nu fungerar den utan problem och backend-servern kommer inte att hänga längre.
 

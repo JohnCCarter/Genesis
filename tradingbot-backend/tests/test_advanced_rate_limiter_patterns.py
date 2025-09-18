@@ -15,24 +15,14 @@ def test_rate_limit_patterns_classification(monkeypatch):
     s = Settings()
     limiter = AdvancedRateLimiter(settings=s)
 
-    assert (
-        limiter._classify_endpoint("auth/w/order/submit")
-        == EndpointType.PRIVATE_TRADING
-    )
-    assert (
-        limiter._classify_endpoint("auth/r/positions") == EndpointType.PRIVATE_ACCOUNT
-    )
+    assert limiter._classify_endpoint("auth/w/order/submit") == EndpointType.PRIVATE_TRADING
+    assert limiter._classify_endpoint("auth/r/positions") == EndpointType.PRIVATE_ACCOUNT
     assert limiter._classify_endpoint("auth/r/wallets") == EndpointType.PRIVATE_ACCOUNT
-    assert (
-        limiter._classify_endpoint("auth/r/info/margin/base")
-        == EndpointType.PRIVATE_MARGIN
-    )
+    assert limiter._classify_endpoint("auth/r/info/margin/base") == EndpointType.PRIVATE_MARGIN
     assert limiter._classify_endpoint("ticker/tBTCUSD") == EndpointType.PUBLIC_MARKET
 
     # Okänd privat läses som PRIVATE_ACCOUNT via default-logik
-    assert (
-        limiter._classify_endpoint("auth/r/info/user") == EndpointType.PRIVATE_ACCOUNT
-    )
+    assert limiter._classify_endpoint("auth/r/info/user") == EndpointType.PRIVATE_ACCOUNT
 
 
 def test_rate_limit_export_metrics(monkeypatch):

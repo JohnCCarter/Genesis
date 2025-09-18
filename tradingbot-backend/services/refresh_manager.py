@@ -104,9 +104,7 @@ class RefreshManager:
             dependencies=dependencies or set(),
         )
 
-        logger.info(
-            f"📋 Panel {panel_id} registrerad (prioritet: {priority.name}, intervall: {interval}s)"
-        )
+        logger.info(f"📋 Panel {panel_id} registrerad (prioritet: {priority.name}, intervall: {interval}s)")
 
     def unregister_panel(self, panel_id: str) -> None:
         """Avregistrera en panel."""
@@ -219,12 +217,7 @@ class RefreshManager:
 
         # Hitta paneler som behöver refresh
         for task in self.tasks.values():
-            if (
-                task.next_run
-                and task.next_run <= now
-                and not task.is_running
-                and task.error_count < task.max_errors
-            ):
+            if task.next_run and task.next_run <= now and not task.is_running and task.error_count < task.max_errors:
                 # Kontrollera dependencies
                 if self._check_dependencies(task):
                     tasks_to_run.append(task)

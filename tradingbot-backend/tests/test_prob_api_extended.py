@@ -22,14 +22,10 @@ async def test_prob_preview_and_trade_block_reasons(monkeypatch):
     monkeypatch.setattr("rest.routes.calculate_position_size", fake_position_size)
 
     client = TestClient(app)
-    pv = client.post(
-        "/api/v2/prob/preview", json={"symbol": "tBTCUSD", "timeframe": "1m"}
-    )
+    pv = client.post("/api/v2/prob/preview", json={"symbol": "tBTCUSD", "timeframe": "1m"})
     assert pv.status_code == 200
     # trade kan blockeras av risk; verifiera ok flagga eller error nyckel
-    tr = client.post(
-        "/api/v2/prob/trade", json={"symbol": "tBTCUSD", "timeframe": "1m"}
-    )
+    tr = client.post("/api/v2/prob/trade", json={"symbol": "tBTCUSD", "timeframe": "1m"})
     assert tr.status_code == 200
     data = tr.json()
     assert "ok" in data

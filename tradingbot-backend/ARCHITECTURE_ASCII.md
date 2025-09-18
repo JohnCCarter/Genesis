@@ -208,7 +208,7 @@
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │                           ARKITEKTURPRINCIPER                                   │
 │                                                                                 │
-│  ✅ INGEN DUBLETTLOGIK                                                         │ 
+│  ✅ INGEN DUBLETTLOGIK                                                         │
 │     • Signering/nonce endast i ExchangeClient                                   │
 │     • WS-first/fallback endast i MarketDataFacade                               │
 │     • Tid/antal/slots endast i TradeConstraintsService                          │

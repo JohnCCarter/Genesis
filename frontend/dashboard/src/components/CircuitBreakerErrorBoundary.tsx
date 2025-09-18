@@ -26,7 +26,7 @@ export class CircuitBreakerErrorBoundary extends Component<Props, State> {
 
   static getDerivedStateFromError(error: Error): Partial<State> {
     const isCircuitBreakerError = error.message.includes('Circuit breaker is OPEN');
-    
+
     return {
       hasError: true,
       error,
@@ -36,7 +36,7 @@ export class CircuitBreakerErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('CircuitBreakerErrorBoundary caught an error:', error, errorInfo);
-    
+
     // Check if it's a circuit breaker error
     if (error.message.includes('Circuit breaker is OPEN')) {
       this.setState({ isCircuitBreakerOpen: true });
@@ -45,17 +45,17 @@ export class CircuitBreakerErrorBoundary extends Component<Props, State> {
 
   handleCheckBackend = async () => {
     this.setState({ isCheckingBackend: true });
-    
+
     try {
       // Reset circuit breaker
       resetCircuitBreaker();
-      
+
       // Wait for reset to take effect
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       // Check if backend is available
       const isBackendOnline = await checkBackendHealth();
-      
+
       if (isBackendOnline) {
         // Backend is back online, reset error state
         this.setState({
@@ -95,13 +95,13 @@ export class CircuitBreakerErrorBoundary extends Component<Props, State> {
                 <p className="text-gray-600 mb-6">
                   The backend server appears to be offline. This could be due to:
                 </p>
-                
+
                 <ul className="text-left text-sm text-gray-600 mb-6 space-y-2">
                   <li>• Backend server is not running</li>
                   <li>• Network connectivity issues</li>
                   <li>• Server is overloaded</li>
                 </ul>
-                
+
                 <div className="space-y-3">
                   <button
                     onClick={this.handleCheckBackend}
@@ -110,7 +110,7 @@ export class CircuitBreakerErrorBoundary extends Component<Props, State> {
                   >
                     {this.state.isCheckingBackend ? 'Checking...' : 'Check Backend'}
                   </button>
-                  
+
                   <button
                     onClick={this.handleRetry}
                     className="w-full px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
@@ -118,7 +118,7 @@ export class CircuitBreakerErrorBoundary extends Component<Props, State> {
                     Retry Anyway
                   </button>
                 </div>
-                
+
                 <div className="mt-4 text-xs text-gray-500">
                   <p>Circuit breaker status: OPEN</p>
                   <p>Failures: {getCircuitBreakerStatus().failureCount}</p>
@@ -128,7 +128,7 @@ export class CircuitBreakerErrorBoundary extends Component<Props, State> {
           </div>
         );
       }
-      
+
       // Other errors
       return this.props.fallback || (
         <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
@@ -141,7 +141,7 @@ export class CircuitBreakerErrorBoundary extends Component<Props, State> {
               <p className="text-gray-600 mb-6">
                 {this.state.error?.message || 'An unexpected error occurred'}
               </p>
-              
+
               <button
                 onClick={this.handleRetry}
                 className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"

@@ -50,7 +50,7 @@ import { useCircuitBreaker } from './lib/useCircuitBreaker';
 
 function MyComponent() {
   const { state, checkBackend, getStatusMessage, canRetry } = useCircuitBreaker();
-  
+
   return (
     <div>
       <p>{getStatusMessage()}</p>
@@ -158,13 +158,13 @@ function App() {
 ```tsx
 function DataComponent() {
   const { state, checkBackend } = useCircuitBreaker();
-  
+
   const fetchData = async () => {
     if (state.isOpen) {
       console.log('Circuit breaker is open, cannot fetch data');
       return;
     }
-    
+
     try {
       const data = await api.get('/api/v2/data');
       // Hantera data
@@ -172,7 +172,7 @@ function DataComponent() {
       // Fel hanteras automatiskt av circuit breaker
     }
   };
-  
+
   return (
     <div>
       {state.isOpen ? (

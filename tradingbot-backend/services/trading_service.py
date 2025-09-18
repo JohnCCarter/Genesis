@@ -45,9 +45,7 @@ class TradingService:
         self._ws_service = ws_service
         logger.info("🔗 WebSocket service kopplad till TradingService")
 
-    async def execute_signal(
-        self, symbol: str, signal: SignalResponse, mode: str = "standard"
-    ) -> dict[str, Any]:
+    async def execute_signal(self, symbol: str, signal: SignalResponse, mode: str = "standard") -> dict[str, Any]:
         """
         Enhetlig trade-execution för alla moduler.
 
@@ -77,9 +75,7 @@ class TradingService:
         else:
             return await self._execute_standard_trade(symbol, signal)
 
-    async def _execute_standard_trade(
-        self, symbol: str, signal: SignalResponse
-    ) -> dict[str, Any]:
+    async def _execute_standard_trade(self, symbol: str, signal: SignalResponse) -> dict[str, Any]:
         """Standard trading via TradingIntegration"""
         try:
             # Konvertera SignalResponse till dict-format för TradingIntegration
@@ -91,9 +87,7 @@ class TradingService:
                 "metadata": signal.metadata or {},
             }
 
-            result = await self._trading_integration.execute_trading_signal(
-                symbol, signal_dict
-            )
+            result = await self._trading_integration.execute_trading_signal(symbol, signal_dict)
 
             # Uppdatera trade-historik
             self._record_trade(symbol, "standard", result)
@@ -108,9 +102,7 @@ class TradingService:
                 "mode": "standard",
             }
 
-    async def _execute_enhanced_trade(
-        self, symbol: str, signal: SignalResponse
-    ) -> dict[str, Any]:
+    async def _execute_enhanced_trade(self, symbol: str, signal: SignalResponse) -> dict[str, Any]:
         """Enhanced trading med position sizing"""
         try:
             # Skapa dummy realtime_result för enhanced trading
@@ -120,9 +112,7 @@ class TradingService:
                 "timestamp": datetime.now(),
             }
 
-            result = await self._enhanced_trader._execute_enhanced_trade(
-                symbol, signal, realtime_result
-            )
+            result = await self._enhanced_trader._execute_enhanced_trade(symbol, signal, realtime_result)
 
             # Uppdatera trade-historik
             self._record_trade(symbol, "enhanced", result)
@@ -137,14 +127,10 @@ class TradingService:
                 "mode": "enhanced",
             }
 
-    async def _execute_realtime_trade(
-        self, symbol: str, signal: SignalResponse
-    ) -> dict[str, Any]:
+    async def _execute_realtime_trade(self, symbol: str, signal: SignalResponse) -> dict[str, Any]:
         """Realtids-trading via WebSocket (om tillgängligt)"""
         if not self._ws_service:
-            logger.warning(
-                "⚠️ WebSocket service inte tillgänglig, fallback till standard"
-            )
+            logger.warning("⚠️ WebSocket service inte tillgänglig, fallback till standard")
             return await self._execute_standard_trade(symbol, signal)
 
         try:
@@ -203,9 +189,7 @@ class TradingService:
         if len(self._trade_history) > 100:
             self._trade_history = self._trade_history[-100:]
 
-    def get_trade_history(
-        self, symbol: str | None = None, limit: int = 50
-    ) -> list[dict[str, Any]]:
+    def get_trade_history(self, symbol: str | None = None, limit: int = 50) -> list[dict[str, Any]]:
         """Hämta trade-historik"""
         history = self._trade_history
 
@@ -226,9 +210,7 @@ class TradingService:
 
         total_trades = len(self._trade_history)
         successful_trades = sum(1 for trade in self._trade_history if trade["success"])
-        success_rate = (
-            (successful_trades / total_trades) * 100 if total_trades > 0 else 0
-        )
+        success_rate = (successful_trades / total_trades) * 100 if total_trades > 0 else 0
 
         return {
             "total_trades": total_trades,
@@ -249,9 +231,7 @@ class TradingService:
     def clear_history(self, symbol: str | None = None):
         """Rensa trade-historik"""
         if symbol:
-            self._trade_history = [
-                trade for trade in self._trade_history if trade["symbol"] != symbol
-            ]
+            self._trade_history = [trade for trade in self._trade_history if trade["symbol"] != symbol]
             self._last_trade_time.pop(symbol, None)
             logger.info(f"🗑️ Trade-historik rensad för {symbol}")
         else:

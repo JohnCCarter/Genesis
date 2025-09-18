@@ -230,9 +230,7 @@ def render_prometheus_text() -> str:
         # defensiv cast
         for m, lm in ctrs_any.items():
             try:
-                lm_typed: dict[str, int] = {
-                    str(k): int(v) for k, v in (lm or {}).items()
-                }
+                lm_typed: dict[str, int] = {str(k): int(v) for k, v in (lm or {}).items()}
             except Exception:
                 lm_typed = {}
             ctrs[str(m)] = lm_typed
@@ -285,9 +283,7 @@ def render_prometheus_text() -> str:
         for key, val in errs.items():
             try:
                 method, path, status = key.split("|", 2)
-                labels = _labels_to_str(
-                    {"path": path, "method": method, "status": status}
-                )
+                labels = _labels_to_str({"path": path, "method": method, "status": status})
                 lines.append(f"tradingbot_http_errors_total{labels} {int(val)}")
             except Exception:
                 continue
@@ -370,28 +366,14 @@ def render_prometheus_text() -> str:
                     if not isinstance(series, list) or not series:
                         continue
                     # Enkelt medel av senaste N (redan trimmas i scheduler)
-                    b_vals = [
-                        float(x.get("brier"))
-                        for x in series
-                        if x.get("brier") is not None
-                    ]
-                    l_vals = [
-                        float(x.get("logloss"))
-                        for x in series
-                        if x.get("logloss") is not None
-                    ]
+                    b_vals = [float(x.get("brier")) for x in series if x.get("brier") is not None]
+                    l_vals = [float(x.get("logloss")) for x in series if x.get("logloss") is not None]
                     labels = _labels_to_str({"window": str(window_key)})
                     if b_vals:
-                        lines.append(
-                            f"tradingbot_prob_brier_window{labels} {sum(b_vals) / max(1, len(b_vals))}"
-                        )
+                        lines.append(f"tradingbot_prob_brier_window{labels} {sum(b_vals) / max(1, len(b_vals))}")
                     if l_vals:
-                        lines.append(
-                            f"tradingbot_prob_logloss_window{labels} {sum(l_vals) / max(1, len(l_vals))}"
-                        )
-                    lines.append(
-                        f"tradingbot_prob_validate_samples_window{labels} {len(series)}"
-                    )
+                        lines.append(f"tradingbot_prob_logloss_window{labels} {sum(l_vals) / max(1, len(l_vals))}")
+                    lines.append(f"tradingbot_prob_validate_samples_window{labels} {len(series)}")
                 except Exception:
                     continue
         except Exception:
@@ -433,9 +415,7 @@ def _quantiles(arr: list[int], ps: list[float]) -> dict[str, int]:
     return out
 
 
-def get_recent_error_counts(
-    window_seconds: int = 3600, statuses: list[int] | None = None
-) -> dict[str, int]:
+def get_recent_error_counts(window_seconds: int = 3600, statuses: list[int] | None = None) -> dict[str, int]:
     try:
         import time as _t
 

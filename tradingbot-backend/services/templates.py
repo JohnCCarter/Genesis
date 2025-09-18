@@ -78,9 +78,7 @@ class OrderTemplatesService:
             data = self._load()
             items = data.get("templates", [])
             name_norm = str(name or "").strip().lower()
-            kept = [
-                t for t in items if str(t.get("name", "")).strip().lower() != name_norm
-            ]
+            kept = [t for t in items if str(t.get("name", "")).strip().lower() != name_norm]
             if len(kept) != len(items):
                 data["templates"] = kept
                 self._save(data)

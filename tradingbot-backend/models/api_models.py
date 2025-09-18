@@ -164,9 +164,7 @@ class MarginInfo(BaseModel):
             net_value=float(data[3]),
             required_margin=float(data[4]),
             leverage=leverage,
-            margin_limits=(
-                data[5] if len(data) > 5 and isinstance(data[5], list) else []
-            ),
+            margin_limits=(data[5] if len(data) > 5 and isinstance(data[5], list) else []),
         )
 
 
@@ -601,9 +599,7 @@ class WebSocketSubscriptionRequest(BaseModel):
     channel: str
     symbol: str
 
-    model_config = {
-        "json_schema_extra": {"example": {"channel": "ticker", "symbol": "tBTCUSD"}}
-    }
+    model_config = {"json_schema_extra": {"example": {"channel": "ticker", "symbol": "tBTCUSD"}}}
 
 
 # API-svar-modeller

@@ -162,7 +162,7 @@ export function UnifiedCircuitBreakerPanel() {
     const getFilteredCBs = () => {
         if (!overview) return {};
         if (selectedCB === 'all') return overview.circuit_breakers;
-        
+
         return { [selectedCB]: overview.circuit_breakers[selectedCB] };
     };
 
@@ -185,8 +185,8 @@ export function UnifiedCircuitBreakerPanel() {
                     <button onClick={refresh} disabled={loading}>
                         {loading ? 'Laddar...' : '🔄 Uppdatera'}
                     </button>
-                    <button 
-                        onClick={resetAllCBs} 
+                    <button
+                        onClick={resetAllCBs}
                         disabled={loading}
                         style={{ background: '#dc3545', color: 'white' }}
                     >
@@ -202,10 +202,10 @@ export function UnifiedCircuitBreakerPanel() {
             )}
 
             {/* Översikt */}
-            <div style={{ 
-                display: 'grid', 
-                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
-                gap: 12, 
+            <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                gap: 12,
                 marginBottom: 16,
                 padding: 12,
                 background: '#f6f8fa',
@@ -219,8 +219,8 @@ export function UnifiedCircuitBreakerPanel() {
                 </div>
                 <div>
                     <div style={{ fontSize: 12, color: '#555' }}>Öppna Circuit Breakers</div>
-                    <div style={{ 
-                        fontSize: 16, 
+                    <div style={{
+                        fontSize: 16,
                         fontWeight: 'bold',
                         color: overview.open_circuit_breakers > 0 ? '#dc3545' : '#28a745'
                     }}>
@@ -280,9 +280,9 @@ export function UnifiedCircuitBreakerPanel() {
                 </h4>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {Object.entries(getFilteredCBs()).map(([name, cb]) => (
-                        <div key={name} style={{ 
-                            padding: 12, 
-                            background: '#f6f8fa', 
+                        <div key={name} style={{
+                            padding: 12,
+                            background: '#f6f8fa',
                             borderRadius: 6,
                             border: '1px solid #e1e4e8'
                         }}>
@@ -292,18 +292,18 @@ export function UnifiedCircuitBreakerPanel() {
                                         <span style={{ fontWeight: 'bold', fontSize: 14 }}>
                                             {getTypeIcon(cb.type)} {name}
                                         </span>
-                                        <span style={{ 
-                                            fontSize: 10, 
-                                            padding: '2px 6px', 
+                                        <span style={{
+                                            fontSize: 10,
+                                            padding: '2px 6px',
                                             background: getStateColor(cb.state),
                                             color: 'white',
                                             borderRadius: 3
                                         }}>
                                             {cb.state.toUpperCase()}
                                         </span>
-                                        <span style={{ 
-                                            fontSize: 10, 
-                                            padding: '2px 6px', 
+                                        <span style={{
+                                            fontSize: 10,
+                                            padding: '2px 6px',
                                             background: '#6c757d',
                                             color: 'white',
                                             borderRadius: 3
@@ -326,10 +326,10 @@ export function UnifiedCircuitBreakerPanel() {
                                         )}
                                     </div>
                                     <div style={{ fontSize: 11, color: '#666' }}>
-                                        <div>Threshold: <b>{cb.config.failure_threshold}</b> · 
-                                        Recovery: <b>{formatDuration(cb.config.recovery_timeout)}</b> · 
+                                        <div>Threshold: <b>{cb.config.failure_threshold}</b> ·
+                                        Recovery: <b>{formatDuration(cb.config.recovery_timeout)}</b> ·
                                         Window: <b>{formatDuration(cb.config.failure_window)}</b></div>
-                                        <div>Max Backoff: <b>{formatDuration(cb.config.max_backoff)}</b> · 
+                                        <div>Max Backoff: <b>{formatDuration(cb.config.max_backoff)}</b> ·
                                         Exponential: <b>{cb.config.exponential_backoff ? 'Yes' : 'No'}</b></div>
                                     </div>
                                 </div>
