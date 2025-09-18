@@ -706,7 +706,7 @@ async def place_order_endpoint(order: OrderRequest, _: bool = Depends(require_au
                     else:
                         ws_res = {"success": False, "error": "ws_not_authenticated"}
                 except Exception as _se:
-                    ws_res = {"success": False, "error": str(_se)}
+                    ws_res = {"success": False, "error": "internal_error"}
                 ws_fallback_ok = bool(ws_res.get("success"))
                 if ws_fallback_ok:
                     await notification_service.notify("info", "Order lagd via WS fallback", {"payload": on_payload})
@@ -729,7 +729,7 @@ async def place_order_endpoint(order: OrderRequest, _: bool = Depends(require_au
             await notification_service.notify(
                 "error",
                 "Order misslyckades",
-                {"request": order.dict(), "error": str(result.get("error"))},
+                {"request": order.dict(), "error": "internal_error"},
             )
             get_metrics_client().inc("orders_total")
             get_metrics_client().inc("orders_failed_total")
@@ -777,7 +777,7 @@ async def place_order_endpoint(order: OrderRequest, _: bool = Depends(require_au
 
     except Exception as e:
         logger.exception(f"Oväntat fel vid orderläggning: {e}")
-        return OrderResponse(success=False, error=str(e))
+        return OrderResponse(success=False, error="internal_error")
 
 
 @router.post("/order/cancel", response_model=OrderResponse)
@@ -826,7 +826,7 @@ async def cancel_order_endpoint(cancel_request: CancelOrderRequest, _: bool = De
 
     except Exception as e:
         logger.exception(f"Oväntat fel vid avbrytning av order: {e}")
-        return OrderResponse(success=False, error=str(e))
+        return OrderResponse(success=False, error="internal_error")
 
 
 @router.post("/order/update", response_model=OrderResponse)
@@ -859,7 +859,7 @@ async def update_order_endpoint(update_request: UpdateOrderRequest, _: bool = De
 
                 if rc.get_bool("DRY_RUN_ENABLED", False):
                     logger.info("WS fallback hoppas över: Dry Run är aktiverat")
-                    return OrderResponse(success=False, error=str(rest_err))
+                    return OrderResponse(success=False, error="internal_error")
 
                 from services.bitfinex_websocket import bitfinex_ws as _ws
 
@@ -876,14 +876,14 @@ async def update_order_endpoint(update_request: UpdateOrderRequest, _: bool = De
                         {"request": update_request.dict(), "response": ws_res},
                     )
                     return OrderResponse(success=True, data={"ws_fallback": True, **ws_res})
-                return OrderResponse(success=False, error=str(ws_res.get("error") or "ws_update_failed"))
+                return OrderResponse(success=False, error="ws_update_failed")
             except Exception as _wse:
                 logger.exception(f"WS fallback update fel: {_wse}")
-                return OrderResponse(success=False, error=str(_wse))
+                return OrderResponse(success=False, error="internal_error")
 
     except Exception as e:
         logger.exception(f"Oväntat fel vid uppdatering av order: {e}")
-        return OrderResponse(success=False, error=str(e))
+        return OrderResponse(success=False, error="internal_error")
 
 
 # --- WS order endpoints ---
@@ -899,11 +899,11 @@ async def ws_order_update(payload: WSOrderUpdateRequest, _: bool = Depends(requi
             extra=payload.extra,
         )
         if not result.get("success"):
-            return OrderResponse(success=False, error=str(result.get("error")))
+            return OrderResponse(success=False, error="internal_error")
         return OrderResponse(success=True, data=result)
     except Exception as e:
         logger.exception(f"WS order update fel: {e}")
-        return OrderResponse(success=False, error=str(e))
+        return OrderResponse(success=False, error="internal_error")
 
 
 @router.post("/ws/orders/cancel-multi", response_model=OrderResponse)
@@ -913,11 +913,11 @@ async def ws_order_cancel_multi(payload: WSCancelMultiRequest, _: bool = Depends
 
         result = await bitfinex_ws.order_cancel_multi(ids=payload.ids, cids=payload.cids, cid_date=payload.cid_date)
         if not result.get("success"):
-            return OrderResponse(success=False, error=str(result.get("error")))
+            return OrderResponse(success=False, error="internal_error")
         return OrderResponse(success=True, data=result)
     except Exception as e:
         logger.exception(f"WS cancel-multi fel: {e}")
-        return OrderResponse(success=False, error=str(e))
+        return OrderResponse(success=False, error="internal_error")
 
 
 @router.post("/ws/orders/ops", response_model=OrderResponse)
@@ -963,11 +963,11 @@ async def ws_order_ops(payload: WSOrderOpsRequest, _: bool = Depends(require_aut
 
         result = await bitfinex_ws.order_ops(resolved_ops)
         if not result.get("success"):
-            return OrderResponse(success=False, error=str(result.get("error")))
+            return OrderResponse(success=False, error="internal_error")
         return OrderResponse(success=True, data=result)
     except Exception as e:
         logger.exception(f"WS ops fel: {e}")
-        return OrderResponse(success=False, error=str(e))
+        return OrderResponse(success=False, error="internal_error")
 
 
 @router.post("/orders/cancel/all", response_model=OrderResponse)
@@ -1005,7 +1005,7 @@ async def cancel_all_orders_endpoint(_: bool = Depends(require_auth)):
 
     except Exception as e:
         logger.exception(f"Oväntat fel vid avbrytning av alla ordrar: {e}")
-        return OrderResponse(success=False, error=str(e))
+        return OrderResponse(success=False, error="internal_error")
 
 
 @router.post("/orders/cancel/symbol/{symbol}", response_model=OrderResponse)
@@ -1028,7 +1028,7 @@ async def cancel_orders_by_symbol_endpoint(symbol: str, _: bool = Depends(requir
 
     except Exception as e:
         logger.exception(f"Oväntat fel vid avbrytning av ordrar för {symbol}: {e}")
-        return OrderResponse(success=False, error=str(e))
+        return OrderResponse(success=False, error="internal_error")
 
 
 @router.get("/orders", response_model=list[OrderResponse])
@@ -1491,7 +1491,7 @@ async def generate_ws_token(request: TokenRequest):
         from utils.token_masking import safe_log_data
 
         logger.exception(safe_log_data(e, "Fel vid generering av WebSocket-token"))
-        return TokenResponse(success=False, error=str(e))
+        return TokenResponse(success=False, error="internal_error")
 
 
 # Strategy endpoints
@@ -3005,7 +3005,7 @@ async def place_bracket_order(req: BracketOrderRequest, _: bool = Depends(requir
         return resp_obj
     except Exception as e:
         logger.exception(f"Fel vid bracket-order: {e}")
-        return OrderResponse(success=False, error=str(e))
+        return OrderResponse(success=False, error="internal_error")
 
 
 """Legacy risk windows endpoints borttagna – använd unified /risk/unified/*"""

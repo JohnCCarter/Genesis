@@ -231,7 +231,7 @@ class ActiveOrdersService:
                     results.append({"id": order.id, "success": True})
                 except Exception as ex:
                     logger.error(f"Fel vid avbrytning av order {order.id}: {ex}")
-                    results.append({"id": order.id, "success": False, "error": str(ex)})
+                    results.append({"id": order.id, "success": False, "error": "internal_error"})
 
             num_success = len([r for r in results if r.get("success")])
             return {
@@ -282,7 +282,7 @@ class ActiveOrdersService:
 
                 except Exception as e:
                     logger.error(f"Fel vid avbrytning av order {order.id}: {e}")
-                    results.append({"id": order.id, "success": False, "error": str(e)})
+                    results.append({"id": order.id, "success": False, "error": "internal_error"})
 
             return {
                 "success": True,
