@@ -327,6 +327,7 @@ audit-backend.json
 analysis/backup_nul_issues/
 analysis/nul_scan.json
 analysis/nul_scan_after.json
+tradingbot-backend/analysis/**
 
 # Pre-commit local caches (per-user)
 .pre-commit-config.yaml.bak
@@ -335,3 +336,6 @@ analysis/nul_scan_after.json
 
 # VS Code workspace state
 .vscode/**
+
+# OpenAI batch outputs
+scripts/openai_batch/results/*.jsonl
