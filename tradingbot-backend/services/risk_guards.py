@@ -356,7 +356,7 @@ class RiskGuardsService:
             return status
         except Exception as e:
             logger.error(f"Kunde inte hämta guards status: {e}")
-            return {"error": str(e)}
+            return {"error": "Internal error"}
 
     def update_guard_config(self, guard_name: str, config: dict[str, Any]) -> bool:
         """Uppdatera konfiguration för en riskvakt."""
