@@ -21,4 +21,4 @@
 
 # Force UTF-8 for text files
 *.txt text eol=lf
-* text=auto eol=lf
+* text=auto eol=lf working-tree-encoding=UTF-8
