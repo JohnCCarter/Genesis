@@ -2544,11 +2544,20 @@ async def prob_retrain_run(req: ProbRetrainRunRequest, _: bool = Depends(require
                     detail="Invalid output_dir: must be a simple relative sub-directory.",
                 )
 
+            # Disallow any path separators to keep a single-segment directory name
+            if "/" in user_dir or "\\" in user_dir:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Invalid output_dir: no path separators allowed.",
+                )
+
             # Construct and resolve final path
             out_dir = _os.path.realpath(_os.path.join(safe_root_real, user_dir))
 
             # Strong containment check: out_dir must be a strict subdirectory of safe_root_real
-            if not is_safe_subdir(safe_root_real, out_dir):
+            real_root = _os.path.realpath(_os.path.abspath(safe_root_real))
+            real_out = _os.path.realpath(_os.path.abspath(out_dir))
+            if not (real_out.startswith(real_root + _os.sep) or real_out == real_root):
                 raise HTTPException(
                     status_code=400,
                     detail="Invalid output_dir: must be within allowed directory.",
