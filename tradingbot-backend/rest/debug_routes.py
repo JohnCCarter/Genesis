@@ -7,7 +7,6 @@ Debug endpoints för att diagnostisera hängningar och prestandaproblem.
 import asyncio
 import sys
 import threading
-import traceback
 from typing import Any
 
 from fastapi import APIRouter
@@ -27,35 +26,37 @@ async def dump_tasks() -> dict[str, Any]:
 
         for task in tasks:
             try:
-                # Hämta stack trace för task
-                stack = ""
-                if hasattr(task, "_coro") and task._coro:
+                # Redacta stacktrace och exception-detaljer i klientrespons
+                name = str(getattr(task, "get_name", lambda: "unknown")())
+                is_done = bool(getattr(task, "done", lambda: False)())
+                has_exc = False
+                if is_done:
                     try:
-                        # Försök få stack från coroutine
-                        frame = task._coro.cr_frame
-                        if frame:
-                            stack = "".join(traceback.format_stack(frame, limit=10))
+                        has_exc = getattr(task, "exception", lambda: None)() is not None
                     except Exception:
-                        stack = f"Task: {task.get_name()}"
-                else:
-                    stack = f"Task: {task.get_name()}"
-
+                        has_exc = True
                 out.append(
                     {
-                        "name": task.get_name(),
-                        "done": task.done(),
-                        "cancelled": task.cancelled(),
-                        "exception": (str(task.exception()) if task.done() and task.exception() else None),
-                        "stack": stack,
+                        "name": name,
+                        "done": is_done,
+                        "cancelled": bool(getattr(task, "cancelled", lambda: False)()),
+                        "exception": has_exc,
                     }
                 )
-            except Exception as e:
-                out.append({"name": "unknown", "error": str(e), "stack": ""})
+            except Exception:
+                out.append({"name": "unknown", "error": "internal_error"})
 
+        cur = asyncio.current_task()
+        cur_name = None
+        if cur is not None:
+            try:
+                cur_name = str(getattr(cur, "get_name", lambda: "unknown")())
+            except Exception:
+                cur_name = None
         return {
             "count": len(out),
             "tasks": out,
-            "current_task": (asyncio.current_task().get_name() if asyncio.current_task() else None),
+            "current_task": cur_name,
         }
     except Exception as e:
         logger.error(f"Fel vid task dump: {e}")
@@ -71,22 +72,17 @@ def dump_threads() -> dict[str, Any]:
 
         for thread in threading.enumerate():
             try:
-                frame = frames.get(thread.ident)
-                stack = ""
-                if frame:
-                    stack = "".join(traceback.format_stack(frame, limit=10))
-
+                # Redacta stacktrace i klientrespons
                 data.append(
                     {
                         "name": thread.name,
                         "ident": thread.ident,
                         "daemon": thread.daemon,
                         "alive": thread.is_alive(),
-                        "stack": stack,
                     }
                 )
-            except Exception as e:
-                data.append({"name": "unknown", "error": str(e), "stack": ""})
+            except Exception:
+                data.append({"name": "unknown", "error": "internal_error"})
 
         return {
             "count": len(data),
@@ -133,7 +129,8 @@ async def dump_market_data() -> dict[str, Any]:
         from services.market_data_facade import get_market_data
 
         facade = get_market_data()
-        stats = facade.get_stats()
+        # Vissa typer saknar tydligt typad get_stats i linter; använd getattr
+        stats = getattr(facade, "get_stats", lambda: {})()
 
         return {
             "stats": stats,
