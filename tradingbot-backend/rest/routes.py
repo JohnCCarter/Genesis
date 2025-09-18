@@ -270,7 +270,7 @@ async def prob_preview(req: ProbPreviewRequest, _bypass_auth: bool = Depends(sec
         }
     except Exception as e:
         logger.exception(f"prob/preview error: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 class BracketOrderRequest(BaseModel):
@@ -491,7 +491,7 @@ async def prob_trade(req: ProbTradeRequest, _bypass_auth: bool = Depends(securit
         return {"ok": True, "result": res_dict}
     except Exception as e:
         logger.exception(f"prob/trade error: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 # Order endpoints
@@ -1063,7 +1063,7 @@ async def get_orders_by_symbol_endpoint(symbol: str, _: bool = Depends(require_a
 
     except Exception as e:
         logger.exception(f"Fel vid hämtning av aktiva ordrar för {symbol}: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.get("/order/{order_id}", response_model=OrderResponse)
@@ -1087,7 +1087,7 @@ async def get_order_by_id_endpoint(order_id: int, _: bool = Depends(require_auth
         raise
     except Exception as e:
         logger.exception(f"Fel vid hämtning av order {order_id}: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 # Wallet endpoints
@@ -1105,7 +1105,7 @@ async def get_wallets_endpoint(_: bool = Depends(require_auth)):
 
     except Exception as e:
         logger.exception(f"Fel vid hämtning av plånböcker: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 # Funding/Transfer endpoints
@@ -1132,7 +1132,7 @@ async def funding_transfer(req: TransferRequest, _: bool = Depends(require_auth)
         raise
     except Exception as e:
         logger.exception(f"Fel vid transfer: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.get("/funding/movements")
@@ -1156,7 +1156,7 @@ async def funding_movements(
         raise
     except Exception as e:
         logger.exception(f"Fel vid movements: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.get("/wallets/balance")
@@ -1197,7 +1197,7 @@ async def get_wallets_balance_endpoint(currency: str | None = None, _: bool = De
             return out
     except Exception as e:
         logger.exception(f"Fel vid wallets/balance: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.get("/wallets/exchange", response_model=list[WalletBalance])
@@ -1212,7 +1212,7 @@ async def get_exchange_wallets_endpoint(_: bool = Depends(require_auth)):
 
     except Exception as e:
         logger.exception(f"Fel vid hämtning av exchange-plånböcker: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.get("/wallets/margin", response_model=list[WalletBalance])
@@ -1227,7 +1227,7 @@ async def get_margin_wallets_endpoint(_: bool = Depends(require_auth)):
 
     except Exception as e:
         logger.exception(f"Fel vid hämtning av margin-plånböcker: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.get("/wallets/funding", response_model=list[WalletBalance])
@@ -1242,7 +1242,7 @@ async def get_funding_wallets_endpoint(_: bool = Depends(require_auth)):
 
     except Exception as e:
         logger.exception(f"Fel vid hämtning av funding-plånböcker: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 # Position endpoints
@@ -1260,7 +1260,7 @@ async def get_positions_endpoint(_: bool = Depends(require_auth)):
 
     except Exception as e:
         logger.exception(f"Fel vid hämtning av positioner: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.get("/positions/long", response_model=list[Position])
@@ -1275,7 +1275,7 @@ async def get_long_positions_endpoint(_: bool = Depends(require_auth)):
 
     except Exception as e:
         logger.exception(f"Fel vid hämtning av long-positioner: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.get("/positions/short", response_model=list[Position])
@@ -1290,7 +1290,7 @@ async def get_short_positions_endpoint(_: bool = Depends(require_auth)):
 
     except Exception as e:
         logger.exception(f"Fel vid hämtning av short-positioner: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.post("/positions/close/{symbol}", response_model=dict[str, Any])
@@ -1305,7 +1305,7 @@ async def close_position_endpoint(symbol: str, _: bool = Depends(require_auth)):
 
     except Exception as e:
         logger.exception(f"Fel vid stängning av position: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 # Margin endpoints
@@ -1323,7 +1323,7 @@ async def get_margin_info_endpoint(_: bool = Depends(require_auth)):
 
     except Exception as e:
         logger.exception(f"Fel vid hämtning av margin-information: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.get("/margin/status", response_model=dict[str, Any])
@@ -1338,7 +1338,7 @@ async def get_margin_status_endpoint(_: bool = Depends(require_auth)):
 
     except Exception as e:
         logger.exception(f"Fel vid hämtning av margin-status: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.get("/margin/status/{symbol}")
@@ -1366,7 +1366,7 @@ async def get_margin_status_symbol(symbol: str, _: bool = Depends(require_auth))
         return base
     except Exception as e:
         logger.exception(f"Fel vid hämtning av margin-status (symbol): {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.get("/margin/leverage", response_model=dict[str, float])
@@ -1381,7 +1381,7 @@ async def get_leverage_endpoint(_: bool = Depends(require_auth)):
 
     except Exception as e:
         logger.exception(f"Fel vid hämtning av hävstång: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 # Order History endpoints
@@ -1404,7 +1404,7 @@ async def get_orders_history_endpoint(
 
     except Exception as e:
         logger.exception(f"Fel vid hämtning av orderhistorik: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.get("/order/{order_id}/trades", response_model=list[TradeItem])
@@ -1419,7 +1419,7 @@ async def get_order_trades_endpoint(order_id: int, _: bool = Depends(require_aut
 
     except Exception as e:
         logger.exception(f"Fel vid hämtning av trades för order {order_id}: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.get("/trades/history", response_model=list[TradeItem])
@@ -1550,7 +1550,7 @@ async def evaluate_weighted_strategy_endpoint(request: WeightedStrategyRequest, 
         return result
     except Exception as e:
         logger.exception(f"Fel vid viktad strategiutvärdering: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 # Strategy settings endpoints
@@ -1595,7 +1595,7 @@ async def get_strategy_settings(symbol: str | None = None, _: bool = Depends(req
         return result
     except Exception as e:
         logger.exception(f"Fel vid hämtning av strategiinställningar: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/strategy/settings")
@@ -1647,7 +1647,7 @@ async def update_strategy_settings(
         return saved.to_dict()
     except Exception as e:
         logger.exception(f"Fel vid uppdatering av strategiinställningar: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # --- Auto-regim / Auto-vikter toggles ---
@@ -1682,7 +1682,7 @@ async def get_strategy_auto(_: bool = Depends(require_auth)):
         }
     except Exception as e:
         logger.exception(f"Fel vid hämtning av strategy auto-flaggor: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/strategy/auto")
@@ -1722,7 +1722,7 @@ async def update_strategy_auto(payload: StrategyAutoPayload, _: bool = Depends(r
         }
     except Exception as e:
         logger.exception(f"Fel vid uppdatering av strategy auto-flaggor: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # Position sizing endpoint (enkel riskprocent-variant)
@@ -1926,7 +1926,7 @@ async def calculate_position_size(req: PositionSizeRequest, _: bool = Depends(re
         return resp
     except Exception as e:
         logger.exception(f"Fel vid positionsstorleksberäkning: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # Performance endpoint (förenklad)
@@ -1953,7 +1953,7 @@ async def get_account_performance(_: bool = Depends(require_auth)):
         }
     except Exception as e:
         logger.exception(f"Fel vid performance: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # Market data endpoints
@@ -1978,7 +1978,7 @@ async def market_ticker(symbol: str, _: bool = Depends(require_auth)):
         raise
     except Exception as e:
         logger.exception(f"Fel vid ticker: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/market/tickers")
@@ -2005,7 +2005,7 @@ async def market_tickers(symbols: str, _: bool = Depends(require_auth)):
         raise
     except Exception as e:
         logger.exception(f"Fel vid tickers (batch): {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/platform/status")
@@ -2021,7 +2021,7 @@ async def platform_status(_: bool = Depends(require_auth)):
         return {"status": "up" if up else "maintenance", "raw": st}
     except Exception as e:
         logger.exception(f"Fel vid platform status: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/market/symbols/config")
@@ -2037,7 +2037,7 @@ async def market_symbols_config(format: str = "v2", _: bool = Depends(require_au
         return pairs
     except Exception as e:
         logger.exception(f"Fel vid configs symbols: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/market/symbols/paper")
@@ -2103,7 +2103,7 @@ async def market_candles(
         raise
     except Exception as e:
         logger.exception(f"Fel vid candles: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # Resync endpoint: re‑subscribe + REST snapshot fetch
@@ -2118,7 +2118,7 @@ async def market_resync(symbol: str, _: bool = Depends(require_auth)):
         return {"success": True}
     except Exception as e:
         logger.exception(f"Fel vid resync: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # Health endpoint
@@ -2136,7 +2136,7 @@ async def health(_: bool = Depends(require_auth)):
         }
     except Exception as e:
         logger.exception(f"Health error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/ws/pool/status")
@@ -2147,7 +2147,7 @@ async def ws_pool_status(_: bool = Depends(require_auth)):
         return bitfinex_ws.get_pool_status()
     except Exception as e:
         logger.exception(f"WS pool status error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/ws/subscribe")
@@ -2181,7 +2181,7 @@ async def ws_subscribe(req: WSSubscribeRequest, _: bool = Depends(require_auth))
         raise
     except Exception as e:
         logger.exception(f"WS subscribe error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/ws/unsubscribe")
@@ -2207,7 +2207,7 @@ async def ws_unsubscribe(req: WSUnsubscribeRequest, _: bool = Depends(require_au
         raise
     except Exception as e:
         logger.exception(f"WS unsubscribe error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/prob/predict")
@@ -2375,7 +2375,7 @@ async def prob_predict(req: ProbPredictRequest, _: bool = Depends(require_auth))
         return out
     except Exception as e:
         logger.exception(f"prob/predict error: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.get("/prob/status")
@@ -2398,7 +2398,7 @@ async def prob_status(_: bool = Depends(require_auth)):
         }
     except Exception as e:
         logger.exception(f"prob/status error: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 class ProbValidateRequest(BaseModel):
@@ -2553,7 +2553,7 @@ async def prob_retrain_run(req: ProbRetrainRunRequest, _: bool = Depends(require
         return {"written": written, "reloaded": bool(prob_model.model_meta)}
     except Exception as e:
         logger.exception(f"prob/retrain/run error: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 # Prob konfig - hämta/uppdatera utan omstart
@@ -2622,7 +2622,7 @@ async def prob_get_config(_: bool = Depends(require_auth)):
         }
     except Exception as e:
         logger.exception(f"prob/config get error: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.post("/prob/config")
@@ -2684,7 +2684,7 @@ async def prob_update_config(req: ProbConfigUpdateRequest, _: bool = Depends(req
         return await prob_get_config(True)  # återanvänd GET
     except Exception as e:
         logger.exception(f"prob/config update error: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.post("/prob/featlog")
@@ -2707,7 +2707,7 @@ async def prob_feature_log(q: ProbFeatureLogQuery, _: bool = Depends(require_aut
         return out
     except Exception as e:
         logger.exception(f"prob/featlog error: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 # Symbols endpoint
@@ -2734,7 +2734,7 @@ async def market_symbols(test_only: bool = False, format: str = "v2", _: bool = 
         return filtered
     except Exception as e:
         logger.exception(f"Fel vid symbols: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 # Watchlist endpoint (liten vy) med ticker + volym + senaste strategi-signal
@@ -2781,7 +2781,7 @@ async def auto_start(req: AutoStartRequest, _: bool = Depends(require_auth)):
         return {"ok": True, "symbol": req.symbol}
     except Exception as e:
         logger.exception(f"Fel vid auto/start: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.post("/auto/stop")
@@ -2792,7 +2792,7 @@ async def auto_stop(req: AutoStartRequest, _: bool = Depends(require_auth)):
         return {"ok": True, "symbol": req.symbol}
     except Exception as e:
         logger.exception(f"Fel vid auto/stop: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.get("/auto/status")
@@ -2805,7 +2805,7 @@ async def auto_status(_: bool = Depends(require_auth)):
         }
     except Exception as e:
         logger.exception(f"Fel vid auto/status: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 # Batch/Stop-all endpoints
@@ -2821,7 +2821,7 @@ async def auto_stop_all(_: bool = Depends(require_auth)):
         return {"ok": True}
     except Exception as e:
         logger.exception(f"Fel vid auto/stop-all: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.post("/auto/start-batch")
@@ -2842,7 +2842,7 @@ async def auto_start_batch(req: AutoBatchRequest, _: bool = Depends(require_auth
         return {"ok": True, "started": started}
     except Exception as e:
         logger.exception(f"Fel vid auto/start-batch: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 # Bracket order endpoint
@@ -3127,7 +3127,7 @@ async def get_account_performance_detail(_: bool = Depends(require_auth)):
         }
     except Exception as e:
         logger.exception(f"Fel vid performance/detail: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 # Risk endpoints
@@ -3181,7 +3181,7 @@ async def runtime_config_get(_: bool = Depends(require_auth)):
         return {"overrides": getattr(rc, "_runtime_overrides", {})}
     except Exception as e:
         logger.exception(f"Fel vid runtime config get: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.post("/runtime/config")
@@ -3500,7 +3500,7 @@ async def update_regime_config(req: RegimeConfigRequest, _: bool = Depends(requi
             raise HTTPException(status_code=400, detail=f"Kunde inte uppdatera regime {req.regime_name}")
     except Exception as e:
         logger.exception(f"Fel vid uppdatering av regime konfiguration: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.post("/regime/performance/update")
@@ -3522,7 +3522,7 @@ async def update_regime_performance(regime_name: str, _: bool = Depends(require_
             )
     except Exception as e:
         logger.exception(f"Fel vid uppdatering av regime performance: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 class AblationTestRequest(BaseModel):
@@ -3612,7 +3612,7 @@ async def start_health_watchdog(_: bool = Depends(require_auth)):
             return {"success": False, "message": "Health watchdog redan igång"}
     except Exception as e:
         logger.exception(f"Fel vid start av health watchdog: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.post("/health/watchdog/stop")
@@ -3625,7 +3625,7 @@ async def stop_health_watchdog(_: bool = Depends(require_auth)):
         return {"success": True, "message": "Health watchdog stoppad"}
     except Exception as e:
         logger.exception(f"Fel vid stopp av health watchdog: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 # JSON Optimizer endpoints
@@ -3639,7 +3639,7 @@ async def get_json_optimizer_stats(_: bool = Depends(require_auth)):
         return {"success": True, "stats": stats}
     except Exception as e:
         logger.exception(f"Fel vid hämtning av JSON optimizer stats: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.post("/json-optimizer/clear-cache")
@@ -3652,7 +3652,7 @@ async def clear_json_cache(_: bool = Depends(require_auth)):
         return {"success": True, "message": "JSON cache rensad"}
     except Exception as e:
         logger.exception(f"Fel vid rensning av JSON cache: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 class BenchmarkRequest(BaseModel):
@@ -3670,7 +3670,7 @@ async def benchmark_json_parsing(req: BenchmarkRequest, _: bool = Depends(requir
         return {"success": True, "results": results}
     except Exception as e:
         logger.exception(f"Fel vid JSON benchmark: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 # Bracket state admin
@@ -3690,7 +3690,7 @@ async def bracket_reset(req: BracketResetRequest, _: bool = Depends(require_auth
         return {"success": True, "cleared": cleared}
     except Exception as e:
         logger.exception(f"Fel vid bracket reset: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 # Metrics endpoint (Prometheus text format)
@@ -3744,7 +3744,7 @@ async def metrics(_: bool = Depends(require_auth)):
         return Response(content=text, media_type="text/plain; version=0.0.4")
     except Exception as e:
         logger.exception(f"Fel vid metrics: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.get("/metrics/summary")
@@ -3891,7 +3891,7 @@ async def ui_capabilities(_: bool = Depends(require_auth)):
         return caps
     except Exception as e:
         logger.exception(f"UI capabilities error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 class MCPTogglePayload(BaseModel):
@@ -3914,7 +3914,7 @@ async def cache_candles_stats(_: bool = Depends(require_auth)):
         return candle_cache.stats()
     except Exception as e:
         logger.exception(f"Fel vid cache stats: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.post("/cache/candles/clear")
@@ -3941,7 +3941,7 @@ async def cache_candles_clear(req: CacheClearRequest, _: bool = Depends(require_
         return {"success": True, "deleted": n}
     except Exception as e:
         logger.exception(f"Fel vid cache clear: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.post("/cache/candles/backfill")
@@ -3957,7 +3957,7 @@ async def cache_candles_backfill(req: BackfillRequest, _: bool = Depends(require
         return {"success": True, "inserted": inserted}
     except Exception as e:
         logger.exception(f"Fel vid cache backfill: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 # Equity endpoints
@@ -3969,7 +3969,7 @@ async def get_equity(_: bool = Depends(require_auth)):
         return equity
     except Exception as e:
         logger.exception(f"Fel vid equity: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.post("/account/equity/snapshot")
@@ -3980,7 +3980,7 @@ async def equity_snapshot(_: bool = Depends(require_auth)):
         return snap
     except Exception as e:
         logger.exception(f"Fel vid equity snapshot: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.get("/account/equity/history")
@@ -3991,7 +3991,7 @@ async def equity_history(limit: int | None = None, _: bool = Depends(require_aut
         return {"equity": hist}
     except Exception as e:
         logger.exception(f"Fel vid equity history: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 # Order Templates endpoints
@@ -4057,7 +4057,7 @@ async def set_ws_strategy(payload: CoreModeRequest, _: bool = Depends(require_au
         }
     except Exception as e:
         logger.exception(f"Fel vid set ws-strategy: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.get("/mode/validation-warmup")
@@ -4075,7 +4075,7 @@ async def set_validation_warmup(payload: CoreModeRequest, _: bool = Depends(requ
         }
     except Exception as e:
         logger.exception(f"Fel vid set validation-warmup: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.get("/mode/ws-connect-on-start")
@@ -4093,7 +4093,7 @@ async def set_ws_connect_toggle(payload: CoreModeRequest, _: bool = Depends(requ
         }
     except Exception as e:
         logger.exception(f"Fel vid set ws-connect-on-start: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 # OBS: GET /order/templates togs bort för att undvika kollision med /order/{order_id} (int)
@@ -4122,7 +4122,7 @@ async def save_template(payload: SaveTemplateRequest, _: bool = Depends(require_
         return result
     except Exception as e:
         logger.exception(f"Fel vid save_template: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 # Alias endpoints för att undvika kollision med /order/{order_id}
@@ -4152,7 +4152,7 @@ async def import_templates(payload: TemplatesPayload, _: bool = Depends(require_
         return {"imported": count}
     except Exception as e:
         logger.exception(f"Fel vid import_templates: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.get("/orders/templates/export", response_model=list[dict[str, Any]])
@@ -4162,7 +4162,7 @@ async def export_templates(_: bool = Depends(require_auth)):
         return svc.list_templates()
     except Exception as e:
         logger.exception(f"Fel vid export_templates: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.delete("/order/templates/{name}")
@@ -4188,7 +4188,7 @@ async def save_template_alias(payload: SaveTemplateRequest, _: bool = Depends(re
         return result
     except Exception as e:
         logger.exception(f"Fel vid save_template (alias): {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 class UpdateWindowsRequest(BaseModel):
@@ -4221,7 +4221,7 @@ async def update_trading_windows(req: UpdateWindowsRequest, _: bool = Depends(re
         return {"success": True, "status": rm.status()}
     except Exception as e:
         logger.exception(f"Fel vid uppdatering av trading windows: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 # --- Runtime toggles: DRY RUN ---
@@ -4233,7 +4233,7 @@ async def get_dry_run(_: bool = Depends(require_auth)):
         return {"dry_run_enabled": bool(rc.get_bool("DRY_RUN_ENABLED", False))}
     except Exception as e:
         logger.exception(f"Fel vid get dry-run: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/mode/dry-run")
@@ -4254,7 +4254,7 @@ async def set_dry_run(payload: CoreModeRequest, _: bool = Depends(require_auth))
         return {"dry_run_enabled": bool(rc.get_bool("DRY_RUN_ENABLED", False))}
     except Exception as e:
         logger.exception(f"Fel vid set dry-run: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # --- Runtime toggles: TRADING PAUSED ---
@@ -4266,7 +4266,7 @@ async def get_trading_paused(_: bool = Depends(require_auth)):
         return {"trading_paused": bool(rc.get_bool("TRADING_PAUSED", False))}
     except Exception as e:
         logger.exception(f"Fel vid get trading-paused: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/mode/trading-paused")
@@ -4287,7 +4287,7 @@ async def set_trading_paused(payload: CoreModeRequest, _: bool = Depends(require
         return {"trading_paused": bool(rc.get_bool("TRADING_PAUSED", False))}
     except Exception as e:
         logger.exception(f"Fel vid set trading-paused: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # --- Runtime toggles: Probability Model ---
@@ -4308,7 +4308,7 @@ async def get_prob_model(_: bool = Depends(require_auth)):
         return {"prob_model_enabled": bool(enabled)}
     except Exception as e:
         logger.exception(f"Fel vid get prob-model: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/mode/prob-model")
@@ -4327,7 +4327,7 @@ async def set_prob_model(payload: CoreModeRequest, _: bool = Depends(require_aut
         return {"prob_model_enabled": bool(getattr(prob_model, "enabled", False))}
     except Exception as e:
         logger.exception(f"Fel vid set prob-model: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # --- Runtime toggles: Autotrade ---
@@ -4346,7 +4346,7 @@ async def get_autotrade(_: bool = Depends(require_auth)):
         }
     except Exception as e:
         logger.exception(f"Fel vid get autotrade: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/mode/autotrade")
@@ -4371,7 +4371,7 @@ async def set_autotrade(payload: CoreModeRequest, _: bool = Depends(require_auth
         }
     except Exception as e:
         logger.exception(f"Fel vid set autotrade: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # --- Refresh Manager endpoints ---
@@ -4392,7 +4392,7 @@ async def get_refresh_manager_status(_: bool = Depends(require_auth)):
         }
     except Exception as e:
         logger.exception(f"Fel vid hämtning av refresh manager status: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/refresh-manager/force-refresh")
@@ -4409,7 +4409,7 @@ async def force_refresh_panel(request: dict[str, Any], _: bool = Depends(require
         return {"success": True, "message": f"Refresh tvingad för {target}"}
     except Exception as e:
         logger.exception(f"Fel vid force refresh: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/refresh-manager/start")
@@ -4422,7 +4422,7 @@ async def start_refresh_manager(_: bool = Depends(require_auth)):
         return {"success": True, "message": "RefreshManager startad"}
     except Exception as e:
         logger.exception(f"Fel vid start av refresh manager: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/refresh-manager/stop")
@@ -4435,7 +4435,7 @@ async def stop_refresh_manager(_: bool = Depends(require_auth)):
         return {"success": True, "message": "RefreshManager stoppad"}
     except Exception as e:
         logger.exception(f"Fel vid stopp av refresh manager: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # --- Runtime toggles: Scheduler ---
@@ -4450,7 +4450,7 @@ async def get_scheduler(_: bool = Depends(require_auth)):
         return {"scheduler_running": is_running}
     except Exception as e:
         logger.exception(f"Fel vid get scheduler: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/mode/scheduler")
@@ -4470,7 +4470,7 @@ async def set_scheduler(payload: CoreModeRequest, _: bool = Depends(require_auth
         return {"scheduler_running": bool(scheduler.is_running())}
     except Exception as e:
         logger.exception(f"Fel vid set scheduler: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/strategy/regime/all")
@@ -4492,7 +4492,7 @@ async def get_all_regimes(_: bool = Depends(require_auth)):
 
     except Exception as e:
         logger.error(f"❌ Fel vid hämtning av all regimes: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
     try:
         from services.symbols import SymbolService
         from config.settings import Settings as _Settings
@@ -4735,7 +4735,7 @@ async def update_strategy_from_regime(symbol: str | None = None, _: bool = Depen
 
     except Exception as e:
         logger.exception(f"Fel vid uppdatering av settings från regim: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # ============================================================================
@@ -4763,7 +4763,7 @@ async def start_enhanced_auto_trading(symbol: str, _: bool = Depends(require_aut
 
     except Exception as e:
         logger.error(f"❌ Fel vid start av enhanced auto-trading: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/enhanced-auto/stop")
@@ -4786,7 +4786,7 @@ async def stop_enhanced_auto_trading(symbol: str, _: bool = Depends(require_auth
 
     except Exception as e:
         logger.error(f"❌ Fel vid stopp av enhanced auto-trading: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # --- Unified Risk Service endpoints ---
@@ -4815,7 +4815,7 @@ async def get_unified_risk_status(_: bool = Depends(require_auth)):
             pass
         return risk_status
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/risk/unified/evaluate")
@@ -4836,7 +4836,7 @@ async def evaluate_risk(request: dict[str, Any], _: bool = Depends(require_auth)
         }
     except Exception as e:
         logger.exception(f"Fel vid risk-evaluering: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # --- Unified Risk Control endpoints ---
@@ -4851,7 +4851,7 @@ async def pause_unified_risk(_: bool = Depends(require_auth)):
         tw.set_paused(True)
         return {"success": True, "paused": True}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/risk/unified/resume")
@@ -4896,7 +4896,7 @@ async def resume_unified_risk(_: bool = Depends(require_auth)):
         return {"success": True, "paused": False}
     except Exception as e:
         logger.exception(f"Fel vid unified resume: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/risk/unified/reset-guard")
@@ -4916,7 +4916,7 @@ async def reset_risk_guard_unified(request: dict[str, Any], _: bool = Depends(re
         }
     except Exception as e:
         logger.exception(f"Fel vid återställning av riskvakt: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/risk/unified/reset-circuit-breaker")
@@ -4932,7 +4932,7 @@ async def reset_circuit_breaker_unified(_: bool = Depends(require_auth)):
         }
     except Exception as e:
         logger.exception(f"Fel vid återställning av circuit breaker: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/risk/unified/update-guard")
@@ -4953,7 +4953,7 @@ async def update_risk_guard(request: dict[str, Any], _: bool = Depends(require_a
         }
     except Exception as e:
         logger.exception(f"Fel vid uppdatering av riskvakt: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # --- Compatibility bridge for legacy RiskGuardsPanel (/api/v2/risk/guards/*) ---
@@ -4971,7 +4971,7 @@ async def get_feature_flags_status(_: bool = Depends(require_auth)):
         return flags_status
     except Exception as e:
         logger.exception(f"Fel vid hämtning av feature flags status: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # --- Risk enabled toggle ---
@@ -4984,7 +4984,7 @@ async def get_risk_enabled(_: bool = Depends(require_auth)):
         return {"enabled": rc.get_bool("RISK_ENABLED", getattr(s, "RISK_ENABLED", True))}
     except Exception as e:
         logger.exception(f"Fel vid hämtning av risk enabled: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 class RiskEnabledRequest(BaseModel):
@@ -4998,7 +4998,7 @@ async def set_risk_enabled(req: RiskEnabledRequest, _: bool = Depends(require_au
         return {"ok": True, "enabled": rc.get_bool("RISK_ENABLED", True)}
     except Exception as e:
         logger.exception(f"Fel vid sättning av risk enabled: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/feature-flags/category/{category}")
@@ -5015,7 +5015,7 @@ async def get_feature_flags_by_category(category: str, _: bool = Depends(require
         }
     except Exception as e:
         logger.exception(f"Fel vid hämtning av feature flags för kategori {category}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/feature-flags/set")
@@ -5050,7 +5050,7 @@ async def set_feature_flag(request: dict[str, Any], _: bool = Depends(require_au
         }
     except Exception as e:
         logger.exception(f"Fel vid uppdatering av feature flag {name}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/feature-flags/reset")
@@ -5075,7 +5075,7 @@ async def reset_feature_flag(name: str | None = None, _: bool = Depends(require_
             }
     except Exception as e:
         logger.exception(f"Fel vid återställning av feature flag: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/feature-flags/ui-capabilities")
@@ -5088,7 +5088,7 @@ async def get_ui_capabilities(_: bool = Depends(require_auth)):
         return capabilities
     except Exception as e:
         logger.exception(f"Fel vid hämtning av UI capabilities: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # --- Enhanced Observability Service endpoints ---
@@ -5104,7 +5104,7 @@ async def get_comprehensive_observability(_: bool = Depends(require_auth)):
         return metrics
     except Exception as e:
         logger.exception(f"Fel vid hämtning av comprehensive observability: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/observability/system")
@@ -5129,7 +5129,7 @@ async def get_system_observability(_: bool = Depends(require_auth)):
         }
     except Exception as e:
         logger.exception(f"Fel vid hämtning av system observability: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/observability/rate-limiter")
@@ -5151,7 +5151,7 @@ async def get_rate_limiter_observability(_: bool = Depends(require_auth)):
         }
     except Exception as e:
         logger.exception(f"Fel vid hämtning av rate limiter observability: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/observability/exchange")
@@ -5175,7 +5175,7 @@ async def get_exchange_observability(_: bool = Depends(require_auth)):
         }
     except Exception as e:
         logger.exception(f"Fel vid hämtning av exchange observability: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/observability/trading")
@@ -5198,7 +5198,7 @@ async def get_trading_observability(_: bool = Depends(require_auth)):
         }
     except Exception as e:
         logger.exception(f"Fel vid hämtning av trading observability: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # --- History Service endpoints ---
@@ -5229,7 +5229,7 @@ async def get_comprehensive_history(
         return history
     except Exception as e:
         logger.exception(f"Fel vid hämtning av comprehensive history: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/history/trades")
@@ -5253,7 +5253,7 @@ async def get_trade_history(
         }
     except Exception as e:
         logger.exception(f"Fel vid hämtning av trade history: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/history/ledgers")
@@ -5284,7 +5284,7 @@ async def get_ledger_history(
         }
     except Exception as e:
         logger.exception(f"Fel vid hämtning av ledger history: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/history/equity")
@@ -5302,7 +5302,7 @@ async def get_equity_history(limit: int = 1000, force_refresh: bool = False, _: 
         }
     except Exception as e:
         logger.exception(f"Fel vid hämtning av equity history: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # --- Validation Service endpoints ---
@@ -5337,7 +5337,7 @@ async def run_probability_validation(request: dict[str, Any], _: bool = Depends(
         }
     except Exception as e:
         logger.exception(f"Fel vid probability validation: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/validation/strategy")
@@ -5371,7 +5371,7 @@ async def run_strategy_validation(request: dict[str, Any], _: bool = Depends(req
         }
     except Exception as e:
         logger.exception(f"Fel vid strategy validation: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/validation/backtest")
@@ -5409,7 +5409,7 @@ async def run_backtest(request: dict[str, Any], _: bool = Depends(require_auth))
         }
     except Exception as e:
         logger.exception(f"Fel vid backtest: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/validation/history")
@@ -5439,7 +5439,7 @@ async def get_validation_history(_: bool = Depends(require_auth)):
         }
     except Exception as e:
         logger.exception(f"Fel vid hämtning av validation history: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # V2 API endpoints för validation borttagna – använd /api/v2/validation/*
@@ -5458,7 +5458,7 @@ async def get_circuit_breaker_status(name: str | None = None, _: bool = Depends(
         return cb_status
     except Exception as e:
         logger.exception(f"Fel vid hämtning av circuit breaker status: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/circuit-breaker/record-success")
@@ -5480,7 +5480,7 @@ async def record_circuit_breaker_success(request: dict[str, Any], _: bool = Depe
         }
     except Exception as e:
         logger.exception(f"Fel vid registrering av circuit breaker success: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/circuit-breaker/record-failure")
@@ -5503,7 +5503,7 @@ async def record_circuit_breaker_failure(request: dict[str, Any], _: bool = Depe
         }
     except Exception as e:
         logger.exception(f"Fel vid registrering av circuit breaker failure: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/circuit-breaker/reset")
@@ -5531,7 +5531,7 @@ async def reset_circuit_breaker(request: dict[str, Any], _: bool = Depends(requi
             }
     except Exception as e:
         logger.exception(f"Fel vid återställning av circuit breaker: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/circuit-breaker/force-recovery")
@@ -5553,7 +5553,7 @@ async def force_circuit_breaker_recovery(_: bool = Depends(require_auth)):
         }
     except Exception as e:
         logger.exception(f"Fel vid tvingad circuit breaker recovery: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/circuit-breaker/recovery-status")
@@ -5568,7 +5568,7 @@ async def get_circuit_breaker_recovery_status(_: bool = Depends(require_auth)):
         return recovery_status
     except Exception as e:
         logger.exception(f"Fel vid hämtning av circuit breaker recovery status: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/circuit-breaker/register")
@@ -5618,7 +5618,7 @@ async def register_circuit_breaker(request: dict[str, Any], _: bool = Depends(re
         }
     except Exception as e:
         logger.exception(f"Fel vid registrering av circuit breaker: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/enhanced-auto/status")
@@ -5636,7 +5636,7 @@ async def get_enhanced_auto_status(_: bool = Depends(require_auth)):
 
     except Exception as e:
         logger.error(f"❌ Fel vid hämtning av enhanced auto-status: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/enhanced-auto/stop-all")
@@ -5655,7 +5655,7 @@ async def stop_all_enhanced_auto_trading(_: bool = Depends(require_auth)):
 
     except Exception as e:
         logger.error(f"❌ Fel vid stopp av all enhanced auto-trading: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # ============================================================================
@@ -5678,7 +5678,7 @@ async def get_performance_summary(days: int = 30, _: bool = Depends(require_auth
 
     except Exception as e:
         logger.error(f"❌ Fel vid hämtning av performance summary: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/performance/symbol/{symbol}")
@@ -5696,7 +5696,7 @@ async def get_symbol_performance(symbol: str, days: int = 30, _: bool = Depends(
 
     except Exception as e:
         logger.error(f"❌ Fel vid hämtning av symbol performance: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/performance/trades")
@@ -5714,7 +5714,7 @@ async def get_recent_trades(limit: int = 20, _: bool = Depends(require_auth)):
 
     except Exception as e:
         logger.error(f"❌ Fel vid hämtning av recent trades: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/performance/daily")
@@ -5732,7 +5732,7 @@ async def get_daily_stats(days: int = 7, _: bool = Depends(require_auth)):
 
     except Exception as e:
         logger.error(f"❌ Fel vid hämtning av daily stats: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # ============================================================================
@@ -5757,7 +5757,7 @@ async def get_live_signals(_: bool = Depends(require_auth)):
 
     except Exception as e:
         logger.error(f"❌ Fel vid hämtning av live signals: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/signals/{symbol}")
@@ -5778,7 +5778,7 @@ async def get_signal_for_symbol(symbol: str, _: bool = Depends(require_auth)):
 
     except Exception as e:
         logger.error(f"❌ Fel vid hämtning av signal för {symbol}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/signals/refresh")
@@ -5800,7 +5800,7 @@ async def refresh_signals(request: dict, _: bool = Depends(require_auth)):
 
     except Exception as e:
         logger.error(f"❌ Fel vid refresh av signals: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/signals/history")
@@ -5822,7 +5822,7 @@ async def get_signal_history(symbol: str | None = None, limit: int = 50, _: bool
 
     except Exception as e:
         logger.error(f"❌ Fel vid hämtning av signal-historik: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # CACHE ENDPOINTS
