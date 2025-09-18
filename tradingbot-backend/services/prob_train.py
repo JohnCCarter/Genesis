@@ -78,8 +78,15 @@ def train_and_export(candles: list[list[float]], horizon: int, tp: float, sl: fl
     # Step 3: Construct the final path within the safe directory
     # Use only the basename to prevent any path traversal
     safe_filename = os.path.basename(normalized_path)
+    # Allowlist: only .json files, simple names (letters, digits, _ - .)
+    import re as _re
+
     if not safe_filename or "/" in safe_filename or "\\" in safe_filename:
         raise ValueError(f"Invalid filename: {safe_filename}")
+    if not _re.fullmatch(r"[A-Za-z0-9._-]+", safe_filename):
+        raise ValueError(f"Invalid filename characters: {safe_filename}")
+    if not safe_filename.lower().endswith(".json"):
+        raise ValueError("Only .json files are allowed for model export")
 
     # Step 4: Final path construction within safe bounds
     safe_path = os.path.join(safe_root, safe_filename)
