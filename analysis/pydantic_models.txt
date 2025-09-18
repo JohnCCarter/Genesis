@@ -1491,5 +1491,3 @@ tradingbot-backend\rest\routes.py:4171:class TemplatesPayload(BaseModel):
 tradingbot-backend\rest\routes.py:4178:class CoreModeRequest(BaseModel):
 tradingbot-backend\rest\routes.py:4346:class UpdateWindowsRequest(BaseModel):
 tradingbot-backend\rest\wallet.py:26:class WalletBalance(BaseModel):
-
-

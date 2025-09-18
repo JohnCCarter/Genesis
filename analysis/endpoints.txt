@@ -33,5 +33,3 @@ tradingbot-backend\main.py:353:@app.get("/metrics")
 tradingbot-backend\main.py:461:@app.get("/metrics/summary")
 tradingbot-backend\.venv\Lib\site-packages\fastapi\security\oauth2.py:17:        @app.post("/login")
 tradingbot-backend\.venv\Lib\site-packages\fastapi\security\oauth2.py:67:        @app.post("/login")
-
-

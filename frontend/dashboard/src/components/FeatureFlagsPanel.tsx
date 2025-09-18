@@ -118,7 +118,7 @@ export function FeatureFlagsPanel() {
     const getFilteredFlags = () => {
         if (!status) return {};
         if (selectedCategory === 'all') return status.flags;
-        
+
         const filtered: Record<string, FeatureFlag> = {};
         for (const [name, flag] of Object.entries(status.flags)) {
             if (flag.category === selectedCategory) {
@@ -131,7 +131,7 @@ export function FeatureFlagsPanel() {
     // Quick toggle flags - most important ones
     const quickToggleFlags = [
         'dry_run_enabled',
-        'trading_paused', 
+        'trading_paused',
         'autotrade_enabled',
         'ws_strategy_enabled',
         'prob_model_enabled'
@@ -145,8 +145,8 @@ export function FeatureFlagsPanel() {
                     <button onClick={refresh} disabled={loading}>
                         {loading ? 'Laddar...' : '🔄 Uppdatera'}
                     </button>
-                    <button 
-                        onClick={resetAllFlags} 
+                    <button
+                        onClick={resetAllFlags}
                         disabled={loading}
                         style={{ background: '#dc3545', color: 'white' }}
                     >
@@ -164,10 +164,10 @@ export function FeatureFlagsPanel() {
             {status && (
                 <>
                     {/* Quick Toggle Section */}
-                    <div style={{ 
-                        background: '#f8f9fa', 
-                        padding: 16, 
-                        borderRadius: 8, 
+                    <div style={{
+                        background: '#f8f9fa',
+                        padding: 16,
+                        borderRadius: 8,
                         marginBottom: 20,
                         border: '1px solid #e9ecef'
                     }}>
@@ -178,10 +178,10 @@ export function FeatureFlagsPanel() {
                             {quickToggleFlags.map(flagName => {
                                 const flag = status.flags[flagName];
                                 if (!flag) return null;
-                                
+
                                 const isEnabled = Boolean(flag.value);
                                 const label = flagName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                                
+
                                 return (
                                     <button
                                         key={flagName}
@@ -208,10 +208,10 @@ export function FeatureFlagsPanel() {
                     </div>
 
                     {/* Översikt */}
-                    <div style={{ 
-                        display: 'grid', 
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
-                        gap: 12, 
+                    <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                        gap: 12,
                         marginBottom: 16,
                         padding: 12,
                         background: '#f6f8fa',
@@ -285,9 +285,9 @@ export function FeatureFlagsPanel() {
                         </h4>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                             {Object.entries(getFilteredFlags()).map(([name, flag]) => (
-                                <div key={name} style={{ 
-                                    padding: 12, 
-                                    background: '#f6f8fa', 
+                                <div key={name} style={{
+                                    padding: 12,
+                                    background: '#f6f8fa',
                                     borderRadius: 6,
                                     border: '1px solid #e1e4e8'
                                 }}>
@@ -297,9 +297,9 @@ export function FeatureFlagsPanel() {
                                                 <span style={{ fontWeight: 'bold', fontSize: 14 }}>
                                                     {name}
                                                 </span>
-                                                <span style={{ 
-                                                    fontSize: 10, 
-                                                    padding: '2px 6px', 
+                                                <span style={{
+                                                    fontSize: 10,
+                                                    padding: '2px 6px',
                                                     background: getCategoryColor(flag.category),
                                                     color: 'white',
                                                     borderRadius: 3
@@ -307,9 +307,9 @@ export function FeatureFlagsPanel() {
                                                     {flag.category}
                                                 </span>
                                                 {flag.requires_restart && (
-                                                    <span style={{ 
-                                                        fontSize: 10, 
-                                                        padding: '2px 6px', 
+                                                    <span style={{
+                                                        fontSize: 10,
+                                                        padding: '2px 6px',
                                                         background: '#ffc107',
                                                         color: '#333',
                                                         borderRadius: 3
@@ -378,9 +378,9 @@ export function FeatureFlagsPanel() {
                     {/* UI Capabilities */}
                     <div style={{ marginTop: 16 }}>
                         <h4 style={{ margin: '0 0 8px' }}>UI Capabilities</h4>
-                        <div style={{ 
-                            padding: 12, 
-                            background: '#f6f8fa', 
+                        <div style={{
+                            padding: 12,
+                            background: '#f6f8fa',
                             borderRadius: 6,
                             border: '1px solid #e1e4e8',
                             fontSize: 12

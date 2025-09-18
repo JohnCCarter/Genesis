@@ -45,16 +45,16 @@ export function useBackendStatus() {
     try {
       // Reset circuit breaker
       resetCircuitBreaker();
-      
+
       // Wait for reset to take effect
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       // Test backend with health check
       const response = await fetch(`${getApiBase()}/health`, {
         method: 'GET',
         signal: AbortSignal.timeout(5000),
       });
-      
+
       const isOnline = response.ok;
       updateStatus();
       return isOnline;
@@ -69,18 +69,18 @@ export function useBackendStatus() {
     if (status.isOnline) {
       return 'Backend is online';
     }
-    
+
     if (status.isCircuitBreakerOpen) {
       if (status.recoveryTimeRemaining > 0) {
         return `Backend offline - retry in ${Math.ceil(status.recoveryTimeRemaining / 1000)}s`;
       }
       return 'Backend offline - ready for retry';
     }
-    
+
     if (status.failureCount > 0) {
       return `Backend issues - ${status.failureCount} recent failures`;
     }
-    
+
     return 'Backend status unknown';
   }, [status]);
 

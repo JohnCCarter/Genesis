@@ -90,5 +90,3 @@ Obs: Arkitekturöversikt och systemflöden finns i `ARCHITECTURE.md`.
 - Bitfinex 500: symbol, storlek, permissions, förbättra felparsering.
 - "invalid (on)": ska vara löst (arrayformat).
 - Trades history 200 + JSON‑fel: se `rest/order_history.py` förbättrade loggar.
-
-

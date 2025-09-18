@@ -144,10 +144,10 @@ export function RefreshManagerPanel() {
             {status && (
                 <>
                     {/* Översikt */}
-                    <div style={{ 
-                        display: 'grid', 
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
-                        gap: 12, 
+                    <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                        gap: 12,
                         marginBottom: 16,
                         padding: 12,
                         background: '#f6f8fa',
@@ -155,8 +155,8 @@ export function RefreshManagerPanel() {
                     }}>
                         <div>
                             <div style={{ fontSize: 12, color: '#555' }}>Status</div>
-                            <div style={{ 
-                                fontSize: 16, 
+                            <div style={{
+                                fontSize: 16,
                                 fontWeight: 'bold',
                                 color: status.status.running ? '#28a745' : '#dc3545'
                             }}>
@@ -207,7 +207,7 @@ export function RefreshManagerPanel() {
                                                 {panelId}
                                             </td>
                                             <td style={{ padding: '6px 8px', fontSize: 12 }}>
-                                                <span style={{ 
+                                                <span style={{
                                                     color: getPriorityColor(panel.priority),
                                                     fontWeight: 'bold'
                                                 }}>
@@ -218,11 +218,11 @@ export function RefreshManagerPanel() {
                                                 {formatInterval(panel.interval_seconds)}
                                             </td>
                                             <td style={{ padding: '6px 8px', fontSize: 12 }}>
-                                                <span style={{ 
+                                                <span style={{
                                                     color: getStatusColor(panel.is_running, panel.error_count),
                                                     fontWeight: 'bold'
                                                 }}>
-                                                    {panel.is_running ? '🔄 Kör' : 
+                                                    {panel.is_running ? '🔄 Kör' :
                                                      panel.error_count > 0 ? '❌ Fel' : '✅ OK'}
                                                 </span>
                                             </td>
@@ -233,7 +233,7 @@ export function RefreshManagerPanel() {
                                                 {formatTime(panel.next_run)}
                                             </td>
                                             <td style={{ padding: '6px 8px', fontSize: 12 }}>
-                                                <span style={{ 
+                                                <span style={{
                                                     color: panel.error_count > 0 ? '#dc3545' : '#28a745',
                                                     fontWeight: 'bold'
                                                 }}>
@@ -241,11 +241,11 @@ export function RefreshManagerPanel() {
                                                 </span>
                                             </td>
                                             <td style={{ padding: '6px 8px', fontSize: 12 }}>
-                                                <button 
+                                                <button
                                                     onClick={() => forceRefresh(panelId)}
                                                     disabled={loading}
-                                                    style={{ 
-                                                        padding: '2px 6px', 
+                                                    style={{
+                                                        padding: '2px 6px',
                                                         fontSize: 10,
                                                         border: '1px solid #ccc',
                                                         borderRadius: 3,
@@ -265,16 +265,16 @@ export function RefreshManagerPanel() {
                     {/* Refresh Intervall Sammanfattning */}
                     <div>
                         <h4 style={{ margin: '0 0 8px' }}>Refresh Intervall</h4>
-                        <div style={{ 
-                            display: 'grid', 
-                            gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', 
+                        <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
                             gap: 8,
                             fontSize: 12
                         }}>
                             {Object.entries(status.intervals).map(([panelId, interval]) => (
-                                <div key={panelId} style={{ 
-                                    padding: 8, 
-                                    background: '#f6f8fa', 
+                                <div key={panelId} style={{
+                                    padding: 8,
+                                    background: '#f6f8fa',
                                     borderRadius: 4,
                                     border: '1px solid #e1e4e8'
                                 }}>

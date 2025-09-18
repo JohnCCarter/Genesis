@@ -30,9 +30,7 @@ async def test_ws_pool_respects_max_sockets(monkeypatch):
         opened["count"] += 1
         return DummyWS()
 
-    monkeypatch.setattr(
-        bitfinex_ws, "_open_public_socket", _fake_open_public_socket, raising=True
-    )
+    monkeypatch.setattr(bitfinex_ws, "_open_public_socket", _fake_open_public_socket, raising=True)
 
     # Rensa ev. tidigare state
     bitfinex_ws._pool_public.clear()
@@ -73,9 +71,7 @@ async def test_ws_pool_trims_excess_when_cap_reduced(monkeypatch):
     async def _fake_open_public_socket():
         return DummyWS()
 
-    monkeypatch.setattr(
-        bitfinex_ws, "_open_public_socket", _fake_open_public_socket, raising=True
-    )
+    monkeypatch.setattr(bitfinex_ws, "_open_public_socket", _fake_open_public_socket, raising=True)
 
     bitfinex_ws._pool_public.clear()
     bitfinex_ws._pool_sub_counts.clear()

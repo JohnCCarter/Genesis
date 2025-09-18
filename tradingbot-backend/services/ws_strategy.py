@@ -54,9 +54,7 @@ class WSStrategyService:
             return True
 
         except Exception as e:
-            self.logger.error(
-                f"❌ Fel vid uppdatering av strategiflagga {flag_name}: {e}"
-            )
+            self.logger.error(f"❌ Fel vid uppdatering av strategiflagga {flag_name}: {e}")
             return False
 
 

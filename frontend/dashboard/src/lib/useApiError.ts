@@ -15,7 +15,7 @@ export function useApiError() {
 
     if (error instanceof Error) {
       const message = error.message.toLowerCase();
-      
+
       if (message.includes('timeout')) {
         apiError = {
           message: 'Request timed out - server may be slow',
@@ -72,7 +72,7 @@ export function useApiError() {
   const getErrorMessage = useCallback((error: ApiError): string => {
     const timeAgo = Math.floor((Date.now() - error.timestamp) / 1000);
     const timeStr = timeAgo < 60 ? `${timeAgo}s ago` : `${Math.floor(timeAgo / 60)}m ago`;
-    
+
     return `${error.message} (${timeStr})`;
   }, []);
 

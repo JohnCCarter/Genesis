@@ -807,5 +807,3 @@ tradingbot-backend\utils\rate_limiter.py:16:class _RateLimiter:
 tradingbot-backend\utils\rate_limiter.py:38:_singleton: _RateLimiter | None = None
 tradingbot-backend\utils\rate_limiter.py:42:def get_rate_limiter() -> _RateLimiter:
 tradingbot-backend\utils\rate_limiter.py:47:                _singleton = _RateLimiter()
-
-

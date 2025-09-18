@@ -87,9 +87,7 @@ async def test_market_data_timeout():
         ticker = await facade.get_ticker("BTCUSD")
         duration = (time.perf_counter() - start_time) * 1000
 
-        logger.info(
-            f"✅ Market data timeout test: {ticker is not None} ({duration:.1f}ms)"
-        )
+        logger.info(f"✅ Market data timeout test: {ticker is not None} ({duration:.1f}ms)")
 
         # Borde vara snabb (<1s) med timeout
         return duration < 1000 and ticker is not None
@@ -125,9 +123,7 @@ async def test_rate_limiter_no_deadlock():
 
         success_count = sum(1 for r in results if r is True)
 
-        logger.info(
-            f"✅ Rate limiter deadlock test: {success_count}/5 success ({duration:.1f}ms)"
-        )
+        logger.info(f"✅ Rate limiter deadlock test: {success_count}/5 success ({duration:.1f}ms)")
 
         # Borde inte hänga och alla ska lyckas
         return success_count == 5 and duration < 2000
@@ -155,9 +151,7 @@ async def run_hanging_fixes_tests():
         try:
             result = await test_func()
             results[test_name] = result
-            logger.info(
-                f"{'✅' if result else '❌'} {test_name}: {'PASS' if result else 'FAIL'}"
-            )
+            logger.info(f"{'✅' if result else '❌'} {test_name}: {'PASS' if result else 'FAIL'}")
         except Exception as e:
             logger.error(f"❌ {test_name}: ERROR - {e}")
             results[test_name] = False

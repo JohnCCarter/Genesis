@@ -65,11 +65,7 @@ class ATRState:
         c = float(close)
         if self.prev_close is None:
             tr = h - l_
-            self.atr = (
-                tr
-                if self.atr is None
-                else (self.atr * (self.period - 1) + tr) / self.period
-            )
+            self.atr = tr if self.atr is None else (self.atr * (self.period - 1) + tr) / self.period
             self.prev_close = c
             return float(self.atr)
         tr = max(h - l_, abs(h - self.prev_close), abs(l_ - self.prev_close))

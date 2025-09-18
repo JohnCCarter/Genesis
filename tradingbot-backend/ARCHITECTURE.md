@@ -112,5 +112,3 @@ UnifiedSchedulerService jobb:
 - Volym: REST (500–2000), WS (10k–50k), Scheduler (1k–5k), Bitfinex (100–500)
 - Flöden: Order (9 steg), Signal (6 steg), WS (6 steg)
 - Resiliens: WS‑fallback för REST, circuit breakers, rate limiting
-
-

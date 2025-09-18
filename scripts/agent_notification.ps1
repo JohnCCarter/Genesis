@@ -5,7 +5,7 @@ Param(
     [Parameter(Mandatory = $true, Position = 0)]
     [ValidateSet('check', 'monitor', 'stop')]
     [string]$Command,
-    
+
     [string]$Agent = "Cursor",
     [int]$IntervalSeconds = 30,
     [switch]$AutoReply,
@@ -187,7 +187,7 @@ function Initialize-Notifications {
     if (-not (Test-Path $COMM_DIR)) {
         New-Item -ItemType Directory -Path $COMM_DIR -Force | Out-Null
     }
-    
+
     if (-not (Test-Path $NOTIFICATION_FILE)) {
         @{
             "last_checked"          = @{
@@ -204,18 +204,18 @@ function Check-NewMessages {
         [string]$Agent,
         [switch]$All
     )
-    
+
     Initialize-Notifications
-    
+
     if (-not (Test-Path $MESSAGES_FILE)) {
         return @()
     }
-    
+
     Acquire-CommLock
     try {
         $messages = Read-JsonSafe -Path $MESSAGES_FILE
         if (-not $messages) { $messages = @() } else { $messages = @($messages) }
-        
+
         $notifications = Read-JsonSafe -Path $NOTIFICATION_FILE
         $lastChecked = $notifications.last_checked.$Agent
         if (-not $lastChecked) { $lastChecked = (Get-Date).AddDays(-1).ToUniversalTime().ToString('o') }
@@ -225,10 +225,10 @@ function Check-NewMessages {
         }
         else {
             $lc = [datetime]$lastChecked
-            $newMessages = $messages | Where-Object { 
-                $_.to -eq $Agent -and 
-                ([datetime]$_.timestamp) -gt $lc -and 
-                -not $_.read 
+            $newMessages = $messages | Where-Object {
+                $_.to -eq $Agent -and
+                ([datetime]$_.timestamp) -gt $lc -and
+                -not $_.read
             }
         }
         return $newMessages
@@ -246,17 +246,17 @@ function Show-Notification {
         [switch]$Sound,
         [switch]$OnlyHigh
     )
-    
+
     if ($Messages.Count -eq 0) {
         return
     }
-    
+
     Write-Host ""
     Write-Host "ðŸ”” NOTIFICATION for $Agent" -ForegroundColor Yellow
     Write-Host "================================" -ForegroundColor Yellow
     Write-Host "You have $($Messages.Count) new message(s)!" -ForegroundColor Cyan
     Write-Host ""
-    
+
     $burntToastReady = $false
     if ($Toast) { $burntToastReady = Ensure-BurntToast -Install:$ToastInstall }
 
@@ -268,7 +268,7 @@ function Show-Notification {
             default { "White" }
         }
         $isHigh = ($msg.priority -eq 'high' -or $msg.priority -eq 'critical')
-        
+
         Write-Host "From: $($msg.from)" -ForegroundColor $priorityColor
         Write-Host "Priority: $($msg.priority)" -ForegroundColor $priorityColor
         if ($msg.context) {
@@ -296,7 +296,7 @@ function Show-Notification {
             }
         }
     }
-    
+
     Write-Host ""
     Write-Host "To read all messages: .\scripts\agent_communication.ps1 read -Agent `"$Agent`"" -ForegroundColor Green
     Write-Host "================================" -ForegroundColor Yellow
@@ -305,9 +305,9 @@ function Show-Notification {
 
 function Update-LastChecked {
     param([string]$Agent)
-    
+
     Initialize-Notifications
-    
+
     Acquire-CommLock
     try {
         $notifications = Read-JsonSafe -Path $NOTIFICATION_FILE
@@ -334,18 +334,18 @@ function Start-Monitoring {
         [int]$ContractSweepSeconds = 60,
         [int]$HeartbeatSeconds = 600
     )
-    
+
     Write-Host "ðŸ”” Starting notification monitoring for $Agent" -ForegroundColor Green
     if ($Watch) { Write-Host "Mode: Event-driven (FileSystemWatcher)" -ForegroundColor Gray } else { Write-Host "Checking every $IntervalSeconds seconds..." -ForegroundColor Gray }
     Write-Host "Press Ctrl+C to stop" -ForegroundColor Gray
     Write-Host ""
-    
+
     try { if ($Watch) { Start-EventWatch -Agent $Agent -AutoReply:$AutoReply -AutoReplyTemplate $AutoReplyTemplate -Toast:$Toast -Sound:$Sound -OnlyHigh:$OnlyHigh -LogThreads:$LogThreads -ThreadsFile $ThreadsFile -ContractSweepSeconds $ContractSweepSeconds -HeartbeatSeconds $HeartbeatSeconds; return }`n        $first = $true
         $lastSweep = Get-Date '1970-01-01T00:00:00Z'
         $lastHb = Get-Date '1970-01-01T00:00:00Z'
         while ($true) {
             $newMessages = Check-NewMessages -Agent $Agent -All:([bool]$first)
-            
+
             if ($newMessages.Count -gt 0) {
                 Show-Notification -Agent $Agent -Messages $newMessages -Toast:$Toast -Sound:$Sound -OnlyHigh:$OnlyHigh
                 if ($LogThreads) { try { Append-ThreadLog -Agent $Agent -Messages $newMessages -ThreadsFile $ThreadsFile } catch { } }
@@ -538,13 +538,13 @@ function Start-EventWatch {
     while ($true) { Start-Sleep -Seconds 86400 }
 }function Stop-Monitoring {
     Write-Host "ðŸ›‘ Stopping all notification monitoring..." -ForegroundColor Yellow
-    
+
     # Kill any running monitoring processes
-    $processes = Get-Process | Where-Object { 
-        $_.ProcessName -eq "powershell" -and 
-        $_.CommandLine -like "*agent_notification.ps1*" 
+    $processes = Get-Process | Where-Object {
+        $_.ProcessName -eq "powershell" -and
+        $_.CommandLine -like "*agent_notification.ps1*"
     }
-    
+
     foreach ($process in $processes) {
         try {
             Stop-Process -Id $process.Id -Force
@@ -583,8 +583,3 @@ switch ($Command) {
         Write-Host "  Stop:    .\agent_notification.ps1 stop" -ForegroundColor Gray
     }
 }
-
-
-
-
-

@@ -58,7 +58,5 @@ async def test_exchange_client_retries_on_nonce_error(monkeypatch):
     # Patch httpx.AsyncClient to our async context manager stub
     monkeypatch.setattr(httpx, "AsyncClient", _Client)
 
-    resp = await client.signed_request(
-        method="post", endpoint="auth/r/ledgers/hist", body={}, timeout=5.0
-    )
+    resp = await client.signed_request(method="post", endpoint="auth/r/ledgers/hist", body={}, timeout=5.0)
     assert resp.status_code == 200

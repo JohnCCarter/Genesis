@@ -23,16 +23,16 @@ export function BackendStatus({ className = '' }: BackendStatusProps) {
     try {
       // Try to reset circuit breaker and test connection
       resetCircuitBreaker();
-      
+
       // Wait a moment for reset to take effect
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       // Test with a simple health check
       const response = await fetch(`${getApiBase()}/health`, {
         method: 'GET',
         signal: AbortSignal.timeout(5000), // 5 second timeout
       });
-      
+
       if (response.ok) {
         setStatus(getCircuitBreakerStatus());
         setLastCheck(new Date());
@@ -58,14 +58,14 @@ export function BackendStatus({ className = '' }: BackendStatusProps) {
 
   const getRecoveryTime = () => {
     if (!status.isOpen) return null;
-    
+
     const timeSinceFailure = Date.now() - status.lastFailureTime;
     const recoveryTime = 30000 - timeSinceFailure; // 30 second recovery timeout
-    
+
     if (recoveryTime <= 0) {
       return 'Ready for retry';
     }
-    
+
     return `Retry in ${Math.ceil(recoveryTime / 1000)}s`;
   };
 
@@ -77,7 +77,7 @@ export function BackendStatus({ className = '' }: BackendStatusProps) {
             <span className="text-sm font-medium">{getStatusText()}</span>
             {isChecking && <span className="text-xs">🔄 Checking...</span>}
           </div>
-          
+
           {status.isOpen && (
             <button
               onClick={handleCheckBackend}
@@ -88,7 +88,7 @@ export function BackendStatus({ className = '' }: BackendStatusProps) {
             </button>
           )}
         </div>
-        
+
         {status.isOpen && (
           <div className="mt-2 text-xs">
             <div>Failures: {status.failureCount}</div>

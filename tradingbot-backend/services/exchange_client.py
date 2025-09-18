@@ -18,7 +18,7 @@ from typing import Any
 import httpx
 from services.http import get_async_client
 
-from config.settings import settings
+from config.settings import settings, Settings
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -58,9 +58,7 @@ class ExchangeClient:
         if payload_str is not None:
             message += payload_str
 
-        signature = hmac.new(
-            key=api_secret.encode(), msg=message.encode(), digestmod=hashlib.sha384
-        ).hexdigest()
+        signature = hmac.new(key=api_secret.encode(), msg=message.encode(), digestmod=hashlib.sha384).hexdigest()
 
         return {
             "bfx-apikey": api_key,
@@ -75,9 +73,7 @@ class ExchangeClient:
         import utils.nonce_manager
 
         ws_api_key = self.settings.BITFINEX_WS_API_KEY or self.settings.BITFINEX_API_KEY
-        ws_api_secret = (
-            self.settings.BITFINEX_WS_API_SECRET or self.settings.BITFINEX_API_SECRET
-        )
+        ws_api_secret = self.settings.BITFINEX_WS_API_SECRET or self.settings.BITFINEX_API_SECRET
 
         ws_nonce_us = utils.nonce_manager.get_nonce(ws_api_key)
         nonce_ms = str(int(int(ws_nonce_us) / 1000))
@@ -116,47 +112,52 @@ class ExchangeClient:
         body = body or {}
         body_json = json.dumps(body, separators=(",", ":"), ensure_ascii=False)
 
-        headers = self.build_rest_headers(
-            endpoint=endpoint, payload_str=body_json, v1=v1
-        )
-        base_url = (
-            getattr(self.settings, "BITFINEX_AUTH_API_URL", None)
-            or self.settings.BITFINEX_API_URL
-        )
+        headers = self.build_rest_headers(endpoint=endpoint, payload_str=body_json, v1=v1)
+        base_url = getattr(self.settings, "BITFINEX_AUTH_API_URL", None) or self.settings.BITFINEX_API_URL
         if v1:
             base_url = "https://api.bitfinex.com/v1"
 
         # Notera: timeout hanteras av delad klient; hämta per-event-loop klient
         client = get_async_client()
         req = getattr(client, method.lower())
-        response = await req(
-            f"{base_url}/{endpoint}",
-            content=body_json.encode("utf-8"),
-            headers=headers,
-        )
+        if timeout is not None:
+            response = await req(
+                f"{base_url}/{endpoint}",
+                content=body_json.encode("utf-8"),
+                headers=headers,
+                timeout=timeout,
+            )
+        else:
+            response = await req(
+                f"{base_url}/{endpoint}",
+                content=body_json.encode("utf-8"),
+                headers=headers,
+            )
 
         # Nonce‑fel (Bitfinex returnerar 500 med feltextlista där index 2 brukar innehålla meddelandet)
         if response.status_code == 500:
             try:
                 data = response.json()
-                if (
-                    isinstance(data, list)
-                    and len(data) >= 3
-                    and "nonce" in str(data[2]).lower()
-                ):
+                if isinstance(data, list) and len(data) >= 3 and "nonce" in str(data[2]).lower():
                     from utils.nonce_manager import bump_nonce
 
                     api_key = self.settings.BITFINEX_API_KEY or "default_key"
                     bump_nonce(api_key)
                     # Bygg om headers och försök en gång till
-                    headers = self.build_rest_headers(
-                        endpoint=endpoint, payload_str=body_json
-                    )
-                    response = await req(
-                        f"{base_url}/{endpoint}",
-                        content=body_json.encode("utf-8"),
-                        headers=headers,
-                    )
+                    headers = self.build_rest_headers(endpoint=endpoint, payload_str=body_json)
+                    if timeout is not None:
+                        response = await req(
+                            f"{base_url}/{endpoint}",
+                            content=body_json.encode("utf-8"),
+                            headers=headers,
+                            timeout=timeout,
+                        )
+                    else:
+                        response = await req(
+                            f"{base_url}/{endpoint}",
+                            content=body_json.encode("utf-8"),
+                            headers=headers,
+                        )
             except Exception:
                 pass
 

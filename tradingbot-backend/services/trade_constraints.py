@@ -30,9 +30,7 @@ class TradeConstraintsService:
         # Global paus eller stängt fönster
         if self.trading_window.is_paused():
             try:
-                inc_labeled(
-                    "trade_constraints_blocked_total", {"reason": "trading_paused"}
-                )
+                inc_labeled("trade_constraints_blocked_total", {"reason": "trading_paused"})
             except Exception:
                 pass
             return ConstraintResult(False, "trading_paused")
@@ -86,9 +84,7 @@ class TradeConstraintsService:
                     pass
                 return ConstraintResult(False, "trade_cooldown_active", stats)
             try:
-                inc_labeled(
-                    "trade_constraints_blocked_total", {"reason": "trade_blocked"}
-                )
+                inc_labeled("trade_constraints_blocked_total", {"reason": "trade_blocked"})
             except Exception:
                 pass
             return ConstraintResult(False, "trade_blocked", stats)
@@ -117,11 +113,7 @@ class TradeConstraintsService:
         return {
             "paused": self.trading_window.is_paused(),
             "open": self.trading_window.is_open(),
-            "next_open": (
-                self.trading_window.next_open().isoformat()
-                if self.trading_window.next_open()
-                else None
-            ),
+            "next_open": (self.trading_window.next_open().isoformat() if self.trading_window.next_open() else None),
             "limits": self.trading_window.get_limits(),
             "trades": self.trade_counter.stats(),
         }

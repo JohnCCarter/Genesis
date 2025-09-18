@@ -30,9 +30,7 @@ class MetricsClient:
     def inc_labeled(self, name: str, labels: dict[str, str], by: int = 1) -> None:
         _inc_labeled(name, labels, by)
 
-    def observe_latency(
-        self, path: str, method: str, status_code: int, duration_ms: int
-    ) -> None:
+    def observe_latency(self, path: str, method: str, status_code: int, duration_ms: int) -> None:
         _observe_latency(path, method, status_code, duration_ms)
 
     def record_http_result(

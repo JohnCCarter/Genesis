@@ -292,9 +292,7 @@ class FeatureFlagsService:
 
             # Kontrollera om värdet faktiskt har ändrats
             if old_value == value:
-                logger.debug(
-                    f"📋 Feature flag {name} har redan värdet {value} - hoppar över uppdatering"
-                )
+                logger.debug(f"📋 Feature flag {name} har redan värdet {value} - hoppar över uppdatering")
                 return True
 
             # Debouncing: kontrollera om vi har uppdaterat för nyligen
@@ -302,9 +300,7 @@ class FeatureFlagsService:
             last_update = self._last_update_times.get(name)
 
             if last_update and (now - last_update) < self._debounce_delay:
-                logger.debug(
-                    f"⏱️ Debouncing feature flag {name} - för nyligen uppdaterad"
-                )
+                logger.debug(f"⏱️ Debouncing feature flag {name} - för nyligen uppdaterad")
                 return True
 
             # Uppdatera flag
@@ -315,9 +311,7 @@ class FeatureFlagsService:
             # Uppdatera runtime-värden om möjligt
             self._update_runtime_flag(name, value)
 
-            logger.info(
-                f"🚩 Feature flag uppdaterad: {name} = {value} (tidigare: {old_value})"
-            )
+            logger.info(f"🚩 Feature flag uppdaterad: {name} = {value} (tidigare: {old_value})")
             return True
 
         except Exception as e:
@@ -364,9 +358,7 @@ class FeatureFlagsService:
                 "description": flag.description,
                 "category": flag.category,
                 "requires_restart": flag.requires_restart,
-                "last_updated": (
-                    flag.last_updated.isoformat() if flag.last_updated else None
-                ),
+                "last_updated": (flag.last_updated.isoformat() if flag.last_updated else None),
             }
         return result
 
@@ -380,9 +372,7 @@ class FeatureFlagsService:
                     "default_value": flag.default_value,
                     "description": flag.description,
                     "requires_restart": flag.requires_restart,
-                    "last_updated": (
-                        flag.last_updated.isoformat() if flag.last_updated else None
-                    ),
+                    "last_updated": (flag.last_updated.isoformat() if flag.last_updated else None),
                 }
         return result
 
@@ -408,9 +398,7 @@ class FeatureFlagsService:
             # Uppdatera runtime-värden
             self._update_runtime_flag(name, flag.default_value)
 
-            logger.info(
-                f"🔄 Feature flag återställd: {name} = {flag.default_value} (tidigare: {old_value})"
-            )
+            logger.info(f"🔄 Feature flag återställd: {name} = {flag.default_value} (tidigare: {old_value})")
             return True
 
         except Exception as e:
@@ -454,20 +442,12 @@ class FeatureFlagsService:
         """Uppdatera runtime-flags från deras källor."""
         try:
             # Uppdatera WebSocket flags
-            self.flags["ws_strategy_enabled"].current_value = (
-                self._get_ws_strategy_enabled()
-            )
-            self.flags["ws_connect_on_start"].current_value = (
-                self._get_ws_connect_on_start()
-            )
-            self.flags["validation_on_start"].current_value = (
-                self._get_validation_on_start()
-            )
+            self.flags["ws_strategy_enabled"].current_value = self._get_ws_strategy_enabled()
+            self.flags["ws_connect_on_start"].current_value = self._get_ws_connect_on_start()
+            self.flags["validation_on_start"].current_value = self._get_validation_on_start()
 
             # Uppdatera scheduler flag
-            self.flags["scheduler_running"].current_value = (
-                self._get_scheduler_running()
-            )
+            self.flags["scheduler_running"].current_value = self._get_scheduler_running()
 
             logger.debug("🔄 Runtime flags uppdaterade")
         except Exception as e:

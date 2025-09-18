@@ -4,9 +4,7 @@ from services.risk_policy_engine import RiskPolicyEngine
 
 
 class _StubRes:
-    def __init__(
-        self, allowed: bool, reason: str | None = None, details: dict | None = None
-    ):
+    def __init__(self, allowed: bool, reason: str | None = None, details: dict | None = None):
         self.allowed = allowed
         self.reason = reason
         self.details = details or {}
@@ -30,9 +28,7 @@ async def test_risk_policy_blocks_on_guards(monkeypatch):
 
 def test_risk_policy_blocks_on_constraints(monkeypatch):
     eng = RiskPolicyEngine()
-    monkeypatch.setattr(
-        eng.constraints, "check", lambda **kwargs: _StubRes(False, "trading_paused")
-    )
+    monkeypatch.setattr(eng.constraints, "check", lambda **kwargs: _StubRes(False, "trading_paused"))
 
     res = eng.evaluate(symbol="tBTCUSD")
     assert not res.allowed
@@ -45,9 +41,7 @@ def test_risk_policy_allows_when_ok(monkeypatch):
     # ensure guards do not block
     import services.risk_policy_engine as rpe
 
-    monkeypatch.setattr(
-        rpe.risk_guards, "check_all_guards", lambda *args, **kwargs: (False, None)
-    )
+    monkeypatch.setattr(rpe.risk_guards, "check_all_guards", lambda *args, **kwargs: (False, None))
 
     res = eng.evaluate(symbol="tBTCUSD")
     assert res.allowed

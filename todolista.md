@@ -58,5 +58,3 @@ curl -sS -H "Authorization: Bearer dev" -H "Content-Type: application/json" `
 #### Referenser
 - Struktur: [tradingbot-backend/Struktur.md](tradingbot-backend/Struktur.md)
 - Arkitektur: [tradingbot-backend/ARCHITECTURE.md](tradingbot-backend/ARCHITECTURE.md)
-
-

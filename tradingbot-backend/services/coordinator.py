@@ -49,9 +49,7 @@ class CoordinatorService:
         if not bool(getattr(s, "PROB_VALIDATE_ENABLED", True)):
             return {"ok": False, "disabled": True}
         raw_syms = (getattr(s, "PROB_VALIDATE_SYMBOLS", None) or "").strip()
-        symbols = (
-            [x.strip() for x in raw_syms.split(",") if x.strip()] if raw_syms else []
-        )
+        symbols = [x.strip() for x in raw_syms.split(",") if x.strip()] if raw_syms else []
         if not symbols:
             env_syms = (getattr(s, "WS_SUBSCRIBE_SYMBOLS", None) or "").strip()
             symbols = [x.strip() for x in env_syms.split(",") if x.strip()] or [
@@ -90,13 +88,9 @@ class CoordinatorService:
             if res.get("logloss") is not None:
                 agg_logloss.append(float(res["logloss"]))
         if agg_brier:
-            metrics_store.setdefault("prob_validation", {})["brier"] = sum(
-                agg_brier
-            ) / max(1, len(agg_brier))
+            metrics_store.setdefault("prob_validation", {})["brier"] = sum(agg_brier) / max(1, len(agg_brier))
         if agg_logloss:
-            metrics_store.setdefault("prob_validation", {})["logloss"] = sum(
-                agg_logloss
-            ) / max(1, len(agg_logloss))
+            metrics_store.setdefault("prob_validation", {})["logloss"] = sum(agg_logloss) / max(1, len(agg_logloss))
         return {"ok": True, "symbols": len(symbols)}
 
     async def prob_retrain(self) -> dict[str, Any]:
@@ -112,9 +106,7 @@ class CoordinatorService:
         if not bool(getattr(s, "PROB_RETRAIN_ENABLED", False)):
             return {"ok": False, "disabled": True}
         raw_syms = (getattr(s, "PROB_RETRAIN_SYMBOLS", None) or "").strip()
-        symbols = (
-            [x.strip() for x in raw_syms.split(",") if x.strip()] if raw_syms else []
-        )
+        symbols = [x.strip() for x in raw_syms.split(",") if x.strip()] if raw_syms else []
         if not symbols:
             env_syms = (getattr(s, "WS_SUBSCRIBE_SYMBOLS", None) or "").strip()
             symbols = [x.strip() for x in env_syms.split(",") if x.strip()] or [
@@ -146,9 +138,7 @@ class CoordinatorService:
             events += 1
         try:
             if prob_model.reload():
-                metrics_store.setdefault("prob_retrain", {})["last_success"] = int(
-                    datetime.now(UTC).timestamp()
-                )
+                metrics_store.setdefault("prob_retrain", {})["last_success"] = int(datetime.now(UTC).timestamp())
         except Exception:
             pass
         metrics_store.setdefault("prob_retrain", {})["events"] = (
@@ -161,9 +151,7 @@ class CoordinatorService:
 
         s = settings
         raw_syms = (getattr(s, "WS_SUBSCRIBE_SYMBOLS", None) or "").strip()
-        symbols = (
-            [x.strip() for x in raw_syms.split(",") if x.strip()] if raw_syms else []
-        )
+        symbols = [x.strip() for x in raw_syms.split(",") if x.strip()] if raw_syms else []
         if not symbols:
             symbols = [f"t{getattr(s, 'DEFAULT_TRADING_PAIR', 'BTCUSD')}"]
         try:

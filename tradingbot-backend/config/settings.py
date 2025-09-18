@@ -18,9 +18,7 @@ except ImportError:  # Fall tillbaka till v1
 
         print("Using pydantic BaseSettings (v1)")
     except ImportError:
-        raise ImportError(
-            "Neither pydantic-settings nor pydantic BaseSettings found"
-        ) from None
+        raise ImportError("Neither pydantic-settings nor pydantic BaseSettings found") from None
 
 _settings_instance = None
 
@@ -37,9 +35,7 @@ class Settings(_BaseSettings):
     AUTH_REQUIRED: bool = False
 
     # CORS
-    ALLOWED_ORIGINS: str = (
-        '["http://localhost:3000", "http://localhost:8080", "http://localhost:5173", "http://localhost:5174", "http://127.0.0.1:5173", "http://127.0.0.1:5174"]'
-    )
+    ALLOWED_ORIGINS: str = '["http://localhost:3000", "http://localhost:8080", "http://localhost:5173", "http://localhost:5174", "http://127.0.0.1:5173", "http://127.0.0.1:5174"]'
 
     # Bitfinex REST API - för orderläggning och kontohantering
     BITFINEX_API_KEY: str | None = None
@@ -64,9 +60,7 @@ class Settings(_BaseSettings):
 
     # WS multi-socket (publika kanaler) - Optimerat för Bitfinex-begränsningar
     WS_USE_POOL: bool = True
-    WS_MAX_SUBS_PER_SOCKET: int = (
-        25  # Minskad från 200 (Bitfinex max 25 channels per connection)
-    )
+    WS_MAX_SUBS_PER_SOCKET: int = 25  # Minskad från 200 (Bitfinex max 25 channels per connection)
     WS_PUBLIC_SOCKETS_MAX: int = 1  # Minskad från 3 (undvik 20 connections/min limit)
 
     # Lista över symboler att auto‑subscriba vid startup (komma‑separerad)
@@ -147,9 +141,7 @@ class Settings(_BaseSettings):
     PRIVATE_REST_CONCURRENCY: int = 1
 
     # Regex/pattern-baserad mapping av endpoints till limiter-typer
-    RATE_LIMIT_PATTERNS: str | None = (
-        None  # ex: "^auth/w/=>PRIVATE_TRADING;^auth/r/positions=>PRIVATE_ACCOUNT;^(ticker|candles|book|trades)=>PUBLIC_MARKET"
-    )
+    RATE_LIMIT_PATTERNS: str | None = None  # ex: "^auth/w/=>PRIVATE_TRADING;^auth/r/positions=>PRIVATE_ACCOUNT;^(ticker|candles|book|trades)=>PUBLIC_MARKET"
 
     # WS ticker prioritet: anse WS-data färsk i X sekunder innan REST-fallback
     WS_TICKER_STALE_SECS: int = 10
@@ -240,9 +232,7 @@ class Settings(_BaseSettings):
     SUPABASE_URL: str | None = None
     SUPABASE_ANON_KEY: str | None = None
     SUPABASE_SERVICE_ROLE_KEY: str | None = None
-    MCP_SERVER_URL: str = (
-        "https://kxibqgvpdfmklvwhmcry.supabase.co/functions/v1/mcp_server"
-    )
+    MCP_SERVER_URL: str = "https://kxibqgvpdfmklvwhmcry.supabase.co/functions/v1/mcp_server"
 
     # JWT Authentication
     JWT_SECRET: str | None = None

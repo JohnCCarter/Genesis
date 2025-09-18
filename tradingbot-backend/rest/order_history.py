@@ -58,16 +58,12 @@ class OrderHistoryItem(BaseModel):
             avg_execution_price=float(data[7]) if data[7] is not None else None,
             created_at=(
                 datetime.fromtimestamp(float(data[8]) / 1000.0)
-                if (
-                    len(data) > 8 and data[8] is not None and str(data[8]).strip() != ""
-                )
+                if (len(data) > 8 and data[8] is not None and str(data[8]).strip() != "")
                 else datetime.now()
             ),
             updated_at=(
                 datetime.fromtimestamp(float(data[9]) / 1000.0)
-                if (
-                    len(data) > 9 and data[9] is not None and str(data[9]).strip() != ""
-                )
+                if (len(data) > 9 and data[9] is not None and str(data[9]).strip() != "")
                 else None
             ),
             is_cancelled=bool(data[10]),
@@ -130,11 +126,7 @@ class TradeItem(BaseModel):
                 fee = try_float(data[8])
                 fee_currency = str(data[9]) if len(data) > 9 else ""
             # Fall 2: tidsstämpel på index 2 (ms)
-            elif (
-                len(data) >= 9
-                and isinstance(data[2], (int, float))
-                and float(data[2]) > 10_000_000_000
-            ):
+            elif len(data) >= 9 and isinstance(data[2], (int, float)) and float(data[2]) > 10_000_000_000:
                 # [id, sym, mts, orderId, execId, amount, price, fee, feeCur]
                 mts_create = int(data[2])
                 order_id = int(data[3]) if len(data) > 3 and data[3] is not None else 0
@@ -157,9 +149,7 @@ class TradeItem(BaseModel):
         except Exception as e:
             raise ValueError(f"Kunde inte tolka tradedata: {data} ({e})") from e
 
-        executed_at = (
-            datetime.fromtimestamp(mts_create / 1000) if mts_create else datetime.now()
-        )
+        executed_at = datetime.fromtimestamp(mts_create / 1000) if mts_create else datetime.now()
 
         return cls(
             id=trade_id,
@@ -257,17 +247,12 @@ class OrderHistoryService:
 
     def __init__(self):
         self.settings = settings
-        self.base_url = (
-            getattr(self.settings, "BITFINEX_AUTH_API_URL", None)
-            or self.settings.BITFINEX_API_URL
-        )
+        self.base_url = getattr(self.settings, "BITFINEX_AUTH_API_URL", None) or self.settings.BITFINEX_API_URL
         self.rate_limiter = get_advanced_rate_limiter()
         # Global semafor för alla privata REST-klasser
         self._sem = get_private_rest_semaphore()
 
-    async def _signed_post_with_retry(
-        self, endpoint: str, body: dict[str, Any] | None = None
-    ) -> httpx.Response:
+    async def _signed_post_with_retry(self, endpoint: str, body: dict[str, Any] | None = None) -> httpx.Response:
         """
         Skicka ett signerat POST-anrop med timeout och retry/backoff.
 
@@ -282,23 +267,15 @@ class OrderHistoryService:
 
         timeout = getattr(self.settings, "DATA_HTTP_TIMEOUT", 15.0)
         retries = max(int(getattr(self.settings, "DATA_MAX_RETRIES", 2) or 0), 0)
-        backoff_base = (
-            max(int(getattr(self.settings, "DATA_BACKOFF_BASE_MS", 250) or 0), 0)
-            / 1000.0
-        )
-        backoff_max = (
-            max(int(getattr(self.settings, "DATA_BACKOFF_MAX_MS", 2000) or 0), 0)
-            / 1000.0
-        )
+        backoff_base = max(int(getattr(self.settings, "DATA_BACKOFF_BASE_MS", 250) or 0), 0) / 1000.0
+        backoff_max = max(int(getattr(self.settings, "DATA_BACKOFF_MAX_MS", 2000) or 0), 0) / 1000.0
 
         last_exc: Exception | None = None
         response: httpx.Response | None = None
         for attempt in range(retries + 1):
             try:
                 # Circuit breaker: respektera cooldown
-                if hasattr(
-                    self.rate_limiter, "can_request"
-                ) and not self.rate_limiter.can_request(endpoint):
+                if hasattr(self.rate_limiter, "can_request") and not self.rate_limiter.can_request(endpoint):
                     wait = self.rate_limiter.time_until_open(endpoint)
                     logger.warning(f"CB: {endpoint} stängd i {wait:.1f}s")
                     await asyncio.sleep(wait)
@@ -309,9 +286,7 @@ class OrderHistoryService:
                 async with self._sem:
                     # Använd centraliserad ExchangeClient för signering/nonce-hantering
                     ec = get_exchange_client()
-                    response = await ec.signed_request(
-                        method="post", endpoint=endpoint, body=body, timeout=timeout
-                    )
+                    response = await ec.signed_request(method="post", endpoint=endpoint, body=body, timeout=timeout)
                 _t1 = time.perf_counter()
                 try:
                     record_http_result(
@@ -343,23 +318,15 @@ class OrderHistoryService:
                     # Retrybara statuskoder (ej nonce-fel)
                     if response.status_code in (429, 500, 502, 503, 504):
                         # Hantera server busy med intelligenta backoffs
-                        if "server busy" in (
-                            response.text or ""
-                        ).lower() or response.status_code in (429, 503):
+                        if "server busy" in (response.text or "").lower() or response.status_code in (429, 503):
                             # Circuit breaker + Retry-After
                             retry_after = response.headers.get("Retry-After")
                             if hasattr(self.rate_limiter, "note_failure"):
-                                cooldown = self.rate_limiter.note_failure(
-                                    endpoint, response.status_code, retry_after
-                                )
-                                logger.warning(
-                                    f"CB öppnad för {endpoint} i {cooldown:.1f}s"
-                                )
+                                cooldown = self.rate_limiter.note_failure(endpoint, response.status_code, retry_after)
+                                logger.warning(f"CB öppnad för {endpoint} i {cooldown:.1f}s")
                                 try:
                                     # Toggle transport CB metric on failure
-                                    metrics_store[
-                                        "transport_circuit_breaker_active"
-                                    ] = 1
+                                    metrics_store["transport_circuit_breaker_active"] = 1
                                 except Exception:
                                     pass
                             # Ny: namngiven TransportCircuitBreaker wrapper (parallell markering)
@@ -389,9 +356,7 @@ class OrderHistoryService:
             except Exception as e:
                 last_exc = e
                 if attempt < retries:
-                    delay = min(
-                        backoff_max, backoff_base * (2**attempt)
-                    ) + random.uniform(0, 0.1)
+                    delay = min(backoff_max, backoff_base * (2**attempt)) + random.uniform(0, 0.1)
                     await asyncio.sleep(delay)
                     continue
                 break
@@ -411,20 +376,14 @@ class OrderHistoryService:
                 )
                 # Om vi har ett svar men något gick fel, kasta ett mer specifikt fel
                 if response.status_code == 200:
-                    raise RuntimeError(
-                        f"API returned 200 but processing failed for {endpoint}"
-                    )
+                    raise RuntimeError(f"API returned 200 but processing failed for {endpoint}")
                 else:
-                    raise RuntimeError(
-                        f"API error {response.status_code} for {endpoint}"
-                    )
+                    raise RuntimeError(f"API error {response.status_code} for {endpoint}")
             except Exception:
                 pass
         if last_exc:
             raise last_exc
-        raise RuntimeError(
-            f"unknown_http_error for {endpoint} - no response and no exception"
-        )
+        raise RuntimeError(f"unknown_http_error for {endpoint} - no response and no exception")
 
     async def get_orders_history(
         self,
@@ -455,9 +414,7 @@ class OrderHistoryService:
             if end_time:
                 payload["end"] = end_time
 
-            logger.info(
-                f"🌐 REST API: Hämtar orderhistorik från {self.base_url}/{endpoint}"
-            )
+            logger.info(f"🌐 REST API: Hämtar orderhistorik från {self.base_url}/{endpoint}")
             response = await self._signed_post_with_retry(endpoint, payload)
 
             # Förbättrad felhantering för JSON-parsing
@@ -471,9 +428,7 @@ class OrderHistoryService:
 
             logger.info(f"✅ REST API: Hämtade {len(orders_data)} historiska ordrar")
 
-            orders = [
-                OrderHistoryItem.from_bitfinex_data(order) for order in orders_data
-            ]
+            orders = [OrderHistoryItem.from_bitfinex_data(order) for order in orders_data]
             return orders
 
         except Exception as e:
@@ -504,9 +459,7 @@ class OrderHistoryService:
                 logger.error(f"Response text (first 500 chars): {response.text[:500]}")
                 raise RuntimeError(f"JSON parsing failed: {json_error}")
 
-            logger.info(
-                f"✅ REST API: Hämtade {len(trades_data)} trades för order {order_id}"
-            )
+            logger.info(f"✅ REST API: Hämtade {len(trades_data)} trades för order {order_id}")
 
             trades = [TradeItem.from_bitfinex_data(trade) for trade in trades_data]
             return trades
@@ -515,9 +468,7 @@ class OrderHistoryService:
             logger.error(f"Fel vid hämtning av trades för order {order_id}: {e}")
             raise
 
-    async def get_trades_history(
-        self, symbol: str | None = None, limit: int = 25
-    ) -> list[TradeItem]:
+    async def get_trades_history(self, symbol: str | None = None, limit: int = 25) -> list[TradeItem]:
         """
         Hämtar handelshistorik från Bitfinex.
 
@@ -534,9 +485,7 @@ class OrderHistoryService:
                 endpoint = f"auth/r/trades/{symbol}/hist"
 
             payload = {"limit": limit} if limit else {}
-            logger.info(
-                f"🌐 REST API: Hämtar handelshistorik från {self.base_url}/{endpoint}"
-            )
+            logger.info(f"🌐 REST API: Hämtar handelshistorik från {self.base_url}/{endpoint}")
             response = await self._signed_post_with_retry(endpoint, payload)
 
             # Förbättrad felhantering för JSON-parsing
@@ -557,9 +506,7 @@ class OrderHistoryService:
             logger.error(f"Fel vid hämtning av handelshistorik: {e}")
             raise
 
-    async def get_ledgers(
-        self, currency: str | None = None, limit: int = 25
-    ) -> list[LedgerEntry]:
+    async def get_ledgers(self, currency: str | None = None, limit: int = 25) -> list[LedgerEntry]:
         """
         Hämtar ledger-poster från Bitfinex.
 
@@ -590,9 +537,7 @@ class OrderHistoryService:
 
             logger.info(f"✅ REST API: Hämtade {len(ledgers_data)} ledger-poster")
 
-            ledgers = [
-                LedgerEntry.from_bitfinex_data(ledger) for ledger in ledgers_data
-            ]
+            ledgers = [LedgerEntry.from_bitfinex_data(ledger) for ledger in ledgers_data]
             return ledgers
 
         except Exception as e:
@@ -615,15 +560,11 @@ async def get_order_trades(order_id: int) -> list[TradeItem]:
     return await order_history_service.get_order_trades(order_id)
 
 
-async def get_trades_history(
-    symbol: str | None = None, limit: int = 25
-) -> list[TradeItem]:
+async def get_trades_history(symbol: str | None = None, limit: int = 25) -> list[TradeItem]:
     return await order_history_service.get_trades_history(symbol, limit)
 
 
-async def get_ledgers(
-    currency: str | None = None, limit: int = 25
-) -> list[LedgerEntry]:
+async def get_ledgers(currency: str | None = None, limit: int = 25) -> list[LedgerEntry]:
     return await order_history_service.get_ledgers(currency, limit)
 
 
@@ -636,26 +577,20 @@ if __name__ == "__main__":
             orders = await get_orders_history(10)
             print(f"Senaste {len(orders)} ordrar:")
             for order in orders:
-                print(
-                    f"  {order.id}: {order.symbol} {order.type} {order.amount} @ {order.price} ({order.status})"
-                )
+                print(f"  {order.id}: {order.symbol} {order.type} {order.amount} @ {order.price} ({order.status})")
 
             # Om det finns ordrar, hämta trades för den första
             if orders:
                 trades = await get_order_trades(orders[0].id)
                 print(f"\nTrades för order {orders[0].id}:")
                 for trade in trades:
-                    print(
-                        f"  {trade.id}: {trade.amount} @ {trade.price} (Fee: {trade.fee} {trade.fee_currency})"
-                    )
+                    print(f"  {trade.id}: {trade.amount} @ {trade.price} (Fee: {trade.fee} {trade.fee_currency})")
 
             # Hämta senaste 5 ledger-poster för USD
             ledgers = await get_ledgers("USD", 5)
             print(f"\nSenaste {len(ledgers)} ledger-poster för USD:")
             for ledger in ledgers:
-                print(
-                    f"  {ledger.id}: {ledger.amount} {ledger.currency} - {ledger.description}"
-                )
+                print(f"  {ledger.id}: {ledger.amount} {ledger.currency} - {ledger.description}")
 
         except Exception as e:
             print(f"Fel: {e}")
