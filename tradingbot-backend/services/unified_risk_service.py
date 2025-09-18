@@ -457,7 +457,6 @@ class UnifiedRiskService:
             logger.error(f"❌ Fel vid hämtning av risk-status: {e}")
             return {
                 "timestamp": datetime.now().isoformat(),
-        alert-autofix-58
                 "error": "Internal server error",
         main
                 "overall_status": "error",
