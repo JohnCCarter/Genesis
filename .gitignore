@@ -322,3 +322,16 @@ audit-backend.json
 !.agent-communication/notifications.json
 !.agent-communication/status.json
 !.agent-communication/contracts.view.txt
+
+# Analysis backups and scans (local artifacts)
+analysis/backup_nul_issues/
+analysis/nul_scan.json
+analysis/nul_scan_after.json
+
+# Pre-commit local caches (per-user)
+.pre-commit-config.yaml.bak
+.pre-commit-cache/
+.cache/pre-commit/
+
+# VS Code workspace state
+.vscode/**

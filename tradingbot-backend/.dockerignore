@@ -29,3 +29,9 @@ node_modules/
 dist/
 build/
 archived/**
+.agent-locks/
+.agent-communication/
+analysis/backup_nul_issues/
+analysis/*.json
+analysis/*.txt
+analysis/*.md
