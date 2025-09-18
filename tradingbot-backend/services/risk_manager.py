@@ -24,7 +24,12 @@ _CB_OPENED_AT: datetime | None = None
 
 class RiskManager:
     def __init__(self, settings: Settings | None = None):
-        self.settings = settings or Settings()
+        if settings is None:
+            from config.settings import settings as _settings
+
+            self.settings = _settings
+        else:
+            self.settings = settings
         self.policy = RiskPolicyEngine(self.settings)
         # Backwards-compat: exponera underliggande services så gamla tester fungerar
         self.trading_window = self.policy.constraints.trading_window

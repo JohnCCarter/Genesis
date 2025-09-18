@@ -345,6 +345,16 @@ class FeatureFlagsService:
             elif name == "dry_run_enabled":
                 rc.set_bool("DRY_RUN_ENABLED", bool(value))
 
+            elif name == "prob_model_enabled":
+                # Spegla prob-modellflag både i runtime_config och singleton
+                rc.set_bool("PROB_MODEL_ENABLED", bool(value))
+                try:
+                    from services.prob_model import prob_model
+
+                    prob_model.enabled = bool(value)
+                except Exception:
+                    pass
+
         except Exception as e:
             logger.warning(f"⚠️ Kunde inte uppdatera runtime flag {name}: {e}")
 

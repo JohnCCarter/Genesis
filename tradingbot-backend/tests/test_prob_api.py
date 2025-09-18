@@ -7,7 +7,7 @@ os.environ.setdefault("AUTH_REQUIRED", "False")
 
 
 @pytest.mark.asyncio
-async def test_prob_predict_endpoint():
+def test_prob_predict_endpoint():
     from main import app
 
     client = TestClient(app)
@@ -19,7 +19,7 @@ async def test_prob_predict_endpoint():
 
 
 @pytest.mark.asyncio
-async def test_prob_validate_endpoint():
+def test_prob_validate_endpoint():
     from main import app
 
     client = TestClient(app)
@@ -31,3 +31,11 @@ async def test_prob_validate_endpoint():
     data = resp.json()
     assert "brier" in data
     assert "logloss" in data
+    # Additional sanity: source/schema present with correct fallback logic
+    assert "source" in data
+    assert data["source"] in ("model", "heuristic")
+    if data["source"] == "model":
+        assert data.get("schema") is not None
+    else:
+        # Heuristic fallback should not report a model schema
+        assert data.get("schema") is None

@@ -11,6 +11,7 @@ import asyncio as _asyncio
 import os
 from contextlib import asynccontextmanager
 from datetime import datetime
+from typing import Any
 
 import fastapi as _fastapi
 import uvicorn
@@ -49,6 +50,7 @@ try:
 except Exception:
     mcp_router = None  # type: ignore
 
+trading_service: Any = None
 try:
     from rest.routes import router as rest_router
     from rest.debug_routes import router as debug_router
@@ -57,7 +59,15 @@ try:
     from services.metrics import get_metrics_summary
     from utils.feature_flags import is_ws_connect_on_start
     from services.signal_service import signal_service
-    from services.trading_service import trading_service
+
+    try:
+        from services.trading_service import trading_service as _trading_service  # type: ignore
+
+        trading_service = _trading_service
+    except Exception:
+        trading_service = None
+    # Importera WS bridge-events (subscribe/unsubscribe/pool_status)
+    import ws.subscription_events  # noqa: F401
 except Exception as e:
     logger.error(f"❌ Critical startup error - cannot import core modules: {e}")
     raise
@@ -101,9 +111,19 @@ async def lifespan(app: FastAPI):
                 _t1 = _t.perf_counter()
                 logger.info("✅ WebSocket-anslutning etablerad (%.0f ms)", (_t1 - _t0) * 1000)
 
-                # Koppla WebSocket service till enhetliga services
-                signal_service.set_websocket_service(bitfinex_ws)
-                trading_service.set_websocket_service(bitfinex_ws)
+                # Koppla WebSocket service till enhetliga services (guarded)
+                try:
+                    fn = getattr(signal_service, "set_websocket_service", None)
+                    if callable(fn):
+                        fn(bitfinex_ws)
+                except Exception:
+                    pass
+                try:
+                    fn2 = getattr(trading_service, "set_websocket_service", None)
+                    if callable(fn2):
+                        fn2(bitfinex_ws)
+                except Exception:
+                    pass
                 logger.info("🔗 Enhetliga services kopplade till WebSocket")
 
                 # WS‑auth direkt om nycklar finns så att privata flöden fungerar

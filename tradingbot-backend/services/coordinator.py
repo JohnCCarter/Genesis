@@ -74,6 +74,8 @@ class CoordinatorService:
                 tp=tp,
                 sl=sl,
                 max_samples=int(getattr(s, "PROB_VALIDATE_MAX_SAMPLES", 500) or 500),
+                symbol=sym,
+                timeframe=tf,
             )
             key = f"{sym}|{tf}"
             pv = metrics_store.setdefault("prob_validation", {})

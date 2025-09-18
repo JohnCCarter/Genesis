@@ -16,6 +16,7 @@
 
 - Dubbelkolla varje fynd
 - Säkerställa att implementationen matchar specifikationen
+- Kör `tradingbot-backend/scripts/ci.ps1` (ruff/black/pytest/bandit) och säkerställ grön körning
 - Uppdatera TODO-lista korrekt
 
 ## ÅTAGANDE - ALDRIG MER:

@@ -22,7 +22,12 @@ class PolicyDecision:
 
 class RiskPolicyEngine:
     def __init__(self, settings: Settings | None = None) -> None:
-        self.settings = settings or Settings()
+        if settings is None:
+            from config.settings import settings as _settings
+
+            self.settings = _settings
+        else:
+            self.settings = settings
         self.constraints = TradeConstraintsService(self.settings)
 
     def evaluate(

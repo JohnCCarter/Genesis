@@ -237,6 +237,8 @@ class SchedulerService:
                         tp=float(getattr(s, "PROB_MODEL_EV_THRESHOLD", 0.0005) or 0.0005),
                         sl=float(getattr(s, "PROB_MODEL_EV_THRESHOLD", 0.0005) or 0.0005),
                         max_samples=max_samples,
+                        symbol=sym,
+                        timeframe=tf,
                     )
                     key = f"{sym}|{tf}"
                     pv = metrics_store.setdefault("prob_validation", {})

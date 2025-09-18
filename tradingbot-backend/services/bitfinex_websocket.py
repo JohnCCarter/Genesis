@@ -411,7 +411,7 @@ class BitfinexWebSocketService:
         except Exception:
             return eff_symbol
 
-    async def send(self, payload: dict[str, Any] | str):
+    async def send(self, payload: dict[str, Any] | list[Any] | str):
         """Skicka rått WS-meddelande. Accepterar dict (json.dumps) eller str."""
         try:
             if not self.websocket:
@@ -490,6 +490,86 @@ class BitfinexWebSocketService:
             logger.warning(f"⚠️ Kunde inte skicka conf: {e}")
 
     # --- WS Orderkommandon ---
+    # AI Change: Added order_on (send single WS 'on') for pure WS order flow (Agent: Codex, Date: 2025-09-17)
+    async def order_on(self, order: dict[str, Any]) -> dict[str, Any]:
+        """Skicka WS 'on' (lägg ny order) som en singel-operation.
+
+        Förväntar Bitfinex-format: [0, "on", null, payload]
+        Payload innehåller minst type, symbol (tPAIR) och amount (str, ± för riktning).
+        """
+        try:
+            if not await self.ensure_authenticated():
+                return {"success": False, "error": "ws_not_authenticated"}
+
+            # Grundläggande fält och normalisering
+            body: dict[str, Any] = {}
+            body["type"] = str(order.get("type") or "EXCHANGE LIMIT").strip()
+
+            # Symbol-resolution via SymbolService (t.ex. TEST/alias → giltig tPAIR)
+            sym_in = str(order.get("symbol") or "").strip()
+            if not sym_in:
+                return {"success": False, "error": "symbol_required"}
+            try:
+                from services.symbols import SymbolService  # lazy import
+
+                sym_svc = SymbolService()
+                await sym_svc.refresh()
+                eff_symbol = sym_svc.resolve(sym_in)
+                if not sym_svc.listed(eff_symbol):
+                    return {"success": False, "error": "pair_not_listed"}
+            except Exception:
+                eff_symbol = sym_in
+            body["symbol"] = eff_symbol
+
+            # Amount som str och tecken baserat på side (WS kräver tecken)
+            amt = order.get("amount")
+            if amt is None:
+                return {"success": False, "error": "amount_required"}
+            amt_str = str(amt).strip()
+            side = str(order.get("side") or "").lower()
+            try:
+                if side == "sell" and amt_str and not amt_str.startswith("-"):
+                    amt_str = f"-{amt_str}"
+                if side == "buy" and amt_str.startswith("-"):
+                    amt_str = amt_str.lstrip("-")
+            except Exception:
+                pass
+            body["amount"] = amt_str
+
+            # Övriga fält
+            if order.get("price") is not None:
+                body["price"] = str(order.get("price"))
+            if order.get("price_trailing") is not None:
+                body["price_trailing"] = str(order.get("price_trailing"))
+            if order.get("price_aux_limit") is not None:
+                body["price_aux_limit"] = str(order.get("price_aux_limit"))
+            if order.get("flags") is not None:
+                try:
+                    body["flags"] = int(order.get("flags"))
+                except Exception:
+                    pass
+
+            # Client ID (cid) – använd given eller generera tidsbaserad
+            cid_in = order.get("client_id") or order.get("cid")
+            if cid_in is not None:
+                try:
+                    body["cid"] = int(str(cid_in).strip())
+                except Exception:
+                    body["cid"] = str(cid_in)
+            else:
+                try:
+                    body["cid"] = int(time.time() * 1000)
+                except Exception:
+                    body["cid"] = int(datetime.now().timestamp() * 1000)
+
+            msg = [0, "on", None, body]
+            await self.send(msg)
+            logger.info("🛒 WS on skickad: %s %s", body.get("symbol"), body.get("type"))
+            return {"success": True, "sent": True, "cid": body.get("cid")}
+        except Exception as e:
+            logger.error(f"❌ WS on fel: {e}")
+            return {"success": False, "error": str(e)}
+
     async def order_update(
         self,
         order_id: int,

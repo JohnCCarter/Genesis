@@ -44,6 +44,7 @@ class UnifiedSignalService:
         self.signal_service = SignalService()
         self.market_data = get_market_data()
         self.symbol_service = SymbolService()
+        self._ws = None  # Bitfinex WebSocket service (optional dependency)
 
         # Enhetlig cache för alla signaler
         self._signal_cache: dict[str, SignalResponse] = {}
@@ -131,6 +132,7 @@ class UnifiedSignalService:
             return None
 
     async def generate_signal(self, symbol: str, force_refresh: bool = False) -> SignalResponse | None:
+    async def generate_signal(self, symbol: str, force_refresh: bool = False) -> SignalResponse | None:
         """
         Generera enhetlig signal för en symbol.
 
@@ -181,12 +183,14 @@ class UnifiedSignalService:
             self._last_update[symbol] = datetime.now()
 
             logger.debug(f"✅ Signal för {symbol}: {signal.signal_type} (confidence: {sc.confidence})")
+            logger.debug(f"✅ Signal för {symbol}: {signal.signal_type} (confidence: {sc.confidence})")
             return signal
 
         except Exception as e:
             logger.error(f"❌ Fel vid generering av signal för {symbol}: {e}")
             return None
 
+    async def generate_all_signals(self, force_refresh: bool = False) -> LiveSignalsResponse:
     async def generate_all_signals(self, force_refresh: bool = False) -> LiveSignalsResponse:
         """
         Generera signaler för alla aktiva symboler.
@@ -199,6 +203,7 @@ class UnifiedSignalService:
 
             # Generera signaler parallellt för bättre prestanda
             signal_tasks = [self.generate_signal(symbol, force_refresh) for symbol in symbols]
+            signal_tasks = [self.generate_signal(symbol, force_refresh) for symbol in symbols]
             signals = await asyncio.gather(*signal_tasks, return_exceptions=True)
 
             # Filtrera bort None och exceptions
@@ -207,6 +212,7 @@ class UnifiedSignalService:
                 if isinstance(signal, SignalResponse):
                     valid_signals.append(signal)
                 elif isinstance(signal, Exception):
+                    logger.error(f"❌ Signal generation error för {symbols[i]}: {signal}")
                     logger.error(f"❌ Signal generation error för {symbols[i]}: {signal}")
 
             # Beräkna active signals och summary
@@ -257,6 +263,7 @@ class UnifiedSignalService:
 
             # Hämta regime data för alla symboler
             regime_tasks = [self.get_regime_data(symbol, force_refresh) for symbol in symbols]
+            regime_tasks = [self.get_regime_data(symbol, force_refresh) for symbol in symbols]
             regimes = await asyncio.gather(*regime_tasks, return_exceptions=True)
 
             # Filtrera bort None och exceptions
@@ -288,8 +295,10 @@ class UnifiedSignalService:
             # Beräkna sammanfattning
             trend_count = len([r for r in enhanced_regimes if r["regime"] == "trend"])
             balanced_count = len([r for r in enhanced_regimes if r["regime"] == "balanced"])
+            balanced_count = len([r for r in enhanced_regimes if r["regime"] == "balanced"])
             range_count = len([r for r in enhanced_regimes if r["regime"] == "range"])
             avg_confidence = (
+                sum(r["confidence_score"] for r in enhanced_regimes) / len(enhanced_regimes) if enhanced_regimes else 0
                 sum(r["confidence_score"] for r in enhanced_regimes) / len(enhanced_regimes) if enhanced_regimes else 0
             )
             total_trading_prob = sum(r["trading_probability"] for r in enhanced_regimes)
@@ -307,6 +316,7 @@ class UnifiedSignalService:
                 },
             }
 
+            logger.info(f"📊 Regime sammanfattning: {trend_count} trend, {balanced_count} balanced, {range_count} range")
             logger.info(f"📊 Regime sammanfattning: {trend_count} trend, {balanced_count} balanced, {range_count} range")
             return result
 
@@ -387,6 +397,8 @@ class UnifiedSignalService:
             "signal_cache_size": len(self._signal_cache),
             "regime_cache_size": len(self._regime_cache),
             "last_updates": len(self._last_update),
+            "oldest_cache": (min(self._last_update.values()) if self._last_update else None),
+            "newest_cache": (max(self._last_update.values()) if self._last_update else None),
             "oldest_cache": (min(self._last_update.values()) if self._last_update else None),
             "newest_cache": (max(self._last_update.values()) if self._last_update else None),
         }

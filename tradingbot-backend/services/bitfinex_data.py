@@ -10,6 +10,7 @@ import random
 import time
 import httpx
 
+import httpx
 from services.http import aget
 
 from config.settings import settings

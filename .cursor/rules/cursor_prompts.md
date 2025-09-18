@@ -32,7 +32,7 @@ Verktygsregler & arbetsflöde
 - Parallellisera: batcha läsningar/sökningar/oberoende operationer; undvik sekventiella steg när inte nödvändigt.
 - Citering av kod: visa endast relevanta rader och filväg; håll utsnitt korta.
 - Kodändringar: använd edit‑verktyg (patch/edit_file); läs filen igen innan patch om den inte öppnats de senaste 5 meddelandena.
-- Efter kodändringar: kör tester (`pytest`) och lint (`flake8 .`); åtgärda fel innan arbetet markeras klart.
+- Efter kodändringar: kör `tradingbot-backend/scripts/ci.ps1` (black, ruff, pytest, bandit). Åtgärda fel innan arbetet markeras klart.
 - Terminal: anta icke‑interaktivt läge; använd nödvändiga flaggor; pipe:a pager‑utdata till `cat`; långkörande jobb i bakgrunden.
 
 Testning och lint
@@ -182,11 +182,23 @@ Utför: Små, säkra steg + kör tester.
 
 ---
 
-Tips
+### Tips
 
 - Standardkörning (dev): `uvicorn main:app --reload` från `tradingbot-backend`.
 - Test: `python -m pytest tests/` (sätt vid behov `AUTH_REQUIRED=False`).
-- Lint: kör flake8 enligt projektets konfiguration.
+- Lint/CI: `powershell -File tradingbot-backend/scripts/ci.ps1` (ruff/black/pytest/bandit).
+
+#### PowerShell setup (venv + pip‑tools)
+```powershell
+python -m pip install --upgrade pip pip-tools
+python -m venv .venv
+Set-ExecutionPolicy -Scope Process Bypass -Force
+. .\.venv\Scripts\Activate.ps1
+pip install -r tradingbot-backend/requirements.txt
+```
+
+#### Loggsekretess
+- Läck aldrig tokens eller hemligheter i loggar. Använd redaction i `utils/logger.py` och skriv inte ut headers/body med känsliga värden.
 
 ---
 

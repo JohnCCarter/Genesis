@@ -48,8 +48,10 @@ class SafeFormatter(logging.Formatter):
         try:
             # Försök round-trip i aktuell encoding; ersätt otillåtna tecken
             return msg.encode(encoding, errors="replace").decode(encoding, errors="replace")
+            return msg.encode(encoding, errors="replace").decode(encoding, errors="replace")
         except Exception:
             # Sista utväg: ASCII utan specialtecken
+            return msg.encode("ascii", errors="replace").decode("ascii", errors="replace")
             return msg.encode("ascii", errors="replace").decode("ascii", errors="replace")
 
 
@@ -80,9 +82,9 @@ def get_logger(name: str) -> logging.Logger:
 
         # Skapa filhandler om möjligt (LOG_FILE från Settings)
         try:
-            from config.settings import Settings  # lazily import to avoid cycles
+            from config.settings import settings  # lazily import to avoid cycles
 
-            settings = Settings()
+            settings = settings()
             log_file_name = getattr(settings, "LOG_FILE", "tradingbot.log") or "tradingbot.log"
             # Skriv loggfil i projektroten (mappen över utils)
             project_root = os.path.dirname(os.path.dirname(__file__))

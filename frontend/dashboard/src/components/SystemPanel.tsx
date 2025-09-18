@@ -27,8 +27,14 @@ export function SystemPanel() {
 
     const refreshSubs = React.useCallback(async () => {
         try {
-            const s = await getWith('/api/v2/ws/pool/status', { timeout: 8000, maxRetries: 1 });
-            const arr = (s && s.subscriptions) || [];
+            const s = getUiSocket();
+            await ensureUiSocketConnected();
+            const res = await new Promise<any>((resolve) => {
+                // Be om poolstatus via Socket.IO event
+                try { (s as any).emit('get_pool_status', {}, (reply: any) => resolve(reply)); } catch { resolve(null); }
+                setTimeout(() => resolve(null), 1500);
+            });
+            const arr = (res && (res.subscriptions || res?.subscriptions)) || [];
             setSubs(Array.isArray(arr) ? arr : []);
         } catch (e) {
             setSubs([]);
@@ -107,9 +113,13 @@ export function SystemPanel() {
                     <input placeholder="tBTCUSD" value={sym} onChange={(e) => setSym(e.target.value)} style={{ width: 160 }} />
                     <button onClick={async () => {
                         try {
+                            const s = await ensureUiSocketConnected();
                             const body: any = { channel: chan, symbol: sym };
                             if (chan === 'candles' && tf.trim()) body.timeframe = tf.trim();
-                            await post('/api/v2/ws/subscribe', body);
+                            await new Promise<void>((resolve) => {
+                                try { (s as any).emit('subscribe_channel', body, () => resolve()); } catch { resolve(); }
+                                setTimeout(() => resolve(), 1200);
+                            });
                             await refreshSubs();
                         } catch (e: any) {
                             setWsLog((v) => v + `\nERR ${e?.message || String(e)}`);
@@ -117,9 +127,13 @@ export function SystemPanel() {
                     }}>Subscribe</button>
                     <button onClick={async () => {
                         try {
+                            const s = await ensureUiSocketConnected();
                             const body: any = { channel: chan, symbol: sym };
                             if (chan === 'candles' && tf.trim()) body.timeframe = tf.trim();
-                            await post('/api/v2/ws/unsubscribe', body);
+                            await new Promise<void>((resolve) => {
+                                try { (s as any).emit('unsubscribe_channel', body, () => resolve()); } catch { resolve(); }
+                                setTimeout(() => resolve(), 1200);
+                            });
                             await refreshSubs();
                         } catch (e: any) {
                             setWsLog((v) => v + `\nERR ${e?.message || String(e)}`);

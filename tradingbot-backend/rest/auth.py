@@ -10,6 +10,7 @@ import hmac
 import json
 import os
 from datetime import datetime
+from typing import Any
 
 from fastapi.security import HTTPBearer
 
@@ -33,7 +34,7 @@ logger.info(
 
 def build_auth_headers(
     endpoint: str,
-    payload: dict = None,
+    payload: dict[str, Any] | None = None,
     v1: bool = False,
     payload_str: str | None = None,
 ) -> dict:
@@ -125,8 +126,9 @@ async def place_order(order: dict) -> dict:
         except Exception:
             pass
         try:
-            if order.get("flags") is not None:
-                bitfinex_order["flags"] = int(order.get("flags"))
+            flags_value = order.get("flags")
+            if isinstance(flags_value, (int, str)):
+                bitfinex_order["flags"] = int(flags_value)
         except Exception:
             pass
 
@@ -147,6 +149,33 @@ async def place_order(order: dict) -> dict:
         return result
 
     except Exception as e:
+        # Förbättrad felparsning: httpx response och Bitfinex 500-lista
+        try:
+            import httpx
+
+            if isinstance(e, httpx.HTTPStatusError):
+                resp = e.response
+                details = None
+                try:
+                    details = resp.json()
+                except Exception:
+                    details = resp.text
+                logger.error(f"Fel vid orderläggning (HTTP {resp.status_code}): {details}")
+                # Bitfinex 500 payload brukar vara en lista [code, message, detail]
+                if resp.status_code == 500 and isinstance(details, list) and len(details) >= 2:
+                    return {
+                        "error": "bitfinex_500",
+                        "code": details[0],
+                        "message": details[1],
+                        "detail": details[2] if len(details) > 2 else None,
+                    }
+                return {
+                    "error": "http_error",
+                    "status": resp.status_code,
+                    "detail": details,
+                }
+        except Exception:
+            pass
         error_msg = f"Fel vid orderläggning: {e}"
         logger.error(error_msg)
         return {"error": error_msg}

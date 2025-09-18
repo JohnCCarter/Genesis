@@ -27,7 +27,9 @@ class WSWalletHandler:
         """
         self.sio = sio_client
         self.bitfinex_ws = bitfinex_ws_service
-        self.settings = Settings()
+        from config.settings import settings as _settings
+
+        self.settings = _settings
         self.authenticated = False
         self.wallets = []
         self.wallet_callbacks = []

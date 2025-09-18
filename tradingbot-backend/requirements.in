@@ -4,6 +4,8 @@ uvicorn>=0.24,<0.25
 httpx>=0.24,<0.26
 supabase>=2.3,<3
 pydantic-settings>=2.0,<3
+# Enforce secure Starlette to address GHSA-f96h-pmfr-66vw and GHSA-2c2j-9gv5-cj73
+starlette>=0.47.2,<0.48
 
 # Enforce secure Starlette to address advisories
 starlette>=0.47.2,<0.48
@@ -30,3 +32,4 @@ ruff>=0.5,<1
 mypy>=1.6,<2
 bandit>=1.7,<2
 pip-audit>=2.7,<3
+pylint>=3,<4

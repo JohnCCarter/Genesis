@@ -25,7 +25,12 @@ class RiskGuardsService:
     """Service fÃ¶r globala riskvakter och kill-switch funktionalitet."""
 
     def __init__(self, settings: Settings | None = None):
-        self.settings = settings or Settings()
+        if settings is None:
+            from config.settings import settings as _settings
+
+            self.settings = _settings
+        else:
+            self.settings = settings
         self.guards_file = "config/risk_guards.json"
         self.performance_service = PerformanceService(self.settings)
 

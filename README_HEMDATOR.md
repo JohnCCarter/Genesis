@@ -3,6 +3,7 @@
 Enkel guide för att starta boten lokalt på en hemdator.
 
 **Dator:** Skynet
+**Dator:** Skynet
 **Sökväg:** `C:\Users\salib\Desktop\Repo\Genesis`
 
 ## 🏠 **Lokal Utvecklingsmiljö**

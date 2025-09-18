@@ -39,6 +39,8 @@ async def main() -> None:
     model = train_and_export(candles, horizon=horizon, tp=tp, sl=sl, out_path=out_path)
     print(f"Exported model to {out_path}")
     # Tips: sätt i .env → PROB_MODEL_FILE={out_path}
+    # Invalidation hint: per-symbol/timeframe cache i prob_model använder filens mtime,
+    # så efter retrain behöver du inte starta om processen – ny metadata plockas automatiskt.
 
 
 if __name__ == "__main__":

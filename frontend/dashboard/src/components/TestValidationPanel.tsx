@@ -274,6 +274,12 @@ export function TestValidationPanel() {
                                         <div>Brier Score: <b>{formatNumber(result.metrics.brier_score || 0, 4)}</b></div>
                                         <div>Total Signals: <b>{result.metrics.total_signals || 0}</b></div>
                                         <div>Correct Signals: <b>{result.metrics.correct_signals || 0}</b></div>
+                                        {result?.schema && (
+                                            <div>Schema: <b>{Array.isArray(result.schema) ? result.schema.join(', ') : String(result.schema)}</b></div>
+                                        )}
+                                        {result?.source && (
+                                            <div>Source: <b>{String(result.source)}</b></div>
+                                        )}
                                     </div>
                                 </div>
                             )}
