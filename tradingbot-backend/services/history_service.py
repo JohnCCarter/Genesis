@@ -293,7 +293,7 @@ class HistoryService:
             logger.error(f"❌ Fel vid hämtning av comprehensive history: {e}")
             return {
                 "timestamp": datetime.now().isoformat(),
-                "error": str(e),
+                "error": "Internal server error",
                 "trades": {"count": 0, "data": [], "summary": {}},
                 "ledgers": {"count": 0, "data": [], "summary": {}},
                 "equity_history": {"count": 0, "data": [], "summary": {}},

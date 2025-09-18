@@ -186,8 +186,8 @@ class UnifiedRiskService:
             return RiskDecision(True)
 
         except Exception as e:
-            logger.error(f"❌ Fel vid risk-evaluering: {e}")
-            return RiskDecision(False, f"evaluation_error:{e!s}")
+            logger.error(f"❌ Fel vid risk-evaluering: {e}", exc_info=True)
+            return RiskDecision(False, "evaluation_error")
 
     def record_trade(self, symbol: str | None = None) -> None:
         """Registrera en genomförd trade."""
@@ -457,7 +457,11 @@ class UnifiedRiskService:
             logger.error(f"❌ Fel vid hämtning av risk-status: {e}")
             return {
                 "timestamp": datetime.now().isoformat(),
+        alert-autofix-58
                 "error": "Internal error",
+
+                "error": "Internal server error",
+        main
                 "overall_status": "error",
             }
 

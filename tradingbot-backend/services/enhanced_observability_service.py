@@ -410,10 +410,10 @@ class EnhancedObservabilityService:
             return comprehensive_metrics
 
         except Exception as e:
-            logger.error(f"❌ Fel vid hämtning av comprehensive metrics: {e}")
+            logger.exception(f"❌ Fel vid hämtning av comprehensive metrics: {e}")
             return {
                 "timestamp": datetime.now().isoformat(),
-                "error": str(e),
+                "error": "Internal server error",
                 "overall_health": "error",
             }
 
