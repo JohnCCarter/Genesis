@@ -627,7 +627,7 @@ class HealthWatchdogService:
             }
         except Exception as e:
             logger.error(f"❌ Kunde inte hämta overall health: {e}")
-            return {"error": str(e)}
+            return {"error": "Internal server error"}
 
 
 # Global instans
