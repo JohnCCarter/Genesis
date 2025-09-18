@@ -457,7 +457,7 @@ class UnifiedRiskService:
             logger.error(f"❌ Fel vid hämtning av risk-status: {e}")
             return {
                 "timestamp": datetime.now().isoformat(),
-                "error": str(e),
+                "error": "Internal error",
                 "overall_status": "error",
             }
 
