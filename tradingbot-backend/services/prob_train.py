@@ -65,48 +65,36 @@ def train_and_export(candles: list[list[float]], horizon: int, tp: float, sl: fl
     # Security: Validate out_path to prevent path traversal
     import os
 
-    # CRITICAL: Ensure out_path is safe (no directory traversal)
-    # Step 1: Normalize and check for absolute paths or traversal attempts
+    # Step 1: Normalize and validate path to prevent directory traversal
     normalized_path = os.path.normpath(out_path)
     if os.path.isabs(normalized_path) or ".." in normalized_path.split(os.sep):
         raise ValueError(f"Invalid out_path: {out_path}")
 
-    # Step 2: Additional security - only allow simple filenames in a safe directory
-    # Define the safe root directory for all model outputs
+    # Step 2: Only allow simple filenames in the safe directory
     safe_root = os.path.abspath("config/models")
-
-    # Step 3: Construct the final path within the safe directory
-    # Use only the basename to prevent any path traversal
     safe_filename = os.path.basename(normalized_path)
-    # Allowlist: only .json files, simple names (letters, digits, _ - .)
     import re as _re
 
-    if not safe_filename or "/" in safe_filename or "\\" in safe_filename:
+    # Extra validation
+    if (
+        not safe_filename
+        or "/" in safe_filename
+        or "\\" in safe_filename
+        or not _re.fullmatch(r"[A-Za-z0-9._-]+", safe_filename)
+        or not safe_filename.lower().endswith(".json")
+    ):
         raise ValueError(f"Invalid filename: {safe_filename}")
-    if not _re.fullmatch(r"[A-Za-z0-9._-]+", safe_filename):
-        raise ValueError(f"Invalid filename characters: {safe_filename}")
-    if not safe_filename.lower().endswith(".json"):
-        raise ValueError("Only .json files are allowed for model export")
 
-    # Step 4: Final path construction within safe bounds
-    safe_path = os.path.join(safe_root, safe_filename)
-
-    # Step 5: Ensure the safe directory exists
+    # Step 3: Construct the final output path and ensure it is within the safe directory
     os.makedirs(safe_root, exist_ok=True)
-
-    # branch marker removed
-    # Step 6: Create a completely new path variable to break data flow analysis concerns
-    final_clean_path = os.path.join(os.path.abspath("config/models"), safe_filename)
-
-    # Step 6: Realpath containment check to ensure no breakout is possible
+    target_path = os.path.join(safe_root, safe_filename)
     real_root = os.path.realpath(safe_root)
-    real_path = os.path.realpath(safe_path)
-    if not (real_path.startswith(real_root + os.sep) or real_path == real_root):
-        raise ValueError(f"Output path not within safe directory: {real_path}")
+    real_target = os.path.realpath(target_path)
+    # Ensure strict containment: real_target must be within real_root
+    if not (real_target.startswith(real_root + os.sep) or real_target == real_root):
+        raise ValueError(f"Output path not within safe directory: {real_target}")
 
-    final_clean_path = real_path  # Path is known-safe at this point
-    # branch marker removed
-
+    # Step 4: Continue training and export to the validated file
     samples = build_dataset(candles, horizon=horizon, tp=tp, sl=sl)
     if not samples:
         raise ValueError("No samples built; increase history.")
@@ -126,6 +114,6 @@ def train_and_export(candles: list[list[float]], horizon: int, tp: float, sl: fl
         # heuristic combiner for hold: normalize at inference
         "version": 1,
     }
-    with open(final_clean_path, "w", encoding="utf-8") as f:
+    with open(real_target, "w", encoding="utf-8") as f:
         json.dump(model, f)
     return model
