@@ -73,7 +73,7 @@ Persistence: Fortsätt tills arbetet är klart.
 - Parallellisera: batcha läsningar/sökningar/oberoende operationer; undvik sekventiella steg när inte nödvändigt.
 - Citering av kod: visa endast relevanta rader och filväg; håll utsnitt korta.
 - Kodändringar: använd edit‑verktyg; skriv inte stora kodblock direkt i chatten.
-- Efter kodändringar: kör tester och lint; åtgärda fel innan leverans.
+- Efter kodändringar: kör `tradingbot-backend/scripts/ci.ps1` (black, ruff, pytest, bandit); åtgärda fel innan leverans.
 - Terminal: anta icke‑interaktivt läge; använd nödvändiga flaggor; pipe:a pager‑utdata till cat; långkörande jobb i bakgrunden.
 - Arbetsflöde i svar: kort statusuppdatering före verktygsanvändning; kort sammanfattning efteråt.
 - Markdown: använd "###" rubriker; fetstil för nyckelinfo; `inline code` för filer/klasser/funktioner; visa bara relevanta kodblock.
@@ -82,7 +82,7 @@ Persistence: Fortsätt tills arbetet är klart.
 
 - Bitfinex v2 (REST + WS) med signering och korrekt nonce‑hantering.
 - Robust reconnect/backoff och felhantering för nätverksstörningar.
-- Respektera `AUTH_REQUIRED`; använd `.env` för nycklar; läck aldrig hemligheter i logg/svar.
+- Respektera `AUTH_REQUIRED`; använd `.env` för nycklar; läck aldrig hemligheter i logg/svar (använd redaction i `utils/logger.py`).
 
   11.Minnen (Memory‑policy)
 
