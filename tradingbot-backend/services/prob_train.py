@@ -14,7 +14,7 @@ from typing import Any
 import numpy as np
 
 from services.prob_features import build_dataset
-
+from werkzeug.utils import secure_filename
 
 def _to_Xy(samples: list[dict[str, Any]]):
     feats = [[s.get("ema_diff", 0.0), s.get("rsi_norm", 0.0), s.get("atr_pct", 0.0)] for s in samples]
@@ -65,6 +65,21 @@ def train_and_export(candles: list[list[float]], horizon: int, tp: float, sl: fl
     # Security: Validate out_path to prevent path traversal
     import os
 
+ alert-autofix-34
+    # Step 1: Sanitize filename and ensure no directory traversal
+    safe_root = os.path.abspath("config/models")
+    safe_filename = secure_filename(out_path)
+    if (
+        or safe_filename.startswith(".")
+        not safe_filename
+        or "/" in safe_filename
+        or "\\" in safe_filename
+        or not safe_filename.lower().endswith(".json")
+    ):
+        raise ValueError(f"Invalid output filename: {safe_filename}")
+
+    # Step 2: Construct the final output path and ensure it is within the safe directory
+
     # Step 1: Normalize and validate path to prevent directory traversal
     normalized_path = os.path.normpath(out_path)
     if os.path.isabs(normalized_path) or ".." in normalized_path.split(os.sep):
@@ -86,6 +101,7 @@ def train_and_export(candles: list[list[float]], horizon: int, tp: float, sl: fl
         raise ValueError(f"Invalid filename: {safe_filename}")
 
     # Step 3: Construct the final output path and ensure it is within the safe directory
+ main
     os.makedirs(safe_root, exist_ok=True)
     target_path = os.path.join(safe_root, safe_filename)
     real_root = os.path.realpath(safe_root)
@@ -94,7 +110,11 @@ def train_and_export(candles: list[list[float]], horizon: int, tp: float, sl: fl
     if not (real_target.startswith(real_root + os.sep) or real_target == real_root):
         raise ValueError(f"Output path not within safe directory: {real_target}")
 
+ alert-autofix-34
+    # Step 3: Continue training and export to the validated file
+
     # Step 4: Continue training and export to the validated file
+  main
     samples = build_dataset(candles, horizon=horizon, tp=tp, sl=sl)
     if not samples:
         raise ValueError("No samples built; increase history.")
