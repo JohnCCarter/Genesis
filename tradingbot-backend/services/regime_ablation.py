@@ -474,7 +474,7 @@ class RegimeAblationService:
             return status
         except Exception as e:
             logger.error(f"❌ Kunde inte hämta regime status: {e}")
-            return {"error": str(e)}
+            raise RuntimeError("Kunde inte hämta regime status") from e
 
 
 # Global instans
