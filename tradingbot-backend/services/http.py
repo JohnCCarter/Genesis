@@ -11,7 +11,7 @@ limits = httpx.Limits(max_keepalive_connections=20, max_connections=40)
 timeout = httpx.Timeout(connect=2.0, read=6.0, write=6.0, pool=2.0)
 
 # Per-event-loop klienter för att undvika att en stängd klient återanvänds i ny loop
-_clients_by_loop: Dict[int, httpx.AsyncClient] = {}
+_clients_by_loop: dict[int, httpx.AsyncClient] = {}
 
 
 def _get_loop_id() -> int:

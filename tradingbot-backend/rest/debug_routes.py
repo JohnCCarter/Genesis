@@ -45,11 +45,7 @@ async def dump_tasks() -> dict[str, Any]:
                         "name": task.get_name(),
                         "done": task.done(),
                         "cancelled": task.cancelled(),
-                        "exception": (
-                            str(task.exception())
-                            if task.done() and task.exception()
-                            else None
-                        ),
+                        "exception": (str(task.exception()) if task.done() and task.exception() else None),
                         "stack": stack,
                     }
                 )
@@ -59,13 +55,11 @@ async def dump_tasks() -> dict[str, Any]:
         return {
             "count": len(out),
             "tasks": out,
-            "current_task": (
-                asyncio.current_task().get_name() if asyncio.current_task() else None
-            ),
+            "current_task": (asyncio.current_task().get_name() if asyncio.current_task() else None),
         }
     except Exception as e:
         logger.error(f"Fel vid task dump: {e}")
-        return {"error": str(e), "count": 0, "tasks": []}
+        return {"error": "internal_error", "count": 0, "tasks": []}
 
 
 @router.get("/api/v2/debug/threads")
@@ -101,7 +95,7 @@ def dump_threads() -> dict[str, Any]:
         }
     except Exception as e:
         logger.error(f"Fel vid thread dump: {e}")
-        return {"error": str(e), "count": 0, "threads": []}
+        return {"error": "internal_error", "count": 0, "threads": []}
 
 
 @router.get("/api/v2/debug/rate_limiter")
@@ -129,7 +123,7 @@ async def dump_rate_limiter() -> dict[str, Any]:
         }
     except Exception as e:
         logger.error(f"Fel vid rate limiter dump: {e}")
-        return {"error": str(e)}
+        return {"error": "internal_error"}
 
 
 @router.get("/api/v2/debug/market_data")
@@ -148,7 +142,7 @@ async def dump_market_data() -> dict[str, Any]:
         }
     except Exception as e:
         logger.error(f"Fel vid market data dump: {e}")
-        return {"error": str(e)}
+        return {"error": "internal_error"}
 
 
 @router.get("/api/v2/debug/risk_guards")
@@ -161,7 +155,7 @@ async def dump_risk_guards() -> dict[str, Any]:
         return status
     except Exception as e:
         logger.error(f"Fel vid risk guards dump: {e}")
-        return {"error": str(e)}
+        return {"error": "internal_error"}
 
 
 @router.get("/api/v2/debug/websocket")
@@ -180,4 +174,4 @@ async def dump_websocket() -> dict[str, Any]:
         }
     except Exception as e:
         logger.error(f"Fel vid WebSocket dump: {e}")
-        return {"error": str(e)}
+        return {"error": "internal_error"}
