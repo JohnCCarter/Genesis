@@ -7,9 +7,7 @@ from typing import Any, Dict, List
 from bs4 import BeautifulSoup
 
 # Konfigurera loggning
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
@@ -133,11 +131,7 @@ class HtmlStructureAnalyzer:
             table_info = {
                 "headers": headers,
                 "classes": table.get("class", []),
-                "rows": (
-                    len(table.find_all("tr")) - 1
-                    if headers
-                    else len(table.find_all("tr"))
-                ),
+                "rows": (len(table.find_all("tr")) - 1 if headers else len(table.find_all("tr"))),
             }
             tables.append(table_info)
 
@@ -200,9 +194,7 @@ class HtmlStructureAnalyzer:
         }
 
         # Hitta potentiella endpoints
-        for element in soup.find_all(
-            string=re.compile(r"(GET|POST|PUT|DELETE)\s+/[^\s]+")
-        ):
+        for element in soup.find_all(string=re.compile(r"(GET|POST|PUT|DELETE)\s+/[^\s]+")):
             api_info["potential_endpoints"].append(
                 {
                     "text": element.strip(),

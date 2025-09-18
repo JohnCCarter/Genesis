@@ -16,6 +16,7 @@ repos:
       - id: black
         language_version: python3
         files: ^tradingbot-backend/.*\.py$
+        exclude: ^tradingbot-backend/archived/
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.1.6
@@ -23,6 +24,7 @@ repos:
       - id: ruff
         args: [--fix, --config, tradingbot-backend/pyproject.toml]
         files: ^tradingbot-backend/.*\.py$
+        exclude: ^tradingbot-backend/archived/
 
   - repo: local
     hooks:
@@ -32,6 +34,7 @@ repos:
         entry: python scripts/check_nul_bytes.py
         pass_filenames: true
         files: ^(tradingbot-backend|frontend|scripts|analysis|\.gitattributes|\.editorconfig|README\.md)
+        exclude: ^tradingbot-backend/archived/
 
   # Temporarily disabled due to pbr dependency issues
   # - repo: https://github.com/PyCQA/bandit

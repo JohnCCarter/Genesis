@@ -8,9 +8,7 @@ from typing import Any, Dict, List
 from bs4 import BeautifulSoup
 
 # Konfigurera loggning
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 

@@ -103,24 +103,12 @@ def log_startup_status() -> None:
     status = get_component_status()
 
     logger.info("🔧 Komponent-status vid startup:")
-    logger.info(
-        f"  📝 Dry Run: {'✅ Aktiverat' if status['dry_run_enabled'] else '❌ Inaktiverat'}"
-    )
-    logger.info(
-        f"  🧠 Probability Model: {'✅ Aktiverat' if status['prob_model_enabled'] else '❌ Inaktiverat'}"
-    )
-    logger.info(
-        f"  🤖 Auto Trading: {'✅ Aktiverat' if status['prob_autotrade_enabled'] else '❌ Inaktiverat'}"
-    )
-    logger.info(
-        f"  🗓️ Scheduler: {'✅ Aktiverat' if status['scheduler_enabled'] else '❌ Inaktiverat'}"
-    )
-    logger.info(
-        f"  🌐 WebSocket Connect: {'✅ Aktiverat' if status['ws_connect_on_start'] else '❌ Inaktiverat'}"
-    )
-    logger.info(
-        f"  🚀 Dev Mode: {'✅ Aktiverat' if status['dev_mode'] else '❌ Inaktiverat'}"
-    )
+    logger.info(f"  📝 Dry Run: {'✅ Aktiverat' if status['dry_run_enabled'] else '❌ Inaktiverat'}")
+    logger.info(f"  🧠 Probability Model: {'✅ Aktiverat' if status['prob_model_enabled'] else '❌ Inaktiverat'}")
+    logger.info(f"  🤖 Auto Trading: {'✅ Aktiverat' if status['prob_autotrade_enabled'] else '❌ Inaktiverat'}")
+    logger.info(f"  🗓️ Scheduler: {'✅ Aktiverat' if status['scheduler_enabled'] else '❌ Inaktiverat'}")
+    logger.info(f"  🌐 WebSocket Connect: {'✅ Aktiverat' if status['ws_connect_on_start'] else '❌ Inaktiverat'}")
+    logger.info(f"  🚀 Dev Mode: {'✅ Aktiverat' if status['dev_mode'] else '❌ Inaktiverat'}")
 
     # Logga miljövariabler
     env_vars = status["environment_variables"]

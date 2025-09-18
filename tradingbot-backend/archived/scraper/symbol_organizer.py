@@ -4,9 +4,7 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 # Konfigurera loggning
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
@@ -58,9 +56,7 @@ class SymbolOrganizer:
         else:
             return "other"
 
-    def organize_symbols(
-        self, symbols: List[Dict[str, str]]
-    ) -> Dict[str, List[Dict[str, Any]]]:
+    def organize_symbols(self, symbols: List[Dict[str, str]]) -> Dict[str, List[Dict[str, Any]]]:
         """
         Organiserar symboler i kategorier
 
