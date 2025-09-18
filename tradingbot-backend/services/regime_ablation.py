@@ -373,7 +373,7 @@ class RegimeAblationService:
 
         except Exception as e:
             logger.error(f"❌ Fel vid ablation test: {e}")
-            return {"error": str(e)}
+            return {"error": "Internal error occurred"}
 
     def _simulate_regime_performance(self, regime_names: list[str]) -> dict[str, Any]:
         """
@@ -474,7 +474,7 @@ class RegimeAblationService:
             return status
         except Exception as e:
             logger.error(f"❌ Kunde inte hämta regime status: {e}")
-            return {"error": str(e)}
+            raise RuntimeError("Kunde inte hämta regime status") from e
 
 
 # Global instans

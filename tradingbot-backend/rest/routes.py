@@ -11,6 +11,7 @@ from typing import Any
 
 import jwt
 from fastapi import APIRouter, Depends, HTTPException, Response, Query, Request, status
+from utils.logger import get_logger
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from fastapi.responses import JSONResponse, PlainTextResponse, ORJSONResponse
 from pydantic import BaseModel, Field
@@ -353,7 +354,16 @@ async def prob_trade(req: ProbTradeRequest, _bypass_auth: bool = Depends(securit
                         pass
                 except Exception:
                     pass
-                return {"ok": False, "error": f"risk_blocked:{reason}"}
+                # Avoid leaking internal error details to clients
+                err_msg = "risk_evaluation_failed" if str(reason).startswith("evaluation_error") else f"risk_blocked:{reason}"
+                # Only expose generic error to client if reason is internal error
+                logger = get_logger(__name__)
+                if str(reason).startswith("Fel vid kontroll") or str(reason).startswith("evaluation_error"):
+                    logger.error(f"Suppressed internal risk evaluation details: {reason}")
+                    client_error = "risk_evaluation_failed"
+                else:
+                    client_error = f"risk_blocked"
+                return {"ok": False, "error": client_error}
         except Exception:
             pass
         # Mät latens för orderläggningen
