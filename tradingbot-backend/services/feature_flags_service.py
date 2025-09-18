@@ -468,11 +468,7 @@ class FeatureFlagsService:
             }
         except Exception as e:
             logger.error(f"❌ Fel vid hämtning av flag status: {e}")
-            return {
-                "timestamp": datetime.now().isoformat(),
-                "error": str(e),
-                "total_flags": 0,
-            }
+            raise
 
 
 # Global instans för enhetlig åtkomst
