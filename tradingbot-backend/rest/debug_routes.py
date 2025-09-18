@@ -1,4 +1,4 @@
-"""
+﻿"""
 Debug Routes - TradingBot Backend
 
 Debug endpoints för att diagnostisera hängningar och prestandaproblem.
