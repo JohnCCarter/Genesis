@@ -458,8 +458,6 @@ class UnifiedRiskService:
             return {
                 "timestamp": datetime.now().isoformat(),
         alert-autofix-58
-                "error": "Internal error",
-
                 "error": "Internal server error",
         main
                 "overall_status": "error",
