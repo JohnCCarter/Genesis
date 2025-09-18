@@ -5,15 +5,15 @@ Param(
     [Parameter(Mandatory = $true, Position = 0)]
     [ValidateSet('send', 'read', 'status', 'clear', 'update-status')]
     [string]$Command,
-    
+
     [Parameter(Position = 1)]
     [string]$Message,
-    
+
     [string]$To = "Codex",
     [string]$From = "Cursor",
     [string]$Priority = "normal",
     [string]$Context = "",
-    
+
     # Preferred for read/clear/update-status
     [string]$Agent,
 
@@ -79,11 +79,11 @@ function Initialize-Communication {
     if (-not (Test-Path $COMM_DIR)) {
         New-Item -ItemType Directory -Path $COMM_DIR -Force | Out-Null
     }
-    
+
     if (-not (Test-Path $MESSAGES_FILE)) {
         Write-JsonSafe -Path $MESSAGES_FILE -Object @()
     }
-    
+
     if (-not (Test-Path $STATUS_FILE)) {
         @{
             "Cursor" = @{
@@ -108,14 +108,14 @@ function Send-Message {
         [string]$Priority,
         [string]$Context
     )
-    
+
     Initialize-Communication
-    
+
     Acquire-CommLock
     try {
         $messages = Read-JsonSafe -Path $MESSAGES_FILE
         if (-not $messages) { $messages = @() } else { $messages = @($messages) }
-    
+
         $newMessage = @{
             "id"        = [System.Guid]::NewGuid().ToString()
             "timestamp" = (Get-Date).ToUniversalTime().ToString('o')
@@ -126,48 +126,48 @@ function Send-Message {
             "context"   = $Context
             "read"      = $false
         }
-    
+
         $messages += $newMessage
-    
+
     # Keep only last 50 messages
         if ($messages.Count -gt 50) { $messages = @($messages | Select-Object -Last 50) }
-    
+
         Write-JsonSafe -Path $MESSAGES_FILE -Object @($messages)
     }
     finally {
         Release-CommLock
     }
-    
+
     try { Update-Status -Agent $From -Status 'available' -Task $Task } catch { }
-    
+
     Write-Host "Message sent to $To" -ForegroundColor Green
     Write-Host "ID: $($newMessage.id)" -ForegroundColor Gray
 }
 
 function Read-Messages {
     param([string]$Agent)
-    
+
     Initialize-Communication
 
     Acquire-CommLock
     try {
         $messages = Read-JsonSafe -Path $MESSAGES_FILE
-        if (-not $messages) { 
+        if (-not $messages) {
             Write-Host "No messages found" -ForegroundColor Yellow
-            return 
+            return
         }
         $messages = @($messages)
 
         $unreadMessages = $messages | Where-Object { $_.to -eq $Agent -and -not $_.read }
-        
+
         if (-not $unreadMessages -or $unreadMessages.Count -eq 0) {
             Write-Host "No unread messages for ${Agent}" -ForegroundColor Yellow
             return
         }
-        
+
         Write-Host "Unread messages for ${Agent}:" -ForegroundColor Cyan
         Write-Host "================================" -ForegroundColor Cyan
-        
+
         foreach ($msg in $unreadMessages) {
             $priorityColor = switch ($msg.priority) {
                 "high" { "Red" }
@@ -175,7 +175,7 @@ function Read-Messages {
                 "low" { "Gray" }
                 default { "White" }
             }
-            
+
             Write-Host "[$($msg.timestamp)] From: $($msg.from)" -ForegroundColor $priorityColor
             Write-Host "Priority: $($msg.priority)" -ForegroundColor $priorityColor
             if ($msg.context) {
@@ -184,11 +184,11 @@ function Read-Messages {
             Write-Host "Message: $($msg.message)" -ForegroundColor White
             Write-Host "ID: $($msg.id)" -ForegroundColor Gray
             Write-Host "--------------------------------" -ForegroundColor Gray
-            
+
             # Mark as read
             $msg.read = $true
         }
-        
+
         # Save updated messages
         Write-JsonSafe -Path $MESSAGES_FILE -Object @($messages)
     }
@@ -203,21 +203,21 @@ function Get-Status {
     Acquire-CommLock
     try {
         $status = Read-JsonSafe -Path $STATUS_FILE
-        
+
         Write-Host "Agent Status:" -ForegroundColor Cyan
         Write-Host "=============" -ForegroundColor Cyan
-        
+
         foreach ($agent in $status.PSObject.Properties) {
             $agentName = $agent.Name
             $agentData = $agent.Value
-            
+
             $statusColor = switch ($agentData.status) {
                 "available" { "Green" }
                 "busy" { "Yellow" }
                 "offline" { "Red" }
                 default { "White" }
             }
-            
+
             Write-Host "${agentName}:" -ForegroundColor White
             Write-Host "  Status: $($agentData.status)" -ForegroundColor $statusColor
             Write-Host "  Last seen: $($agentData.last_seen)" -ForegroundColor Gray
@@ -236,7 +236,7 @@ function Clear-Messages {
     param([string]$Agent)
 
     Initialize-Communication
-    
+
     Acquire-CommLock
     try {
         if ($Agent) {
@@ -261,19 +261,19 @@ function Update-Status {
         [string]$Status,
         [string]$Task = ""
     )
-    
+
     Initialize-Communication
-    
+
     Acquire-CommLock
     try {
         $statusData = Read-JsonSafe -Path $STATUS_FILE
-        
+
         if ($statusData.$Agent) {
             if ($Status) { $statusData.$Agent.status = $Status }
             $statusData.$Agent.last_seen = (Get-Date).ToUniversalTime().ToString('o')
             if ($Task) { $statusData.$Agent.current_task = $Task }
         }
-        
+
         Write-JsonSafe -Path $STATUS_FILE -Object $statusData
     }
     finally {

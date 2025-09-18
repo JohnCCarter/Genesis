@@ -38,5 +38,3 @@ export async function ensureUiSocketConnected(): Promise<Socket> {
     setTimeout(() => resolve(s), 2000);
   });
 }
-
-

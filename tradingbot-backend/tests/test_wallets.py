@@ -1,8 +1,6 @@
 import pytest
 
-pytestmark = pytest.mark.skip(
-    reason="Legacy HTTP tests – skipped; use manual smoke tests in README"
-)
+pytestmark = pytest.mark.skip(reason="Legacy HTTP tests – skipped; use manual smoke tests in README")
 """
 Test Wallets - TradingBot Backend
 

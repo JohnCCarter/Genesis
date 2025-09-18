@@ -56,9 +56,7 @@ class BitfinexRateLimiter:
             window_start = now - self.settings.BITFINEX_RATE_LIMIT_WINDOW_SECONDS
 
             # Rensa gamla timestamps
-            while (
-                self._request_timestamps and self._request_timestamps[0] < window_start
-            ):
+            while self._request_timestamps and self._request_timestamps[0] < window_start:
                 self._request_timestamps.popleft()
 
             # Kontrollera rate limit
@@ -69,9 +67,7 @@ class BitfinexRateLimiter:
                 wait_time = window_start - oldest_request + 1.0
 
                 if wait_time > 0:
-                    logger.warning(
-                        f"Rate limit nått för {endpoint}, väntar {wait_time:.1f}s"
-                    )
+                    logger.warning(f"Rate limit nått för {endpoint}, väntar {wait_time:.1f}s")
                     await asyncio.sleep(wait_time)
 
             # Lägg till nuvarande request
@@ -93,14 +89,10 @@ class BitfinexRateLimiter:
 
             # Öka backoff om vi får flera server busy i rad
             if now - self._last_server_busy_time < 60:  # Inom 1 minut
-                self._adaptive_backoff_multiplier = min(
-                    4.0, self._adaptive_backoff_multiplier * 1.5
-                )
+                self._adaptive_backoff_multiplier = min(4.0, self._adaptive_backoff_multiplier * 1.5)
             else:
                 # Återställ om det varit länge sedan
-                self._adaptive_backoff_multiplier = max(
-                    1.0, self._adaptive_backoff_multiplier * 0.8
-                )
+                self._adaptive_backoff_multiplier = max(1.0, self._adaptive_backoff_multiplier * 0.8)
 
             self._last_server_busy_time = int(now)
 

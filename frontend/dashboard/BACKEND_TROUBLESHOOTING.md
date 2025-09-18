@@ -78,7 +78,7 @@ import { useBackendStatus } from './lib/useBackendStatus';
 
 function MyComponent() {
   const { status, checkBackend, getStatusMessage } = useBackendStatus();
-  
+
   return (
     <div>
       <p>{getStatusMessage()}</p>
@@ -98,7 +98,7 @@ import { useApiError } from './lib/useApiError';
 
 function DataComponent() {
   const { error, handleError, clearError } = useApiError();
-  
+
   const fetchData = async () => {
     try {
       const data = await api.get('/api/v2/data');
@@ -107,7 +107,7 @@ function DataComponent() {
       handleError(err);
     }
   };
-  
+
   return (
     <div>
       {error && (
@@ -139,7 +139,7 @@ import api from './lib/api';
 console.log(api.getCircuitBreakerStatus());
 
 // Testa backend health
-api.checkBackendHealth().then(online => 
+api.checkBackendHealth().then(online =>
   console.log('Backend online:', online)
 );
 ```

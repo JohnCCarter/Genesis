@@ -19,9 +19,7 @@ import requests
 from bs4 import BeautifulSoup
 
 # Konfigurera loggning
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger("bitfinex_auth_scraper")
 
 # Konstanter
@@ -51,9 +49,7 @@ class BitfinexAuthScraper:
         self.cache_dir = cache_dir or CACHE_DIR
         self.cache_validity_days = cache_validity_days
         self.session = requests.Session()
-        self.session.headers.update(
-            {"User-Agent": "Mozilla/5.0 Genesis-Trading-Bot Authentication Helper"}
-        )
+        self.session.headers.update({"User-Agent": "Mozilla/5.0 Genesis-Trading-Bot Authentication Helper"})
 
         # Skapa cache-katalog om den inte finns
         os.makedirs(self.cache_dir, exist_ok=True)
@@ -77,9 +73,7 @@ class BitfinexAuthScraper:
 
         # Kontrollera om cachen finns och är giltig
         if cache_file.exists():
-            file_age = datetime.now() - datetime.fromtimestamp(
-                cache_file.stat().st_mtime
-            )
+            file_age = datetime.now() - datetime.fromtimestamp(cache_file.stat().st_mtime)
             if file_age < timedelta(days=self.cache_validity_days):
                 try:
                     with open(cache_file, "r", encoding="utf-8") as f:
@@ -111,9 +105,7 @@ class BitfinexAuthScraper:
             if cache_file.exists():
                 try:
                     with open(cache_file, "r", encoding="utf-8") as f:
-                        logger.warning(
-                            f"Använder gammal cache för {section}_auth på grund av nätverksfel"
-                        )
+                        logger.warning(f"Använder gammal cache för {section}_auth på grund av nätverksfel")
                         return json.load(f)
                 except (json.JSONDecodeError, IOError):
                     pass
@@ -159,9 +151,7 @@ class BitfinexAuthScraper:
                 result["nonce_info"]["description"] = nonce_p.get_text(strip=True)
 
             # Leta efter varningar om nonce
-            nonce_warning = soup.find(
-                string=re.compile("nonce provided must be strictly", re.IGNORECASE)
-            )
+            nonce_warning = soup.find(string=re.compile("nonce provided must be strictly", re.IGNORECASE))
             if nonce_warning:
                 result["nonce_info"]["warning"] = nonce_warning.get_text(strip=True)
 
@@ -177,14 +167,10 @@ class BitfinexAuthScraper:
                     elif "language-python" in parent_classes:
                         lang = "python"
 
-                result["examples"].append(
-                    {"language": lang, "code": block.get_text(strip=True)}
-                )
+                result["examples"].append({"language": lang, "code": block.get_text(strip=True)})
 
         # Extrahera autentiseringsprocessen
-        auth_process = soup.find(
-            string=re.compile("authentication procedure", re.IGNORECASE)
-        )
+        auth_process = soup.find(string=re.compile("authentication procedure", re.IGNORECASE))
         if auth_process and auth_process.parent:
             process_list = auth_process.parent.find_next("ul")
             if process_list:
@@ -200,9 +186,7 @@ class BitfinexAuthScraper:
         # Hitta rubriker som innehåller "Wallets", "Orders", "Positions", etc.
         # Leta först efter "REST Authenticated Endpoints" rubriken
         rest_auth_header = soup.find(
-            string=lambda text: text
-            and isinstance(text, str)
-            and "REST Authenticated Endpoints" in text
+            string=lambda text: text and isinstance(text, str) and "REST Authenticated Endpoints" in text
         )
 
         # Om vi hittar rubriken, leta efter alla strong-taggar som innehåller kategorinamn
@@ -270,9 +254,7 @@ class BitfinexAuthScraper:
                     endpoint_name = item.get_text(strip=True)
                     endpoint_url = link.get("href") if link else None
 
-                    section["endpoints"].append(
-                        {"name": endpoint_name, "url": endpoint_url}
-                    )
+                    section["endpoints"].append({"name": endpoint_name, "url": endpoint_url})
 
             if section["endpoints"]:
                 endpoint_sections.append(section)
@@ -328,9 +310,7 @@ class BitfinexAuthScraper:
             result["nonce_info"]["warning"] = nonce_warning.parent.get_text(strip=True)
 
         # Extrahera exempel-kod för autentisering
-        auth_example_links = soup.find_all(
-            "a", href=re.compile("authenticated-connection-example", re.IGNORECASE)
-        )
+        auth_example_links = soup.find_all("a", href=re.compile("authenticated-connection-example", re.IGNORECASE))
         for link in auth_example_links:
             lang = "unknown"
             if "javascript" in link.get_text(strip=True).lower():
@@ -375,10 +355,7 @@ class BitfinexAuthScraper:
             event_headers = soup.find_all(
                 ["h3"],
                 string=lambda text: text
-                and any(
-                    keyword in text.lower()
-                    for keyword in ["list of account", "list of ws"]
-                ),
+                and any(keyword in text.lower() for keyword in ["list of account", "list of ws"]),
             )
 
         for header in event_headers:
@@ -521,25 +498,17 @@ class BitfinexAuthScraper:
             for param in self.ws_auth_info.get("auth_parameters", []):
                 field = param.get("field")
                 if field == "authNonce":
-                    recommendations["websocket"]["payload_format"][
-                        "nonce"
-                    ] = "authNonce"
+                    recommendations["websocket"]["payload_format"]["nonce"] = "authNonce"
                 elif field == "authPayload":
-                    recommendations["websocket"]["payload_format"][
-                        "payload"
-                    ] = "authPayload"
+                    recommendations["websocket"]["payload_format"]["payload"] = "authPayload"
                 elif field == "authSig":
-                    recommendations["websocket"]["payload_format"][
-                        "signature"
-                    ] = "authSig"
+                    recommendations["websocket"]["payload_format"]["signature"] = "authSig"
                 elif field == "apiKey":
                     recommendations["websocket"]["payload_format"]["api_key"] = "apiKey"
 
             nonce_info = self.ws_auth_info.get("nonce_info", {})
             if nonce_info.get("description"):
-                recommendations["websocket"]["nonce_info"] = nonce_info.get(
-                    "description"
-                )
+                recommendations["websocket"]["nonce_info"] = nonce_info.get("description")
 
         return recommendations
 
@@ -696,10 +665,7 @@ def build_ws_auth_payload() -> str:
                 )
 
             # Kontrollera message-format
-            if (
-                "AUTH{nonce}" not in ws_auth_code.replace(" ", "")
-                and "payload = f'AUTH{nonce}'" not in ws_auth_code
-            ):
+            if "AUTH{nonce}" not in ws_auth_code.replace(" ", "") and "payload = f'AUTH{nonce}'" not in ws_auth_code:
                 results["websocket"]["matches_recommendations"] = False
                 results["websocket"]["differences"].append(
                     {
@@ -735,21 +701,13 @@ def main():
 
     # Generera rekommendationer
     recommendations = scraper.get_auth_recommendations()
-    logger.info(
-        f"REST autentiseringsrekommendationer: {json.dumps(recommendations['rest'], indent=2)}"
-    )
-    logger.info(
-        f"WebSocket autentiseringsrekommendationer: {json.dumps(recommendations['websocket'], indent=2)}"
-    )
+    logger.info(f"REST autentiseringsrekommendationer: {json.dumps(recommendations['rest'], indent=2)}")
+    logger.info(f"WebSocket autentiseringsrekommendationer: {json.dumps(recommendations['websocket'], indent=2)}")
 
     # Generera kodexempel
     examples = scraper.generate_auth_code_examples()
-    logger.info(
-        f"REST autentiseringskodexempel:\n{examples['rest']['python']['build_auth_headers']}"
-    )
-    logger.info(
-        f"WebSocket autentiseringskodexempel:\n{examples['websocket']['python']['build_ws_auth_payload']}"
-    )
+    logger.info(f"REST autentiseringskodexempel:\n{examples['rest']['python']['build_auth_headers']}")
+    logger.info(f"WebSocket autentiseringskodexempel:\n{examples['websocket']['python']['build_ws_auth_payload']}")
 
     # Visa tillgängliga REST endpoints
     if "endpoint_sections" in rest_info:

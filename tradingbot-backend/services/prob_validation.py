@@ -25,9 +25,7 @@ def _one_hot(label: Label) -> tuple[float, float, float]:
     return 0.0, 0.0, 1.0
 
 
-def _scores_for(
-    probs: dict[str, float], label: Label, eps: float = 1e-12
-) -> tuple[float, float]:
+def _scores_for(probs: dict[str, float], label: Label, eps: float = 1e-12) -> tuple[float, float]:
     """
     Return (brier, logloss) for a single sample.
     - Brier (multi-class): sum_k (p_k - y_k)^2

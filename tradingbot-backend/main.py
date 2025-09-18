@@ -99,9 +99,7 @@ async def lifespan(app: FastAPI):
             try:
                 await _asyncio.wait_for(bitfinex_ws.connect(), timeout=5.0)
                 _t1 = _t.perf_counter()
-                logger.info(
-                    "✅ WebSocket-anslutning etablerad (%.0f ms)", (_t1 - _t0) * 1000
-                )
+                logger.info("✅ WebSocket-anslutning etablerad (%.0f ms)", (_t1 - _t0) * 1000)
 
                 # Koppla WebSocket service till enhetliga services
                 signal_service.set_websocket_service(bitfinex_ws)
@@ -111,15 +109,11 @@ async def lifespan(app: FastAPI):
                 # WS‑auth direkt om nycklar finns så att privata flöden fungerar
                 try:
                     _ta = _t.perf_counter()
-                    await _asyncio.wait_for(
-                        bitfinex_ws.ensure_authenticated(), timeout=3.0
-                    )
+                    await _asyncio.wait_for(bitfinex_ws.ensure_authenticated(), timeout=3.0)
                     _tb = _t.perf_counter()
                     logger.info("🔐 WS‑auth klar (%.0f ms)", (_tb - _ta) * 1000)
                 except TimeoutError:
-                    logger.warning(
-                        "⚠️ WS‑auth timeout – fortsätter utan auth vid startup"
-                    )
+                    logger.warning("⚠️ WS‑auth timeout – fortsätter utan auth vid startup")
                 except Exception as e:
                     logger.warning(f"⚠️ WS‑auth misslyckades: {e}")
             except TimeoutError:
@@ -127,9 +121,7 @@ async def lifespan(app: FastAPI):
             except Exception as e:
                 logger.warning(f"⚠️ WebSocket-anslutning misslyckades: {e}")
         else:
-            logger.info(
-                "WS‑connect vid start är AV. Kan startas via WS‑test sidan eller API."
-            )
+            logger.info("WS‑connect vid start är AV. Kan startas via WS‑test sidan eller API.")
     except Exception as e:
         logger.warning(f"⚠️ WebSocket-anslutning block misslyckades: {e}")
 
@@ -154,9 +146,7 @@ async def lifespan(app: FastAPI):
             scheduler.start()
             logger.info("🗓️ Scheduler startad")
         else:
-            logger.info(
-                "🚫 Scheduler inaktiverat (aktivera med ENABLE_SCHEDULER=true eller DEV_MODE=true)"
-            )
+            logger.info("🚫 Scheduler inaktiverat (aktivera med ENABLE_SCHEDULER=true eller DEV_MODE=true)")
     except Exception as e:
         logger.warning(f"⚠️ Kunde inte starta scheduler: {e}")
 
@@ -214,9 +204,7 @@ async def lifespan(app: FastAPI):
     try:
         import asyncio
 
-        all_tasks = [
-            task for task in asyncio.all_tasks() if task is not asyncio.current_task()
-        ]
+        all_tasks = [task for task in asyncio.all_tasks() if task is not asyncio.current_task()]
         if all_tasks:
             logger.info(f"🔄 Avbryter {len(all_tasks)} aktiva tasks...")
             for task in all_tasks:
@@ -224,14 +212,10 @@ async def lifespan(app: FastAPI):
 
             # Vänta på att tasks avslutas (max 3 sekunder)
             try:
-                await asyncio.wait_for(
-                    asyncio.gather(*all_tasks, return_exceptions=True), timeout=3.0
-                )
+                await asyncio.wait_for(asyncio.gather(*all_tasks, return_exceptions=True), timeout=3.0)
                 logger.info("✅ Alla tasks avbrutna")
             except TimeoutError:
-                logger.warning(
-                    "⚠️ Timeout vid avbrytning av tasks - fortsätter shutdown"
-                )
+                logger.warning("⚠️ Timeout vid avbrytning av tasks - fortsätter shutdown")
     except Exception as e:
         logger.warning(f"⚠️ Fel vid task cleanup: {e}")
 
@@ -327,14 +311,10 @@ async def http_protocol_error_handler(request: Request, call_next):
         error_msg = str(e)
         if "ConnectionClosed" in error_msg or "LocalProtocolError" in error_msg:
             logger.warning(f"⚠️ HTTP-protokollfel hanterat: {error_msg}")
-            return Response(
-                status_code=499, content="Connection closed by client"
-            )  # Client Closed Request
+            return Response(status_code=499, content="Connection closed by client")  # Client Closed Request
         elif "timeout" in error_msg.lower():
             logger.warning(f"⚠️ HTTP-timeout hanterat: {error_msg}")
-            return Response(
-                status_code=504, content="Request timeout"
-            )  # Gateway Timeout
+            return Response(status_code=504, content="Request timeout")  # Gateway Timeout
         else:
             # Logga andra fel men låt dem propagera
             logger.error(f"❌ Ohanterat HTTP-fel: {error_msg}")
@@ -405,9 +385,7 @@ try:
 
     _FASTAPI_STATIC = _os.path.join(_os.path.dirname(_fastapi.__file__), "static")
     # Montera under egen path för att inte krocka
-    app.mount(
-        "/_docs_static", StaticFiles(directory=_FASTAPI_STATIC), name="_docs_static"
-    )
+    app.mount("/_docs_static", StaticFiles(directory=_FASTAPI_STATIC), name="_docs_static")
 
     @app.get("/docs", include_in_schema=False)
     async def custom_swagger_ui_html():
@@ -508,9 +486,7 @@ async def metrics(request: Request) -> Response:
     basic_pass = _os.getenv("METRICS_BASIC_AUTH_PASS")
     access_token = _os.getenv("METRICS_ACCESS_TOKEN")
 
-    restrictions_configured = bool(
-        ip_allowlist_raw or (basic_user and basic_pass) or access_token
-    )
+    restrictions_configured = bool(ip_allowlist_raw or (basic_user and basic_pass) or access_token)
 
     if restrictions_configured:
         client_ip = None
@@ -523,9 +499,7 @@ async def metrics(request: Request) -> Response:
 
         # 1) IP allowlist
         if ip_allowlist_raw and client_ip:
-            allowed_ips = {
-                ip.strip() for ip in ip_allowlist_raw.split(",") if ip.strip()
-            }
+            allowed_ips = {ip.strip() for ip in ip_allowlist_raw.split(",") if ip.strip()}
             if client_ip in allowed_ips:
                 allowed = True
 
@@ -564,9 +538,9 @@ async def metrics(request: Request) -> Response:
                 try:
                     decoded = base64.b64decode(b64).decode("utf-8")
                     username, password = decoded.split(":", 1)
-                    if hmac.compare_digest(
-                        username, str(basic_user)
-                    ) and hmac.compare_digest(password, str(basic_pass)):
+                    if hmac.compare_digest(username, str(basic_user)) and hmac.compare_digest(
+                        password, str(basic_pass)
+                    ):
                         allowed = True
                 except Exception:
                     pass
@@ -720,7 +694,5 @@ if __name__ == "__main__":
             backlog=50,  # Begränsa backlog för nya anslutningar
         )
     except Exception as e:
-        logger.error(
-            f"❌ Kritiskt startfel - kan inte starta uvicorn: {e}", exc_info=True
-        )
+        logger.error(f"❌ Kritiskt startfel - kan inte starta uvicorn: {e}", exc_info=True)
         raise

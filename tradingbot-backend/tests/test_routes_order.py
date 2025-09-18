@@ -9,12 +9,8 @@ async def test_place_order_rate_limited(monkeypatch):
     # Aktivera rate-limit via settings-monkeypatch (återställs automatiskt)
     from rest import routes as routes_module
 
-    monkeypatch.setattr(
-        routes_module.settings, "ORDER_RATE_LIMIT_MAX", 1, raising=False
-    )
-    monkeypatch.setattr(
-        routes_module.settings, "ORDER_RATE_LIMIT_WINDOW", 60, raising=False
-    )
+    monkeypatch.setattr(routes_module.settings, "ORDER_RATE_LIMIT_MAX", 1, raising=False)
+    monkeypatch.setattr(routes_module.settings, "ORDER_RATE_LIMIT_WINDOW", 60, raising=False)
 
     # Stubba place_order så den inte anropas två gånger
     calls = {"count": 0}
@@ -55,9 +51,7 @@ async def test_place_order_error_monitored(monkeypatch):
     # reset metrics
     metrics_store.clear()
 
-    req = OrderRequest(
-        symbol="tTESTBTC:TESTUSD", amount="1", type="EXCHANGE MARKET", side="buy"
-    )
+    req = OrderRequest(symbol="tTESTBTC:TESTUSD", amount="1", type="EXCHANGE MARKET", side="buy")
 
     # Act
     resp = await place_order_endpoint(req, True)

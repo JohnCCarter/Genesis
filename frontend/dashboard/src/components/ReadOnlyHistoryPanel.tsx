@@ -77,7 +77,7 @@ export function ReadOnlyHistoryPanel() {
       params.append('trades_limit', limit.toString());
       params.append('ledgers_limit', limit.toString());
       params.append('equity_limit', Math.min(1000, Math.max(100, limit)).toString());
-      
+
       const data = await getWith(`/api/v2/history/comprehensive?${params.toString()}`, { timeout: 15000, maxRetries: 1 });
 
       setHistoryData(data);

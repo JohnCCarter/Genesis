@@ -21,7 +21,7 @@ export function TestValidationPanel() {
         try {
             setLoading(true);
             setError(null);
-            
+
             let endpoint = '';
             let params: any = {
                 symbol,
@@ -29,7 +29,7 @@ export function TestValidationPanel() {
                 limit,
                 force_refresh: true,
             };
-            
+
             switch (activeTest) {
                 case 'probability':
                     endpoint = '/api/v2/validation/probability';
@@ -53,13 +53,13 @@ export function TestValidationPanel() {
                     };
                     break;
             }
-            
+
             const res = await post(endpoint, params);
             setResult(res);
-            
+
             // Uppdatera validation history
             await refreshValidationHistory();
-            
+
         } catch (e: any) {
             setError(e?.message || 'Test misslyckades');
         } finally {
@@ -166,10 +166,10 @@ export function TestValidationPanel() {
             </div>
 
             {/* Test Parameters */}
-            <div style={{ 
-                display: 'grid', 
-                gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', 
-                gap: 8, 
+            <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+                gap: 8,
                 alignItems: 'end',
                 marginBottom: 16,
                 padding: 12,
@@ -179,48 +179,48 @@ export function TestValidationPanel() {
             }}>
                 <div>
                     <label style={{ fontSize: 12, fontWeight: 'bold' }}>Symbol</label>
-                    <input 
-                        value={symbol} 
-                        onChange={(e) => setSymbol(e.target.value)} 
-                        style={{ width: '100%', padding: '4px 8px', border: '1px solid #ced4da', borderRadius: 4, fontSize: 12 }} 
+                    <input
+                        value={symbol}
+                        onChange={(e) => setSymbol(e.target.value)}
+                        style={{ width: '100%', padding: '4px 8px', border: '1px solid #ced4da', borderRadius: 4, fontSize: 12 }}
                     />
                 </div>
                 <div>
                     <label style={{ fontSize: 12, fontWeight: 'bold' }}>Timeframe</label>
-                    <input 
-                        value={timeframe} 
-                        onChange={(e) => setTimeframe(e.target.value)} 
-                        style={{ width: '100%', padding: '4px 8px', border: '1px solid #ced4da', borderRadius: 4, fontSize: 12 }} 
+                    <input
+                        value={timeframe}
+                        onChange={(e) => setTimeframe(e.target.value)}
+                        style={{ width: '100%', padding: '4px 8px', border: '1px solid #ced4da', borderRadius: 4, fontSize: 12 }}
                     />
                 </div>
                 <div>
                     <label style={{ fontSize: 12, fontWeight: 'bold' }}>Limit</label>
-                    <input 
-                        type="number" 
-                        value={limit} 
-                        onChange={(e) => setLimit(parseInt(e.target.value || '0', 10))} 
-                        style={{ width: '100%', padding: '4px 8px', border: '1px solid #ced4da', borderRadius: 4, fontSize: 12 }} 
+                    <input
+                        type="number"
+                        value={limit}
+                        onChange={(e) => setLimit(parseInt(e.target.value || '0', 10))}
+                        style={{ width: '100%', padding: '4px 8px', border: '1px solid #ced4da', borderRadius: 4, fontSize: 12 }}
                     />
                 </div>
                 {activeTest === 'probability' && (
                     <div>
                         <label style={{ fontSize: 12, fontWeight: 'bold' }}>Max Samples</label>
-                        <input 
-                            type="number" 
-                            value={maxSamples} 
-                            onChange={(e) => setMaxSamples(parseInt(e.target.value || '0', 10))} 
-                            style={{ width: '100%', padding: '4px 8px', border: '1px solid #ced4da', borderRadius: 4, fontSize: 12 }} 
+                        <input
+                            type="number"
+                            value={maxSamples}
+                            onChange={(e) => setMaxSamples(parseInt(e.target.value || '0', 10))}
+                            style={{ width: '100%', padding: '4px 8px', border: '1px solid #ced4da', borderRadius: 4, fontSize: 12 }}
                         />
                     </div>
                 )}
                 {activeTest === 'backtest' && (
                     <div>
                         <label style={{ fontSize: 12, fontWeight: 'bold' }}>Initial Capital</label>
-                        <input 
-                            type="number" 
-                            value={initialCapital} 
-                            onChange={(e) => setInitialCapital(parseFloat(e.target.value || '0'))} 
-                            style={{ width: '100%', padding: '4px 8px', border: '1px solid #ced4da', borderRadius: 4, fontSize: 12 }} 
+                        <input
+                            type="number"
+                            value={initialCapital}
+                            onChange={(e) => setInitialCapital(parseFloat(e.target.value || '0'))}
+                            style={{ width: '100%', padding: '4px 8px', border: '1px solid #ced4da', borderRadius: 4, fontSize: 12 }}
                         />
                     </div>
                 )}
@@ -229,9 +229,9 @@ export function TestValidationPanel() {
             {/* Test Results */}
             {result && (
                 <div style={{ marginBottom: 16 }}>
-                    <div style={{ 
-                        padding: 12, 
-                        background: result.success ? '#d4edda' : '#f8d7da', 
+                    <div style={{
+                        padding: 12,
+                        background: result.success ? '#d4edda' : '#f8d7da',
                         borderRadius: 6,
                         border: `1px solid ${result.success ? '#c3e6cb' : '#f5c6cb'}`,
                         marginBottom: 12
@@ -240,8 +240,8 @@ export function TestValidationPanel() {
                             <div style={{ fontSize: 14, fontWeight: 'bold' }}>
                                 {getTestIcon(result.test_type)} {result.test_type.replace('_', ' ').toUpperCase()}
                             </div>
-                            <div style={{ 
-                                fontSize: 12, 
+                            <div style={{
+                                fontSize: 12,
                                 color: getSuccessColor(result.success),
                                 fontWeight: 'bold'
                             }}>
@@ -249,8 +249,8 @@ export function TestValidationPanel() {
                             </div>
                         </div>
                         <div style={{ fontSize: 12, color: '#555' }}>
-                            Symbol: <b>{result.symbol}</b> · 
-                            Timeframe: <b>{result.timeframe}</b> · 
+                            Symbol: <b>{result.symbol}</b> ·
+                            Timeframe: <b>{result.timeframe}</b> ·
                             Time: <b>{formatTime(result.timestamp)}</b>
                         </div>
                         {result.error_message && (
@@ -277,7 +277,7 @@ export function TestValidationPanel() {
                                     </div>
                                 </div>
                             )}
-                            
+
                             {activeTest === 'strategy' && (
                                 <div style={{ fontSize: 12, color: '#555', marginBottom: 8 }}>
                                     <div>Total Trades: <b>{result.metrics.total_trades || 0}</b></div>
@@ -286,7 +286,7 @@ export function TestValidationPanel() {
                                     <div>Avg Return/Trade: <b>{formatNumber(result.metrics.avg_return_per_trade || 0, 4)}</b></div>
                                 </div>
                             )}
-                            
+
                             {activeTest === 'backtest' && (
                                 <div style={{ fontSize: 12, color: '#555', marginBottom: 8 }}>
                                     <div>Initial Capital: <b>${formatNumber(result.metrics.initial_capital || 0, 2)}</b></div>
@@ -297,7 +297,7 @@ export function TestValidationPanel() {
                                     <div>Sharpe Ratio: <b>{formatNumber(result.metrics.sharpe_ratio || 0, 3)}</b></div>
                                 </div>
                             )}
-                            
+
                             <div style={{ fontSize: 12, color: '#555', marginBottom: 8 }}>Full Result</div>
                             <JsonTree data={result} />
                         </div>
@@ -308,10 +308,10 @@ export function TestValidationPanel() {
             {/* Validation History */}
             <div>
                 <h4 style={{ margin: '0 0 8px' }}>📋 Test History</h4>
-                <div style={{ 
-                    maxHeight: 200, 
-                    overflow: 'auto', 
-                    border: '1px solid #e1e4e8', 
+                <div style={{
+                    maxHeight: 200,
+                    overflow: 'auto',
+                    border: '1px solid #e1e4e8',
                     borderRadius: 6,
                     background: '#f6f8fa'
                 }}>
@@ -321,8 +321,8 @@ export function TestValidationPanel() {
                         </div>
                     ) : (
                         validationHistory.map((test, index) => (
-                            <div key={index} style={{ 
-                                padding: 8, 
+                            <div key={index} style={{
+                                padding: 8,
                                 borderBottom: '1px solid #e1e4e8',
                                 fontSize: 12
                             }}>
@@ -335,7 +335,7 @@ export function TestValidationPanel() {
                                             {test.symbol} · {formatTime(test.timestamp)}
                                         </span>
                                     </div>
-                                    <div style={{ 
+                                    <div style={{
                                         color: getSuccessColor(test.success),
                                         fontWeight: 'bold'
                                     }}>

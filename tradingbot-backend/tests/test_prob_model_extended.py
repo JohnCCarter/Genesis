@@ -22,14 +22,10 @@ async def test_prob_predict_api_with_mocked_candles(monkeypatch):
         base = 100.0
         return [[0, 0, base + i * 0.1, base + i * 0.2, base, 1] for i in range(60)]
 
-    monkeypatch.setattr(
-        "services.bitfinex_data.BitfinexDataService.get_candles", fake_candles
-    )
+    monkeypatch.setattr("services.bitfinex_data.BitfinexDataService.get_candles", fake_candles)
 
     client = TestClient(app)
-    r = client.post(
-        "/api/v2/prob/predict", json={"symbol": "tBTCUSD", "timeframe": "1m"}
-    )
+    r = client.post("/api/v2/prob/predict", json={"symbol": "tBTCUSD", "timeframe": "1m"})
     assert r.status_code == 200
     data = r.json()
     assert "probabilities" in data and "decision" in data

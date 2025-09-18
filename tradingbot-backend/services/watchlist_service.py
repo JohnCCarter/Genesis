@@ -35,9 +35,7 @@ class WatchlistService:
         self._cache: dict[str, dict[str, Any]] = {}
         self._cache_ttl = timedelta(minutes=5)
 
-    async def build_watchlist(
-        self, symbols_param: str | None, include_prob: bool
-    ) -> list[dict[str, Any]]:
+    async def build_watchlist(self, symbols_param: str | None, include_prob: bool) -> list[dict[str, Any]]:
         cache_key = f"watchlist_{symbols_param}_{include_prob}"
         now = datetime.now()
         cached = self._cache.get(cache_key)
@@ -119,21 +117,9 @@ class WatchlistService:
             if listed is False and not show_unlisted:
                 continue
 
-            ticker = (
-                tickers[i]
-                if i < len(tickers) and not isinstance(tickers[i], Exception)
-                else None
-            )
-            c1 = (
-                candles_1m[i]
-                if i < len(candles_1m) and not isinstance(candles_1m[i], Exception)
-                else None
-            )
-            c5 = (
-                candles_5m[i]
-                if i < len(candles_5m) and not isinstance(candles_5m[i], Exception)
-                else None
-            )
+            ticker = tickers[i] if i < len(tickers) and not isinstance(tickers[i], Exception) else None
+            c1 = candles_1m[i] if i < len(candles_1m) and not isinstance(candles_1m[i], Exception) else None
+            c5 = candles_5m[i] if i < len(candles_5m) and not isinstance(candles_5m[i], Exception) else None
 
             def _safe_float(val: object) -> float | None:
                 try:
@@ -141,14 +127,8 @@ class WatchlistService:
                 except Exception:
                     return None
 
-            last = (
-                _safe_float(ticker.get("last_price"))
-                if isinstance(ticker, dict)
-                else None
-            )
-            vol = (
-                _safe_float(ticker.get("volume")) if isinstance(ticker, dict) else None
-            )
+            last = _safe_float(ticker.get("last_price")) if isinstance(ticker, dict) else None
+            vol = _safe_float(ticker.get("volume")) if isinstance(ticker, dict) else None
             ws_live = eff in ws_live_set
             margin_status = margin_statuses.get(s)
 
@@ -170,27 +150,13 @@ class WatchlistService:
                     parsed_any = parse_candles_to_strategy_data(c1)
                 except Exception:
                     parsed_any = {"closes": [], "highs": [], "lows": []}
-                parsed_map: dict[str, Any] = (
-                    dict(parsed_any) if isinstance(parsed_any, dict) else {}
-                )
+                parsed_map: dict[str, Any] = dict(parsed_any) if isinstance(parsed_any, dict) else {}
                 parsed_map["symbol"] = s
                 if isinstance(ind1, dict):
                     try:
-                        parsed_map["ema_snapshot"] = (
-                            float(ind1.get("ema"))
-                            if ind1.get("ema") is not None
-                            else None
-                        )
-                        parsed_map["rsi_snapshot"] = (
-                            float(ind1.get("rsi"))
-                            if ind1.get("rsi") is not None
-                            else None
-                        )
-                        parsed_map["atr_snapshot"] = (
-                            float(ind1.get("atr"))
-                            if ind1.get("atr") is not None
-                            else None
-                        )
+                        parsed_map["ema_snapshot"] = float(ind1.get("ema")) if ind1.get("ema") is not None else None
+                        parsed_map["rsi_snapshot"] = float(ind1.get("rsi")) if ind1.get("rsi") is not None else None
+                        parsed_map["atr_snapshot"] = float(ind1.get("atr")) if ind1.get("atr") is not None else None
                     except Exception:
                         pass
                 strat = evaluate_strategy(parsed_map)  # type: ignore[arg-type]
@@ -200,40 +166,22 @@ class WatchlistService:
                     parsed_any5 = parse_candles_to_strategy_data(c5)
                 except Exception:
                     parsed_any5 = {"closes": [], "highs": [], "lows": []}
-                parsed_map5: dict[str, Any] = (
-                    dict(parsed_any5) if isinstance(parsed_any5, dict) else {}
-                )
+                parsed_map5: dict[str, Any] = dict(parsed_any5) if isinstance(parsed_any5, dict) else {}
                 parsed_map5["symbol"] = s
                 if isinstance(ind5, dict):
                     try:
-                        parsed_map5["ema_snapshot"] = (
-                            float(ind5.get("ema"))
-                            if ind5.get("ema") is not None
-                            else None
-                        )
-                        parsed_map5["rsi_snapshot"] = (
-                            float(ind5.get("rsi"))
-                            if ind5.get("rsi") is not None
-                            else None
-                        )
-                        parsed_map5["atr_snapshot"] = (
-                            float(ind5.get("atr"))
-                            if ind5.get("atr") is not None
-                            else None
-                        )
+                        parsed_map5["ema_snapshot"] = float(ind5.get("ema")) if ind5.get("ema") is not None else None
+                        parsed_map5["rsi_snapshot"] = float(ind5.get("rsi")) if ind5.get("rsi") is not None else None
+                        parsed_map5["atr_snapshot"] = float(ind5.get("atr")) if ind5.get("atr") is not None else None
                     except Exception:
                         pass
                 strat_5m = evaluate_strategy(parsed_map5)  # type: ignore[arg-type]
 
             indicators_payload: dict[str, Any] = {}
             if isinstance(ind1, dict) and any(k in ind1 for k in ("ema", "rsi", "atr")):
-                indicators_payload["1m"] = {
-                    k: ind1.get(k) for k in ("ema", "rsi", "atr")
-                }
+                indicators_payload["1m"] = {k: ind1.get(k) for k in ("ema", "rsi", "atr")}
             if isinstance(ind5, dict) and any(k in ind5 for k in ("ema", "rsi", "atr")):
-                indicators_payload["5m"] = {
-                    k: ind5.get(k) for k in ("ema", "rsi", "atr")
-                }
+                indicators_payload["5m"] = {k: ind5.get(k) for k in ("ema", "rsi", "atr")}
 
             item: dict[str, Any] = {
                 "symbol": s,
@@ -253,18 +201,12 @@ class WatchlistService:
                     ds = get_market_data()
                     candles_prob = await ds.get_candles(s, "1m", 50)
                     if candles_prob:
-                        closes = [
-                            row[2]
-                            for row in candles_prob
-                            if isinstance(row, (list, tuple)) and len(row) >= 3
-                        ]
+                        closes = [row[2] for row in candles_prob if isinstance(row, (list, tuple)) and len(row) >= 3]
                         if len(closes) >= 2:
                             price = float(closes[-1])
                             ema = sum(closes[-10:]) / min(10, len(closes))
                             ema_z = (price - ema) / (abs(ema) + 1e-9)
-                            sc = SignalService().score(
-                                regime="trend", adx_value=20.0, ema_z_value=ema_z
-                            )
+                            sc = SignalService().score(regime="trend", adx_value=20.0, ema_z_value=ema_z)
                             item["prob"] = {
                                 "probabilities": {
                                     "buy": round(sc.probability / 100.0, 6),
@@ -273,11 +215,7 @@ class WatchlistService:
                                 "decision": (
                                     "buy"
                                     if sc.recommendation == "buy"
-                                    else (
-                                        "abstain"
-                                        if sc.recommendation == "hold"
-                                        else "sell"
-                                    )
+                                    else ("abstain" if sc.recommendation == "hold" else "sell")
                                 ),
                                 "ev": round(sc.probability / 100.0, 6),
                             }

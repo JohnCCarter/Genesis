@@ -97,9 +97,7 @@ def get_feature_flag(name: str, default_value: Any = None) -> Any:
         value = feature_flags_service.get_flag(name)
         return value if value is not None else default_value
     except Exception:
-        logger.debug(
-            f"Kunde inte hämta feature flag {name}, använder default: {default_value}"
-        )
+        logger.debug(f"Kunde inte hämta feature flag {name}, använder default: {default_value}")
         return default_value
 
 

@@ -73,9 +73,7 @@ class JSONOptimizer:
         try:
             if self.use_orjson:
                 # orjson returnerar bytes, konvertera till string
-                return orjson.dumps(obj, **kwargs).decode(
-                    "utf-8"
-                )  # pylint: disable=no-member
+                return orjson.dumps(obj, **kwargs).decode("utf-8")  # pylint: disable=no-member
             else:
                 return json.dumps(obj, **kwargs)
         except Exception as e:
@@ -180,10 +178,7 @@ class JSONOptimizer:
 
             # Optimera listor
             elif isinstance(value, list):
-                value = [
-                    self.optimize_dict(item) if isinstance(item, dict) else item
-                    for item in value
-                ]
+                value = [self.optimize_dict(item) if isinstance(item, dict) else item for item in value]
 
             optimized[key] = value
 
@@ -255,9 +250,7 @@ class CandleDataOptimizer:
 
         return optimized_candles
 
-    def batch_parse_candles(
-        self, candle_batches: list[list[list[Any]]]
-    ) -> list[dict[str, Any]]:
+    def batch_parse_candles(self, candle_batches: list[list[list[Any]]]) -> list[dict[str, Any]]:
         """
         Batch-parse candle data för bättre prestanda.
 

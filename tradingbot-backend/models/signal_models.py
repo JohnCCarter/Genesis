@@ -20,12 +20,8 @@ class SignalResponse(BaseModel):
     current_price: float | None = Field(None, description="Aktuellt pris")
     adx_value: float | None = Field(None, description="ADX värde")
     ema_z_value: float | None = Field(None, description="EMA Z-score")
-    regime: str | None = Field(
-        None, description="Marknadsregim: trend, balanced, range"
-    )
-    status: str = Field(
-        "ACTIVE", description="Status: ACTIVE, EXECUTED, CANCELLED, EXPIRED"
-    )
+    regime: str | None = Field(None, description="Marknadsregim: trend, balanced, range")
+    status: str = Field("ACTIVE", description="Status: ACTIVE, EXECUTED, CANCELLED, EXPIRED")
 
 
 class SignalHistory(BaseModel):
@@ -40,9 +36,7 @@ class SignalHistory(BaseModel):
     executed: bool = Field(False, description="Om signalen utfördes")
     executed_at: datetime | None = Field(None, description="När signalen utfördes")
     profit_loss: float | None = Field(None, description="Vinst/förlust från signalen")
-    status: str = Field(
-        "ACTIVE", description="Status: ACTIVE, EXECUTED, CANCELLED, EXPIRED"
-    )
+    status: str = Field("ACTIVE", description="Status: ACTIVE, EXECUTED, CANCELLED, EXPIRED")
 
 
 class LiveSignalsResponse(BaseModel):
@@ -58,9 +52,7 @@ class LiveSignalsResponse(BaseModel):
 class SignalGenerationRequest(BaseModel):
     """Request model för att generera nya signals"""
 
-    symbols: list[str] | None = Field(
-        None, description="Specifika symboler att analysera"
-    )
+    symbols: list[str] | None = Field(None, description="Specifika symboler att analysera")
     force_refresh: bool = Field(False, description="Tvinga ny signal generation")
     include_history: bool = Field(False, description="Inkludera signal-historik")
 
@@ -91,6 +83,4 @@ class SignalThresholds(BaseModel):
     medium_signal_min: float = Field(60.0, description="Minimum för MEDIUM signal")
     weak_signal_min: float = Field(40.0, description="Minimum för WEAK signal")
     auto_execute_min: float = Field(85.0, description="Minimum för auto-execution")
-    manual_confirm_min: float = Field(
-        70.0, description="Minimum för manuell bekräftelse"
-    )
+    manual_confirm_min: float = Field(70.0, description="Minimum för manuell bekräftelse")

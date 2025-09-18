@@ -404,5 +404,3 @@ tradingbot-backend\services\validation_service.py:307:        """Beräkna probab
 tradingbot-backend\utils\advanced_rate_limiter.py:266:        """Skicka limiter-stats till metrics_store för Prometheus-export."""
 tradingbot-backend\utils\server_timing.py:45:        self._t0 = time.perf_counter()
 tradingbot-backend\utils\server_timing.py:50:            dt_ms = (time.perf_counter() - self._t0) * 1000.0
-
-

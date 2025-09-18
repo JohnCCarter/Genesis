@@ -20,10 +20,7 @@ logger = get_logger(__name__)
 class FundingService:
     def __init__(self) -> None:
         self.settings = settings
-        self.base_url = (
-            getattr(self.settings, "BITFINEX_AUTH_API_URL", None)
-            or self.settings.BITFINEX_API_URL
-        )
+        self.base_url = getattr(self.settings, "BITFINEX_AUTH_API_URL", None) or self.settings.BITFINEX_API_URL
 
     async def transfer(
         self,

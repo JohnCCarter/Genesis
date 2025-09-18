@@ -46,9 +46,7 @@ class TransportCircuitBreaker:
         except Exception:
             pass
 
-    def note_failure(
-        self, endpoint: str, status_code: int, retry_after: str | None = None
-    ) -> float:
+    def note_failure(self, endpoint: str, status_code: int, retry_after: str | None = None) -> float:
         cooldown = self._limiter.note_failure(endpoint, status_code, retry_after)
         # Toggle metric till 1 när CB öppnas
         try:

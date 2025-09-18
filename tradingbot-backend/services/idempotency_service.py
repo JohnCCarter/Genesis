@@ -52,9 +52,7 @@ class IdempotencyService:
             logger.debug(f"IdempotencyService.get fel: {e}")
             return None
 
-    def check_and_register(
-        self, key: str, ttl_seconds: int | None = None
-    ) -> Any | None:
+    def check_and_register(self, key: str, ttl_seconds: int | None = None) -> Any | None:
         """Returnera tidigare svar om giltigt, annars registrera placeholder och returnera None."""
         try:
             k = (key or "").strip()

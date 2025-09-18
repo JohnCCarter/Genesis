@@ -31,9 +31,7 @@ def show_symbols(scraper):
     print(f"Hittade totalt {len(symbols)} symboler")
 
     # Visa några vanliga symboler
-    common_symbols = [
-        s for s in symbols if s["symbol"] in ["tBTCUSD", "tETHUSD", "tLTCUSD"]
-    ]
+    common_symbols = [s for s in symbols if s["symbol"] in ["tBTCUSD", "tETHUSD", "tLTCUSD"]]
     print("\nVanliga symboler:")
     for symbol in common_symbols:
         print(f"  {symbol['symbol']}")
@@ -82,9 +80,7 @@ def show_error_codes(scraper):
             if i >= 4:  # Visa max 5 exempel
                 break
     else:
-        print(
-            "\nKunde inte hämta felkoder. Detta kan bero på ändringar i API-dokumentationen."
-        )
+        print("\nKunde inte hämta felkoder. Detta kan bero på ändringar i API-dokumentationen.")
         print("Vanliga felkoder inkluderar:")
         print("  - 10100: Pris utanför tillåtet intervall")
         print("  - 10001: Otillräckliga medel")
