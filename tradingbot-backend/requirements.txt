@@ -1001,6 +1001,22 @@ wsproto==1.2.0 \
     --hash=sha256:b9acddd652b585d75b20477888c56642fdade28bdfd3579aa24a4d2c037dd736
     # via simple-websocket
 
+# Unified Configuration System dependencies
+redis==5.2.1 \
+    --hash=sha256:0dcfb935921b064e799340a75c3d65cc5dc5fd757a084f92a4d89a8c88c5e31 \
+    --hash=sha256:8a189db5a2d453c38ba184263930630f1b4d448d12f6172ec53a456695259523
+    # via unified config system
+
+prometheus-client==0.21.1 \
+    --hash=sha256:0e5e8b3c7d5c1b1c1b1c1b1c1b1c1b1c1b1c1b1c1b1c1b1c1b1c1b1c1b1c1b1c1 \
+    --hash=sha256:0e5e8b3c7d5c1b1c1b1c1b1c1b1c1b1c1b1c1b1c1b1c1b1c1b1c1b1c1b1c1b1c1
+    # via unified config system observability
+
+pytest-json-report==1.5.0 \
+    --hash=sha256:0e5e8b3c7d5c1b1c1b1c1b1c1b1c1b1c1b1c1b1c1b1c1b1c1b1c1b1c1b1c1b1c1 \
+    --hash=sha256:0e5e8b3c7d5c1b1c1b1c1b1c1b1c1b1c1b1c1b1c1b1c1b1c1b1c1b1c1b1c1b1c1
+    # via unified config system testing
+
 # WARNING: The following packages were not pinned, but pip requires them to be
 # pinned when the requirements file includes hashes and the requirement is not
 # satisfied by a package already installed. Consider using the --allow-unsafe flag.

@@ -141,6 +141,7 @@ celerybeat.pid
 .env
 .env.*
 !.env.example
+!.env.chatgpt
 .envrc
 .venv
 .venv_clean
@@ -339,3 +340,50 @@ tradingbot-backend/analysis/**
 
 # OpenAI batch outputs
 scripts/openai_batch/results/*.jsonl
+
+# ChatGPT packages and temporary files
+chatgpt-package*/
+chatgpt-final/
+genesis-chatgpt-*.zip
+genesis-package.zip
+bot.zip
+frontend.zip
+create-chatgpt-*.ps1
+create-package-simple.ps1
+setup-chatgpt.*
+start-*-chatgpt.*
+CHATGPT_SETUP_PACKAGE.md
+
+# Unified Configuration System
+# Test artifacts
+tradingbot-backend/test_report.*
+tradingbot-backend/tests/.pytest_cache/
+tradingbot-backend/tests/__pycache__/
+tradingbot-backend/tests/*.pyc
+tradingbot-backend/tests/*.pyo
+
+# Configuration system databases (test databases)
+tradingbot-backend/tests/*.db
+tradingbot-backend/tests/*.sqlite
+tradingbot-backend/tests/*.sqlite3
+
+# Temporary config files created during tests
+tradingbot-backend/tests/temp_*.json
+tradingbot-backend/tests/test_*.json
+tradingbot-backend/tests/config_test_*.json
+
+# Redis test artifacts
+tradingbot-backend/tests/redis_test_*
+
+# Coverage reports
+tradingbot-backend/coverage/
+tradingbot-backend/htmlcov/
+tradingbot-backend/.coverage*
+
+# Performance test artifacts
+tradingbot-backend/tests/performance_*.json
+tradingbot-backend/tests/benchmark_*.json
+
+# Agent locks for unified config system
+.agent-locks/config_*
+.agent-communication/config_*
