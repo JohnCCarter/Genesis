@@ -43,8 +43,13 @@ export function RiskGuardsPanel() {
                 current_equity: raw?.current_equity ?? 0,
                 daily_loss_percentage: raw?.daily_loss_percentage ?? 0,
                 drawdown_percentage: raw?.drawdown_percentage ?? 0,
-                // Använd full guards-konfiguration från unified endpoint
-                guards: (raw?.guards_full ?? raw?.guards ?? {}) as any,
+                // Använd full guards-konfiguration från unified endpoint med fallback
+                guards: {
+                    max_daily_loss: raw?.guards_full?.max_daily_loss ?? raw?.guards?.max_daily_loss ?? { enabled: false },
+                    kill_switch: raw?.guards_full?.kill_switch ?? raw?.guards?.kill_switch ?? { enabled: false },
+                    exposure_limits: raw?.guards_full?.exposure_limits ?? raw?.guards?.exposure_limits ?? { enabled: false },
+                    volatility_guards: raw?.guards_full?.volatility_guards ?? raw?.guards?.volatility_guards ?? { enabled: false },
+                },
                 last_updated: raw?.timestamp ?? new Date().toISOString(),
             };
             setStatus(mapped);
@@ -160,15 +165,15 @@ export function RiskGuardsPanel() {
                         <h4 style={{ margin: 0 }}>Max Daily Loss</h4>
                         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                             <span style={{
-                                background: getStatusColor(status.guards.max_daily_loss.triggered),
+                                background: getStatusColor(status.guards?.max_daily_loss?.triggered),
                                 color: 'white',
                                 padding: '2px 8px',
                                 borderRadius: 12,
                                 fontSize: '0.8em'
                             }}>
-                                {getStatusText(status.guards.max_daily_loss)}
+                                {getStatusText(status.guards?.max_daily_loss)}
                             </span>
-                            {status.guards.max_daily_loss.triggered && (
+                            {status.guards?.max_daily_loss?.triggered && (
                                 <button
                                     onClick={() => resetGuard('max_daily_loss')}
                                     disabled={loading}
@@ -189,12 +194,12 @@ export function RiskGuardsPanel() {
 
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 8, fontSize: '0.9em' }}>
                         <div>
-                            <strong>Gräns:</strong> {status.guards.max_daily_loss.percentage}%
+                            <strong>Gräns:</strong> {status.guards?.max_daily_loss?.percentage ?? 'N/A'}%
                         </div>
                         <div>
-                            <strong>Cooldown:</strong> {status.guards.max_daily_loss.cooldown_hours}h
+                            <strong>Cooldown:</strong> {status.guards?.max_daily_loss?.cooldown_hours ?? 'N/A'}h
                         </div>
-                        {status.guards.max_daily_loss.triggered_at && (
+                        {status.guards?.max_daily_loss?.triggered_at && (
                             <div>
                                 <strong>Triggad:</strong> {new Date(status.guards.max_daily_loss.triggered_at).toLocaleString()}
                             </div>
@@ -208,15 +213,15 @@ export function RiskGuardsPanel() {
                         <h4 style={{ margin: 0 }}>Kill Switch</h4>
                         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                             <span style={{
-                                background: getStatusColor(status.guards.kill_switch.triggered),
+                                background: getStatusColor(status.guards?.kill_switch?.triggered),
                                 color: 'white',
                                 padding: '2px 8px',
                                 borderRadius: 12,
                                 fontSize: '0.8em'
                             }}>
-                                {getStatusText(status.guards.kill_switch)}
+                                {getStatusText(status.guards?.kill_switch)}
                             </span>
-                            {status.guards.kill_switch.triggered && (
+                            {status.guards?.kill_switch?.triggered && (
                                 <button
                                     onClick={() => resetGuard('kill_switch')}
                                     disabled={loading}
@@ -237,12 +242,12 @@ export function RiskGuardsPanel() {
 
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 8, fontSize: '0.9em' }}>
                         <div>
-                            <strong>Max Drawdown:</strong> {status.guards.kill_switch.max_drawdown_percentage}%
+                            <strong>Max Drawdown:</strong> {status.guards?.kill_switch?.max_drawdown_percentage ?? 'N/A'}%
                         </div>
                         <div>
-                            <strong>Cooldown:</strong> {status.guards.kill_switch.cooldown_hours}h
+                            <strong>Cooldown:</strong> {status.guards?.kill_switch?.cooldown_hours ?? 'N/A'}h
                         </div>
-                        {status.guards.kill_switch.reason && (
+                        {status.guards?.kill_switch?.reason && (
                             <div style={{ gridColumn: '1 / -1' }}>
                                 <strong>Orsak:</strong> {status.guards.kill_switch.reason}
                             </div>
@@ -261,19 +266,19 @@ export function RiskGuardsPanel() {
                             borderRadius: 12,
                             fontSize: '0.8em'
                         }}>
-                            {getStatusText(status.guards.exposure_limits)}
+                            {getStatusText(status.guards?.exposure_limits)}
                         </span>
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 8, fontSize: '0.9em' }}>
                         <div>
-                            <strong>Max Positioner:</strong> {status.guards.exposure_limits.max_open_positions}
+                            <strong>Max Positioner:</strong> {status.guards?.exposure_limits?.max_open_positions ?? 'N/A'}
                         </div>
                         <div>
-                            <strong>Max Position Size:</strong> {status.guards.exposure_limits.max_position_size_percentage}%
+                            <strong>Max Position Size:</strong> {status.guards?.exposure_limits?.max_position_size_percentage ?? 'N/A'}%
                         </div>
                         <div>
-                            <strong>Max Total Exposure:</strong> {status.guards.exposure_limits.max_total_exposure_percentage}%
+                            <strong>Max Total Exposure:</strong> {status.guards?.exposure_limits?.max_total_exposure_percentage ?? 'N/A'}%
                         </div>
                     </div>
                 </div>
@@ -289,16 +294,16 @@ export function RiskGuardsPanel() {
                             borderRadius: 12,
                             fontSize: '0.8em'
                         }}>
-                            {getStatusText(status.guards.volatility_guards)}
+                            {getStatusText(status.guards?.volatility_guards)}
                         </span>
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 8, fontSize: '0.9em' }}>
                         <div>
-                            <strong>Max Daglig Volatilitet:</strong> {status.guards.volatility_guards.max_daily_volatility}%
+                            <strong>Max Daglig Volatilitet:</strong> {status.guards?.volatility_guards?.max_daily_volatility ?? 'N/A'}%
                         </div>
                         <div>
-                            <strong>Paus vid Hög Volatilitet:</strong> {status.guards.volatility_guards.pause_on_high_volatility ? 'Ja' : 'Nej'}
+                            <strong>Paus vid Hög Volatilitet:</strong> {status.guards?.volatility_guards?.pause_on_high_volatility ? 'Ja' : 'Nej'}
                         </div>
                     </div>
                 </div>
