@@ -4449,10 +4449,13 @@ async def get_refresh_manager_status(_: bool = Depends(require_auth)):
         panel_status = manager.get_panel_status()
         intervals = manager.get_refresh_intervals_summary()
 
+        ts = getattr(manager.shared_data, "timestamp", None)
+        ts_iso = ts.isoformat() if ts else None
+
         return {
-            "status": status,
+            "status": panel_status,
             "intervals": intervals,
-            "shared_data_timestamp": manager.shared_data.timestamp.isoformat(),
+            "shared_data_timestamp": ts_iso,
         }
     except Exception as e:
         logger.exception(f"Fel vid hämtning av refresh manager status: {e}")
