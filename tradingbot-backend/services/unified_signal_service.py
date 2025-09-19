@@ -319,7 +319,9 @@ class UnifiedSignalService:
                 },
             }
 
-            logger.info(f"📊 Regime sammanfattning: {trend_count} trend, {balanced_count} balanced, {range_count} range")
+            logger.info(
+                f"📊 Regime sammanfattning: {trend_count} trend, {balanced_count} balanced, {range_count} range"
+            )
             return result
 
         except Exception as e:

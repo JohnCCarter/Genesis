@@ -178,9 +178,9 @@ class RiskGuardsService:
             if not guard.get("triggered"):
                 guard["triggered"] = True
                 guard["triggered_at"] = datetime.now().isoformat()
-                guard[
-                    "reason"
-                ] = f"Daglig förlust {daily_loss_pct_early:.2f}% över threshold {guard.get('percentage', 0)}%"
+                guard["reason"] = (
+                    f"Daglig förlust {daily_loss_pct_early:.2f}% över threshold {guard.get('percentage', 0)}%"
+                )
                 self._save_guards(self.guards)
                 logger.warning(f"🚨 Max daily loss aktiverat: {guard['reason']}")
             return True, guard["reason"]
@@ -208,9 +208,9 @@ class RiskGuardsService:
             if not guard.get("triggered"):
                 guard["triggered"] = True
                 guard["triggered_at"] = datetime.now().isoformat()
-                guard[
-                    "reason"
-                ] = f"Drawdown {drawdown_pct:.2f}% över threshold {guard.get('max_drawdown_percentage', 0)}%"
+                guard["reason"] = (
+                    f"Drawdown {drawdown_pct:.2f}% över threshold {guard.get('max_drawdown_percentage', 0)}%"
+                )
                 self._save_guards(self.guards)
                 logger.warning(f"🚨 Kill switch aktiverat: {guard['reason']}")
             return True, guard["reason"]

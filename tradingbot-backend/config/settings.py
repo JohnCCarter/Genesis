@@ -35,7 +35,9 @@ class Settings(_BaseSettings):
     AUTH_REQUIRED: bool = False
 
     # CORS
-    ALLOWED_ORIGINS: str = '["http://localhost:3000", "http://localhost:8080", "http://localhost:5173", "http://localhost:5174", "http://127.0.0.1:5173", "http://127.0.0.1:5174"]'
+    ALLOWED_ORIGINS: str = (
+        '["http://localhost:3000", "http://localhost:8080", "http://localhost:5173", "http://localhost:5174", "http://127.0.0.1:5173", "http://127.0.0.1:5174"]'
+    )
 
     # Bitfinex REST API - för orderläggning och kontohantering
     BITFINEX_API_KEY: str | None = None
@@ -141,7 +143,9 @@ class Settings(_BaseSettings):
     PRIVATE_REST_CONCURRENCY: int = 1
 
     # Regex/pattern-baserad mapping av endpoints till limiter-typer
-    RATE_LIMIT_PATTERNS: str | None = None  # ex: "^auth/w/=>PRIVATE_TRADING;^auth/r/positions=>PRIVATE_ACCOUNT;^(ticker|candles|book|trades)=>PUBLIC_MARKET"
+    RATE_LIMIT_PATTERNS: str | None = (
+        None  # ex: "^auth/w/=>PRIVATE_TRADING;^auth/r/positions=>PRIVATE_ACCOUNT;^(ticker|candles|book|trades)=>PUBLIC_MARKET"
+    )
 
     # WS ticker prioritet: anse WS-data färsk i X sekunder innan REST-fallback
     WS_TICKER_STALE_SECS: int = 10
