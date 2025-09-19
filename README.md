@@ -62,7 +62,7 @@ BITFINEX_API_SECRET=din_api_secret
 # Backend (förhindra WebSocket-hängning vid start)
 cd tradingbot-backend
 $env:WS_CONNECT_ON_START='False'
-uvicorn main:app --reload
+python -m uvicorn main:app --reload
 
 # Frontend (nytt PowerShell-fönster)
 cd frontend/dashboard
@@ -76,7 +76,7 @@ npm run dev
 # Backend (förhindra WebSocket-hängning vid start)
 cd tradingbot-backend
 set WS_CONNECT_ON_START=False
-uvicorn main:app --reload
+python -m uvicorn main:app --reload
 
 # Frontend (nytt Command Prompt-fönster)
 cd frontend/dashboard
@@ -122,7 +122,7 @@ taskkill /F /IM python.exe
 # Starta med inaktiverad WebSocket-anslutning
 $env:WS_CONNECT_ON_START='False'
 cd tradingbot-backend
-uvicorn main:app --reload
+python -m uvicorn main:app --reload
 ```
 
 **Windows Command Prompt:**
@@ -134,7 +134,7 @@ taskkill /F /IM python.exe
 # Starta med inaktiverad WebSocket-anslutning
 set WS_CONNECT_ON_START=False
 cd tradingbot-backend
-uvicorn main:app --reload
+python -m uvicorn main:app --reload
 ```
 
 ### Frontend får inte token
@@ -161,7 +161,7 @@ curl http://127.0.0.1:8000/health
 curl -X POST http://127.0.0.1:8000/api/v2/auth/ws-token -H "Content-Type: application/json" -d "{\"user_id\":\"test\",\"scope\":\"read\",\"expiry_hours\":1}"
 ```
 
-3. Kontrollera CORS-inställningar i backend
+1. Kontrollera CORS-inställningar i backend
 
 ### Dependencies-konflikter
 
