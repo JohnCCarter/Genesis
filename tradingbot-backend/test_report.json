@@ -1,0 +1,51 @@
+{
+  "total_tests": 3,
+  "total_passed": 0,
+  "total_failed": 3,
+  "success_rate": 0.0,
+  "duration_seconds": 3.15301513671875,
+  "failed_files": [
+    "tests/test_unified_config_system.py",
+    "tests/test_config_api.py",
+    "tests/test_redis_integration.py"
+  ],
+  "all_passed": false,
+  "test_results": [
+    {
+      "file": "tests/test_unified_config_system.py",
+      "result": 1,
+      "json_result": {
+        "summary": {
+          "passed": 0,
+          "failed": 1,
+          "total": 1
+        }
+      },
+      "success": false
+    },
+    {
+      "file": "tests/test_config_api.py",
+      "result": 1,
+      "json_result": {
+        "summary": {
+          "passed": 0,
+          "failed": 1,
+          "total": 1
+        }
+      },
+      "success": false
+    },
+    {
+      "file": "tests/test_redis_integration.py",
+      "result": 1,
+      "json_result": {
+        "summary": {
+          "passed": 0,
+          "failed": 1,
+          "total": 1
+        }
+      },
+      "success": false
+    }
+  ]
+}

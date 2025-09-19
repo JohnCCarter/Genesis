@@ -1,0 +1,156 @@
+
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unified Configuration System - Test Rapport</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #F44336, #2196F3);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+        .header .subtitle {
+            margin-top: 10px;
+            opacity: 0.9;
+            font-size: 1.2em;
+        }
+        .summary {
+            padding: 30px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        .stat-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            border-left: 4px solid #F44336;
+        }
+        .stat-card h3 {
+            margin: 0 0 10px 0;
+            color: #333;
+            font-size: 1.1em;
+        }
+        .stat-card .number {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #F44336;
+        }
+        .details {
+            padding: 30px;
+            border-top: 1px solid #eee;
+        }
+        .test-file {
+            margin-bottom: 20px;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 4px solid #ddd;
+        }
+        .test-file.passed {
+            background: #f0f9ff;
+            border-left-color: #4CAF50;
+        }
+        .test-file.failed {
+            background: #fff5f5;
+            border-left-color: #F44336;
+        }
+        .test-file h4 {
+            margin: 0 0 10px 0;
+            font-family: 'Courier New', monospace;
+        }
+        .timestamp {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚠️ Test Rapport</h1>
+            <div class="subtitle">Unified Configuration System</div>
+        </div>
+        
+        <div class="summary">
+            <div class="stat-card">
+                <h3>Totalt antal tester</h3>
+                <div class="number">3</div>
+            </div>
+            <div class="stat-card">
+                <h3>Godkända</h3>
+                <div class="number">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>Misslyckade</h3>
+                <div class="number">3</div>
+            </div>
+            <div class="stat-card">
+                <h3>Framgångsgrad</h3>
+                <div class="number">0.0%</div>
+            </div>
+            <div class="stat-card">
+                <h3>Körtid</h3>
+                <div class="number">3.2s</div>
+            </div>
+        </div>
+        
+        <div class="details">
+            <h2>Detaljerade resultat</h2>
+
+            <div class="test-file failed">
+                <h4>tests/test_unified_config_system.py</h4>
+                <p><strong>Status:</strong> ❌ Misslyckad</p>
+
+                <p><strong>Tester:</strong> 1 | 
+                   <strong>Godkända:</strong> 0 | 
+                   <strong>Misslyckade:</strong> 1</p>
+</div>
+            <div class="test-file failed">
+                <h4>tests/test_config_api.py</h4>
+                <p><strong>Status:</strong> ❌ Misslyckad</p>
+
+                <p><strong>Tester:</strong> 1 | 
+                   <strong>Godkända:</strong> 0 | 
+                   <strong>Misslyckade:</strong> 1</p>
+</div>
+            <div class="test-file failed">
+                <h4>tests/test_redis_integration.py</h4>
+                <p><strong>Status:</strong> ❌ Misslyckad</p>
+
+                <p><strong>Tester:</strong> 1 | 
+                   <strong>Godkända:</strong> 0 | 
+                   <strong>Misslyckade:</strong> 1</p>
+</div>
+        </div>
+        
+        <div class="timestamp">
+            Genererad: 2025-09-19 16:13:35
+        </div>
+    </div>
+</body>
+</html>

@@ -90,7 +90,7 @@ class Settings(_BaseSettings):
     TRADING_RULES_FILE: str = "config/trading_rules.json"
     # Global av/på för risklager (guards + constraints). Starta Off om du vill toggla i runtime
     RISK_ENABLED: bool = True
-    MAX_TRADES_PER_DAY: int = 15
+    MAX_TRADES_PER_DAY: int = 200
     # Per-symbol daglig gräns (0 = inaktiverad)
     MAX_TRADES_PER_SYMBOL_PER_DAY: int = 0
     TRADE_COOLDOWN_SECONDS: int = 60
