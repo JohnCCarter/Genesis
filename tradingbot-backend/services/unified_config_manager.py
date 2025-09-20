@@ -25,8 +25,8 @@ class ConfigContext:
     """Kontext för konfigurationshämtning."""
 
     priority_profile: PriorityProfile = PriorityProfile.GLOBAL
-    user: Optional[str] = None
-    source_override: Optional[str] = None
+    user: str | None = None
+    source_override: str | None = None
 
 
 class UnifiedConfigManager:
@@ -145,7 +145,7 @@ class UnifiedConfigManager:
         # I en riktig implementation skulle vi ha en runtime store
         return None
 
-    def _get_feature_flag(self, key: str) -> Any:
+    def _get_feature_flag(self, _key: str) -> Any:
         """Hämta från feature flags."""
         # Placeholder för feature flags
         # I en riktig implementation skulle vi integrera med feature flag system
@@ -218,11 +218,11 @@ class UnifiedConfigManager:
 
                 if env_key in KEY_REGISTRY:
                     expected_type = KEY_REGISTRY[env_key].type
-                    if expected_type == int:
+                    if expected_type is int:
                         return int(value)
-                    elif expected_type == bool:
+                    elif expected_type is bool:
                         return value.lower() in ("true", "1", "yes", "on")
-                    elif expected_type == float:
+                    elif expected_type is float:
                         return float(value)
                     else:
                         return value
@@ -292,16 +292,16 @@ class UnifiedConfigManager:
 
     def _convert_value(self, value: str, target_type: type) -> Any:
         """Konvertera strängvärde till target typ."""
-        if target_type == bool:
+        if target_type is bool:
             return value.lower() in ("true", "1", "yes", "on")
-        elif target_type == int:
+        elif target_type is int:
             return int(value)
-        elif target_type == float:
+        elif target_type is float:
             return float(value)
         else:
             return value
 
-    def get_effective_config(self, context: ConfigContext | None = None) -> Dict[str, Any]:
+    def get_effective_config(self, context: ConfigContext | None = None) -> dict[str, Any]:
         """Hämta all effektiv konfiguration."""
         context = context or ConfigContext()
         effective_config = {}
@@ -316,7 +316,7 @@ class UnifiedConfigManager:
 
         return effective_config
 
-    def get_config_stats(self) -> Dict[str, Any]:
+    def get_config_stats(self) -> dict[str, Any]:
         """Hämta statistik för konfigurationssystemet."""
         return {
             "total_keys": len(KEY_REGISTRY),
@@ -327,7 +327,7 @@ class UnifiedConfigManager:
 
 
 # Global unified config manager instans
-_unified_config_manager: Optional[UnifiedConfigManager] = None
+_unified_config_manager: UnifiedConfigManager | None = None
 
 
 def get_unified_config_manager(

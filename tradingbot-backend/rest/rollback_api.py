@@ -32,7 +32,7 @@ class CreateSnapshotRequest(BaseModel):
     name: str = Field(..., description="Snapshot namn")
     description: str = Field("", description="Beskrivning av snapshot")
     snapshot_type: str = Field("manual", description="Typ av snapshot")
-    tags: List[str] = Field([], description="Taggar för snapshot")
+    tags: list[str] = Field([], description="Taggar för snapshot")
 
 
 class SnapshotResponse(BaseModel):
@@ -45,9 +45,9 @@ class SnapshotResponse(BaseModel):
     created_at: float = Field(..., description="Skapad timestamp")
     created_by: str = Field(..., description="Skapad av")
     generation: int = Field(..., description="Generationsnummer")
-    configuration: Dict[str, Any] = Field(..., description="Konfiguration")
-    metadata: Dict[str, Any] = Field(..., description="Metadata")
-    tags: List[str] = Field(..., description="Taggar")
+    configuration: dict[str, Any] = Field(..., description="Konfiguration")
+    metadata: dict[str, Any] = Field(..., description="Metadata")
+    tags: list[str] = Field(..., description="Taggar")
 
 
 class RollbackRequest(BaseModel):
@@ -65,11 +65,11 @@ class RollbackResponse(BaseModel):
     status: str = Field(..., description="Status")
     created_at: float = Field(..., description="Skapad timestamp")
     created_by: str = Field(..., description="Initierad av")
-    started_at: Optional[float] = Field(None, description="Startad timestamp")
-    completed_at: Optional[float] = Field(None, description="Slutförd timestamp")
-    error_message: Optional[str] = Field(None, description="Felmeddelande")
-    affected_keys: List[str] = Field([], description="Påverkade nycklar")
-    metadata: Dict[str, Any] = Field({}, description="Metadata")
+    started_at: float | None = Field(None, description="Startad timestamp")
+    completed_at: float | None = Field(None, description="Slutförd timestamp")
+    error_message: str | None = Field(None, description="Felmeddelande")
+    affected_keys: list[str] = Field([], description="Påverkade nycklar")
+    metadata: dict[str, Any] = Field({}, description="Metadata")
 
 
 class CreateStagedRolloutRequest(BaseModel):
@@ -77,9 +77,9 @@ class CreateStagedRolloutRequest(BaseModel):
 
     name: str = Field(..., description="Rollout namn")
     description: str = Field("", description="Beskrivning")
-    target_keys: List[str] = Field(..., description="Målnycklar")
-    rollout_plan: Dict[str, Any] = Field(..., description="Rollout plan")
-    success_criteria: Dict[str, Any] = Field({}, description="Framgångskriterier")
+    target_keys: list[str] = Field(..., description="Målnycklar")
+    rollout_plan: dict[str, Any] = Field(..., description="Rollout plan")
+    success_criteria: dict[str, Any] = Field({}, description="Framgångskriterier")
 
 
 class StagedRolloutResponse(BaseModel):
@@ -88,18 +88,18 @@ class StagedRolloutResponse(BaseModel):
     id: str = Field(..., description="Rollout ID")
     name: str = Field(..., description="Rollout namn")
     description: str = Field(..., description="Beskrivning")
-    target_keys: List[str] = Field(..., description="Målnycklar")
-    rollout_plan: Dict[str, Any] = Field(..., description="Rollout plan")
+    target_keys: list[str] = Field(..., description="Målnycklar")
+    rollout_plan: dict[str, Any] = Field(..., description="Rollout plan")
     status: str = Field(..., description="Status")
     created_at: float = Field(..., description="Skapad timestamp")
     created_by: str = Field(..., description="Skapad av")
-    started_at: Optional[float] = Field(None, description="Startad timestamp")
-    completed_at: Optional[float] = Field(None, description="Slutförd timestamp")
+    started_at: float | None = Field(None, description="Startad timestamp")
+    completed_at: float | None = Field(None, description="Slutförd timestamp")
     current_stage: int = Field(..., description="Aktuellt steg")
     total_stages: int = Field(..., description="Totalt antal steg")
-    success_criteria: Dict[str, Any] = Field({}, description="Framgångskriterier")
-    rollback_snapshot_id: Optional[str] = Field(None, description="Rollback snapshot ID")
-    metadata: Dict[str, Any] = Field({}, description="Metadata")
+    success_criteria: dict[str, Any] = Field({}, description="Framgångskriterier")
+    rollback_snapshot_id: str | None = Field(None, description="Rollback snapshot ID")
+    metadata: dict[str, Any] = Field({}, description="Metadata")
 
 
 # API Endpoints
@@ -138,10 +138,10 @@ async def create_snapshot(request: CreateSnapshotRequest, user: dict[str, Any] =
         raise HTTPException(status_code=500, detail=f"Failed to create snapshot: {e}")
 
 
-@router.get("/snapshots", response_model=List[SnapshotResponse])
+@router.get("/snapshots", response_model=list[SnapshotResponse])
 async def list_snapshots(
     limit: int = Query(100, description="Maximum number of snapshots"),
-    snapshot_type: Optional[str] = Query(None, description="Filter by snapshot type"),
+    snapshot_type: str | None = Query(None, description="Filter by snapshot type"),
     user: dict[str, Any] = Depends(get_user_from_token),
 ):
     """Lista snapshots."""
@@ -296,9 +296,9 @@ async def start_staged_rollout(rollout_id: str, user: dict[str, Any] = Depends(g
         raise HTTPException(status_code=500, detail=f"Failed to start staged rollout: {e}")
 
 
-@router.get("/staged-rollouts", response_model=List[StagedRolloutResponse])
+@router.get("/staged-rollouts", response_model=list[StagedRolloutResponse])
 async def list_staged_rollouts(
-    status: Optional[str] = Query(None, description="Filter by status"),
+    status: str | None = Query(None, description="Filter by status"),
     user: dict[str, Any] = Depends(get_user_from_token),
 ):
     """Lista staged rollouts."""

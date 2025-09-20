@@ -57,7 +57,7 @@ class ConfigEvent:
     duration_ms: float | None = None
     success: bool = True
     error_message: str | None = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -68,7 +68,7 @@ class ConfigMetric:
     metric_type: MetricType
     value: float
     timestamp: float
-    labels: Dict[str, str] = field(default_factory=dict)
+    labels: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass
@@ -77,9 +77,9 @@ class EffectiveConfigSnapshot:
 
     timestamp: float
     context: ConfigContext
-    configuration: Dict[str, Any]
+    configuration: dict[str, Any]
     generation: int
-    source_summary: Dict[str, int] = field(default_factory=dict)
+    source_summary: dict[str, int] = field(default_factory=dict)
 
 
 class ConfigObservability:
@@ -98,13 +98,13 @@ class ConfigObservability:
 
         # Events
         self._events: deque = deque(maxlen=10000)  # Håller senaste 10k events
-        self._events_by_type: Dict[EventType, deque] = defaultdict(lambda: deque(maxlen=1000))
-        self._events_by_key: Dict[str, deque] = defaultdict(lambda: deque(maxlen=100))
+        self._events_by_type: dict[EventType, deque] = defaultdict(lambda: deque(maxlen=1000))
+        self._events_by_key: dict[str, deque] = defaultdict(lambda: deque(maxlen=100))
 
         # Metrics
-        self._metrics: Dict[str, deque] = defaultdict(lambda: deque(maxlen=1000))
-        self._counters: Dict[str, float] = defaultdict(float)
-        self._gauges: Dict[str, float] = defaultdict(float)
+        self._metrics: dict[str, deque] = defaultdict(lambda: deque(maxlen=1000))
+        self._counters: dict[str, float] = defaultdict(float)
+        self._gauges: dict[str, float] = defaultdict(float)
 
         # Effective config snapshots
         self._snapshots: deque = deque(maxlen=100)  # Håller senaste 100 snapshots
@@ -112,8 +112,8 @@ class ConfigObservability:
         self._last_snapshot = 0.0
 
         # Performance tracking
-        self._operation_times: Dict[str, deque] = defaultdict(lambda: deque(maxlen=1000))
-        self._error_counts: Dict[str, int] = defaultdict(int)
+        self._operation_times: dict[str, deque] = defaultdict(lambda: deque(maxlen=1000))
+        self._error_counts: dict[str, int] = defaultdict(int)
 
         # Starta bakgrundstråd för snapshots
         self._start_background_tasks()
@@ -156,7 +156,7 @@ class ConfigObservability:
                 self._counters[f"events_failure_{event.event_type.value}"] += 1
                 self._error_counts[event.key] += 1
 
-    def record_metric(self, name: str, value: float, metric_type: MetricType, labels: Dict[str, str] = None):
+    def record_metric(self, name: str, value: float, metric_type: MetricType, labels: dict[str, str] = None):
         """Registrera en metric."""
         with self._lock:
             metric = ConfigMetric(
@@ -241,7 +241,7 @@ class ConfigObservability:
         with self._lock:
             cutoff_time = time.time() - 3600  # 1 timme
 
-            for metric_name, metrics in self._metrics.items():
+            for _metric_name, metrics in self._metrics.items():
                 # Ta bort metrics äldre än 1 timme
                 while metrics and metrics[0].timestamp < cutoff_time:
                     metrics.popleft()

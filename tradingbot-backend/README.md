@@ -1,36 +1,125 @@
 # Genesis Trading Bot - Backend
 
-Detta är backend-delen av Genesis Trading Bot, en plattform för automatiserad trading med Bitfinex API.
+> **Högpresterande FastAPI-backend för automatiserad trading med Bitfinex API, AI-driven signalgenerering och omfattande riskhantering.**
 
-## Innehåll
+[![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://python.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com)
+[![Tests](https://img.shields.io/badge/Tests-Pytest-green.svg)](tests/)
+[![Security](https://img.shields.io/badge/Security-Bandit-red.svg)](bandit.yaml)
 
-1. [Översikt](#översikt)
-2. [Installation](#installation)
-3. [Konfiguration](#konfiguration)
-4. [Telegram-notiser](#telegram-notiser)
-5. [Moduler](#moduler)
-6. [API-dokumentation](#api-dokumentation)
-7. [Tester](#tester)
-8. [Utveckling](#utveckling)
-9. [Orderflaggor (Reduce-Only/Post-Only)](#orderflaggor-reduce-onlypost-only)
-10. [Backtest & Heatmap](#backtest--heatmap)
-11. [CI (GitHub Actions)](#ci-github-actions)
-12. [Arkitektur: MarketDataFacade, SignalService, RiskPolicyEngine, Circuit Breakers](#arkitektur-marketdatafacade-signalservice-riskpolicyengine-circuit-breakers)
+## 📋 Innehållsförteckning
 
-## Översikt
+1. [Översikt & Arkitektur](#översikt--arkitektur)
+2. [Funktioner](#funktioner)
+3. [Teknisk Stack](#teknisk-stack)
+4. [Snabbstart](#snabbstart)
+5. [Detaljerad Installation](#detaljerad-installation)
+6. [Konfiguration](#konfiguration)
+7. [Körning & Utveckling](#körning--utveckling)
+8. [API-dokumentation](#api-dokumentation)
+9. [Moduler & Arkitektur](#moduler--arkitektur)
+10. [Tester](#tester)
+11. [Kodkvalitet & Säkerhet](#kodkvalitet--säkerhet)
+12. [Felsökning](#felsökning)
+13. [Roadmap](#roadmap)
+14. [Contributing](#contributing)
+15. [Security](#security)
+16. [License](#license)
+17. [Appendix](#appendix)
 
-Genesis Trading Bot är en plattform för automatiserad trading med Bitfinex API. Backend-delen hanterar:
+## 🏗️ Översikt & Arkitektur
 
-- Autentisering mot Bitfinex API (REST och WebSocket)
-- Hämtning av marknadsdata
-- Teknisk analys och strategiutvärdering
-- Orderhantering
-- Positionshantering
-- Realtidsuppdateringar via WebSocket
-- Schemaläggning av strategier
-- Loggning och felhantering
+Backend-delen av Genesis Trading Bot är en skalbar, säker och högpresterande FastAPI-applikation som hanterar:
 
-## Installation
+- **🤖 AI-driven signalgenerering** med sannolikhetsmodeller och regime detection
+- **📊 WebSocket-first marknadsdata** med intelligent REST-fallback
+- **🛡️ Omfattande riskhantering** med circuit breakers och trading windows
+- **🔧 Unified Configuration Management** med central store och rollback
+- **⚡ Högpresterande trading** med optimerad orderhantering
+- **📈 Avancerad backtesting** och performance tracking
+
+### Arkitektur
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Genesis Backend                          │
+├─────────────────────────────────────────────────────────────┤
+│  FastAPI Application (main.py)                             │
+├─────────────────────────────────────────────────────────────┤
+│  REST API          │  WebSocket API    │  Unified Config   │
+│  ├── auth.py       │  ├── manager.py   │  ├── config_store │
+│  ├── routes.py     │  ├── auth.py      │  ├── key_registry │
+│  ├── wallet.py     │  └── handlers/    │  └── rollback     │
+│  └── positions.py  │                   │                   │
+├─────────────────────────────────────────────────────────────┤
+│  Services Layer                                             │
+│  ├── Market Data   │  ├── Risk Mgmt    │  ├── Trading      │
+│  ├── Signals       │  ├── Circuit Br.  │  └── Analytics    │
+│  └── Config Mgmt   │  └── Monitoring   │                   │
+├─────────────────────────────────────────────────────────────┤
+│  Data Layer                                                │
+│  ├── SQLite (Config)  │  ├── Redis (Cache)  │  ├── Files   │
+│  └── Bitfinex API     │  └── WebSocket      │  └── Logs    │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## ✨ Funktioner
+
+| Kategori | Funktioner |
+|----------|------------|
+| **🤖 AI & Signals** | Sannolikhetsmodeller, Regime detection, Unified signal service |
+| **📊 Marknadsdata** | WebSocket-first, REST fallback, TTL-baserad cache, Market data facade |
+| **🛡️ Riskhantering** | Circuit breakers, Trading windows, Max trades per dag/symbol, Risk guards |
+| **🔧 Konfiguration** | Central store, Rollback, Observability, Key registry, Priority profiles |
+| **📈 Trading** | Enhanced auto-trading, Bracket orders, Order templates, Order validation |
+| **📊 Analytics** | Backtesting, Performance tracking, Heatmaps, Cost-aware analysis |
+| **🛠️ Utveckling** | CI/CD, Kodkvalitet, Agent collaboration, Comprehensive testing |
+
+## 🛠️ Teknisk Stack
+
+### Core Framework
+- **Python 3.11+** - Huvudspråk
+- **FastAPI 0.104+** - Web framework med automatisk OpenAPI
+- **Uvicorn** - ASGI server
+- **Pydantic** - Data validation och serialization
+
+### Data & Storage
+- **SQLite** - Konfigurationsdata och metadata
+- **Redis** - Caching och pub/sub
+- **JSON** - Konfigurationsfiler
+- **SQLAlchemy** - ORM (framtida utökning)
+
+### External APIs
+- **Bitfinex API v2** - REST och WebSocket
+- **WebSocket** - Realtidskommunikation
+- **HTTP/HTTPS** - REST API calls
+
+### Development & Quality
+- **Black** - Code formatting
+- **Ruff** - Linting och import sorting
+- **Bandit** - Security scanning
+- **Pytest** - Testing framework
+- **MyPy** - Type checking
+- **pip-tools** - Dependency management
+
+## 🚀 Snabbstart
+
+```powershell
+# 1. Aktivera miljö och installera dependencies
+cd tradingbot-backend
+pip install -r requirements.txt
+
+# 2. Konfigurera miljövariabler
+cp env.example .env
+# Redigera .env med dina API-nycklar
+
+# 3. Starta servern
+python -m uvicorn main:app --reload
+```
+
+**🎯 Resultat:** Backend på `http://127.0.0.1:8000` med automatisk API-dokumentation på `/docs`
+
+## 📦 Detaljerad Installation
 
 ### Förutsättningar
 
@@ -101,14 +190,16 @@ cp env.example .env
 
 2. Redigera `.env` med dina Bitfinex API-nycklar och autentiseringsinställningar:
 
-```
+# --- Bitfinex REST/WS ---
 BITFINEX_API_KEY=din_api_nyckel
 BITFINEX_API_SECRET=din_api_hemlighet
-BITFINEX_API_URL=https://api.bitfinex.com/v2
+BITFINEX_PUBLIC_API_URL=https://api-pub.bitfinex.com/v2
+BITFINEX_AUTH_API_URL=https://api.bitfinex.com/v2
 
-# WebSocket-nycklar (om separata nycklar används för WS)
 BITFINEX_WS_API_KEY=din_ws_api_nyckel
 BITFINEX_WS_API_SECRET=din_ws_api_hemlighet
+BITFINEX_WS_PUBLIC_URI=wss://api-pub.bitfinex.com/ws/2
+BITFINEX_WS_AUTH_URI=wss://api.bitfinex.com/ws/2
 
 # Backend JWT
 JWT_SECRET_KEY=byt_till_en_stark_hemlighet
@@ -152,17 +243,71 @@ Notiser skickas även via Socket.IO som `notification`-event.
 
 ## Moduler
 
+> **💡 Snabbtips:** Börja med **Core Trading Services** och **Unified Configuration Management** för att förstå systemets grundläggande funktionalitet.
+
 ### Services
 
+#### **Core Trading Services**
 - **bitfinex_data.py**: Hanterar hämtning av marknadsdata från Bitfinex REST API
 - **bitfinex_websocket.py**: Hanterar realtidsdata via Bitfinex WebSocket API
 - **strategy.py**: Implementerar tradingstrategier baserade på tekniska indikatorer
 - **realtime_strategy.py**: Hanterar realtidsutvärdering av strategier
 - **scheduler.py**: Schemaläggning av strategiutvärderingar och andra uppgifter
 - **trading_integration.py**: Integrerar olika delar av systemet för komplett tradingfunktionalitet
+- **enhanced_auto_trader.py**: Förbättrad automatisk trading med avancerade funktioner
+
+#### **Unified Configuration Management**
+- **unified_config_manager.py**: Huvudklass för enhetlig konfigurationshantering
+- **config_store.py**: Central lagring med SQLite/Redis och pub/sub
+- **config_cache.py**: Per-process cache med invalidation
+- **config_validator.py**: Validering med key registry integration
+- **rollback_service.py**: Snapshots, rollback och staged rollout
+- **config_observability.py**: Metrics, events och monitoring
+
+#### **Market Data & Signals**
+- **market_data_facade.py**: Enhetlig datatjänst med WebSocket-first approach
+- **unified_signal_service.py**: Enhetlig signal-orkestrering
+- **signal_service.py**: Signalgenerering och utvärdering
+- **ws_first_data_service.py**: WebSocket-first data service med REST fallback
+
+#### **Risk Management**
+- **risk_policy_engine.py**: Samlar RiskGuards och TradeConstraintsService
+- **risk_guards.py**: Globala vakter (max daily loss, kill-switch, exposure limits)
+- **trade_constraints.py**: Trading window, dagliga limit och cooldown
+- **trading_window.py**: Hantering av handelsfönster
+- **trade_counter.py**: Räkning av trades per dag/symbol
+- **unified_risk_service.py**: Enhetlig riskhantering
+
+#### **Circuit Breakers & Monitoring**
+- **unified_circuit_breaker_service.py**: Enhetlig circuit breaker hantering
+- **transport_circuit_breaker.py**: Transport-nivå circuit breakers
+- **circuit_breaker_recovery.py**: Återhämtning från circuit breaker tillstånd
+- **enhanced_observability_service.py**: Förbättrad observability och monitoring
+
+#### **Probability & Validation**
+- **prob_model.py**: Sannolikhetsmodell för trading
+- **prob_validation.py**: Validering av sannolikhetsmodeller
+- **prob_train.py**: Träning av sannolikhetsmodeller
+- **validation_service.py**: Allmän valideringstjänst
+
+#### **Performance & Analytics**
+- **performance_tracker.py**: Spårning av tradingprestanda
+- **backtest.py**: Backtesting av strategier
+- **cost_aware_backtest.py**: Kostnadsmedveten backtesting
+- **regime_ablation.py**: Regime detection och ablation studies
+
+#### **Utilities & Support**
+- **runtime_config.py**: Runtime konfigurationshantering
+- **feature_flags_service.py**: Feature flags hantering
+- **notifications.py**: Notifikationshantering
+- **metrics.py**: Metrics och telemetri
+- **health_watchdog.py**: Hälsokontroll och övervakning
+
+> **📋 Sammanfattning:** Systemet består av **66 services** organiserade i **8 kategorier**. De viktigaste för nya utvecklare är **Core Trading Services** och **Unified Configuration Management**.
 
 ### REST API
 
+#### **Core API Endpoints**
 - **auth.py**: Autentisering mot Bitfinex REST API
 - **routes.py**: FastAPI-routes för backend API
 - **wallet.py**: Hantering av plånboksinformation
@@ -173,6 +318,16 @@ Notiser skickas även via Socket.IO som `notification`-event.
 - **active_orders.py**: Hantering av aktiva ordrar
 - **order_validator.py**: Validering av orderparametrar
 
+#### **Advanced API Endpoints**
+- **unified_config_api.py**: API för Unified Configuration Management
+- **rollback_api.py**: API för rollback och snapshot-hantering
+- **observability_api.py**: API för observability och monitoring
+- **debug_routes.py**: Debug-endpoints för utveckling
+- **funding.py**: Funding och lån-hantering
+- **ledgers.py**: Ledger och transaktionshistorik
+
+> **📋 Sammanfattning:** **17 REST API endpoints** organiserade i **Core** (grundläggande trading) och **Advanced** (avancerade funktioner).
+
 ### WebSocket
 
 - **auth.py**: Autentisering mot Bitfinex WebSocket API
@@ -180,25 +335,57 @@ Notiser skickas även via Socket.IO som `notification`-event.
 - **order_handler.py**: Hantering av ordrar via WebSocket
 - **wallet_handler.py**: Hantering av plånboksuppdateringar via WebSocket
 - **position_handler.py**: Hantering av positionsuppdateringar via WebSocket
+- **subscription_events.py**: Hantering av WebSocket-prenumerationer och events
+
+> **📋 Sammanfattning:** **8 WebSocket handlers** för realtidskommunikation med Bitfinex API.
 
 ### Indicators
 
 - **rsi.py**: Implementering av Relative Strength Index (RSI)
 - **ema.py**: Implementering av Exponential Moving Average (EMA)
 - **atr.py**: Implementering av Average True Range (ATR)
+- **adx.py**: Implementering av Average Directional Index (ADX)
+- **regime.py**: Regime detection och marknadsregime-analys
+
+> **📋 Sammanfattning:** **6 tekniska indikatorer** för marknadsanalys och strategiutvärdering.
 
 ### Utils
 
 - **bitfinex_client.py**: Hjälpklass för Bitfinex API-anrop
 - **logger.py**: Konfigurering av loggning
+- **advanced_rate_limiter.py**: Avancerad rate limiting med circuit breakers
+- **bitfinex_rate_limiter.py**: Bitfinex-specifik rate limiting
+- **candle_cache.py**: Cache för candle-data
+- **candles.py**: Candle-data hantering och bearbetning
+- **feature_flags.py**: Feature flags hantering
+- **nonce_manager.py**: Nonce-hantering för API-anrop
+- **rate_limiter.py**: Allmän rate limiting
+- **token_masking.py**: Masking av känsliga tokens i loggar
 
-### Scraper
+> **📋 Sammanfattning:** **10 utility-moduler** för API-hantering, rate limiting, caching och säkerhet.
 
-Scraper-verktyg för att extrahera Bitfinex API-dokumentation finns i `docs/scraper/`. Dessa verktyg används för att hålla API-dokumentationen uppdaterad och kan behövas för framtida API-versioner.
+### Config
+
+- **key_registry.py**: Central nyckel-katalog för Unified Configuration Management
+- **priority_profiles.py**: Prioritetsprofiler för konfigurationskällor
+- **settings.py**: Grundläggande inställningar och konfiguration
+- **startup_config.py**: Startup-konfiguration och initialisering
+- **strategy_settings.json**: Strategi-inställningar
+- **risk_guards.json**: Risk guards konfiguration
+- **order_templates.json**: Ordermallar
+
+> **📋 Sammanfattning:** **8 konfigurationsfiler** för systeminställningar, strategier och riskhantering.
 
 ### Models
 
 - **api_models.py**: Pydantic-modeller för API-requests och responses
+- **signal_models.py**: Modeller för signaler och trading-signaler
+
+> **📋 Sammanfattning:** **2 modellfiler** med Pydantic-scheman för API och signaler.
+
+### Scraper
+
+Scraper-verktyg för att extrahera Bitfinex API-dokumentation finns i `archived/scraper/`. Dessa verktyg används för att hålla API-dokumentationen uppdaterad och kan behövas för framtida API-versioner.
 
 ## API-dokumentation
 
@@ -619,3 +806,70 @@ Denna sektion beskriver vilka legacy‑endpoints och funktioner som är markerad
 
 - Metrik: `legacy_endpoints_total{endpoint}` används för att följa kvarvarande trafik.
 - Dashboard: SystemPanel visar `/api/v2/metrics/summary` där legacy‑användning kan synas i counters.
+
+## 🔧 Unified Configuration Management System
+
+### Översikt
+
+Det nya Unified Configuration Management System v2.0 löser konfigurationskonflikter och ger enhetlig hantering av alla konfigurationskällor.
+
+### Komponenter
+
+- **KeyRegistry** (`config/key_registry.py`) - Central nyckel-katalog med schema och metadata
+- **ConfigStore** (`services/config_store.py`) - Central lagring med SQLite/Redis och pub/sub
+- **ConfigCache** (`services/config_cache.py`) - Per-process cache med invalidation
+- **UnifiedConfigManager** (`services/unified_config_manager.py`) - Huvudklass med kontextuell prioritet
+- **ConfigValidator** (`services/config_validator.py`) - Validering med key registry integration
+- **RollbackService** (`services/rollback_service.py`) - Snapshots, rollback och staged rollout
+- **ConfigObservability** (`services/config_observability.py`) - Metrics, events och monitoring
+
+### API Endpoints
+
+- `GET /api/v2/config/keys` - Lista alla konfigurationsnycklar
+- `GET /api/v2/config/{key}` - Hämta konfigurationsvärde
+- `POST /api/v2/config/{key}` - Sätt konfigurationsvärde
+- `POST /api/v2/config/validate` - Validera konfiguration
+- `GET /api/v2/config/effective` - Hämta effektiv konfiguration
+- `GET /api/v2/config/stats` - Konfigurationsstatistik
+
+### Prioritet
+
+1. **Runtime Config** (högsta - dashboard-ändringar)
+2. **Feature Flags** (feature toggles)
+3. **Settings** (miljövariabler)
+4. **Config Files** (JSON-filer)
+
+## 🛡️ Kodkvalitet & Säkerhet
+
+### Automatiserade Verktyg
+
+```powershell
+# Formatering (Black)
+python -m black .
+
+# Linting (Ruff)
+python -m ruff check . --fix
+
+# Säkerhet (Bandit)
+python -m bandit -r . -c bandit.yaml
+
+# Tester (Pytest)
+python -m pytest tests/ -v
+
+# Type checking (MyPy)
+python -m mypy . --ignore-missing-imports
+```
+
+### CI/CD Pipeline
+
+- **GitHub Actions:** Automatisk kodkvalitetskontroll
+- **Pre-commit hooks:** Automatisk formatering och linting
+- **Security scanning:** Bandit för säkerhetsproblem
+- **Test coverage:** Pytest med omfattande test suite
+
+### Konfigurationsfiler
+
+- `pyproject.toml` - Ruff, Black och isort konfiguration
+- `bandit.yaml` - Säkerhetslinter konfiguration
+- `pytest.ini` - Test konfiguration
+- `.pre-commit-config.yaml` - Pre-commit hooks

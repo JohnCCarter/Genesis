@@ -24,23 +24,23 @@ class TestEnvironmentSetup:
     def setup(self) -> str:
         """Sätt upp testmiljö."""
         print("🔧 Sätter upp testmiljö...")
-        
+
         # Skapa temporär test-katalog
         self.test_dir = tempfile.mkdtemp(prefix="unified_config_test_")
         self.original_cwd = os.getcwd()
-        
+
         # Ändra till test-katalog
         os.chdir(self.test_dir)
-        
+
         # Skapa test-struktur
         self._create_test_structure()
-        
+
         # Skapa test-konfiguration
         self._create_test_config()
-        
+
         # Skapa test-data
         self._create_test_data()
-        
+
         print(f"✅ Testmiljö satt upp i: {self.test_dir}")
         return self.test_dir
 
@@ -48,26 +48,19 @@ class TestEnvironmentSetup:
         """Rensa upp testmiljö."""
         if self.test_dir and os.path.exists(self.test_dir):
             print("🧹 Rensar upp testmiljö...")
-            
+
             # Återställ original working directory
             if self.original_cwd:
                 os.chdir(self.original_cwd)
-            
+
             # Ta bort test-katalog
             shutil.rmtree(self.test_dir)
             print("✅ Testmiljö rensad")
 
     def _create_test_structure(self):
         """Skapa test-katalogstruktur."""
-        directories = [
-            "config",
-            "services", 
-            "rest",
-            "tests",
-            "logs",
-            "data"
-        ]
-        
+        directories = ["config", "services", "rest", "tests", "logs", "data"]
+
         for directory in directories:
             os.makedirs(directory, exist_ok=True)
 
@@ -83,14 +76,14 @@ class TestEnvironmentSetup:
                 "thu": [["00:00", "23:59"]],
                 "fri": [["00:00", "23:59"]],
                 "sat": [["00:00", "23:59"]],
-                "sun": [["00:00", "23:59"]]
+                "sun": [["00:00", "23:59"]],
             },
             "max_trades_per_day": 200,
             "trade_cooldown_seconds": 60,
             "paused": False,
-            "max_trades_per_symbol_per_day": 0
+            "max_trades_per_symbol_per_day": 0,
         }
-        
+
         with open("config/trading_rules.json", "w") as f:
             json.dump(trading_rules, f, indent=2)
 
@@ -107,9 +100,9 @@ class TestEnvironmentSetup:
             "AUTH_REQUIRED": "False",
             "BITFINEX_API_KEY": "test_api_key",
             "BITFINEX_API_SECRET": "test_api_secret",
-            "LOG_LEVEL": "DEBUG"
+            "LOG_LEVEL": "DEBUG",
         }
-        
+
         # Sätt environment variables
         for key, value in test_env.items():
             os.environ[key] = value
@@ -119,24 +112,14 @@ class TestEnvironmentSetup:
     def _create_test_data(self):
         """Skapa test-data."""
         # Test trade counter
-        trade_counter = {
-            "day": "2024-01-01",
-            "count": 5,
-            "per_symbol": {
-                "BTCUSD": 3,
-                "ETHUSD": 2
-            }
-        }
-        
+        trade_counter = {"day": "2024-01-01", "count": 5, "per_symbol": {"BTCUSD": 3, "ETHUSD": 2}}
+
         with open("data/trade_counter.json", "w") as f:
             json.dump(trade_counter, f, indent=2)
 
         # Test bracket state
-        bracket_state = {
-            "active_brackets": [],
-            "last_cleanup": "2024-01-01T00:00:00Z"
-        }
-        
+        bracket_state = {"active_brackets": [], "last_cleanup": "2024-01-01T00:00:00Z"}
+
         with open("data/bracket_state.json", "w") as f:
             json.dump(bracket_state, f, indent=2)
 
@@ -151,11 +134,12 @@ class TestEnvironmentSetup:
     def create_test_database(self, db_path: str = "test.db") -> str:
         """Skapa test-databas."""
         import sqlite3
-        
+
         conn = sqlite3.connect(db_path)
-        
+
         # Skapa tabeller
-        conn.execute("""
+        conn.execute(
+            """
             CREATE TABLE IF NOT EXISTS config_values (
                 key TEXT PRIMARY KEY,
                 value TEXT NOT NULL,
@@ -165,9 +149,11 @@ class TestEnvironmentSetup:
                 updated_at REAL NOT NULL,
                 user TEXT
             )
-        """)
-        
-        conn.execute("""
+        """
+        )
+
+        conn.execute(
+            """
             CREATE TABLE IF NOT EXISTS config_history (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 key TEXT NOT NULL,
@@ -178,11 +164,12 @@ class TestEnvironmentSetup:
                 user TEXT,
                 action TEXT
             )
-        """)
-        
+        """
+        )
+
         conn.commit()
         conn.close()
-        
+
         return os.path.abspath(db_path)
 
     def create_test_redis_config(self) -> Dict[str, Any]:
@@ -195,7 +182,7 @@ class TestEnvironmentSetup:
             "socket_timeout": 1.0,
             "socket_connect_timeout": 1.0,
             "retry_on_timeout": True,
-            "max_connections": 10
+            "max_connections": 10,
         }
 
 

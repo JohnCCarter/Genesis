@@ -16,17 +16,17 @@ class ConfigKey:
     """
 
     name: str
-    type: Type
+    type: type
     default: Any
-    min_value: Optional[Any] = None
-    max_value: Optional[Any] = None
+    min_value: Any | None = None
+    max_value: Any | None = None
     priority_profile: PriorityProfile = PriorityProfile.GLOBAL
-    allowed_sources: List[str] = field(default_factory=lambda: ["runtime", "feature_flags", "settings", "files"])
+    allowed_sources: list[str] = field(default_factory=lambda: ["runtime", "feature_flags", "settings", "files"])
     sensitive: bool = False
     restart_required: bool = False
-    namespaces: List[str] = field(default_factory=list)
+    namespaces: list[str] = field(default_factory=list)
     description: str = ""
-    validation_rules: List[str] = field(default_factory=list)
+    validation_rules: list[str] = field(default_factory=list)
 
     def validate_value(self, value: Any) -> bool:
         """
@@ -63,7 +63,7 @@ class ConfigKey:
         """
         if self.sensitive:
             if isinstance(value, str):
-                return "***" if len(value) > 6 else "***"
+                return "***"
             else:
                 return "***"
         return value
@@ -75,7 +75,7 @@ class KeyRegistry:
     """
 
     def __init__(self):
-        self._keys: Dict[str, ConfigKey] = {}
+        self._keys: dict[str, ConfigKey] = {}
         self._initialize_default_keys()
 
     def _initialize_default_keys(self):
@@ -341,7 +341,7 @@ class KeyRegistry:
         """
         self._keys[key.name] = key
 
-    def get_key(self, name: str) -> Optional[ConfigKey]:
+    def get_key(self, name: str) -> ConfigKey | None:
         """
         Hämta en konfigurationsnyckel.
 
@@ -353,7 +353,7 @@ class KeyRegistry:
         """
         return self._keys.get(name)
 
-    def get_all_keys(self) -> Dict[str, ConfigKey]:
+    def get_all_keys(self) -> dict[str, ConfigKey]:
         """
         Hämta alla registrerade nycklar.
 
@@ -362,7 +362,7 @@ class KeyRegistry:
         """
         return self._keys.copy()
 
-    def get_keys_by_namespace(self, namespace: str) -> Dict[str, ConfigKey]:
+    def get_keys_by_namespace(self, namespace: str) -> dict[str, ConfigKey]:
         """
         Hämta alla nycklar inom ett namespace.
 
@@ -374,7 +374,7 @@ class KeyRegistry:
         """
         return {name: key for name, key in self._keys.items() if namespace in key.namespaces}
 
-    def get_keys_by_priority_profile(self, profile: PriorityProfile) -> Dict[str, ConfigKey]:
+    def get_keys_by_priority_profile(self, profile: PriorityProfile) -> dict[str, ConfigKey]:
         """
         Hämta alla nycklar med en specifik prioritetprofil.
 

@@ -38,18 +38,8 @@ class TestUnifiedConfigAPI:
         """Test lista konfigurationsnycklar."""
         # Mock manager response
         mock_keys = [
-            {
-                "name": "DRY_RUN_ENABLED",
-                "type": "bool",
-                "default": False,
-                "description": "Dry Run Mode"
-            },
-            {
-                "name": "MAX_TRADES_PER_DAY", 
-                "type": "int",
-                "default": 200,
-                "description": "Max trades per day"
-            }
+            {"name": "DRY_RUN_ENABLED", "type": "bool", "default": False, "description": "Dry Run Mode"},
+            {"name": "MAX_TRADES_PER_DAY", "type": "int", "default": 200, "description": "Max trades per day"},
         ]
         self.mock_manager.list_keys.return_value = mock_keys
 
@@ -73,11 +63,7 @@ class TestUnifiedConfigAPI:
         # Mock manager response
         self.mock_manager.set.return_value = True
 
-        request_data = {
-            "key": "DRY_RUN_ENABLED",
-            "value": True,
-            "source": "runtime"
-        }
+        request_data = {"key": "DRY_RUN_ENABLED", "value": True, "source": "runtime"}
 
         # Test skulle anropa API endpoint
         # response = client.post("/api/v2/config/set", json=request_data)
@@ -91,10 +77,7 @@ class TestUnifiedConfigAPI:
         mock_validation_result.errors = []
         self.mock_validator.validate_configuration.return_value = mock_validation_result
 
-        config = {
-            "DRY_RUN_ENABLED": True,
-            "MAX_TRADES_PER_DAY": 100
-        }
+        config = {"DRY_RUN_ENABLED": True, "MAX_TRADES_PER_DAY": 100}
 
         request_data = {"configuration": config}
 
@@ -106,18 +89,10 @@ class TestUnifiedConfigAPI:
     def test_rbac_authorization(self):
         """Test RBAC-auktorisering."""
         # Mock user med admin-roll
-        mock_admin_user = {
-            "user_id": "admin_user",
-            "role": "admin",
-            "permissions": ["read_config", "write_config"]
-        }
+        mock_admin_user = {"user_id": "admin_user", "role": "admin", "permissions": ["read_config", "write_config"]}
 
         # Mock user med read-only roll
-        mock_readonly_user = {
-            "user_id": "readonly_user", 
-            "role": "readonly",
-            "permissions": ["read_config"]
-        }
+        mock_readonly_user = {"user_id": "readonly_user", "role": "readonly", "permissions": ["read_config"]}
 
         # Test admin kan skriva
         with patch('rest.unified_config_api.get_user_from_token', return_value=mock_admin_user):
@@ -137,15 +112,11 @@ class TestUnifiedConfigAPI:
         sensitive_config = {
             "BITFINEX_API_KEY": "secret_key_123",
             "BITFINEX_API_SECRET": "secret_secret_456",
-            "DRY_RUN_ENABLED": True
+            "DRY_RUN_ENABLED": True,
         }
 
         # Mock user utan behörighet för känsliga data
-        mock_user = {
-            "user_id": "regular_user",
-            "role": "user",
-            "permissions": ["read_config"]
-        }
+        mock_user = {"user_id": "regular_user", "role": "user", "permissions": ["read_config"]}
 
         # Test att känsliga data redigeras
         with patch('rest.unified_config_api.get_user_from_token', return_value=mock_user):
@@ -158,20 +129,13 @@ class TestUnifiedConfigAPI:
     def test_audit_logging(self):
         """Test audit logging."""
         # Mock user
-        mock_user = {
-            "user_id": "test_user",
-            "role": "admin"
-        }
+        mock_user = {"user_id": "test_user", "role": "admin"}
 
         # Test att konfigurationsändringar loggas
         with patch('rest.unified_config_api.get_user_from_token', return_value=mock_user):
             self.mock_audit_logger.log_config_change.return_value = None
 
-            request_data = {
-                "key": "DRY_RUN_ENABLED",
-                "value": True,
-                "source": "runtime"
-            }
+            request_data = {"key": "DRY_RUN_ENABLED", "value": True, "source": "runtime"}
 
             # Test skulle anropa API endpoint
             # response = client.post("/api/v2/config/set", json=request_data)
@@ -184,33 +148,20 @@ class TestUnifiedConfigAPI:
         """Test preview/apply workflow."""
         # Mock preview response
         mock_preview = {
-            "changes": [
-                {
-                    "key": "DRY_RUN_ENABLED",
-                    "old_value": False,
-                    "new_value": True,
-                    "source": "runtime"
-                }
-            ],
+            "changes": [{"key": "DRY_RUN_ENABLED", "old_value": False, "new_value": True, "source": "runtime"}],
             "warnings": [],
-            "requires_restart": False
+            "requires_restart": False,
         }
 
         # Test preview
-        preview_data = {
-            "key": "DRY_RUN_ENABLED",
-            "value": True
-        }
+        preview_data = {"key": "DRY_RUN_ENABLED", "value": True}
 
         # response = client.post("/api/v2/config/preview", json=preview_data)
         # assert response.status_code == 200
         # assert "changes" in response.json()
 
         # Test apply
-        apply_data = {
-            "preview_id": "preview_123",
-            "confirm": True
-        }
+        apply_data = {"preview_id": "preview_123", "confirm": True}
 
         # response = client.post("/api/v2/config/apply", json=apply_data)
         # assert response.status_code == 200
@@ -221,7 +172,7 @@ class TestUnifiedConfigAPI:
             "operations": [
                 {"action": "set", "key": "DRY_RUN_ENABLED", "value": True},
                 {"action": "set", "key": "MAX_TRADES_PER_DAY", "value": 150},
-                {"action": "delete", "key": "OLD_KEY"}
+                {"action": "delete", "key": "OLD_KEY"},
             ]
         }
 
@@ -237,19 +188,12 @@ class TestUnifiedConfigAPI:
         # assert response.status_code == 400
 
         # Test ogiltigt värde
-        request_data = {
-            "key": "MAX_TRADES_PER_DAY",
-            "value": "not_a_number"
-        }
+        request_data = {"key": "MAX_TRADES_PER_DAY", "value": "not_a_number"}
         # response = client.post("/api/v2/config/set", json=request_data)
         # assert response.status_code == 400
 
         # Test ogiltig källa
-        request_data = {
-            "key": "DRY_RUN_ENABLED",
-            "value": True,
-            "source": "invalid_source"
-        }
+        request_data = {"key": "DRY_RUN_ENABLED", "value": True, "source": "invalid_source"}
         # response = client.post("/api/v2/config/set", json=request_data)
         # assert response.status_code == 400
 
@@ -273,14 +217,14 @@ class TestRollbackAPI:
         mock_snapshot.configuration = {"DRY_RUN_ENABLED": True}
         mock_snapshot.metadata = {}
         mock_snapshot.tags = ["test"]
-        
+
         self.mock_rollback_service.create_snapshot.return_value = mock_snapshot
 
         request_data = {
             "name": "Test Snapshot",
             "description": "Test description",
             "snapshot_type": "manual",
-            "tags": ["test"]
+            "tags": ["test"],
         }
 
         # Test skulle anropa API endpoint
@@ -295,12 +239,10 @@ class TestRollbackAPI:
         mock_operation.snapshot_id = "snapshot_123"
         mock_operation.status = "completed"
         mock_operation.affected_keys = ["DRY_RUN_ENABLED"]
-        
+
         self.mock_rollback_service.rollback_to_snapshot.return_value = mock_operation
 
-        request_data = {
-            "snapshot_id": "snapshot_123"
-        }
+        request_data = {"snapshot_id": "snapshot_123"}
 
         # Test skulle anropa API endpoint
         # response = client.post("/api/v2/rollback/rollback", json=request_data)
@@ -314,16 +256,13 @@ class TestRollbackAPI:
         mock_rollout.name = "Test Rollout"
         mock_rollout.status = "pending"
         mock_rollout.target_keys = ["RISK_PERCENTAGE"]
-        
+
         self.mock_rollback_service.create_staged_rollout.return_value = mock_rollout
 
         request_data = {
             "name": "Test Rollout",
             "target_keys": ["RISK_PERCENTAGE"],
-            "rollout_plan": {
-                "total_stages": 3,
-                "stage_duration_seconds": 60
-            }
+            "rollout_plan": {"total_stages": 3, "stage_duration_seconds": 60},
         }
 
         # Test skulle anropa API endpoint
@@ -337,7 +276,7 @@ class TestRollbackAPI:
         mock_snapshot.id = "emergency_123"
         mock_snapshot.generation = 5
         mock_snapshot.configuration = {"DRY_RUN_ENABLED": True, "TRADING_PAUSED": True}
-        
+
         self.mock_rollback_service.create_snapshot.return_value = mock_snapshot
 
         # Test skulle anropa API endpoint
@@ -359,11 +298,7 @@ class TestObservabilityAPI:
         mock_health = {
             "healthy": True,
             "timestamp": 1234567890.0,
-            "components": {
-                "config_store": True,
-                "config_cache": True,
-                "redis": False
-            }
+            "components": {"config_store": True, "config_cache": True, "redis": False},
         }
         self.mock_observability.get_health_status.return_value = mock_health
 
@@ -378,7 +313,7 @@ class TestObservabilityAPI:
             "config_operations_total": 150,
             "cache_hit_rate": 0.85,
             "redis_connection_status": False,
-            "timestamp": 1234567890.0
+            "timestamp": 1234567890.0,
         }
         self.mock_observability.get_metrics.return_value = mock_metrics
 
@@ -395,7 +330,7 @@ class TestObservabilityAPI:
                 "event_type": "config_change",
                 "timestamp": 1234567890.0,
                 "key": "DRY_RUN_ENABLED",
-                "user": "test_user"
+                "user": "test_user",
             }
         ]
         self.mock_observability.get_events.return_value = mock_events
@@ -407,11 +342,7 @@ class TestObservabilityAPI:
 
     def test_effective_config(self):
         """Test effective config endpoint."""
-        mock_config = {
-            "DRY_RUN_ENABLED": True,
-            "MAX_TRADES_PER_DAY": 200,
-            "TRADING_PAUSED": False
-        }
+        mock_config = {"DRY_RUN_ENABLED": True, "MAX_TRADES_PER_DAY": 200, "TRADING_PAUSED": False}
         self.mock_observability.get_effective_config_snapshot.return_value = mock_config
 
         # Test skulle anropa API endpoint
@@ -475,7 +406,7 @@ class TestAPIIntegration:
         import time
 
         results = []
-        
+
         def make_api_call():
             # Simulera API-anrop
             time.sleep(0.1)

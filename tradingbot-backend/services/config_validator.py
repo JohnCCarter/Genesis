@@ -31,7 +31,7 @@ class ValidationResult:
     message: str
     key: str
     value: Any
-    suggested_fix: Optional[str] = None
+    suggested_fix: str | None = None
 
 
 @dataclass
@@ -42,7 +42,7 @@ class ValidationRule:
     description: str
     validator: Callable[[Any, ConfigKey], ValidationResult]
     severity: ValidationSeverity = ValidationSeverity.ERROR
-    domains: List[str] = None  # None betyder alla domäner
+    domains: list[str] = None  # None betyder alla domäner
 
 
 class ConfigValidator:
@@ -52,8 +52,8 @@ class ConfigValidator:
 
     def __init__(self):
         """Initiera validator."""
-        self._rules: Dict[str, List[ValidationRule]] = {}
-        self._domain_rules: Dict[str, List[ValidationRule]] = {}
+        self._rules: dict[str, list[ValidationRule]] = {}
+        self._domain_rules: dict[str, list[ValidationRule]] = {}
         self._register_default_rules()
 
     def _register_default_rules(self):
@@ -136,7 +136,7 @@ class ConfigValidator:
                     self._domain_rules[domain] = []
                 self._domain_rules[domain].append(rule)
 
-    def validate(self, key: str, value: Any, context: Optional[Dict[str, Any]] = None) -> List[ValidationResult]:
+    def validate(self, key: str, value: Any, context: dict[str, Any] | None = None) -> list[ValidationResult]:
         """
         Validera en konfigurationsnyckel och värde.
 
@@ -263,7 +263,7 @@ class ConfigValidator:
             )
 
         # Kontrollera att känsliga värden inte är tomma eller default
-        if value is None or value == "" or value == config_key.default:
+        if value is None or value in ("", config_key.default):
             return ValidationResult(
                 is_valid=False,
                 severity=ValidationSeverity.CRITICAL,
@@ -411,8 +411,8 @@ class ConfigValidator:
         )
 
     def _validate_context(
-        self, key: str, value: Any, config_key: ConfigKey, context: Dict[str, Any]
-    ) -> List[ValidationResult]:
+        self, key: str, value: Any, config_key: ConfigKey, context: dict[str, Any]
+    ) -> list[ValidationResult]:
         """Validera baserat på kontext."""
         results = []
 
@@ -453,8 +453,8 @@ class ConfigValidator:
         return results
 
     def validate_all(
-        self, config_dict: Dict[str, Any], context: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, List[ValidationResult]]:
+        self, config_dict: dict[str, Any], context: dict[str, Any] | None = None
+    ) -> dict[str, list[ValidationResult]]:
         """
         Validera hela konfigurationen.
 
@@ -470,7 +470,17 @@ class ConfigValidator:
             results[key] = self.validate(key, value, context)
         return results
 
-    def get_validation_summary(self, results: Dict[str, List[ValidationResult]]) -> Dict[str, Any]:
+    def validate_key(self, key: str, value: Any, context: dict[str, Any] | None = None) -> list[ValidationResult]:
+        """Alias för validate för kompatibilitet med tester."""
+        return self.validate(key, value, context)
+
+    def validate_configuration(
+        self, config_dict: dict[str, Any], context: dict[str, Any] | None = None
+    ) -> dict[str, list[ValidationResult]]:
+        """Alias för validate_all för kompatibilitet med tester."""
+        return self.validate_all(config_dict, context)
+
+    def get_validation_summary(self, results: dict[str, list[ValidationResult]]) -> dict[str, Any]:
         """
         Hämta sammanfattning av valideringsresultat.
 
@@ -517,7 +527,7 @@ class ConfigValidator:
 
 
 # Global instans
-_config_validator: Optional[ConfigValidator] = None
+_config_validator: ConfigValidator | None = None
 
 
 def get_config_validator() -> ConfigValidator:
@@ -528,13 +538,13 @@ def get_config_validator() -> ConfigValidator:
     return _config_validator
 
 
-def validate_config(key: str, value: Any, context: Optional[Dict[str, Any]] = None) -> List[ValidationResult]:
+def validate_config(key: str, value: Any, context: dict[str, Any] | None = None) -> list[ValidationResult]:
     """Konvenience-funktion för att validera konfiguration."""
     return get_config_validator().validate(key, value, context)
 
 
 def validate_all_config(
-    config_dict: Dict[str, Any], context: Optional[Dict[str, Any]] = None
-) -> Dict[str, List[ValidationResult]]:
+    config_dict: dict[str, Any], context: dict[str, Any] | None = None
+) -> dict[str, list[ValidationResult]]:
     """Konvenience-funktion för att validera hela konfigurationen."""
     return get_config_validator().validate_all(config_dict, context)

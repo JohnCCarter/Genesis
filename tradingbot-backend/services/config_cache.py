@@ -10,6 +10,7 @@ import logging
 from typing import Any, Set, Callable
 from dataclasses import dataclass
 from .config_store import ConfigStore
+import builtins
 
 logger = logging.getLogger(__name__)
 
@@ -69,14 +70,25 @@ class ConfigCache:
             # Kontrollera cache först
             entry = self._cache.get(key)
             if entry and not entry.is_expired() and key not in self._invalidated_keys:
-                return entry.value
+                return entry
 
             # Fallback till store
             store_value = self.config_store.get(key)
             if store_value is not None:
                 self._set_cache_entry(key, store_value.value, store_value.source, store_value.generation)
 
-            return store_value.value if store_value else None
+            return store_value if store_value else None
+
+    def get_cache_stats(self) -> dict[str, Any]:
+        """Hämta cache-statistik."""
+        with self._lock:
+            return {
+                "total_entries": len(self._cache),
+                "cache_size": len(self._cache),
+                "invalidated_keys": len(self._invalidated_keys),
+                "ttl_enabled": self.default_ttl is not None,
+                "default_ttl": self.default_ttl,
+            }
 
     def set(self, key: str, value: Any, source: str, generation: int, ttl: float | None = None) -> None:
         """
@@ -179,7 +191,7 @@ class ConfigCache:
 
             return len(keys_to_remove)
 
-    def get_all_cached_keys(self) -> Set[str]:
+    def get_all_cached_keys(self) -> builtins.set[str]:
         """
         Hämta alla nycklar som finns i cache.
 

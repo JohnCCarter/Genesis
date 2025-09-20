@@ -224,7 +224,7 @@ class ConfigStore:
             with sqlite3.connect(self.db_path) as conn:
                 conn.execute(
                     """
-                    INSERT OR REPLACE INTO config_values 
+                    INSERT OR REPLACE INTO config_values
                     (key, value, source, generation, created_at, updated_at, user)
                     VALUES (?, ?, ?, ?, ?, ?, ?)
                 """,
@@ -242,7 +242,7 @@ class ConfigStore:
                 # Logga till historik
                 conn.execute(
                     """
-                    INSERT INTO config_history 
+                    INSERT INTO config_history
                     (key, value, source, generation, created_at, user, action)
                     VALUES (?, ?, ?, ?, ?, ?, ?)
                 """,
@@ -370,7 +370,7 @@ class ConfigStore:
                     # Logga till historik
                     conn.execute(
                         """
-                        INSERT INTO config_history 
+                        INSERT INTO config_history
                         (key, value, source, generation, created_at, user, action)
                         VALUES (?, ?, ?, ?, ?, ?, ?)
                     """,
@@ -409,10 +409,10 @@ class ConfigStore:
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.execute(
                 """
-                SELECT key, value, source, generation, created_at, updated_at, user
-                FROM config_history 
-                WHERE key = ? 
-                ORDER BY created_at DESC 
+                SELECT key, value, source, generation, created_at, user, action
+                FROM config_history
+                WHERE key = ?
+                ORDER BY created_at DESC
                 LIMIT ?
             """,
                 (key, limit),
@@ -428,7 +428,7 @@ class ConfigStore:
                         generation=row[3],
                         created_at=row[4],
                         updated_at=row[4],  # Historik har bara created_at
-                        user=row[6],
+                        user=row[5],
                     )
                 )
 
@@ -494,6 +494,10 @@ class ConfigStore:
             "db_path": self.db_path,
         }
 
+    def get_store_stats(self) -> dict[str, Any]:
+        """Alias för get_stats för kompatibilitet med tester."""
+        return self.get_stats()
+
     def batch_set(self, updates: dict[str, Any], source: str, user: str | None = None) -> dict[str, ConfigValue]:
         """
         Atomic batch update av flera konfigurationsvärden.
@@ -533,7 +537,7 @@ class ConfigStore:
                         # Sätt i SQLite
                         conn.execute(
                             """
-                            INSERT OR REPLACE INTO config_values 
+                            INSERT OR REPLACE INTO config_values
                             (key, value, source, generation, created_at, updated_at, user)
                             VALUES (?, ?, ?, ?, ?, ?, ?)
                         """,
@@ -551,7 +555,7 @@ class ConfigStore:
                         # Logga till historik
                         conn.execute(
                             """
-                            INSERT INTO config_history 
+                            INSERT INTO config_history
                             (key, value, source, generation, created_at, user, action)
                             VALUES (?, ?, ?, ?, ?, ?, ?)
                         """,
@@ -648,7 +652,7 @@ class ConfigStore:
                     # Sätt i SQLite
                     conn.execute(
                         """
-                        INSERT OR REPLACE INTO config_values 
+                        INSERT OR REPLACE INTO config_values
                         (key, value, source, generation, created_at, updated_at, user)
                         VALUES (?, ?, ?, ?, ?, ?, ?)
                     """,
@@ -666,7 +670,7 @@ class ConfigStore:
                     # Logga till historik
                     conn.execute(
                         """
-                        INSERT INTO config_history 
+                        INSERT INTO config_history
                         (key, value, source, generation, created_at, user, action)
                         VALUES (?, ?, ?, ?, ?, ?, ?)
                     """,

@@ -180,7 +180,7 @@ def get_user_from_token(credentials: HTTPAuthorizationCredentials = Security(sec
             "permissions": RBAC_MATRIX.get(payload.get("role", UserRole.VIEWER), []),
         }
     except Exception as e:
-        raise HTTPException(status_code=401, detail=f"Invalid token: {str(e)}")
+        raise HTTPException(status_code=401, detail=f"Invalid token: {e!s}")
 
 
 def require_permission(permission: str):

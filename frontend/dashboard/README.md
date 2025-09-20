@@ -1,17 +1,25 @@
 # Genesis Trading Bot - Frontend Dashboard
 
+> **React-baserad dashboard för att övervaka och styra Genesis Trading Bot med realtidsdata och intuitiv användargränssnitt.**
+
+[![React](https://img.shields.io/badge/React-18-blue.svg)](https://reactjs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg)](https://www.typescriptlang.org)
+[![Vite](https://img.shields.io/badge/Vite-5.0+-green.svg)](https://vitejs.dev)
+[![Socket.IO](https://img.shields.io/badge/Socket.IO-4.0+-orange.svg)](https://socket.io)
+
 Detta är frontend-delen av Genesis Trading Bot, en React-baserad dashboard för att övervaka och styra trading-boten.
 
 ## Innehåll
 
 1. [Översikt](#översikt)
-2. [Installation](#installation)
-3. [Konfiguration](#konfiguration)
-4. [Utveckling](#utveckling)
-5. [Paneler](#paneler)
-6. [API-integration](#api-integration)
-7. [WebSocket](#websocket)
-8. [Bygga för produktion](#bygga-för-produktion)
+2. [Arkitektur](#arkitektur)
+3. [Installation](#installation)
+4. [Konfiguration](#konfiguration)
+5. [Utveckling](#utveckling)
+6. [Paneler](#paneler)
+7. [API-integration](#api-integration)
+8. [WebSocket](#websocket)
+9. [Bygga för produktion](#bygga-för-produktion)
 
 ## Översikt
 
@@ -32,13 +40,60 @@ Dashboarden består av flera paneler:
 - **Performance & History**: Trade-historik, prestanda
 - **System**: Systemhälsa, debug-verktyg
 
+## 🏛️ Arkitektur
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Frontend Dashboard                       │
+├─────────────────────────────────────────────────────────────┤
+│  React 18 + TypeScript + Vite                              │
+│  ┌─────────────────────────────────────────────────────────┐ │
+│  │  Main App (main.tsx)                                   │ │
+│  │  ├── Trading Panel     │  ├── Risk Panel              │ │
+│  │  ├── Market Panel      │  ├── History Panel           │ │
+│  │  ├── System Panel      │  └── Wallets Panel           │ │
+│  │  └── Navigation & Layout                               │ │
+│  └─────────────────────────────────────────────────────────┘ │
+└─────────────────────▲───────────────────────────────────────┘
+                      │ API Calls + WebSocket
+┌─────────────────────┴───────────────────────────────────────┐
+│  Backend Integration                                        │
+│  ┌─────────────────────────────────────────────────────────┐ │
+│  │  REST API (api.ts)     │  WebSocket (socket.ts)       │ │
+│  │  ├── JWT Auth          │  ├── Real-time Events        │ │
+│  │  ├── Order Management  │  ├── Market Data             │ │
+│  │  ├── Risk Controls     │  ├── Position Updates        │ │
+│  │  └── System Status     │  └── Notifications           │ │
+│  └─────────────────────────────────────────────────────────┘ │
+└─────────────────────▲───────────────────────────────────────┘
+                      │ HTTP/WebSocket
+┌─────────────────────┴───────────────────────────────────────┐
+│  Genesis Backend (FastAPI)                                  │
+│  ┌─────────────────────────────────────────────────────────┐ │
+│  │  REST Endpoints        │  WebSocket Handlers           │ │
+│  │  ├── /api/v2/auth      │  ├── Real-time Data          │ │
+│  │  ├── /api/v2/orders    │  ├── Order Updates           │ │
+│  │  ├── /api/v2/risk      │  ├── Position Changes        │ │
+│  │  └── /api/v2/system    │  └── System Events           │ │
+│  └─────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Dataflöde
+
+1. **Initialisering**: App laddar JWT-token från localStorage
+2. **Autentisering**: Token används för alla API-anrop
+3. **Realtidsdata**: WebSocket-anslutning för live-uppdateringar
+4. **State Management**: React state + localStorage för persistence
+5. **Error Handling**: Centraliserad felhantering med användarfeedback
+
 ## Installation
 
 ### Förutsättningar
 
 - Node.js 18+
 - npm
-- Backend-servern måste vara igång (se `README_HEMDATOR.md` i rotmappen för instruktioner).
+- Backend-servern måste vara igång (se huvud-README för instruktioner).
 
 ### Steg för installation
 

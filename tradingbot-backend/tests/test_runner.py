@@ -34,8 +34,8 @@ class TestRunner:
         # Definiera test-filer
         test_files = [
             "tests/test_unified_config_system.py",
-            "tests/test_config_api.py", 
-            "tests/test_redis_integration.py"
+            "tests/test_config_api.py",
+            "tests/test_redis_integration.py",
         ]
 
         # Kör tester
@@ -49,42 +49,35 @@ class TestRunner:
                 print(f"⚠️  Testfil {test_file} hittades inte")
 
         self.end_time = time.time()
-        
+
         # Sammanställ resultat
         summary = self._generate_summary(results)
-        
+
         # Generera rapporter
         self._generate_reports(summary)
-        
+
         return summary
 
     def _run_test_file(self, test_file: str) -> Dict[str, Any]:
         """Kör enskild testfil."""
         try:
             # Kör pytest på filen
-            result = pytest.main([
-                test_file,
-                "-v",
-                "--tb=short"
-            ])
-            
-            # Skapa enkel json result (eftersom pytest-json-report inte är installerat)
-            json_result = {"summary": {"passed": 0 if result != 0 else 1, "failed": 1 if result != 0 else 0, "total": 1}}
+            result = pytest.main([test_file, "-v", "--tb=short"])
 
-            return {
-                "file": test_file,
-                "result": result,
-                "json_result": json_result,
-                "success": result == 0
+            # Skapa enkel json result (eftersom pytest-json-report inte är installerat)
+            json_result = {
+                "summary": {"passed": 0 if result != 0 else 1, "failed": 1 if result != 0 else 0, "total": 1}
             }
-            
+
+            return {"file": test_file, "result": result, "json_result": json_result, "success": result == 0}
+
         except Exception as e:
             return {
                 "file": test_file,
                 "result": -1,
                 "json_result": {"summary": {"passed": 0, "failed": 1, "total": 1}},
                 "success": False,
-                "error": str(e)
+                "error": str(e),
             }
 
     def _generate_summary(self, results: List[Dict[str, Any]]) -> Dict[str, Any]:
@@ -100,7 +93,7 @@ class TestRunner:
                 total_passed += summary.get("passed", 0)
                 total_failed += summary.get("failed", 0)
                 total_tests += summary.get("total", 0)
-                
+
                 if not result["success"]:
                     failed_files.append(result["file"])
 
@@ -114,33 +107,33 @@ class TestRunner:
             "duration_seconds": duration,
             "failed_files": failed_files,
             "all_passed": total_failed == 0,
-            "test_results": results
+            "test_results": results,
         }
 
     def _generate_reports(self, summary: Dict[str, Any]):
         """Generera testrapporter."""
         # Console report
         self._print_console_report(summary)
-        
+
         # JSON report
         self._save_json_report(summary)
-        
+
         # HTML report (enkel)
         self._save_html_report(summary)
 
     def _print_console_report(self, summary: Dict[str, Any]):
         """Skriv console rapport."""
-        print("\n" + "="*60)
+        print("\n" + "=" * 60)
         print("📊 UNIFIED CONFIGURATION SYSTEM - TEST RESULTAT")
-        print("="*60)
-        
+        print("=" * 60)
+
         # Sammanfattning
         print(f"📈 Totalt antal tester: {summary['total_tests']}")
         print(f"✅ Godkända: {summary['total_passed']}")
         print(f"❌ Misslyckade: {summary['total_failed']}")
         print(f"📊 Framgångsgrad: {summary['success_rate']:.1f}%")
         print(f"⏱️  Tid: {summary['duration_seconds']:.2f} sekunder")
-        
+
         # Status
         if summary['all_passed']:
             print("\n🎉 ALLA TESTER GODKÄNDA!")
@@ -150,8 +143,8 @@ class TestRunner:
                 print("📁 Misslyckade testfiler:")
                 for file in summary['failed_files']:
                     print(f"   - {file}")
-        
-        print("="*60)
+
+        print("=" * 60)
 
     def _save_json_report(self, summary: Dict[str, Any]):
         """Spara JSON rapport."""
@@ -172,7 +165,7 @@ class TestRunner:
         """Generera HTML rapport."""
         status_color = "#4CAF50" if summary['all_passed'] else "#F44336"
         status_icon = "🎉" if summary['all_passed'] else "⚠️"
-        
+
         html = f"""
 <!DOCTYPE html>
 <html lang="sv">
@@ -297,18 +290,18 @@ class TestRunner:
         <div class="details">
             <h2>Detaljerade resultat</h2>
 """
-        
+
         # Lägg till testfiler
         for result in summary['test_results']:
             status_class = "passed" if result['success'] else "failed"
             status_text = "✅ Godkänd" if result['success'] else "❌ Misslyckad"
-            
+
             html += f"""
             <div class="test-file {status_class}">
                 <h4>{result['file']}</h4>
                 <p><strong>Status:</strong> {status_text}</p>
 """
-            
+
             if 'json_result' in result and 'summary' in result['json_result']:
                 test_summary = result['json_result']['summary']
                 html += f"""
@@ -316,23 +309,27 @@ class TestRunner:
                    <strong>Godkända:</strong> {test_summary.get('passed', 0)} | 
                    <strong>Misslyckade:</strong> {test_summary.get('failed', 0)}</p>
 """
-            
+
             if 'error' in result:
                 html += f"<p><strong>Fel:</strong> {result['error']}</p>"
-            
+
             html += "</div>"
-        
-        html += """
+
+        html += (
+            """
         </div>
         
         <div class="timestamp">
-            Genererad: """ + time.strftime("%Y-%m-%d %H:%M:%S") + """
+            Genererad: """
+            + time.strftime("%Y-%m-%d %H:%M:%S")
+            + """
         </div>
     </div>
 </body>
 </html>
 """
-        
+        )
+
         return html
 
 
@@ -340,7 +337,7 @@ def main():
     """Huvudfunktion för test runner."""
     runner = TestRunner()
     results = runner.run_all_tests()
-    
+
     # Exit code baserat på resultat
     exit_code = 0 if results['all_passed'] else 1
     sys.exit(exit_code)

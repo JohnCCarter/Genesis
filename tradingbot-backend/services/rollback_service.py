@@ -61,16 +61,16 @@ class Snapshot:
     created_at: float
     created_by: str
     generation: int
-    configuration: Dict[str, Any]
-    metadata: Dict[str, Any]
-    tags: List[str]
+    configuration: dict[str, Any]
+    metadata: dict[str, Any]
+    tags: list[str]
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Konvertera till dictionary."""
         return asdict(self)
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'Snapshot':
+    def from_dict(cls, data: dict[str, Any]) -> 'Snapshot':
         """Skapa från dictionary."""
         data['snapshot_type'] = SnapshotType(data['snapshot_type'])
         return cls(**data)
@@ -86,11 +86,11 @@ class RollbackOperation:
     status: RollbackStatus
     created_at: float
     created_by: str
-    started_at: Optional[float] = None
-    completed_at: Optional[float] = None
-    error_message: Optional[str] = None
-    affected_keys: List[str] = None
-    metadata: Dict[str, Any] = None
+    started_at: float | None = None
+    completed_at: float | None = None
+    error_message: str | None = None
+    affected_keys: list[str] = None
+    metadata: dict[str, Any] = None
 
     def __post_init__(self):
         if self.affected_keys is None:
@@ -98,12 +98,12 @@ class RollbackOperation:
         if self.metadata is None:
             self.metadata = {}
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Konvertera till dictionary."""
         return asdict(self)
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'RollbackOperation':
+    def from_dict(cls, data: dict[str, Any]) -> 'RollbackOperation':
         """Skapa från dictionary."""
         data['status'] = RollbackStatus(data['status'])
         return cls(**data)
@@ -116,18 +116,18 @@ class StagedRollout:
     id: str
     name: str
     description: str
-    target_keys: List[str]
-    rollout_plan: Dict[str, Any]  # Staged rollout plan
+    target_keys: list[str]
+    rollout_plan: dict[str, Any]  # Staged rollout plan
     status: StagedRolloutStatus
     created_at: float
     created_by: str
-    started_at: Optional[float] = None
-    completed_at: Optional[float] = None
+    started_at: float | None = None
+    completed_at: float | None = None
     current_stage: int = 0
     total_stages: int = 0
-    success_criteria: Dict[str, Any] = None
-    rollback_snapshot_id: Optional[str] = None
-    metadata: Dict[str, Any] = None
+    success_criteria: dict[str, Any] = None
+    rollback_snapshot_id: str | None = None
+    metadata: dict[str, Any] = None
 
     def __post_init__(self):
         if self.success_criteria is None:
@@ -135,12 +135,12 @@ class StagedRollout:
         if self.metadata is None:
             self.metadata = {}
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Konvertera till dictionary."""
         return asdict(self)
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'StagedRollout':
+    def from_dict(cls, data: dict[str, Any]) -> 'StagedRollout':
         """Skapa från dictionary."""
         data['status'] = StagedRolloutStatus(data['status'])
         return cls(**data)
@@ -162,7 +162,7 @@ class RollbackService:
         self._init_database()
 
         # Aktiva staged rollouts
-        self._active_rollouts: Dict[str, StagedRollout] = {}
+        self._active_rollouts: dict[str, StagedRollout] = {}
 
         # Starta bakgrundstrådar
         self._start_background_tasks()
@@ -261,7 +261,7 @@ class RollbackService:
         description: str = "",
         snapshot_type: SnapshotType = SnapshotType.MANUAL,
         created_by: str = "system",
-        tags: List[str] | None = None,
+        tags: list[str] | None = None,
     ) -> Snapshot:
         """
         Skapa en snapshot av aktuell konfiguration.
@@ -316,8 +316,8 @@ class RollbackService:
             with sqlite3.connect(self._db_path) as conn:
                 conn.execute(
                     """
-                    INSERT INTO snapshots 
-                    (id, name, description, snapshot_type, created_at, created_by, 
+                    INSERT INTO snapshots
+                    (id, name, description, snapshot_type, created_at, created_by,
                      generation, configuration, metadata, tags)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
@@ -339,7 +339,7 @@ class RollbackService:
         logger.info(f"Created snapshot {snapshot_id} with {len(configuration)} keys")
         return snapshot
 
-    def get_snapshot(self, snapshot_id: str) -> Optional[Snapshot]:
+    def get_snapshot(self, snapshot_id: str) -> Snapshot | None:
         """Hämta snapshot med ID."""
         with sqlite3.connect(self._db_path) as conn:
             cursor = conn.execute(
@@ -370,7 +370,7 @@ class RollbackService:
 
         return None
 
-    def list_snapshots(self, limit: int = 100, snapshot_type: Optional[SnapshotType] = None) -> List[Snapshot]:
+    def list_snapshots(self, limit: int = 100, snapshot_type: SnapshotType | None = None) -> list[Snapshot]:
         """Lista snapshots med filtrering."""
         query = """
             SELECT id, name, description, snapshot_type, created_at, created_by,
@@ -444,7 +444,7 @@ class RollbackService:
             with sqlite3.connect(self._db_path) as conn:
                 conn.execute(
                     """
-                    INSERT INTO rollback_operations 
+                    INSERT INTO rollback_operations
                     (id, snapshot_id, target_generation, status, created_at, created_by,
                      started_at, completed_at, error_message, affected_keys, metadata)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -535,11 +535,11 @@ class RollbackService:
     def create_staged_rollout(
         self,
         name: str,
-        target_keys: List[str],
-        rollout_plan: Dict[str, Any],
+        target_keys: list[str],
+        rollout_plan: dict[str, Any],
         created_by: str = "system",
         description: str = "",
-        success_criteria: Dict[str, Any] | None = None,
+        success_criteria: dict[str, Any] | None = None,
     ) -> StagedRollout:
         """
         Skapa staged rollout för risknycklar.
@@ -596,9 +596,9 @@ class RollbackService:
             with sqlite3.connect(self._db_path) as conn:
                 conn.execute(
                     """
-                    INSERT INTO staged_rollouts 
+                    INSERT INTO staged_rollouts
                     (id, name, description, target_keys, rollout_plan, status, created_at, created_by,
-                     started_at, completed_at, current_stage, total_stages, success_criteria, 
+                     started_at, completed_at, current_stage, total_stages, success_criteria,
                      rollback_snapshot_id, metadata)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
@@ -659,7 +659,7 @@ class RollbackService:
 
         return any(pattern in key.upper() for pattern in risk_patterns)
 
-    def _get_staged_rollout(self, rollout_id: str) -> Optional[StagedRollout]:
+    def _get_staged_rollout(self, rollout_id: str) -> StagedRollout | None:
         """Hämta staged rollout med ID."""
         with sqlite3.connect(self._db_path) as conn:
             cursor = conn.execute(
@@ -767,7 +767,7 @@ class RollbackService:
 
         logger.info(f"Completed staged rollout {rollout.id}")
 
-    def get_rollback_service_stats(self) -> Dict[str, Any]:
+    def get_rollback_service_stats(self) -> dict[str, Any]:
         """Hämta statistik för rollback service."""
         with sqlite3.connect(self._db_path) as conn:
             # Snapshot statistik
@@ -793,7 +793,7 @@ class RollbackService:
 
 
 # Global rollback service instans
-_rollback_service: Optional[RollbackService] = None
+_rollback_service: RollbackService | None = None
 
 
 def get_rollback_service(

@@ -46,17 +46,17 @@ class CITestPipeline:
             print(f"\n📋 Kör steg: {step['name']}")
             result = self._run_step(step)
             self.results[step['name']] = result
-            
+
             if not result['success'] and step.get('critical', False):
                 print(f"❌ Kritiskt steg misslyckades: {step['name']}")
                 break
 
         # Generera sammanfattning
         summary = self._generate_summary()
-        
+
         # Spara rapporter
         self._save_reports(summary)
-        
+
         return summary
 
     def _get_quick_test_steps(self) -> List[Dict[str, Any]]:
@@ -65,18 +65,24 @@ class CITestPipeline:
             {
                 "name": "Unit Tests",
                 "command": ["python", "-m", "pytest", "tests/test_unified_config_system.py::TestConfigStore", "-v"],
-                "critical": True
+                "critical": True,
             },
             {
                 "name": "Basic Integration",
-                "command": ["python", "-m", "pytest", "tests/test_unified_config_system.py::TestUnifiedConfigManager", "-v"],
-                "critical": True
+                "command": [
+                    "python",
+                    "-m",
+                    "pytest",
+                    "tests/test_unified_config_system.py::TestUnifiedConfigManager",
+                    "-v",
+                ],
+                "critical": True,
             },
             {
                 "name": "Code Formatting",
                 "command": ["python", "-m", "black", "--check", "services/", "config/"],
-                "critical": False
-            }
+                "critical": False,
+            },
         ]
 
     def _get_full_test_steps(self) -> List[Dict[str, Any]]:
@@ -85,43 +91,39 @@ class CITestPipeline:
             {
                 "name": "Setup Test Environment",
                 "command": ["python", "tests/setup_test_environment.py"],
-                "critical": True
+                "critical": True,
             },
             {
                 "name": "Unit Tests",
                 "command": ["python", "-m", "pytest", "tests/test_unified_config_system.py", "-v", "--tb=short"],
-                "critical": True
+                "critical": True,
             },
             {
                 "name": "API Tests",
                 "command": ["python", "-m", "pytest", "tests/test_config_api.py", "-v", "--tb=short"],
-                "critical": True
+                "critical": True,
             },
             {
                 "name": "Redis Integration Tests",
                 "command": ["python", "-m", "pytest", "tests/test_redis_integration.py", "-v", "--tb=short"],
-                "critical": False
+                "critical": False,
             },
             {
                 "name": "Code Formatting",
                 "command": ["python", "-m", "black", "--check", "services/", "config/", "tests/"],
-                "critical": False
+                "critical": False,
             },
             {
                 "name": "Linting",
                 "command": ["python", "-m", "ruff", "check", "services/", "config/", "tests/"],
-                "critical": False
+                "critical": False,
             },
-            {
-                "name": "Type Checking",
-                "command": ["python", "-m", "mypy", "services/", "config/"],
-                "critical": False
-            },
+            {"name": "Type Checking", "command": ["python", "-m", "mypy", "services/", "config/"], "critical": False},
             {
                 "name": "Security Scan",
                 "command": ["python", "-m", "bandit", "-r", "services/", "config/"],
-                "critical": False
-            }
+                "critical": False,
+            },
         ]
 
     def _get_security_test_steps(self) -> List[Dict[str, Any]]:
@@ -130,50 +132,45 @@ class CITestPipeline:
             {
                 "name": "Security Scan",
                 "command": ["python", "-m", "bandit", "-r", "services/", "config/", "-f", "json"],
-                "critical": True
+                "critical": True,
             },
             {
                 "name": "RBAC Tests",
                 "command": ["python", "-m", "pytest", "tests/test_config_api.py::TestAPISecurity", "-v"],
-                "critical": True
+                "critical": True,
             },
             {
                 "name": "Sensitive Data Tests",
                 "command": ["python", "-m", "pytest", "tests/test_unified_config_system.py::TestEdgeCases", "-v"],
-                "critical": True
+                "critical": True,
             },
             {
                 "name": "Input Validation Tests",
                 "command": ["python", "-m", "pytest", "tests/test_unified_config_system.py::TestConfigValidator", "-v"],
-                "critical": True
-            }
+                "critical": True,
+            },
         ]
 
     def _run_step(self, step: Dict[str, Any]) -> Dict[str, Any]:
         """Kör enskilt test-steg."""
         start_time = time.time()
-        
+
         try:
             # Kör kommando
-            result = subprocess.run(
-                step["command"],
-                capture_output=True,
-                text=True,
-                timeout=300  # 5 minuter timeout
-            )
-            
+            result = subprocess.run(step["command"], capture_output=True, text=True, timeout=300)  # 5 minuter timeout
+
             duration = time.time() - start_time
             success = result.returncode == 0
-            
+
             return {
                 "success": success,
                 "returncode": result.returncode,
                 "stdout": result.stdout,
                 "stderr": result.stderr,
                 "duration": duration,
-                "command": " ".join(step["command"])
+                "command": " ".join(step["command"]),
             }
-            
+
         except subprocess.TimeoutExpired:
             duration = time.time() - start_time
             return {
@@ -182,7 +179,7 @@ class CITestPipeline:
                 "stdout": "",
                 "stderr": f"Timeout efter {duration:.1f} sekunder",
                 "duration": duration,
-                "command": " ".join(step["command"])
+                "command": " ".join(step["command"]),
             }
         except Exception as e:
             duration = time.time() - start_time
@@ -192,7 +189,7 @@ class CITestPipeline:
                 "stdout": "",
                 "stderr": str(e),
                 "duration": duration,
-                "command": " ".join(step["command"])
+                "command": " ".join(step["command"]),
             }
 
     def _generate_summary(self) -> Dict[str, Any]:
@@ -200,15 +197,15 @@ class CITestPipeline:
         total_steps = len(self.results)
         successful_steps = sum(1 for result in self.results.values() if result["success"])
         failed_steps = total_steps - successful_steps
-        
+
         total_duration = time.time() - self.start_time if self.start_time else 0
-        
+
         # Identifiera kritiska fel
         critical_failures = []
         for step_name, result in self.results.items():
             if not result["success"]:
                 critical_failures.append(step_name)
-        
+
         return {
             "total_steps": total_steps,
             "successful_steps": successful_steps,
@@ -217,32 +214,32 @@ class CITestPipeline:
             "total_duration": total_duration,
             "critical_failures": critical_failures,
             "all_critical_passed": len(critical_failures) == 0,
-            "step_results": self.results
+            "step_results": self.results,
         }
 
     def _save_reports(self, summary: Dict[str, Any]):
         """Spara CI-rapporter."""
         # Console report
         self._print_console_report(summary)
-        
+
         # JSON report
         self._save_json_report(summary)
-        
+
         # JUnit XML (för CI/CD system)
         self._save_junit_xml(summary)
 
     def _print_console_report(self, summary: Dict[str, Any]):
         """Skriv console rapport."""
-        print("\n" + "="*70)
+        print("\n" + "=" * 70)
         print("🏗️  CI/CD TEST PIPELINE - RESULTAT")
-        print("="*70)
-        
+        print("=" * 70)
+
         print(f"📊 Totalt antal steg: {summary['total_steps']}")
         print(f"✅ Lyckade steg: {summary['successful_steps']}")
         print(f"❌ Misslyckade steg: {summary['failed_steps']}")
         print(f"📈 Framgångsgrad: {summary['success_rate']:.1f}%")
         print(f"⏱️  Total tid: {summary['total_duration']:.1f} sekunder")
-        
+
         # Status
         if summary['all_critical_passed']:
             print("\n🎉 ALLA KRITISKA TESTER GODKÄNDA!")
@@ -250,18 +247,18 @@ class CITestPipeline:
             print(f"\n⚠️  {len(summary['critical_failures'])} KRITISKA TESTER MISSLYCKADES")
             for failure in summary['critical_failures']:
                 print(f"   - {failure}")
-        
+
         # Detaljerade resultat
         print("\n📋 Detaljerade resultat:")
         for step_name, result in summary['step_results'].items():
             status = "✅" if result['success'] else "❌"
             duration = result['duration']
             print(f"   {status} {step_name} ({duration:.1f}s)")
-            
+
             if not result['success'] and result['stderr']:
                 print(f"      Fel: {result['stderr'][:100]}...")
-        
-        print("="*70)
+
+        print("=" * 70)
 
     def _save_json_report(self, summary: Dict[str, Any]):
         """Spara JSON rapport."""
@@ -283,18 +280,18 @@ class CITestPipeline:
         total_tests = summary['total_steps']
         failures = summary['failed_steps']
         time_str = f"{summary['total_duration']:.3f}"
-        
+
         xml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <testsuite name="Unified Configuration System CI Tests" 
            tests="{total_tests}" 
            failures="{failures}" 
            time="{time_str}">
 """
-        
+
         for step_name, result in summary['step_results'].items():
             test_name = step_name.replace(" ", "_").lower()
             duration = f"{result['duration']:.3f}"
-            
+
             if result['success']:
                 xml += f"""    <testcase name="{test_name}" time="{duration}"/>
 """
@@ -309,7 +306,7 @@ Stderr: {result['stderr']}
         </failure>
     </testcase>
 """
-        
+
         xml += "</testsuite>"
         return xml
 
@@ -318,27 +315,20 @@ def main():
     """Huvudfunktion för CI pipeline."""
     parser = argparse.ArgumentParser(description="CI/CD Test Pipeline")
     parser.add_argument(
-        "--config", 
-        choices=["quick", "full", "security"], 
-        default="full",
-        help="Test-konfiguration att köra"
+        "--config", choices=["quick", "full", "security"], default="full", help="Test-konfiguration att köra"
     )
-    parser.add_argument(
-        "--output", 
-        type=str,
-        help="Output-katalog för rapporter"
-    )
-    
+    parser.add_argument("--output", type=str, help="Output-katalog för rapporter")
+
     args = parser.parse_args()
-    
+
     # Sätt output-katalog
     if args.output:
         os.chdir(args.output)
-    
+
     # Kör pipeline
     pipeline = CITestPipeline()
     results = pipeline.run_pipeline(args.config)
-    
+
     # Exit code baserat på resultat
     exit_code = 0 if results['all_critical_passed'] else 1
     sys.exit(exit_code)

@@ -2,6 +2,7 @@ skips:
   - B110  # try/except pass (best-effort telemetry)
   - B112  # try/except continue (metrics iteration safety)
   - B311  # random for non-crypto backoff
+  - B113  # requests without timeout (test files only)
 exclude:
   - tests
   - .venv
