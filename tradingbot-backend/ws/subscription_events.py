@@ -15,7 +15,7 @@ from ws.manager import socket_app
 
 
 @socket_app.event
-async def get_pool_status(sid):
+async def get_pool_status(sid, data=None):
     try:
         from services.bitfinex_websocket import bitfinex_ws
 
